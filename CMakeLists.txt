@@ -11,6 +11,15 @@ qt_add_executable(C64Foundry
     App/MainWindow.cpp
     App/MainWindow.h
     App/MainWindow.ui
+    C64/C64Machine.h C64/C64Machine.cpp
+    C64/CPU/MOS6510.h C64/CPU/MOS6510.cpp
+    C64/Bus/C64Bus.h C64/Bus/C64Bus.cpp
+    C64/Memory/C64Memory.h C64/Memory/C64Memory.cpp
+    C64/Memory/RAM.h C64/Memory/RAM.cpp
+    C64/Memory/BasicROM.h C64/Memory/BasicROM.cpp
+    C64/Memory/KernalROM.h C64/Memory/KernalROM.cpp
+    C64/Memory/ColorRAM.h C64/Memory/ColorRAM.cpp
+    C64/Memory/CharROM.h C64/Memory/CharROM.cpp
 )
 
 qt_add_translations(
