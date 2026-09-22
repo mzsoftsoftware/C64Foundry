@@ -22,3 +22,15 @@ C64Machine::~C64Machine()
     delete m_ptrBus;
 }
 
+
+void C64Machine::reset()
+{
+    m_cycles = 0;
+}
+
+void C64Machine::clock()
+{
+    ++m_cycles;
+
+    m_ptrCpu->clock();
+}

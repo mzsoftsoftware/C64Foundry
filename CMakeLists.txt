@@ -20,6 +20,16 @@ qt_add_executable(C64Foundry
     C64/Memory/KernalROM.h C64/Memory/KernalROM.cpp
     C64/Memory/ColorRAM.h C64/Memory/ColorRAM.cpp
     C64/Memory/CharROM.h C64/Memory/CharROM.cpp
+    Gui/Emulator/EmulatorControlWidget.h Gui/Emulator/EmulatorControlWidget.cpp Gui/Emulator/EmulatorControlWidget.ui
+    Emulator/EmulatorSpeed.h
+    Emulator/EmulatorController.h Emulator/EmulatorController.cpp
+    Emulator/EmulatorWorker.h Emulator/EmulatorWorker.cpp
+    Emulator/EmulatorThread.h Emulator/EmulatorThread.cpp
+    C64/C64Timing.h
+)
+
+target_include_directories(C64Foundry PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 qt_add_translations(
