@@ -34,7 +34,9 @@ enum class MOS6510MicroOperation
     ReadIndirectAddressHigh,
     ReadIndirectAddressHighIndexed,
     ReadIndirectToAccumulator,
-    ReadIndirectIndexedToAccumulator
+    ReadIndirectIndexedToAccumulator,
 
-
+    WriteAccumulator,
+    WriteXRegister,
+    WriteYRegister
 };

@@ -169,13 +169,13 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
     case MOS6510MicroOperation::ReadZeroPageIndexedAddress:
     {
         const quint8 baseAddress = static_cast<quint8>(m_address);
-        switch (m_operation)
+        switch (m_addressingMode)
         {
-        case MOS6510Operation::LDA:
-        case MOS6510Operation::LDY:
+        case MOS6510AddressingMode::ZeroPageX:
+        case MOS6510AddressingMode::IndexedIndirect:
             m_address = static_cast<quint8>(baseAddress + m_x);
             break;
-        case MOS6510Operation::LDX:
+        case MOS6510AddressingMode::ZeroPageY:
             m_address = static_cast<quint8>(baseAddress + m_y);
             break;
         default:
@@ -234,7 +234,17 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
         m_pageCrossed = (baseAddress & 0xFF00) != (m_address & 0xFF00);
         if (m_pageCrossed)
         {
-            m_dummyReadPending = true;
+            switch (m_operation)
+            {
+            case MOS6510Operation::LDA:
+            case MOS6510Operation::LDX:
+            case MOS6510Operation::LDY:
+                m_dummyReadPending = true;
+                break;
+
+            default:
+                break;
+            }
         }
         break;
     }
@@ -294,7 +304,15 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
         m_pageCrossed = (baseAddress & 0xFF00) != (m_address & 0xFF00);
         if (m_pageCrossed)
         {
-            m_dummyReadPending = true;
+            switch (m_operation)
+            {
+            case MOS6510Operation::LDA:
+                m_dummyReadPending = true;
+                break;
+
+            default:
+                break;
+            }
         }
         break;
     }
@@ -310,6 +328,22 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
         const quint8 value = m_ptrBus->read(m_address);
         m_accumulator = value;
         updateLoadFlags(value);
+        break;
+    }
+    case MOS6510MicroOperation::WriteAccumulator:
+    {
+        m_ptrBus->write(m_address, m_accumulator);
+        break;
+    }
+    case MOS6510MicroOperation::WriteXRegister:
+    {
+        m_ptrBus->write(m_address, m_x);
+        break;
+    }
+
+    case MOS6510MicroOperation::WriteYRegister:
+    {
+        m_ptrBus->write(m_address, m_y);
         break;
     }
     }
