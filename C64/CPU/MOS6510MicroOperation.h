@@ -2,6 +2,8 @@
 
 enum class MOS6510MicroOperation
 {
+    NoOperation,
+
     ReadImmediateToAccumulator,
     ReadImmediateToXRegister,
     ReadImmediateToYRegister,

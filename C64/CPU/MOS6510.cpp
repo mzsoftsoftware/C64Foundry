@@ -113,6 +113,10 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
 {
     switch (microOperation)
     {
+    case MOS6510MicroOperation::NoOperation:
+    {
+        break;
+    }
     case MOS6510MicroOperation::ReadImmediateToAccumulator:
     {
         const quint16 address = m_programCounter;

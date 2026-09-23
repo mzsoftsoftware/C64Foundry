@@ -5,7 +5,6 @@
 MOS6510TestLoad::MOS6510TestLoad()
 {
 }
-
 MOS6510TestLoad::~MOS6510TestLoad()
 {
 }

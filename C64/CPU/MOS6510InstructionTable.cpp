@@ -31,7 +31,7 @@ void MOS6510InstructionTable::initializeInstructions()
     //initializeStackInstructions();
     //initializeJumpInstructions();
     //initializeFlagInstructions();
-    //initializeSpecialInstructions();
+    initializeSpecialInstructions();
 }
 
 
@@ -156,5 +156,12 @@ void MOS6510InstructionTable::initializeLoadInstructions()
     m_instructions[0xB1].microOperations[2] = MOS6510MicroOperation::ReadIndirectAddressHighIndexed;
     m_instructions[0xB1].microOperations[3] = MOS6510MicroOperation::ReadIndirectIndexedToAccumulator;
     m_instructions[0xB1].microOperationCount = 4;
+}
 
+void MOS6510InstructionTable::initializeSpecialInstructions()
+{
+    m_instructions[0xEA].operation = MOS6510Operation::NOP;
+    m_instructions[0xEA].addressingMode = MOS6510AddressingMode::Implied;
+    m_instructions[0xEA].microOperations[0] = MOS6510MicroOperation::NoOperation;
+    m_instructions[0xEA].microOperationCount = 1;
 }
