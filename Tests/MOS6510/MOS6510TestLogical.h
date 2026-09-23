@@ -4,13 +4,13 @@
 #include "MOS6510TestBase.h"
 
 
-class MOS6510TestArithmeticLogic : public QObject, public MOS6510TestBase
+class MOS6510TestLogical : public QObject, public MOS6510TestBase
 {
     Q_OBJECT
 
 public:
-    explicit MOS6510TestArithmeticLogic();
-    virtual ~MOS6510TestArithmeticLogic();
+    explicit MOS6510TestLogical();
+    virtual ~MOS6510TestLogical();
 
 private:
     void initializeRegisters();

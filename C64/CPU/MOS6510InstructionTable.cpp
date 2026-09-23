@@ -23,7 +23,7 @@ void MOS6510InstructionTable::initializeInstructions()
     initializeStoreInstructions();
     initializeTransferInstructions();
     initializeStackInstructions();
-    initializeArithmeticLogicInstructions();
+    initializeLogicalInstructions();
     initializeSpecialInstructions();
 
     //initializeArithmeticLogicInstructions();
@@ -321,7 +321,7 @@ void MOS6510InstructionTable::initializeStackInstructions()
     m_instructions[0x28].microOperationCount = 2;
 }
 
-void MOS6510InstructionTable::initializeArithmeticLogicInstructions()
+void MOS6510InstructionTable::initializeLogicalInstructions()
 {
     m_instructions[0x29].operation = MOS6510Operation::AND;
     m_instructions[0x29].addressingMode = MOS6510AddressingMode::Immediate;

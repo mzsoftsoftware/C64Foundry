@@ -1,16 +1,16 @@
-#include "MOS6510TestArithmeticLogic.h"
+#include "MOS6510TestLogical.h"
 
 #include <QTest>
 
 
-MOS6510TestArithmeticLogic::MOS6510TestArithmeticLogic()
+MOS6510TestLogical::MOS6510TestLogical()
 {
 }
-MOS6510TestArithmeticLogic::~MOS6510TestArithmeticLogic()
+MOS6510TestLogical::~MOS6510TestLogical()
 {
 }
 
-void MOS6510TestArithmeticLogic::initializeRegisters()
+void MOS6510TestLogical::initializeRegisters()
 {
     m_cpu.setAccumulator(0x55);
     m_cpu.setXRegister(0x22);
@@ -18,7 +18,7 @@ void MOS6510TestArithmeticLogic::initializeRegisters()
     m_cpu.setStackPointer(0xFF);
     m_cpu.setStatus(0x7D);
 }
-quint8 MOS6510TestArithmeticLogic::expectedLogicalStatus(const quint8 status, const quint8 value) const
+quint8 MOS6510TestLogical::expectedLogicalStatus(const quint8 status, const quint8 value) const
 {
     quint8 result = status;
     result &= static_cast<quint8>(~static_cast<quint8>(MOS6510StatusFlag::Zero));
@@ -35,7 +35,7 @@ quint8 MOS6510TestArithmeticLogic::expectedLogicalStatus(const quint8 status, co
 }
 
 // --------------------------------------------------------------------------------------------
-void MOS6510TestArithmeticLogic::testLogicalImmediate_data()
+void MOS6510TestLogical::testLogicalImmediate_data()
 {
     QTest::addColumn<quint8>("opcode");
     QTest::addColumn<quint8>("accumulator");
@@ -56,7 +56,7 @@ void MOS6510TestArithmeticLogic::testLogicalImmediate_data()
     QTest::newRow("EOR negative") << quint8(0x49) << quint8(0x00) << quint8(0x80) << quint8(0x80) << quint8(0x7D);
 
 }
-void MOS6510TestArithmeticLogic::testLogicalImmediate()
+void MOS6510TestLogical::testLogicalImmediate()
 {
     QFETCH(quint8, opcode);
     QFETCH(quint8, accumulator);
@@ -94,7 +94,7 @@ void MOS6510TestArithmeticLogic::testLogicalImmediate()
     QCOMPARE(m_cpu.accumulator(), expectedAccumulator);
 }
 // --------------------------------------------------------------------------------------------
-void MOS6510TestArithmeticLogic::testLogicalZeroPage_data()
+void MOS6510TestLogical::testLogicalZeroPage_data()
 {
     QTest::addColumn<quint8>("opcode");
     QTest::addColumn<quint8>("accumulator");
@@ -114,7 +114,7 @@ void MOS6510TestArithmeticLogic::testLogicalZeroPage_data()
     QTest::newRow("EOR zero") << quint8(0x45) << quint8(0x00) << quint8(0x00) << quint8(0x00) << quint8(0x7D);
     QTest::newRow("EOR negative") << quint8(0x45) << quint8(0x00) << quint8(0x80) << quint8(0x80) << quint8(0x7D);
 }
-void MOS6510TestArithmeticLogic::testLogicalZeroPage()
+void MOS6510TestLogical::testLogicalZeroPage()
 {
     QFETCH(quint8, opcode);
     QFETCH(quint8, accumulator);
@@ -155,7 +155,7 @@ void MOS6510TestArithmeticLogic::testLogicalZeroPage()
     QCOMPARE(m_cpu.accumulator(), expectedAccumulator);
 }
 // --------------------------------------------------------------------------------------------
-void MOS6510TestArithmeticLogic::testLogicalZeroPageIndexed_data()
+void MOS6510TestLogical::testLogicalZeroPageIndexed_data()
 {
     QTest::addColumn<quint8>("opcode");
     QTest::addColumn<quint8>("accumulator");
@@ -174,7 +174,7 @@ void MOS6510TestArithmeticLogic::testLogicalZeroPageIndexed_data()
     QTest::newRow("ORA zero page wrap") << quint8(0x15) << quint8(0x00) << quint8(0x80) << quint8(0x01) << quint8(0x80) << quint8(0x7D) << quint8(0xFF) << quint8(0x00);
     QTest::newRow("EOR zero page wrap") << quint8(0x55) << quint8(0x80) << quint8(0x80) << quint8(0x01) << quint8(0x00) << quint8(0x7D) << quint8(0xFF) << quint8(0x00);
 }
-void MOS6510TestArithmeticLogic::testLogicalZeroPageIndexed()
+void MOS6510TestLogical::testLogicalZeroPageIndexed()
 {
     QFETCH(quint8, opcode);
     QFETCH(quint8, accumulator);
@@ -222,7 +222,7 @@ void MOS6510TestArithmeticLogic::testLogicalZeroPageIndexed()
     QCOMPARE(m_cpu.accumulator(), expectedAccumulator);
 }
 // --------------------------------------------------------------------------------------------
-void MOS6510TestArithmeticLogic::testLogicalAbsolute_data()
+void MOS6510TestLogical::testLogicalAbsolute_data()
 {
     QTest::addColumn<quint8>("opcode");
     QTest::addColumn<quint8>("accumulator");
@@ -239,7 +239,7 @@ void MOS6510TestArithmeticLogic::testLogicalAbsolute_data()
     QTest::newRow("ORA negative") << quint8(0x0D) << quint8(0x00) << quint8(0x80) << quint8(0x80) << quint8(0x7D) << quint16(0x2342);
     QTest::newRow("EOR negative") << quint8(0x4D) << quint8(0xFF) << quint8(0x80) << quint8(0x7F) << quint8(0x7D) << quint16(0x2342);
 }
-void MOS6510TestArithmeticLogic::testLogicalAbsolute()
+void MOS6510TestLogical::testLogicalAbsolute()
 {
     QFETCH(quint8, opcode);
     QFETCH(quint8, accumulator);
@@ -285,7 +285,7 @@ void MOS6510TestArithmeticLogic::testLogicalAbsolute()
     QCOMPARE(m_cpu.accumulator(), expectedAccumulator);
 }
 // --------------------------------------------------------------------------------------------
-void MOS6510TestArithmeticLogic::testLogicalAbsoluteIndexed_data()
+void MOS6510TestLogical::testLogicalAbsoluteIndexed_data()
 {
     QTest::addColumn<quint8>("opcode");
     QTest::addColumn<quint8>("accumulator");
@@ -304,7 +304,7 @@ void MOS6510TestArithmeticLogic::testLogicalAbsoluteIndexed_data()
     QTest::newRow("ORA negative") << quint8(0x1D) << quint8(0x00) << quint8(0x80) << quint8(0x80) << quint8(0x7D) << quint8(0x02) << quint16(0x2340) << quint16(0x2342);
     QTest::newRow("EOR negative") << quint8(0x5D) << quint8(0xFF) << quint8(0x80) << quint8(0x7F) << quint8(0x7D) << quint8(0x02) << quint16(0x2340) << quint16(0x2342);
 }
-void MOS6510TestArithmeticLogic::testLogicalAbsoluteIndexed()
+void MOS6510TestLogical::testLogicalAbsoluteIndexed()
 {
     QFETCH(quint8, opcode);
     QFETCH(quint8, accumulator);
@@ -353,7 +353,7 @@ void MOS6510TestArithmeticLogic::testLogicalAbsoluteIndexed()
     QCOMPARE(m_cpu.accumulator(), expectedAccumulator);
 }
 // --------------------------------------------------------------------------------------------
-void MOS6510TestArithmeticLogic::testLogicalAbsoluteIndexedPageCrossing_data()
+void MOS6510TestLogical::testLogicalAbsoluteIndexedPageCrossing_data()
 {
     QTest::addColumn<quint8>("opcode");
     QTest::addColumn<quint8>("accumulator");
@@ -365,7 +365,7 @@ void MOS6510TestArithmeticLogic::testLogicalAbsoluteIndexedPageCrossing_data()
     QTest::newRow("ORA") << quint8(0x1D) << quint8(0x55) << quint8(0x0A) << quint8(0x5F) << quint8(0x7D);
     QTest::newRow("EOR") << quint8(0x5D) << quint8(0x55) << quint8(0x0F) << quint8(0x5A) << quint8(0x7D);
 }
-void MOS6510TestArithmeticLogic::testLogicalAbsoluteIndexedPageCrossing()
+void MOS6510TestLogical::testLogicalAbsoluteIndexedPageCrossing()
 {
     QFETCH(quint8, opcode);
     QFETCH(quint8, accumulator);
