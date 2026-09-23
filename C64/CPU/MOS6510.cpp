@@ -107,6 +107,7 @@ void MOS6510::prepareMicroOperations()
     }
     m_pageCrossed = false;
     m_dummyReadPending = false;
+    m_pageCrossingCycle = instruction.pageCrossingCycle;
 }
 
 void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
@@ -141,7 +142,30 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
         updateLoadFlags(m_y);
         break;
     }
-
+    case MOS6510MicroOperation::ReadImmediateAndAccumulator:
+    {
+        const quint16 address = m_programCounter;
+        m_accumulator &= m_ptrBus->read(address);
+        ++m_programCounter;
+        updateLoadFlags(m_accumulator);
+        break;
+    }
+    case MOS6510MicroOperation::ReadImmediateOrAccumulator:
+    {
+        const quint16 address = m_programCounter;
+        m_accumulator |= m_ptrBus->read(address);
+        ++m_programCounter;
+        updateLoadFlags(m_accumulator);
+        break;
+    }
+    case MOS6510MicroOperation::ReadImmediateExclusiveOrAccumulator:
+    {
+        const quint16 address = m_programCounter;
+        m_accumulator ^= m_ptrBus->read(address);
+        ++m_programCounter;
+        updateLoadFlags(m_accumulator);
+        break;
+    }
     case MOS6510MicroOperation::ReadZeroPageAddress:
     {
         m_address = m_ptrBus->read(m_programCounter);
@@ -164,6 +188,24 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
     {
         m_y = m_ptrBus->read(m_address);
         updateLoadFlags(m_y);
+        break;
+    }
+    case MOS6510MicroOperation::ReadZeroPageAndAccumulator:
+    {
+        m_accumulator &= m_ptrBus->read(m_address);
+        updateLoadFlags(m_accumulator);
+        break;
+    }
+    case MOS6510MicroOperation::ReadZeroPageOrAccumulator:
+    {
+        m_accumulator |= m_ptrBus->read(m_address);
+        updateLoadFlags(m_accumulator);
+        break;
+    }
+    case MOS6510MicroOperation::ReadZeroPageExclusiveOrAccumulator:
+    {
+        m_accumulator ^= m_ptrBus->read(m_address);
+        updateLoadFlags(m_accumulator);
         break;
     }
     case MOS6510MicroOperation::ReadZeroPageIndexedAddress:
@@ -199,6 +241,26 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
     {
         m_y = m_ptrBus->read(m_address);
         updateLoadFlags(m_y);
+        break;
+    }
+    case MOS6510MicroOperation::ReadZeroPageIndexedAndAccumulator:
+    {
+        m_accumulator &= m_ptrBus->read(m_address);
+        updateLoadFlags(m_accumulator);
+        break;
+    }
+
+    case MOS6510MicroOperation::ReadZeroPageIndexedOrAccumulator:
+    {
+        m_accumulator |= m_ptrBus->read(m_address);
+        updateLoadFlags(m_accumulator);
+        break;
+    }
+
+    case MOS6510MicroOperation::ReadZeroPageIndexedExclusiveOrAccumulator:
+    {
+        m_accumulator ^= m_ptrBus->read(m_address);
+        updateLoadFlags(m_accumulator);
         break;
     }
     case MOS6510MicroOperation::ReadAbsoluteAddressLow:
@@ -239,6 +301,9 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
             case MOS6510Operation::LDA:
             case MOS6510Operation::LDX:
             case MOS6510Operation::LDY:
+            case MOS6510Operation::AND:
+            case MOS6510Operation::ORA:
+            case MOS6510Operation::EOR:
                 m_dummyReadPending = true;
                 break;
 
@@ -266,6 +331,24 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
         updateLoadFlags(m_y);
         break;
     }
+    case MOS6510MicroOperation::ReadAbsoluteAndAccumulator:
+    {
+        m_accumulator &= m_ptrBus->read(m_address);
+        updateLoadFlags(m_accumulator);
+        break;
+    }
+    case MOS6510MicroOperation::ReadAbsoluteOrAccumulator:
+    {
+        m_accumulator |= m_ptrBus->read(m_address);
+        updateLoadFlags(m_accumulator);
+        break;
+    }
+    case MOS6510MicroOperation::ReadAbsoluteExclusiveOrAccumulator:
+    {
+        m_accumulator ^= m_ptrBus->read(m_address);
+        updateLoadFlags(m_accumulator);
+        break;
+    }
     case MOS6510MicroOperation::ReadAbsoluteIndexedToAccumulator:
     {
         m_accumulator = m_ptrBus->read(m_address);
@@ -282,6 +365,24 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
     {
         m_y = m_ptrBus->read(m_address);
         updateLoadFlags(m_y);
+        break;
+    }
+    case MOS6510MicroOperation::ReadAbsoluteIndexedAndAccumulator:
+    {
+        m_accumulator &= m_ptrBus->read(m_address);
+        updateLoadFlags(m_accumulator);
+        break;
+    }
+    case MOS6510MicroOperation::ReadAbsoluteIndexedOrAccumulator:
+    {
+        m_accumulator |= m_ptrBus->read(m_address);
+        updateLoadFlags(m_accumulator);
+        break;
+    }
+    case MOS6510MicroOperation::ReadAbsoluteIndexedExclusiveOrAccumulator:
+    {
+        m_accumulator ^= m_ptrBus->read(m_address);
+        updateLoadFlags(m_accumulator);
         break;
     }
     case MOS6510MicroOperation::ReadIndirectAddressLow:

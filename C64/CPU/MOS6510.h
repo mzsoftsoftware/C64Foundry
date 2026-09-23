@@ -80,4 +80,5 @@ private:
 
     bool m_pageCrossed = false;
     bool m_dummyReadPending = false;
+    bool m_pageCrossingCycle = false;
 };

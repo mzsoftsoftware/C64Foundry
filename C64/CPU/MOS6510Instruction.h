@@ -109,4 +109,6 @@ struct MOS6510Instruction
 
     MOS6510MicroOperation microOperations[8];
     quint8 microOperationCount;
+
+    bool pageCrossingCycle = false;
 };

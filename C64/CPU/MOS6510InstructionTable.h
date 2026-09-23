@@ -20,11 +20,10 @@ private:
     void initializeStoreInstructions();
     void initializeTransferInstructions();
     void initializeStackInstructions();
+    void initializeArithmeticLogicInstructions();
     void initializeSpecialInstructions();
 
 
-    void initializeArithmeticInstructions();
-    void initializeLogicInstructions();
     void initializeCompareInstructions();
     void initializeIncrementInstructions();
     void initializeShiftInstructions();
