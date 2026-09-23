@@ -21,7 +21,7 @@ void MOS6510InstructionTable::initializeInstructions()
 {
     initializeLoadInstructions();
     initializeStoreInstructions();
-    //initializeTransferInstructions();
+    initializeTransferInstructions();
     //initializeArithmeticInstructions();
     //initializeLogicInstructions();
     //initializeCompareInstructions();
@@ -250,6 +250,44 @@ void MOS6510InstructionTable::initializeStoreInstructions()
     m_instructions[0x8C].microOperations[1] = MOS6510MicroOperation::ReadAbsoluteAddressHigh;
     m_instructions[0x8C].microOperations[2] = MOS6510MicroOperation::WriteYRegister;
     m_instructions[0x8C].microOperationCount = 3;
+}
+
+void MOS6510InstructionTable::initializeTransferInstructions()
+{
+    m_instructions[0xAA].operation = MOS6510Operation::TAX;
+    m_instructions[0xAA].addressingMode = MOS6510AddressingMode::Implied;
+    m_instructions[0xAA].microOperations[0] = MOS6510MicroOperation::TransferAccumulatorToXRegister;
+    m_instructions[0xAA].microOperationCount = 1;
+
+    m_instructions[0xA8].operation = MOS6510Operation::TAY;
+    m_instructions[0xA8].addressingMode = MOS6510AddressingMode::Implied;
+    m_instructions[0xA8].microOperations[0] = MOS6510MicroOperation::TransferAccumulatorToYRegister;
+    m_instructions[0xA8].microOperationCount = 1;
+
+    m_instructions[0x8A].operation = MOS6510Operation::TXA;
+    m_instructions[0x8A].addressingMode = MOS6510AddressingMode::Implied;
+    m_instructions[0x8A].microOperations[0] = MOS6510MicroOperation::TransferXRegisterToAccumulator;
+    m_instructions[0x8A].microOperationCount = 1;
+
+    m_instructions[0x98].operation = MOS6510Operation::TYA;
+    m_instructions[0x98].addressingMode = MOS6510AddressingMode::Implied;
+    m_instructions[0x98].microOperations[0] = MOS6510MicroOperation::TransferYRegisterToAccumulator;
+    m_instructions[0x98].microOperationCount = 1;
+
+    m_instructions[0xBA].operation = MOS6510Operation::TSX;
+    m_instructions[0xBA].addressingMode = MOS6510AddressingMode::Implied;
+    m_instructions[0xBA].microOperations[0] = MOS6510MicroOperation::TransferStackPointerToXRegister;
+    m_instructions[0xBA].microOperationCount = 1;
+
+    m_instructions[0x9A].operation = MOS6510Operation::TXS;
+    m_instructions[0x9A].addressingMode = MOS6510AddressingMode::Implied;
+    m_instructions[0x9A].microOperations[0] = MOS6510MicroOperation::TransferXRegisterToStackPointer;
+    m_instructions[0x9A].microOperationCount = 1;
+
+    m_instructions[0x9A].operation = MOS6510Operation::TXS;
+    m_instructions[0x9A].addressingMode = MOS6510AddressingMode::Implied;
+    m_instructions[0x9A].microOperations[0] = MOS6510MicroOperation::TransferXRegisterToStackPointer;
+    m_instructions[0x9A].microOperationCount = 1;
 }
 
 void MOS6510InstructionTable::initializeSpecialInstructions()

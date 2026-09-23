@@ -38,5 +38,12 @@ enum class MOS6510MicroOperation
 
     WriteAccumulator,
     WriteXRegister,
-    WriteYRegister
+    WriteYRegister,
+
+    TransferAccumulatorToXRegister,
+    TransferAccumulatorToYRegister,
+    TransferXRegisterToAccumulator,
+    TransferYRegisterToAccumulator,
+    TransferStackPointerToXRegister,
+    TransferXRegisterToStackPointer
 };

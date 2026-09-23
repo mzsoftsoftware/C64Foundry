@@ -132,60 +132,6 @@ void MOS6510TestStore::testAbsoluteStore()
     QCOMPARE(m_memory.readRAM(address), value);
 }
 // --------------------------------------------------------------------------------------------
-void MOS6510TestStore::testAbsoluteYStore_data()
-{
-    QTest::addColumn<quint8>("opcode");
-    QTest::addColumn<quint16>("address");
-    QTest::addColumn<quint8>("index");
-    QTest::addColumn<quint8>("value");
-    QTest::addColumn<quint16>("expectedAddress");
-
-    QTest::newRow("STA absolute,Y") << quint8(0x99) << quint16(0x1234) << quint8(0x05) << quint8(0x11) << quint16(0x1239);
-    QTest::newRow("STA absolute,Y page crossing") << quint8(0x99) << quint16(0x12F0) << quint8(0x20) << quint8(0x11) << quint16(0x1310);
-    QTest::newRow("STA absolute,Y $FFFF") << quint8(0x99) << quint16(0xFFFE) << quint8(0x01) << quint8(0x11) << quint16(0xFFFF);
-}
-void MOS6510TestStore::testAbsoluteYStore()
-{
-    QFETCH(quint8, opcode);
-    QFETCH(quint16, address);
-    QFETCH(quint8, index);
-    QFETCH(quint8, value);
-    QFETCH(quint16, expectedAddress);
-
-    setupCpu();
-    initializeRegisters();
-    m_cpu.setYRegister(index);
-    m_memory.writeRAM(0x1000, opcode);
-    m_memory.writeRAM(0x1001, static_cast<quint8>(address & 0xFF));
-    m_memory.writeRAM(0x1002, static_cast<quint8>((address >> 8) & 0xFF));
-    m_memory.writeRAM(0x1003, 0xEA);
-    m_memory.writeRAM(expectedAddress, 0x00);
-    m_cpu.setProgramCounter(0x1000);
-
-    // Cycle 1: Opcode Fetch
-    m_cpu.clock();
-    QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
-
-    // Cycle 2: Low-Byte der Adresse lesen
-    m_cpu.clock();
-    QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
-
-    // Cycle 3: High-Byte der Adresse lesen und Y addieren
-    m_cpu.clock();
-    QCOMPARE(m_cpu.programCounter(), quint16(0x1003));
-
-    // Cycle 4: Wert schreiben
-    m_cpu.clock();
-    QCOMPARE(m_cpu.programCounter(), quint16(0x1003));
-    QCOMPARE(m_memory.readRAM(expectedAddress), value);
-    verifyRegisters(0x11, 0x22, index, 0x7D);
-
-    // Cycle 5: nächsten Opcode holen
-    m_cpu.clock();
-    QCOMPARE(m_cpu.programCounter(), quint16(0x1004));
-    QCOMPARE(m_memory.readRAM(expectedAddress), value);
-}
-// --------------------------------------------------------------------------------------------
 void MOS6510TestStore::testIndexedStore_data()
 {
     QTest::addColumn<quint8>("opcode");

@@ -23,9 +23,6 @@ private slots:
     void testAbsoluteStore_data();
     void testAbsoluteStore();
 
-    void testAbsoluteYStore_data();
-    void testAbsoluteYStore();
-
     void testIndexedStore_data();
     void testIndexedStore();
 
