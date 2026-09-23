@@ -11,8 +11,9 @@ EmulatorWorker::EmulatorWorker(QObject *parent)
     : QObject{parent}
 {
     m_ptrMachine = new C64Machine();
+    m_ptrMachine->powerOn();
 
-    qDebug() << "EmulatorWorker: created";
+    qDebug() << "EmulatorWorker: created and powered";
 }
 EmulatorWorker::~EmulatorWorker()
 {

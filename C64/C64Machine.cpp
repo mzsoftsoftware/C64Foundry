@@ -1,5 +1,7 @@
 #include "C64Machine.h"
 
+#include <QDebug>
+
 #include "Bus/C64Bus.h"
 #include "Memory/C64Memory.h"
 #include "CPU/MOS6510.h"
@@ -22,7 +24,9 @@ C64Machine::~C64Machine()
     delete m_ptrBus;
 }
 
-
+void C64Machine::powerOn()
+{
+}
 void C64Machine::reset()
 {
     m_cycles = 0;

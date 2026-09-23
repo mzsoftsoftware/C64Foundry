@@ -19,7 +19,7 @@ public:
     //void setCIA2(CIA* ptrCia2);
 
     // Operations
-    quint8 read(quint16 address);
+    quint8 read(quint16 address) const;
     void write(quint16 address, quint8 value);
 
 private:

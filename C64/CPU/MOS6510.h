@@ -2,6 +2,12 @@
 
 #include <QtGlobal>
 
+#include "MOS6510Instruction.h"
+#include "MOS6510InstructionTable.h"
+#include "MOS6510MicroOperation.h"
+#include "MOS6510StatusRegister.h"
+
+
 class C64Bus;
 
 
@@ -11,33 +17,60 @@ public:
     explicit MOS6510();
     virtual ~MOS6510();
 
+    // Getter
+    quint8 accumulator() const { return m_accumulator; }
+    quint16 programCounter() const { return m_programCounter; }
+    quint8 xRegister() const { return m_x; }
+    quint8 yRegister() const { return m_y; }
+    bool statusFlag(MOS6510StatusFlag flag) const;
+
     // Setter
     void setBus(C64Bus* ptrBus);
+    void setProgramCounter(const quint16 address)   { m_programCounter = address; }
 
     // Operations
     void reset();
     void clock();
 
 private:
-    enum class CycleState
+    enum class CpuState
     {
-        Reset,
-        FetchOpcode,
-        FetchOperand,
-        Execute
+        Fetch,
+        Execute,
+        Stopped
     };
 
+    void fetchOpcode();
+    void decodeInstruction();
+    void prepareMicroOperations();
+    void executeMicroOperation(MOS6510MicroOperation microOperation);
+
+    void setStatusFlag(MOS6510StatusFlag flag, bool value);
+    void updateLoadFlags(quint8 value);
+
+private:
     C64Bus* m_ptrBus = nullptr;
 
-    quint16 m_programCounter = 0;
+    MOS6510InstructionTable m_instructionTable;
+    CpuState m_state = CpuState::Fetch;
+
     quint8  m_accumulator = 0;
     quint8  m_x = 0;
     quint8  m_y = 0;
     quint8  m_stackPointer = 0;
+    quint16 m_programCounter = 0;
     quint8  m_status = 0;
 
     quint8 m_opcode = 0;
+    quint16 m_address = 0;
+    quint8 m_data = 0;
 
-    CycleState m_cycleState = CycleState::Reset;
-    quint8  m_cycle = 0;
+    MOS6510Operation m_operation = MOS6510Operation::Unknown;
+    MOS6510AddressingMode m_addressingMode = MOS6510AddressingMode::Implied;
+    MOS6510MicroOperation m_microOperations[8];
+    quint8 m_microOperationCount = 0;
+    quint8 m_microOperationIndex = 0;
+
+    bool m_pageCrossed = false;
+    bool m_dummyReadPending = false;
 };
