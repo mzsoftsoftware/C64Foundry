@@ -191,6 +191,37 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
         updateLoadFlags(m_y);
         break;
     }
+    case MOS6510MicroOperation::ReadAbsoluteAddressLow:
+    {
+        m_address = m_ptrBus->read(m_programCounter);
+        ++m_programCounter;
+        break;
+    }
+    case MOS6510MicroOperation::ReadAbsoluteAddressHigh:
+    {
+        const quint8 highByte = m_ptrBus->read(m_programCounter);
+        ++m_programCounter;
+        m_address |= static_cast<quint16>(highByte) << 8;
+        break;
+    }
+    case MOS6510MicroOperation::ReadAbsoluteToAccumulator:
+    {
+        m_accumulator = m_ptrBus->read(m_address);
+        updateLoadFlags(m_accumulator);
+        break;
+    }
+    case MOS6510MicroOperation::ReadAbsoluteToXRegister:
+    {
+        m_x = m_ptrBus->read(m_address);
+        updateLoadFlags(m_x);
+        break;
+    }
+    case MOS6510MicroOperation::ReadAbsoluteToYRegister:
+    {
+        m_y = m_ptrBus->read(m_address);
+        updateLoadFlags(m_y);
+        break;
+    }
     }
 }
 

@@ -42,4 +42,6 @@ private slots:
     void testZeroPageIndexedLoad_data();
     void testZeroPageIndexedLoad();
 
+    void testAbsoluteLoad_data();
+    void testAbsoluteLoad();
 };

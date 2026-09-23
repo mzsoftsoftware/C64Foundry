@@ -14,5 +14,11 @@ enum class MOS6510MicroOperation
     ReadZeroPageIndexedAddress,
     ReadZeroPageIndexedToAccumulator,
     ReadZeroPageIndexedToXRegister,
-    ReadZeroPageIndexedToYRegister
+    ReadZeroPageIndexedToYRegister,
+
+    ReadAbsoluteAddressLow,
+    ReadAbsoluteAddressHigh,
+    ReadAbsoluteToAccumulator,
+    ReadAbsoluteToXRegister,
+    ReadAbsoluteToYRegister
 };

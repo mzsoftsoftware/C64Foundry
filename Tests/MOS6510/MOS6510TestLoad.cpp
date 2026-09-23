@@ -402,3 +402,97 @@ void MOS6510TestLoad::testZeroPageIndexedLoad()
     verifyLoadedRegister(registerType, value);
 }
 // --------------------------------------------------------------------------------------------
+void MOS6510TestLoad::testAbsoluteLoad_data()
+{
+    QTest::addColumn<LoadRegister>("registerType");
+    QTest::addColumn<quint8>("opcode");
+    QTest::addColumn<quint16>("address");
+    QTest::addColumn<quint8>("value");
+    QTest::addColumn<quint8>("status");
+
+    QTest::newRow("LDA positive") << LoadRegister::Accumulator << quint8(0xAD) << quint16(0x1234) << quint8(0x37) << quint8(0x7D);
+    QTest::newRow("LDA zero") << LoadRegister::Accumulator << quint8(0xAD) << quint16(0x1234) << quint8(0x00) << quint8(0x7D);
+    QTest::newRow("LDA negative") << LoadRegister::Accumulator << quint8(0xAD) << quint16(0x1234) << quint8(0x80) << quint8(0x7D);
+    QTest::newRow("LDA $0000") << LoadRegister::Accumulator << quint8(0xAD) << quint16(0x0000) << quint8(0x11) << quint8(0x7D);
+    QTest::newRow("LDA $FFFF") << LoadRegister::Accumulator << quint8(0xAD) << quint16(0xFFFF) << quint8(0x22) << quint8(0x7D);
+
+    QTest::newRow("LDX positive") << LoadRegister::X << quint8(0xAE) << quint16(0x2345) << quint8(0x37) << quint8(0x7D);
+    QTest::newRow("LDX zero") << LoadRegister::X << quint8(0xAE) << quint16(0x2345) << quint8(0x00) << quint8(0x7D);
+    QTest::newRow("LDX negative") << LoadRegister::X << quint8(0xAE) << quint16(0x2345) << quint8(0x80) << quint8(0x7D);
+    QTest::newRow("LDX $0000") << LoadRegister::X << quint8(0xAE) << quint16(0x0000) << quint8(0x33) << quint8(0x7D);
+    QTest::newRow("LDX $FFFF") << LoadRegister::X << quint8(0xAE) << quint16(0xFFFF) << quint8(0x44) << quint8(0x7D);
+
+    QTest::newRow("LDY positive") << LoadRegister::Y << quint8(0xAC) << quint16(0x3456) << quint8(0x37) << quint8(0x7D);
+    QTest::newRow("LDY zero") << LoadRegister::Y << quint8(0xAC) << quint16(0x3456) << quint8(0x00) << quint8(0x7D);
+    QTest::newRow("LDY negative") << LoadRegister::Y << quint8(0xAC) << quint16(0x3456) << quint8(0x80) << quint8(0x7D);
+    QTest::newRow("LDY $0000") << LoadRegister::Y << quint8(0xAC) << quint16(0x0000) << quint8(0x55) << quint8(0x7D);
+    QTest::newRow("LDY $FFFF") << LoadRegister::Y << quint8(0xAC) << quint16(0xFFFF) << quint8(0x66) << quint8(0x7D);
+}
+void MOS6510TestLoad::testAbsoluteLoad()
+{
+    QFETCH(LoadRegister, registerType);
+    QFETCH(quint8, opcode);
+    QFETCH(quint16, address);
+    QFETCH(quint8, value);
+    QFETCH(quint8, status);
+
+    setupCpu();
+    initializeRegisters();
+    m_cpu.setStatus(status);
+    const quint8 lowByte = static_cast<quint8>(address & 0x00FF);
+    const quint8 highByte = static_cast<quint8>((address >> 8) & 0x00FF);
+    m_memory.writeRAM(0x1000, opcode);
+    m_memory.writeRAM(0x1001, lowByte);
+    m_memory.writeRAM(0x1002, highByte);
+    m_memory.writeRAM(0x1003, 0xA9);
+    m_memory.writeRAM(0x1004, 0x55);
+    m_memory.writeRAM(address, value);
+    m_cpu.setProgramCounter(0x1000);
+
+    // Cycle 1: Opcode lesen
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
+
+    // Cycle 2: Low-Byte der Adresse lesen
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
+
+    // Cycle 3: High-Byte der Adresse lesen
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1003));
+
+    // Cycle 4: Wert aus dem Speicher lesen
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1003));
+
+    verifyLoadedRegister(registerType, value);
+    QCOMPARE(m_cpu.status(),
+             expectedLoadStatus(status, value));
+
+    // Die beiden anderen Register wurden nicht verändert.
+    switch (registerType)
+    {
+    case LoadRegister::Accumulator:
+        QCOMPARE(m_cpu.xRegister(), quint8(0x22));
+        QCOMPARE(m_cpu.yRegister(), quint8(0x33));
+        break;
+
+    case LoadRegister::X:
+        QCOMPARE(m_cpu.accumulator(), quint8(0x11));
+        QCOMPARE(m_cpu.yRegister(), quint8(0x33));
+        break;
+
+    case LoadRegister::Y:
+        QCOMPARE(m_cpu.accumulator(), quint8(0x11));
+        QCOMPARE(m_cpu.xRegister(), quint8(0x22));
+        break;
+    }
+
+    // Cycle 5: Opcode der nächsten Instruktion lesen
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1004));
+
+    // Die nächste Instruktion wurde noch nicht ausgeführt.
+    verifyLoadedRegister(registerType, value);
+}
+// --------------------------------------------------------------------------------------------
