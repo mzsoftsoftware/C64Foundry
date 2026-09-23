@@ -800,22 +800,38 @@ void MOS6510TestLoad::testIndirectLoad()
 
         if ((baseAddress & 0xFF00) != (targetAddress & 0xFF00))
         {
+            // Page crossing:
             // Cycle 5: Dummy Read
             m_cpu.clock();
             QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
             QCOMPARE(m_cpu.accumulator(), quint8(0x11));
+
+            // Cycle 6: Data
+            m_cpu.clock();
+            QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
+            QCOMPARE(m_cpu.accumulator(), value);
+            QCOMPARE(m_cpu.status(), expectedLoadStatus(status, value));
+
+            // Cycle 7: Next Opcode Fetch
+            m_cpu.clock();
+            QCOMPARE(m_cpu.programCounter(), quint16(0x1003));
+            QCOMPARE(m_cpu.accumulator(), value);
+        }
+        else
+        {
+            // No page crossing:
+            // Cycle 5: Data
+            m_cpu.clock();
+            QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
+            QCOMPARE(m_cpu.accumulator(), value);
+            QCOMPARE(m_cpu.status(), expectedLoadStatus(status, value));
+
+            // Cycle 6: Next Opcode Fetch
+            m_cpu.clock();
+            QCOMPARE(m_cpu.programCounter(), quint16(0x1003));
+            QCOMPARE(m_cpu.accumulator(), value);
         }
 
-        // Cycle 6: Data
-        m_cpu.clock();
-        QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
-        QCOMPARE(m_cpu.accumulator(), value);
-        QCOMPARE(m_cpu.status(), expectedLoadStatus(status, value));
-
-        // Cycle 7: Next Opcode Fetch
-        m_cpu.clock();
-        QCOMPARE(m_cpu.programCounter(), quint16(0x1003));
-        QCOMPARE(m_cpu.accumulator(), value);
         break;
     }
 }

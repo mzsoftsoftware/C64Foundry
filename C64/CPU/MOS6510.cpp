@@ -276,41 +276,40 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
         m_address |= static_cast<quint16>(highByte) << 8;
         break;
     }
-    case MOS6510MicroOperation::ReadAbsoluteAddressHighIndexed:
+    case MOS6510MicroOperation::ReadAbsoluteXAddress:
     {
         const quint8 highByte = m_ptrBus->read(m_programCounter);
         ++m_programCounter;
         m_address |= static_cast<quint16>(highByte) << 8;
-        const quint16 baseAddress = m_address;
-        switch (m_addressingMode)
-        {
-        case MOS6510AddressingMode::AbsoluteX:
-            m_address += m_x;
-            break;
-        case MOS6510AddressingMode::AbsoluteY:
-            m_address += m_y;
-            break;
-        default:
-            break;
-        }
-        m_pageCrossed = (baseAddress & 0xFF00) != (m_address & 0xFF00);
-        if (m_pageCrossed)
-        {
-            switch (m_operation)
-            {
-            case MOS6510Operation::LDA:
-            case MOS6510Operation::LDX:
-            case MOS6510Operation::LDY:
-            case MOS6510Operation::AND:
-            case MOS6510Operation::ORA:
-            case MOS6510Operation::EOR:
-                m_dummyReadPending = true;
-                break;
 
-            default:
-                break;
-            }
+        const quint16 baseAddress = m_address;
+        m_address += m_x;
+
+        m_pageCrossed = (baseAddress & 0xFF00) != (m_address & 0xFF00);
+
+        if (m_pageCrossed && m_pageCrossingCycle)
+        {
+            m_dummyReadPending = true;
         }
+
+        break;
+    }
+    case MOS6510MicroOperation::ReadAbsoluteYAddress:
+    {
+        const quint8 highByte = m_ptrBus->read(m_programCounter);
+        ++m_programCounter;
+        m_address |= static_cast<quint16>(highByte) << 8;
+
+        const quint16 baseAddress = m_address;
+        m_address += m_y;
+
+        m_pageCrossed = (baseAddress & 0xFF00) != (m_address & 0xFF00);
+
+        if (m_pageCrossed && m_pageCrossingCycle)
+        {
+            m_dummyReadPending = true;
+        }
+
         break;
     }
     case MOS6510MicroOperation::ReadAbsoluteToAccumulator:
@@ -403,17 +402,9 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
         const quint16 baseAddress = m_address;
         m_address += m_y;
         m_pageCrossed = (baseAddress & 0xFF00) != (m_address & 0xFF00);
-        if (m_pageCrossed)
+        if (m_pageCrossed && m_pageCrossingCycle)
         {
-            switch (m_operation)
-            {
-            case MOS6510Operation::LDA:
-                m_dummyReadPending = true;
-                break;
-
-            default:
-                break;
-            }
+            m_dummyReadPending = true;
         }
         break;
     }
