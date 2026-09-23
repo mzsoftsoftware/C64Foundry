@@ -43,7 +43,26 @@ MOS6510InstructionTable::MOS6510InstructionTable()
     m_instructions[0xA4].microOperations[1] = MOS6510MicroOperation::ReadZeroPageToYRegister;
     m_instructions[0xA4].microOperationCount = 2;
 
+    m_instructions[0xB5].operation = MOS6510Operation::LDA;
+    m_instructions[0xB5].addressingMode = MOS6510AddressingMode::ZeroPageX;
+    m_instructions[0xB5].microOperations[0] = MOS6510MicroOperation::ReadZeroPageAddress;
+    m_instructions[0xB5].microOperations[1] = MOS6510MicroOperation::ReadZeroPageIndexedAddress;
+    m_instructions[0xB5].microOperations[2] = MOS6510MicroOperation::ReadZeroPageIndexedToAccumulator;
+    m_instructions[0xB5].microOperationCount = 3;
 
+    m_instructions[0xB6].operation = MOS6510Operation::LDX;
+    m_instructions[0xB6].addressingMode = MOS6510AddressingMode::ZeroPageY;
+    m_instructions[0xB6].microOperations[0] = MOS6510MicroOperation::ReadZeroPageAddress;
+    m_instructions[0xB6].microOperations[1] = MOS6510MicroOperation::ReadZeroPageIndexedAddress;
+    m_instructions[0xB6].microOperations[2] = MOS6510MicroOperation::ReadZeroPageIndexedToXRegister;
+    m_instructions[0xB6].microOperationCount = 3;
+
+    m_instructions[0xB4].operation = MOS6510Operation::LDY;
+    m_instructions[0xB4].addressingMode = MOS6510AddressingMode::ZeroPageX;
+    m_instructions[0xB4].microOperations[0] = MOS6510MicroOperation::ReadZeroPageAddress;
+    m_instructions[0xB4].microOperations[1] = MOS6510MicroOperation::ReadZeroPageIndexedAddress;
+    m_instructions[0xB4].microOperations[2] = MOS6510MicroOperation::ReadZeroPageIndexedToYRegister;
+    m_instructions[0xB4].microOperationCount = 3;
 }
 MOS6510InstructionTable::~MOS6510InstructionTable()
 {

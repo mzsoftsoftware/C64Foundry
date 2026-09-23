@@ -156,6 +156,41 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
         updateLoadFlags(m_y);
         break;
     }
+    case MOS6510MicroOperation::ReadZeroPageIndexedAddress:
+    {
+        const quint8 baseAddress = static_cast<quint8>(m_address);
+        switch (m_operation)
+        {
+        case MOS6510Operation::LDA:
+        case MOS6510Operation::LDY:
+            m_address = static_cast<quint8>(baseAddress + m_x);
+            break;
+        case MOS6510Operation::LDX:
+            m_address = static_cast<quint8>(baseAddress + m_y);
+            break;
+        default:
+            break;
+        }
+        break;
+    }
+    case MOS6510MicroOperation::ReadZeroPageIndexedToAccumulator:
+    {
+        m_accumulator = m_ptrBus->read(m_address);
+        updateLoadFlags(m_accumulator);
+        break;
+    }
+    case MOS6510MicroOperation::ReadZeroPageIndexedToXRegister:
+    {
+        m_x = m_ptrBus->read(m_address);
+        updateLoadFlags(m_x);
+        break;
+    }
+    case MOS6510MicroOperation::ReadZeroPageIndexedToYRegister:
+    {
+        m_y = m_ptrBus->read(m_address);
+        updateLoadFlags(m_y);
+        break;
+    }
     }
 }
 

@@ -9,6 +9,12 @@ enum class LoadRegister
     X,
     Y
 };
+enum class IndexRegister
+{
+    X,
+    Y
+};
+
 
 class MOS6510TestLoad : public QObject, public MOS6510TestBase
 {
@@ -17,6 +23,11 @@ class MOS6510TestLoad : public QObject, public MOS6510TestBase
 public:
     explicit MOS6510TestLoad();
     virtual ~MOS6510TestLoad();
+
+private:
+    void initializeRegisters();
+    void verifyLoadedRegister(LoadRegister registerType, quint8 value);
+    quint8 expectedLoadStatus(quint8 status, quint8 value) const;
 
 private slots:
     void testImmediateLoad_data();
@@ -27,4 +38,8 @@ private slots:
     void testZeroPageLoad_data();
     void testZeroPageLoad();
     void testZeroPageLoadPcWrap();
+
+    void testZeroPageIndexedLoad_data();
+    void testZeroPageIndexedLoad();
+
 };

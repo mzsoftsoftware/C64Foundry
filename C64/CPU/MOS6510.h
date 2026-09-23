@@ -18,15 +18,20 @@ public:
     virtual ~MOS6510();
 
     // Getter
-    quint8 accumulator() const { return m_accumulator; }
-    quint16 programCounter() const { return m_programCounter; }
-    quint8 xRegister() const { return m_x; }
-    quint8 yRegister() const { return m_y; }
+    quint8 accumulator() const                          { return m_accumulator; }
+    quint8 xRegister() const                            { return m_x; }
+    quint8 yRegister() const                            { return m_y; }
+    quint16 programCounter() const                      { return m_programCounter; }
+    quint8 status() const                               { return m_status; }
     bool statusFlag(MOS6510StatusFlag flag) const;
 
     // Setter
     void setBus(C64Bus* ptrBus);
-    void setProgramCounter(const quint16 address)   { m_programCounter = address; }
+    void setAccumulator(quint8 value)                   { m_accumulator = value; }
+    void setXRegister(quint8 value)                     { m_x = value; }
+    void setYRegister(quint8 value)                     { m_y = value; }
+    void setProgramCounter(quint16 address)             { m_programCounter = address; }
+    void setStatus(quint8 value)                        { m_status = value; }
 
     // Operations
     void reset();

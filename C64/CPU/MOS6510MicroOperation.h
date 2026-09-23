@@ -9,39 +9,10 @@ enum class MOS6510MicroOperation
     ReadZeroPageAddress,
     ReadZeroPageToAccumulator,
     ReadZeroPageToXRegister,
-    ReadZeroPageToYRegister
+    ReadZeroPageToYRegister,
+
+    ReadZeroPageIndexedAddress,
+    ReadZeroPageIndexedToAccumulator,
+    ReadZeroPageIndexedToXRegister,
+    ReadZeroPageIndexedToYRegister
 };
-
-/*
-enum class MOS6510MicroOperation
-{
-    FetchOpcode,
-
-    ReadImmediateToAccumulator,
-    ReadImmediateToX,
-    ReadImmediateToY,
-
-    ReadZeroPageAddress,
-    DummyReadZeroPageIndexed,
-
-    ReadMemoryToAccumulator,
-    ReadMemoryToX,
-    ReadMemoryToY,
-
-    ReadMemoryAndAddToAccumulator,
-    ReadMemoryAndCompareWithAccumulator,
-
-    ReadAddressLow,
-    ReadAddressHigh,
-    ReadAddressHighAndAddX,
-    ReadAddressHighAndAddY,
-
-    ReadZeroPagePointer,
-    ReadPointerLow,
-    ReadPointerHigh,
-    ReadPointerHighAndAddY,
-
-    DummyRead,
-
-    WriteAccumulator
-};*/
