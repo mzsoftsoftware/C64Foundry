@@ -14,6 +14,11 @@ enum class IndexRegister
     X,
     Y
 };
+enum class IndirectLoadMode
+{
+    IndexedIndirect,
+    IndirectIndexed
+};
 
 
 class MOS6510TestLoad : public QObject, public MOS6510TestBase
@@ -44,4 +49,13 @@ private slots:
 
     void testAbsoluteLoad_data();
     void testAbsoluteLoad();
+
+    void testAbsoluteIndexedLoad_data();
+    void testAbsoluteIndexedLoad();
+
+    void testAbsoluteYLoad_data();
+    void testAbsoluteYLoad();
+
+    void testIndirectLoad_data();
+    void testIndirectLoad();
 };

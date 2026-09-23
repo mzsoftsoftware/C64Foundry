@@ -496,3 +496,327 @@ void MOS6510TestLoad::testAbsoluteLoad()
     verifyLoadedRegister(registerType, value);
 }
 // --------------------------------------------------------------------------------------------
+void MOS6510TestLoad::testAbsoluteIndexedLoad_data()
+{
+    QTest::addColumn<LoadRegister>("registerType");
+    QTest::addColumn<IndexRegister>("indexRegister");
+    QTest::addColumn<quint8>("opcode");
+    QTest::addColumn<quint16>("address");
+    QTest::addColumn<quint8>("indexValue");
+    QTest::addColumn<quint8>("value");
+    QTest::addColumn<quint8>("status");
+    QTest::addColumn<bool>("pageCrossed");
+
+    QTest::newRow("LDA positive") << LoadRegister::Accumulator << IndexRegister::X << quint8(0xBD) << quint16(0x1234) << quint8(0x05) << quint8(0x37) << quint8(0x7D) << false;
+    QTest::newRow("LDA zero") << LoadRegister::Accumulator << IndexRegister::X << quint8(0xBD) << quint16(0x1234) << quint8(0x05) << quint8(0x00) << quint8(0x7D) << false;
+    QTest::newRow("LDA negative") << LoadRegister::Accumulator << IndexRegister::X << quint8(0xBD) << quint16(0x1234) << quint8(0x05) << quint8(0x80) << quint8(0x7D) << false;
+
+    QTest::newRow("LDX positive") << LoadRegister::X << IndexRegister::Y << quint8(0xBE) << quint16(0x2345) << quint8(0x05) << quint8(0x37) << quint8(0x7D) << false;
+    QTest::newRow("LDX zero") << LoadRegister::X << IndexRegister::Y << quint8(0xBE) << quint16(0x2345) << quint8(0x05) << quint8(0x00) << quint8(0x7D) << false;
+    QTest::newRow("LDX negative") << LoadRegister::X << IndexRegister::Y << quint8(0xBE) << quint16(0x2345) << quint8(0x05) << quint8(0x80) << quint8(0x7D) << false;
+
+    QTest::newRow("LDY positive") << LoadRegister::Y << IndexRegister::X << quint8(0xBC) << quint16(0x3456) << quint8(0x05) << quint8(0x37) << quint8(0x7D) << false;
+    QTest::newRow("LDY zero") << LoadRegister::Y << IndexRegister::X << quint8(0xBC) << quint16(0x3456) << quint8(0x05) << quint8(0x00) << quint8(0x7D) << false;
+    QTest::newRow("LDY negative") << LoadRegister::Y << IndexRegister::X << quint8(0xBC) << quint16(0x3456) << quint8(0x05) << quint8(0x80) << quint8(0x7D) << false;
+
+    QTest::newRow("LDA page crossing") << LoadRegister::Accumulator << IndexRegister::X << quint8(0xBD) << quint16(0x12FE) << quint8(0x05) << quint8(0x37) << quint8(0x7D) << true;
+    QTest::newRow("LDX page crossing") << LoadRegister::X << IndexRegister::Y << quint8(0xBE) << quint16(0x23FE) << quint8(0x05) << quint8(0x37) << quint8(0x7D) << true;
+    QTest::newRow("LDY page crossing") << LoadRegister::Y << IndexRegister::X << quint8(0xBC) << quint16(0x34FE) << quint8(0x05) << quint8(0x37) << quint8(0x7D) << true;
+}
+void MOS6510TestLoad::testAbsoluteIndexedLoad()
+{
+    QFETCH(LoadRegister, registerType);
+    QFETCH(IndexRegister, indexRegister);
+    QFETCH(quint8, opcode);
+    QFETCH(quint16, address);
+    QFETCH(quint8, indexValue);
+    QFETCH(quint8, value);
+    QFETCH(quint8, status);
+    QFETCH(bool, pageCrossed);
+
+    setupCpu();
+    initializeRegisters();
+    m_cpu.setStatus(status);
+    switch (indexRegister)
+    {
+    case IndexRegister::X:
+        m_cpu.setXRegister(indexValue);
+        break;
+    case IndexRegister::Y:
+        m_cpu.setYRegister(indexValue);
+        break;
+    }
+    const quint16 effectiveAddress = address + indexValue;
+    const quint8 lowByte = static_cast<quint8>(address & 0x00FF);
+    const quint8 highByte = static_cast<quint8>((address >> 8) & 0x00FF);
+    m_memory.writeRAM(0x1000, opcode);
+    m_memory.writeRAM(0x1001, lowByte);
+    m_memory.writeRAM(0x1002, highByte);
+    m_memory.writeRAM(0x1003, 0xA9);
+    m_memory.writeRAM(0x1004, 0x55);
+    m_memory.writeRAM(effectiveAddress, value);
+    m_cpu.setProgramCounter(0x1000);
+
+    // Cycle 1: Opcode lesen
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
+
+    // Cycle 2: Low-Byte der Adresse lesen
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
+
+    // Cycle 3: High-Byte lesen und Index addieren
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1003));
+
+    if (pageCrossed)
+    {
+        // Cycle 4: zusätzlicher Zyklus durch Page Crossing
+        m_cpu.clock();
+        QCOMPARE(m_cpu.programCounter(), quint16(0x1003));
+
+        // Der Zielwert darf zu diesem Zeitpunkt noch nicht geladen sein.
+        switch (registerType)
+        {
+        case LoadRegister::Accumulator:
+            QCOMPARE(m_cpu.accumulator(), quint8(0x11));
+            break;
+        case LoadRegister::X:
+            QCOMPARE(m_cpu.xRegister(), quint8(0x22));
+            break;
+        case LoadRegister::Y:
+            QCOMPARE(m_cpu.yRegister(), quint8(0x33));
+            break;
+        }
+    }
+
+    // Cycle 4: Wert aus dem Speicher lesen
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1003));
+
+    verifyLoadedRegister(registerType, value);
+    QCOMPARE(m_cpu.status(), expectedLoadStatus(status, value));
+
+    switch (registerType)
+    {
+    case LoadRegister::Accumulator:
+        QCOMPARE(m_cpu.xRegister(), indexValue);
+        QCOMPARE(m_cpu.yRegister(), quint8(0x33));
+        break;
+    case LoadRegister::X:
+        QCOMPARE(m_cpu.accumulator(), quint8(0x11));
+        QCOMPARE(m_cpu.yRegister(), indexValue);
+        break;
+    case LoadRegister::Y:
+        QCOMPARE(m_cpu.accumulator(), quint8(0x11));
+        QCOMPARE(m_cpu.xRegister(), indexValue);
+        break;
+    }
+
+    // Cycle 5: Opcode der nächsten Instruktion lesen
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1004));
+    verifyLoadedRegister(registerType, value);
+}
+// --------------------------------------------------------------------------------------------
+void MOS6510TestLoad::testAbsoluteYLoad_data()
+{
+    QTest::addColumn<quint16>("address");
+    QTest::addColumn<quint8>("indexValue");
+    QTest::addColumn<quint8>("value");
+    QTest::addColumn<quint8>("status");
+    QTest::addColumn<bool>("pageCrossed");
+
+    QTest::newRow("positive") << quint16(0x1234) << quint8(0x05) << quint8(0x37) << quint8(0x7D) << false;
+    QTest::newRow("zero") << quint16(0x2340) << quint8(0x05) << quint8(0x00) << quint8(0x7D) << false;
+    QTest::newRow("negative") << quint16(0x3450) << quint8(0x05) << quint8(0x80) << quint8(0x7D) << false;
+    QTest::newRow("page crossing") << quint16(0x12FE) << quint8(0x05) << quint8(0x37) << quint8(0x7D) << true;
+}
+void MOS6510TestLoad::testAbsoluteYLoad()
+{
+    QFETCH(quint16, address);
+    QFETCH(quint8, indexValue);
+    QFETCH(quint8, value);
+    QFETCH(quint8, status);
+    QFETCH(bool, pageCrossed);
+
+    setupCpu();
+    initializeRegisters();
+    m_cpu.setYRegister(indexValue);
+    m_cpu.setStatus(status);
+    m_memory.writeRAM(address + indexValue, value);
+    m_memory.writeRAM(0x1000, 0xB9);
+    m_memory.writeRAM(0x1001, static_cast<quint8>(address & 0xFF));
+    m_memory.writeRAM(0x1002, static_cast<quint8>(address >> 8));
+    m_memory.writeRAM(0x1003, 0xEA);
+    m_cpu.setProgramCounter(0x1000);
+
+    // Cycle 1: Opcode Fetch
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
+
+    // Cycle 2: Address Low
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
+
+    // Cycle 3: Address High + Y
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1003));
+    if (pageCrossed)
+    {
+        // Cycle 4: Dummy Read
+        m_cpu.clock();
+        QCOMPARE(m_cpu.programCounter(), quint16(0x1003));
+
+        // Accumulator must not be loaded yet
+        QCOMPARE(m_cpu.accumulator(), quint8(0x11));
+    }
+
+    // Cycle 4: Data
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1003));
+    QCOMPARE(m_cpu.accumulator(), value);
+    QCOMPARE(m_cpu.status(), expectedLoadStatus(status, value));
+
+    // Cycle 5: Next Opcode Fetch
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1004));
+    QCOMPARE(m_cpu.accumulator(), value);
+}
+// --------------------------------------------------------------------------------------------
+void MOS6510TestLoad::testIndirectLoad_data()
+{
+    QTest::addColumn<IndirectLoadMode>("mode");
+    QTest::addColumn<quint8>("zeroPageAddress");
+    QTest::addColumn<quint8>("indexValue");
+    QTest::addColumn<quint16>("baseAddress");
+    QTest::addColumn<quint16>("targetAddress");
+    QTest::addColumn<quint8>("value");
+    QTest::addColumn<quint8>("status");
+
+    QTest::newRow("LDA indexed indirect") << IndirectLoadMode::IndexedIndirect << quint8(0x20) << quint8(0x05) << quint16(0x1234) << quint16(0x1234) << quint8(0x37) << quint8(0x7D);
+    QTest::newRow("LDA indirect indexed") << IndirectLoadMode::IndirectIndexed << quint8(0x20) << quint8(0x05) << quint16(0x122F) << quint16(0x1234) << quint8(0x37) << quint8(0x7D);
+    QTest::newRow("LDA indexed indirect zero page wrap") << IndirectLoadMode::IndexedIndirect << quint8(0xFE) << quint8(0x05) << quint16(0x1234) << quint16(0x1234) << quint8(0x37) << quint8(0x7D);
+    QTest::newRow("LDA indexed indirect pointer wrap") << IndirectLoadMode::IndexedIndirect << quint8(0xFE) << quint8(0x01) << quint16(0x1234) << quint16(0x1234) << quint8(0x37) << quint8(0x7D);
+    QTest::newRow("LDA indirect indexed pointer wrap") << IndirectLoadMode::IndirectIndexed << quint8(0xFF) << quint8(0x00) << quint16(0x1234) << quint16(0x1234) << quint8(0x37) << quint8(0x7D);
+    QTest::newRow("LDA indirect indexed page crossing") << IndirectLoadMode::IndirectIndexed << quint8(0x20) << quint8(0x01) << quint16(0x12FF) << quint16(0x1300) << quint8(0x37) << quint8(0x7D);
+}
+
+void MOS6510TestLoad::testIndirectLoad()
+{
+    QFETCH(IndirectLoadMode, mode);
+    QFETCH(quint8, zeroPageAddress);
+    QFETCH(quint8, indexValue);
+    QFETCH(quint16, baseAddress);
+    QFETCH(quint16, targetAddress);
+    QFETCH(quint8, value);
+    QFETCH(quint8, status);
+
+    setupCpu();
+    initializeRegisters();
+    m_cpu.setStatus(status);
+    switch (mode)
+    {
+    case IndirectLoadMode::IndexedIndirect:
+        m_cpu.setXRegister(indexValue);
+        break;
+    case IndirectLoadMode::IndirectIndexed:
+        m_cpu.setYRegister(indexValue);
+        break;
+    }
+    m_memory.writeRAM(targetAddress, value);
+    switch (mode)
+    {
+    case IndirectLoadMode::IndexedIndirect:
+    {
+        const quint8 pointerAddress = static_cast<quint8>(zeroPageAddress + indexValue);
+        m_memory.writeRAM(pointerAddress, static_cast<quint8>(targetAddress & 0xFF));
+        m_memory.writeRAM(static_cast<quint8>(pointerAddress + 1), static_cast<quint8>(targetAddress >> 8));
+        m_memory.writeRAM(0x1000, 0xA1);
+        break;
+    }
+    case IndirectLoadMode::IndirectIndexed:
+        m_memory.writeRAM(zeroPageAddress, static_cast<quint8>(baseAddress & 0xFF));
+        m_memory.writeRAM(static_cast<quint8>(zeroPageAddress + 1), static_cast<quint8>(baseAddress >> 8));
+        m_memory.writeRAM(0x1000, 0xB1);
+        break;
+    }
+    m_memory.writeRAM(0x1001, zeroPageAddress);
+    m_memory.writeRAM(0x1002, 0xEA);
+    m_cpu.setProgramCounter(0x1000);
+
+    switch (mode)
+    {
+    case IndirectLoadMode::IndexedIndirect:
+        // Cycle 1: Opcode Fetch
+        m_cpu.clock();
+        QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
+
+        // Cycle 2: Zero-Page Operand
+        m_cpu.clock();
+        QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
+
+        // Cycle 3: Zero-Page + X
+        m_cpu.clock();
+        QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
+        QCOMPARE(m_cpu.accumulator(), quint8(0x11));
+
+        // Cycle 4: Pointer Low
+        m_cpu.clock();
+        QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
+
+        // Cycle 5: Pointer High
+        m_cpu.clock();
+        QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
+
+        // Cycle 6: Data
+        m_cpu.clock();
+        QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
+        QCOMPARE(m_cpu.accumulator(), value);
+        QCOMPARE(m_cpu.status(), expectedLoadStatus(status, value));
+
+        // Cycle 7: Next Opcode Fetch
+        m_cpu.clock();
+        QCOMPARE(m_cpu.programCounter(), quint16(0x1003));
+        QCOMPARE(m_cpu.accumulator(), value);
+        break;
+
+    case IndirectLoadMode::IndirectIndexed:
+        // Cycle 1: Opcode Fetch
+        m_cpu.clock();
+        QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
+
+        // Cycle 2: Zero-Page Pointer Address
+        m_cpu.clock();
+        QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
+
+        // Cycle 3: Pointer Low
+        m_cpu.clock();
+        QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
+
+        // Cycle 4: Pointer High + Y
+        m_cpu.clock();
+        QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
+        QCOMPARE(m_cpu.accumulator(), quint8(0x11));
+
+        if ((baseAddress & 0xFF00) != (targetAddress & 0xFF00))
+        {
+            // Cycle 5: Dummy Read
+            m_cpu.clock();
+            QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
+            QCOMPARE(m_cpu.accumulator(), quint8(0x11));
+        }
+
+        // Cycle 6: Data
+        m_cpu.clock();
+        QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
+        QCOMPARE(m_cpu.accumulator(), value);
+        QCOMPARE(m_cpu.status(), expectedLoadStatus(status, value));
+
+        // Cycle 7: Next Opcode Fetch
+        m_cpu.clock();
+        QCOMPARE(m_cpu.programCounter(), quint16(0x1003));
+        QCOMPARE(m_cpu.accumulator(), value);
+        break;
+    }
+}

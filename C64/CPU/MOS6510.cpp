@@ -65,6 +65,11 @@ void MOS6510::clock()
         break;
 
     case CpuState::Execute:
+        if (m_dummyReadPending)
+        {
+            m_dummyReadPending = false;
+            break;
+        }
         executeMicroOperation(m_microOperations[m_microOperationIndex]);
         ++m_microOperationIndex;
         if(m_microOperationIndex >= m_microOperationCount)
@@ -96,11 +101,12 @@ void MOS6510::prepareMicroOperations()
     const MOS6510Instruction& instruction = m_instructionTable.instruction(m_opcode);
     m_microOperationCount = instruction.microOperationCount;
     m_microOperationIndex = 0;
-
     for (quint8 i = 0; i < m_microOperationCount; ++i)
     {
         m_microOperations[i] = instruction.microOperations[i];
     }
+    m_pageCrossed = false;
+    m_dummyReadPending = false;
 }
 
 void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
@@ -204,6 +210,30 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
         m_address |= static_cast<quint16>(highByte) << 8;
         break;
     }
+    case MOS6510MicroOperation::ReadAbsoluteAddressHighIndexed:
+    {
+        const quint8 highByte = m_ptrBus->read(m_programCounter);
+        ++m_programCounter;
+        m_address |= static_cast<quint16>(highByte) << 8;
+        const quint16 baseAddress = m_address;
+        switch (m_addressingMode)
+        {
+        case MOS6510AddressingMode::AbsoluteX:
+            m_address += m_x;
+            break;
+        case MOS6510AddressingMode::AbsoluteY:
+            m_address += m_y;
+            break;
+        default:
+            break;
+        }
+        m_pageCrossed = (baseAddress & 0xFF00) != (m_address & 0xFF00);
+        if (m_pageCrossed)
+        {
+            m_dummyReadPending = true;
+        }
+        break;
+    }
     case MOS6510MicroOperation::ReadAbsoluteToAccumulator:
     {
         m_accumulator = m_ptrBus->read(m_address);
@@ -220,6 +250,62 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
     {
         m_y = m_ptrBus->read(m_address);
         updateLoadFlags(m_y);
+        break;
+    }
+    case MOS6510MicroOperation::ReadAbsoluteIndexedToAccumulator:
+    {
+        m_accumulator = m_ptrBus->read(m_address);
+        updateLoadFlags(m_accumulator);
+        break;
+    }
+    case MOS6510MicroOperation::ReadAbsoluteIndexedToXRegister:
+    {
+        m_x = m_ptrBus->read(m_address);
+        updateLoadFlags(m_x);
+        break;
+    }
+    case MOS6510MicroOperation::ReadAbsoluteIndexedToYRegister:
+    {
+        m_y = m_ptrBus->read(m_address);
+        updateLoadFlags(m_y);
+        break;
+    }
+    case MOS6510MicroOperation::ReadIndirectAddressLow:
+    {
+        m_data = m_ptrBus->read(m_address);
+        break;
+    }
+    case MOS6510MicroOperation::ReadIndirectAddressHigh:
+    {
+        const quint8 highByte = m_ptrBus->read(static_cast<quint8>(m_address + 1));
+        m_address = static_cast<quint16>(m_data) | (static_cast<quint16>(highByte) << 8);
+        break;
+    }
+    case MOS6510MicroOperation::ReadIndirectAddressHighIndexed:
+    {
+        const quint8 highByte = m_ptrBus->read(static_cast<quint8>(m_address + 1));
+        m_address = static_cast<quint16>(m_data) | (static_cast<quint16>(highByte) << 8);
+        const quint16 baseAddress = m_address;
+        m_address += m_y;
+        m_pageCrossed = (baseAddress & 0xFF00) != (m_address & 0xFF00);
+        if (m_pageCrossed)
+        {
+            m_dummyReadPending = true;
+        }
+        break;
+    }
+    case MOS6510MicroOperation::ReadIndirectToAccumulator:
+    {
+        const quint8 value = m_ptrBus->read(m_address);
+        m_accumulator = value;
+        updateLoadFlags(value);
+        break;
+    }
+    case MOS6510MicroOperation::ReadIndirectIndexedToAccumulator:
+    {
+        const quint8 value = m_ptrBus->read(m_address);
+        m_accumulator = value;
+        updateLoadFlags(value);
         break;
     }
     }
