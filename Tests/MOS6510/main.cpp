@@ -3,6 +3,8 @@
 #include "MOS6510TestLoad.h"
 #include "MOS6510TestStore.h"
 #include "MOS6510TestTransfer.h"
+#include "MOS6510TestStack.h"
+#include "MOS6510TestArithmeticLogic.h"
 #include "MOS6510TestSpecial.h"
 
 
@@ -11,6 +13,8 @@ int main(int argc, char* argv[])
     MOS6510TestLoad testLoad;
     MOS6510TestStore testStore;
     MOS6510TestTransfer testTransfer;
+    MOS6510TestStack testStack;
+    MOS6510TestArithmeticLogic testArithmeticLogic;
     MOS6510TestSpecial testSpecial;
 
     int result = 0;
@@ -26,9 +30,18 @@ int main(int argc, char* argv[])
     if(result != 0)
         return result;
 
+    result = QTest::qExec(&testStack, argc, argv);
+    if(result != 0)
+        return result;
+
+    result = QTest::qExec(&testArithmeticLogic, argc, argv);
+    if(result != 0)
+        return result;
+
     result = QTest::qExec(&testSpecial, argc, argv);
     if(result != 0)
         return result;
 
     return result;
 }
+

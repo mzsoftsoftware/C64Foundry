@@ -5,6 +5,8 @@ add_executable(MOS6510Test
     MOS6510TestSpecial.h MOS6510TestSpecial.cpp
     MOS6510TestStore.h MOS6510TestStore.cpp
     MOS6510TestTransfer.h MOS6510TestTransfer.cpp
+    MOS6510TestStack.h MOS6510TestStack.cpp
+    MOS6510TestArithmeticLogic.h MOS6510TestArithmeticLogic.cpp
 )
 
 target_link_libraries(MOS6510Test

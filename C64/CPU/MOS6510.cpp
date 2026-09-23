@@ -385,6 +385,32 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
         m_stackPointer = m_x;
         break;
     }
+    case MOS6510MicroOperation::WriteAccumulatorToStack:
+    {
+        m_ptrBus->write(0x0100 | m_stackPointer, m_accumulator);
+        --m_stackPointer;
+        break;
+    }
+    case MOS6510MicroOperation::ReadStackToAccumulator:
+    {
+        ++m_stackPointer;
+        m_accumulator = m_ptrBus->read(0x0100 | m_stackPointer);
+        updateLoadFlags(m_accumulator);
+        break;
+    }
+    case MOS6510MicroOperation::WriteStatusToStack:
+    {
+        m_ptrBus->write(0x0100 | m_stackPointer, m_status | 0x30);
+        --m_stackPointer;
+        break;
+    }
+    case MOS6510MicroOperation::ReadStackToStatus:
+    {
+        ++m_stackPointer;
+        const quint8 value = m_ptrBus->read(0x0100 | m_stackPointer);
+        m_status = value | 0x20;
+        break;
+    }
     }
 }
 
