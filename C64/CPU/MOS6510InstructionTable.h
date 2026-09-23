@@ -21,6 +21,7 @@ private:
     void initializeTransferInstructions();
     void initializeStackInstructions();
     void initializeLogicalInstructions();
+    void initializeArithmeticInstructions();
     void initializeSpecialInstructions();
 
 

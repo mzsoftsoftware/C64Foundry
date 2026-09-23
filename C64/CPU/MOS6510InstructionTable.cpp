@@ -24,6 +24,7 @@ void MOS6510InstructionTable::initializeInstructions()
     initializeTransferInstructions();
     initializeStackInstructions();
     initializeLogicalInstructions();
+    initializeArithmeticInstructions();
     initializeSpecialInstructions();
 
     //initializeArithmeticLogicInstructions();
@@ -421,6 +422,11 @@ void MOS6510InstructionTable::initializeLogicalInstructions()
     m_instructions[0x5D].microOperations[1] = MOS6510MicroOperation::ReadAbsoluteXAddress;
     m_instructions[0x5D].microOperations[2] = MOS6510MicroOperation::ReadAbsoluteIndexedExclusiveOrAccumulator;
     m_instructions[0x5D].microOperationCount = 3;
+}
+
+void MOS6510InstructionTable::initializeArithmeticInstructions()
+{
+
 }
 
 void MOS6510InstructionTable::initializeSpecialInstructions()
