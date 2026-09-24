@@ -638,6 +638,26 @@ void MOS6510InstructionTable::initializeArithmeticInstructions()
     m_instructions[0xCC].microOperations[1] = MOS6510MicroOperation::ReadAbsoluteAddressHigh;
     m_instructions[0xCC].microOperations[2] = MOS6510MicroOperation::ReadAbsoluteCompareYRegister;
     m_instructions[0xCC].microOperationCount = 3;
+
+    m_instructions[0xE8].operation = MOS6510Operation::INX;
+    m_instructions[0xE8].addressingMode = MOS6510AddressingMode::Implied;
+    m_instructions[0xE8].microOperations[0] = MOS6510MicroOperation::IncrementXRegister;
+    m_instructions[0xE8].microOperationCount = 1;
+
+    m_instructions[0xC8].operation = MOS6510Operation::INY;
+    m_instructions[0xC8].addressingMode = MOS6510AddressingMode::Implied;
+    m_instructions[0xC8].microOperations[0] = MOS6510MicroOperation::IncrementYRegister;
+    m_instructions[0xC8].microOperationCount = 1;
+
+    m_instructions[0xCA].operation = MOS6510Operation::DEX;
+    m_instructions[0xCA].addressingMode = MOS6510AddressingMode::Implied;
+    m_instructions[0xCA].microOperations[0] = MOS6510MicroOperation::DecrementXRegister;
+    m_instructions[0xCA].microOperationCount = 1;
+
+    m_instructions[0x88].operation = MOS6510Operation::DEY;
+    m_instructions[0x88].addressingMode = MOS6510AddressingMode::Implied;
+    m_instructions[0x88].microOperations[0] = MOS6510MicroOperation::DecrementYRegister;
+    m_instructions[0x88].microOperationCount = 1;
 }
 
 void MOS6510InstructionTable::initializeSpecialInstructions()

@@ -7,6 +7,7 @@
 #include "MOS6510TestLogical.h"
 #include "MOS6510TestArithmetic.h"
 #include "MOS6510TestDecimal.h"
+#include "MOS6510TestIncrementDecrement.h"
 #include "MOS6510TestSpecial.h"
 
 
@@ -19,6 +20,7 @@ int main(int argc, char* argv[])
     MOS6510TestLogical testLogical;
     MOS6510TestArithmetic testArithmetic;
     MOS6510TestDecimal testDecimal;
+    MOS6510TestIncrementDecrement testIncDec;
     MOS6510TestSpecial testSpecial;
 
     int result = 0;
@@ -47,6 +49,10 @@ int main(int argc, char* argv[])
         return result;
 
     result = QTest::qExec(&testDecimal, argc, argv);
+    if(result != 0)
+        return result;
+
+    result = QTest::qExec(&testIncDec, argc, argv);
     if(result != 0)
         return result;
 

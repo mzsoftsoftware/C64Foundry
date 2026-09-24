@@ -653,6 +653,33 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
         m_ptrBus->write(m_address, m_y);
         break;
     }
+    case MOS6510MicroOperation::IncrementXRegister:
+    {
+        ++m_x;
+        updateLoadFlags(m_x);
+        break;
+    }
+
+    case MOS6510MicroOperation::IncrementYRegister:
+    {
+        ++m_y;
+        updateLoadFlags(m_y);
+        break;
+    }
+
+    case MOS6510MicroOperation::DecrementXRegister:
+    {
+        --m_x;
+        updateLoadFlags(m_x);
+        break;
+    }
+
+    case MOS6510MicroOperation::DecrementYRegister:
+    {
+        --m_y;
+        updateLoadFlags(m_y);
+        break;
+    }
     case MOS6510MicroOperation::TransferAccumulatorToXRegister:
     {
         m_x = m_accumulator;
