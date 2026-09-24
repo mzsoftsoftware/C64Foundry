@@ -36,5 +36,6 @@ void C64Machine::clock()
 {
     ++m_cycles;
 
+    m_ptrBus->clock();
     m_ptrCpu->clock();
 }
