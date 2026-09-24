@@ -14,7 +14,6 @@ public:
 
 private:
     void initializeRegisters();
-    quint8 expectedAdcStatus(quint8 status, quint8 accumulator, quint8 operand) const;
 
 private slots:
     void testAdcImmediate_data();

@@ -8,6 +8,7 @@ add_executable(MOS6510Test
     MOS6510TestStack.h MOS6510TestStack.cpp
     MOS6510TestLogical.h MOS6510TestLogical.cpp
     MOS6510TestArithmetic.h MOS6510TestArithmetic.cpp
+    MOS6510TestDecimal.h MOS6510TestDecimal.cpp
 )
 
 target_link_libraries(MOS6510Test

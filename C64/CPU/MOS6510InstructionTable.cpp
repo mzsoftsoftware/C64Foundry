@@ -646,4 +646,15 @@ void MOS6510InstructionTable::initializeSpecialInstructions()
     m_instructions[0xEA].addressingMode = MOS6510AddressingMode::Implied;
     m_instructions[0xEA].microOperations[0] = MOS6510MicroOperation::NoOperation;
     m_instructions[0xEA].microOperationCount = 1;
+
+    m_instructions[0xF8].operation = MOS6510Operation::SED;
+    m_instructions[0xF8].addressingMode = MOS6510AddressingMode::Implied;
+    m_instructions[0xF8].microOperations[0] = MOS6510MicroOperation::SetDecimalFlag;
+    m_instructions[0xF8].microOperationCount = 1;
+
+    m_instructions[0xD8].operation = MOS6510Operation::CLD;
+    m_instructions[0xD8].addressingMode = MOS6510AddressingMode::Implied;
+    m_instructions[0xD8].microOperations[0] = MOS6510MicroOperation::ClearDecimalFlag;
+    m_instructions[0xD8].microOperationCount = 1;
+
 }

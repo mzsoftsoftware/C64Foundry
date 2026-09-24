@@ -55,6 +55,9 @@ private:
     void setStatusFlag(MOS6510StatusFlag flag, bool value);
     void updateLoadFlags(quint8 value);
 
+    void addToAccumulator(quint8 operand);
+    void subtractFromAccumulator(quint8 operand);
+
 private:
     C64Bus* m_ptrBus = nullptr;
 

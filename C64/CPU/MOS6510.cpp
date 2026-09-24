@@ -171,17 +171,7 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
         const quint16 address = m_programCounter;
         const quint8 operand = m_ptrBus->read(address);
         ++m_programCounter;
-        const quint8 accumulator = m_accumulator;
-        const quint8 carryIn = statusFlag(MOS6510StatusFlag::Carry) ? 1 : 0;
-        const quint16 sum = static_cast<quint16>(accumulator) + static_cast<quint16>(operand) + static_cast<quint16>(carryIn);
-        const quint8 result = static_cast<quint8>(sum & 0xFF);
-        const bool carry = sum > 0xFF;
-        const bool overflow = ((~(accumulator ^ operand)) & (accumulator ^ result) & 0x80) != 0;
-        m_accumulator = result;
-        setStatusFlag(MOS6510StatusFlag::Carry, carry);
-        setStatusFlag(MOS6510StatusFlag::Zero, result == 0);
-        setStatusFlag(MOS6510StatusFlag::Negative, (result & 0x80) != 0);
-        setStatusFlag(MOS6510StatusFlag::Overflow, overflow);
+        addToAccumulator(operand);
         break;
     }
     case MOS6510MicroOperation::ReadImmediateSubtractFromAccumulator:
@@ -189,17 +179,7 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
         const quint16 address = m_programCounter;
         const quint8 operand = m_ptrBus->read(address);
         ++m_programCounter;
-        const quint8 accumulator = m_accumulator;
-        const quint8 carryIn = statusFlag(MOS6510StatusFlag::Carry) ? 1 : 0;
-        const quint16 difference = static_cast<quint16>(accumulator) - static_cast<quint16>(operand) - static_cast<quint16>(1 - carryIn);
-        const quint8 result = static_cast<quint8>(difference & 0xFF);
-        const bool carry = difference < 0x100;
-        const bool overflow = ((accumulator ^ operand) & (accumulator ^ result) & 0x80) != 0;
-        m_accumulator = result;
-        setStatusFlag(MOS6510StatusFlag::Carry, carry);
-        setStatusFlag(MOS6510StatusFlag::Zero, result == 0);
-        setStatusFlag(MOS6510StatusFlag::Negative, (result & 0x80) != 0);
-        setStatusFlag(MOS6510StatusFlag::Overflow, overflow);
+        subtractFromAccumulator(operand);
         break;
     }
     case MOS6510MicroOperation::ReadImmediateCompareAccumulator:
@@ -283,33 +263,13 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
     case MOS6510MicroOperation::ReadZeroPageAddToAccumulator:
     {
         const quint8 operand = m_ptrBus->read(m_address);
-        const quint8 accumulator = m_accumulator;
-        const quint8 carryIn = statusFlag(MOS6510StatusFlag::Carry) ? 1 : 0;
-        const quint16 sum = static_cast<quint16>(accumulator) + static_cast<quint16>(operand) + static_cast<quint16>(carryIn);
-        const quint8 result = static_cast<quint8>(sum & 0xFF);
-        const bool carry = sum > 0xFF;
-        const bool overflow = ((~(accumulator ^ operand)) & (accumulator ^ result) & 0x80) != 0;
-        m_accumulator = result;
-        setStatusFlag(MOS6510StatusFlag::Carry, carry);
-        setStatusFlag(MOS6510StatusFlag::Zero, result == 0);
-        setStatusFlag(MOS6510StatusFlag::Negative, (result & 0x80) != 0);
-        setStatusFlag(MOS6510StatusFlag::Overflow, overflow);
+        addToAccumulator(operand);
         break;
     }
     case MOS6510MicroOperation::ReadZeroPageSubtractFromAccumulator:
     {
         const quint8 operand = m_ptrBus->read(m_address);
-        const quint8 accumulator = m_accumulator;
-        const quint8 carryIn = statusFlag(MOS6510StatusFlag::Carry) ? 1 : 0;
-        const quint16 difference = static_cast<quint16>(accumulator) - static_cast<quint16>(operand) - static_cast<quint16>(1 - carryIn);
-        const quint8 result = static_cast<quint8>(difference & 0xFF);
-        const bool carry = difference < 0x100;
-        const bool overflow = ((accumulator ^ operand) & (accumulator ^ result) & 0x80) != 0;
-        m_accumulator = result;
-        setStatusFlag(MOS6510StatusFlag::Carry, carry);
-        setStatusFlag(MOS6510StatusFlag::Zero, result == 0);
-        setStatusFlag(MOS6510StatusFlag::Negative, (result & 0x80) != 0);
-        setStatusFlag(MOS6510StatusFlag::Overflow, overflow);
+        subtractFromAccumulator(operand);
         break;
     }
     case MOS6510MicroOperation::ReadZeroPageCompareAccumulator:
@@ -400,33 +360,13 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
     case MOS6510MicroOperation::ReadZeroPageIndexedAddToAccumulator:
     {
         const quint8 operand = m_ptrBus->read(m_address);
-        const quint8 accumulator = m_accumulator;
-        const quint8 carryIn = statusFlag(MOS6510StatusFlag::Carry) ? 1 : 0;
-        const quint16 sum = static_cast<quint16>(accumulator) + static_cast<quint16>(operand) + static_cast<quint16>(carryIn);
-        const quint8 result = static_cast<quint8>(sum & 0xFF);
-        const bool carry = sum > 0xFF;
-        const bool overflow = ((~(accumulator ^ operand)) & (accumulator ^ result) & 0x80) != 0;
-        m_accumulator = result;
-        setStatusFlag(MOS6510StatusFlag::Carry, carry);
-        setStatusFlag(MOS6510StatusFlag::Zero, result == 0);
-        setStatusFlag(MOS6510StatusFlag::Negative, (result & 0x80) != 0);
-        setStatusFlag(MOS6510StatusFlag::Overflow, overflow);
+        addToAccumulator(operand);
         break;
     }
     case MOS6510MicroOperation::ReadZeroPageIndexedSubtractFromAccumulator:
     {
         const quint8 operand = m_ptrBus->read(m_address);
-        const quint8 accumulator = m_accumulator;
-        const quint8 carryIn = statusFlag(MOS6510StatusFlag::Carry) ? 1 : 0;
-        const quint16 difference = static_cast<quint16>(accumulator) - static_cast<quint16>(operand) - static_cast<quint16>(1 - carryIn);
-        const quint8 result = static_cast<quint8>(difference & 0xFF);
-        const bool carry = difference < 0x100;
-        const bool overflow = ((accumulator ^ operand) & (accumulator ^ result) & 0x80) != 0;
-        m_accumulator = result;
-        setStatusFlag(MOS6510StatusFlag::Carry, carry);
-        setStatusFlag(MOS6510StatusFlag::Zero, result == 0);
-        setStatusFlag(MOS6510StatusFlag::Negative, (result & 0x80) != 0);
-        setStatusFlag(MOS6510StatusFlag::Overflow, overflow);
+        subtractFromAccumulator(operand);
         break;
     }
     case MOS6510MicroOperation::ReadZeroPageIndexedCompareAccumulator:
@@ -519,33 +459,13 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
     case MOS6510MicroOperation::ReadAbsoluteAddToAccumulator:
     {
         const quint8 operand = m_ptrBus->read(m_address);
-        const quint8 accumulator = m_accumulator;
-        const quint8 carryIn = statusFlag(MOS6510StatusFlag::Carry) ? 1 : 0;
-        const quint16 sum = static_cast<quint16>(accumulator) + static_cast<quint16>(operand) + static_cast<quint16>(carryIn);
-        const quint8 result = static_cast<quint8>(sum & 0xFF);
-        const bool carry = sum > 0xFF;
-        const bool overflow = ((~(accumulator ^ operand)) & (accumulator ^ result) & 0x80) != 0;
-        m_accumulator = result;
-        setStatusFlag(MOS6510StatusFlag::Carry, carry);
-        setStatusFlag(MOS6510StatusFlag::Zero, result == 0);
-        setStatusFlag(MOS6510StatusFlag::Negative, (result & 0x80) != 0);
-        setStatusFlag(MOS6510StatusFlag::Overflow, overflow);
+        addToAccumulator(operand);
         break;
     }
     case MOS6510MicroOperation::ReadAbsoluteSubtractFromAccumulator:
     {
         const quint8 operand = m_ptrBus->read(m_address);
-        const quint8 accumulator = m_accumulator;
-        const quint8 carryIn = statusFlag(MOS6510StatusFlag::Carry) ? 1 : 0;
-        const quint16 difference = static_cast<quint16>(accumulator) - static_cast<quint16>(operand) - static_cast<quint16>(1 - carryIn);
-        const quint8 result = static_cast<quint8>(difference & 0xFF);
-        const bool carry = difference < 0x100;
-        const bool overflow = ((accumulator ^ operand) & (accumulator ^ result) & 0x80) != 0;
-        m_accumulator = result;
-        setStatusFlag(MOS6510StatusFlag::Carry, carry);
-        setStatusFlag(MOS6510StatusFlag::Zero, result == 0);
-        setStatusFlag(MOS6510StatusFlag::Negative, (result & 0x80) != 0);
-        setStatusFlag(MOS6510StatusFlag::Overflow, overflow);
+        subtractFromAccumulator(operand);
         break;
     }
     case MOS6510MicroOperation::ReadAbsoluteCompareAccumulator:
@@ -617,33 +537,13 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
     case MOS6510MicroOperation::ReadAbsoluteIndexedAddToAccumulator:
     {
         const quint8 operand = m_ptrBus->read(m_address);
-        const quint8 accumulator = m_accumulator;
-        const quint8 carryIn = statusFlag(MOS6510StatusFlag::Carry) ? 1 : 0;
-        const quint16 sum = static_cast<quint16>(accumulator) + static_cast<quint16>(operand) + static_cast<quint16>(carryIn);
-        const quint8 result = static_cast<quint8>(sum & 0xFF);
-        const bool carry = sum > 0xFF;
-        const bool overflow = ((~(accumulator ^ operand)) & (accumulator ^ result) & 0x80) != 0;
-        m_accumulator = result;
-        setStatusFlag(MOS6510StatusFlag::Carry, carry);
-        setStatusFlag(MOS6510StatusFlag::Zero, result == 0);
-        setStatusFlag(MOS6510StatusFlag::Negative, (result & 0x80) != 0);
-        setStatusFlag(MOS6510StatusFlag::Overflow, overflow);
+        addToAccumulator(operand);
         break;
     }
     case MOS6510MicroOperation::ReadAbsoluteIndexedSubtractFromAccumulator:
     {
         const quint8 operand = m_ptrBus->read(m_address);
-        const quint8 accumulator = m_accumulator;
-        const quint8 carryIn = statusFlag(MOS6510StatusFlag::Carry) ? 1 : 0;
-        const quint16 difference = static_cast<quint16>(accumulator) - static_cast<quint16>(operand) - static_cast<quint16>(1 - carryIn);
-        const quint8 result = static_cast<quint8>(difference & 0xFF);
-        const bool carry = difference < 0x100;
-        const bool overflow = ((accumulator ^ operand) & (accumulator ^ result) & 0x80) != 0;
-        m_accumulator = result;
-        setStatusFlag(MOS6510StatusFlag::Carry, carry);
-        setStatusFlag(MOS6510StatusFlag::Zero, result == 0);
-        setStatusFlag(MOS6510StatusFlag::Negative, (result & 0x80) != 0);
-        setStatusFlag(MOS6510StatusFlag::Overflow, overflow);
+        subtractFromAccumulator(operand);
         break;
     }
     case MOS6510MicroOperation::ReadAbsoluteIndexedCompareAccumulator:
@@ -690,33 +590,13 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
     case MOS6510MicroOperation::ReadIndirectAddToAccumulator:
     {
         const quint8 operand = m_ptrBus->read(m_address);
-        const quint8 accumulator = m_accumulator;
-        const quint8 carryIn = statusFlag(MOS6510StatusFlag::Carry) ? 1 : 0;
-        const quint16 sum = static_cast<quint16>(accumulator) + static_cast<quint16>(operand) + static_cast<quint16>(carryIn);
-        const quint8 result = static_cast<quint8>(sum & 0xFF);
-        const bool carry = sum > 0xFF;
-        const bool overflow = ((~(accumulator ^ operand)) & (accumulator ^ result) & 0x80) != 0;
-        m_accumulator = result;
-        setStatusFlag(MOS6510StatusFlag::Carry, carry);
-        setStatusFlag(MOS6510StatusFlag::Zero, result == 0);
-        setStatusFlag(MOS6510StatusFlag::Negative, (result & 0x80) != 0);
-        setStatusFlag(MOS6510StatusFlag::Overflow, overflow);
+        addToAccumulator(operand);
         break;
     }
     case MOS6510MicroOperation::ReadIndirectSubtractFromAccumulator:
     {
         const quint8 operand = m_ptrBus->read(m_address);
-        const quint8 accumulator = m_accumulator;
-        const quint8 carryIn = statusFlag(MOS6510StatusFlag::Carry) ? 1 : 0;
-        const quint16 difference = static_cast<quint16>(accumulator) - static_cast<quint16>(operand) - static_cast<quint16>(1 - carryIn);
-        const quint8 result = static_cast<quint8>(difference & 0xFF);
-        const bool carry = difference < 0x100;
-        const bool overflow = ((accumulator ^ operand) & (accumulator ^ result) & 0x80) != 0;
-        m_accumulator = result;
-        setStatusFlag(MOS6510StatusFlag::Carry, carry);
-        setStatusFlag(MOS6510StatusFlag::Zero, result == 0);
-        setStatusFlag(MOS6510StatusFlag::Negative, (result & 0x80) != 0);
-        setStatusFlag(MOS6510StatusFlag::Overflow, overflow);
+        subtractFromAccumulator(operand);
         break;
     }
     case MOS6510MicroOperation::ReadIndirectCompareAccumulator:
@@ -739,33 +619,13 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
     case MOS6510MicroOperation::ReadIndirectIndexedAddToAccumulator:
     {
         const quint8 operand = m_ptrBus->read(m_address);
-        const quint8 accumulator = m_accumulator;
-        const quint8 carryIn = statusFlag(MOS6510StatusFlag::Carry) ? 1 : 0;
-        const quint16 sum = static_cast<quint16>(accumulator) + static_cast<quint16>(operand) + static_cast<quint16>(carryIn);
-        const quint8 result = static_cast<quint8>(sum & 0xFF);
-        const bool carry = sum > 0xFF;
-        const bool overflow = ((~(accumulator ^ operand)) & (accumulator ^ result) & 0x80) != 0;
-        m_accumulator = result;
-        setStatusFlag(MOS6510StatusFlag::Carry, carry);
-        setStatusFlag(MOS6510StatusFlag::Zero, result == 0);
-        setStatusFlag(MOS6510StatusFlag::Negative, (result & 0x80) != 0);
-        setStatusFlag(MOS6510StatusFlag::Overflow, overflow);
+        addToAccumulator(operand);
         break;
     }
     case MOS6510MicroOperation::ReadIndirectIndexedSubtractFromAccumulator:
     {
         const quint8 operand = m_ptrBus->read(m_address);
-        const quint8 accumulator = m_accumulator;
-        const quint8 carryIn = statusFlag(MOS6510StatusFlag::Carry) ? 1 : 0;
-        const quint16 difference = static_cast<quint16>(accumulator) - static_cast<quint16>(operand) - static_cast<quint16>(1 - carryIn);
-        const quint8 result = static_cast<quint8>(difference & 0xFF);
-        const bool carry = difference < 0x100;
-        const bool overflow = ((accumulator ^ operand) & (accumulator ^ result) & 0x80) != 0;
-        m_accumulator = result;
-        setStatusFlag(MOS6510StatusFlag::Carry, carry);
-        setStatusFlag(MOS6510StatusFlag::Zero, result == 0);
-        setStatusFlag(MOS6510StatusFlag::Negative, (result & 0x80) != 0);
-        setStatusFlag(MOS6510StatusFlag::Overflow, overflow);
+        subtractFromAccumulator(operand);
         break;
     }
     case MOS6510MicroOperation::ReadIndirectIndexedCompareAccumulator:
@@ -859,6 +719,16 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
         m_status = value | 0x20;
         break;
     }
+    case MOS6510MicroOperation::SetDecimalFlag:
+    {
+        setStatusFlag(MOS6510StatusFlag::Decimal, true);
+        break;
+    }
+    case MOS6510MicroOperation::ClearDecimalFlag:
+    {
+        setStatusFlag(MOS6510StatusFlag::Decimal, false);
+        break;
+    }
     }
 }
 
@@ -880,4 +750,99 @@ void MOS6510::updateLoadFlags(const quint8 value)
 {
     setStatusFlag(MOS6510StatusFlag::Zero, value == 0);
     setStatusFlag(MOS6510StatusFlag::Negative, (value & 0x80) != 0);
+}
+
+void MOS6510::addToAccumulator(quint8 operand)
+{
+    const quint8 accumulator = m_accumulator;
+    const quint8 carryIn = (m_status & static_cast<quint8>(MOS6510StatusFlag::Carry)) != 0 ? 1 : 0;
+
+    //
+    // Binary Mode
+    //
+    if ((m_status & static_cast<quint8>(MOS6510StatusFlag::Decimal)) == 0)
+    {
+        const quint16 sum = static_cast<quint16>(accumulator) + static_cast<quint16>(operand) + static_cast<quint16>(carryIn);
+        const quint8 result = static_cast<quint8>(sum);
+        const bool carry = sum > 0xFF;
+        const bool overflow = ((~(accumulator ^ operand)) & (accumulator ^ result) & 0x80) != 0;
+        m_accumulator = result;
+        setStatusFlag(MOS6510StatusFlag::Carry, carry);
+        setStatusFlag(MOS6510StatusFlag::Zero, result == 0);
+        setStatusFlag(MOS6510StatusFlag::Negative, (result & 0x80) != 0);
+        setStatusFlag(MOS6510StatusFlag::Overflow, overflow);
+        return;
+    }
+
+    //
+    // NMOS 6502/6510 Decimal Mode
+    //
+    quint16 decimal = static_cast<quint16>(accumulator & 0x0F) + static_cast<quint16>(operand & 0x0F) + static_cast<quint16>(carryIn);
+    if (decimal > 9)
+        decimal += 6;
+    decimal = (decimal & 0x0F) + static_cast<quint16>(accumulator & 0xF0) + static_cast<quint16>(operand & 0xF0) + ((decimal > 0x0F) ? 0x10 : 0x00);
+
+    //
+    // Z is determined from the unadjusted binary result.
+    //
+    const quint16 binarySum = static_cast<quint16>(accumulator) + static_cast<quint16>(operand) + static_cast<quint16>(carryIn);
+    const bool zero = static_cast<quint8>(binarySum) == 0;
+
+    //
+    // N and V are determined before the final
+    // high-digit decimal correction.
+    //
+    const bool negative = (decimal & 0x80) != 0;
+    const bool overflow = (((accumulator ^ decimal) & 0x80) != 0) && (((accumulator ^ operand) & 0x80) == 0);
+    if ((decimal & 0x1F0) > 0x90)
+        decimal += 0x60;
+    const bool carry = (decimal & 0xFF0) > 0xF0;
+    m_accumulator = static_cast<quint8>(decimal);
+    setStatusFlag(MOS6510StatusFlag::Carry, carry);
+    setStatusFlag(MOS6510StatusFlag::Zero, zero);
+    setStatusFlag(MOS6510StatusFlag::Negative, negative);
+    setStatusFlag(MOS6510StatusFlag::Overflow, overflow);
+}
+void MOS6510::subtractFromAccumulator(quint8 operand)
+{
+    const quint8 accumulator = m_accumulator;
+    const quint8 carryIn = (m_status & static_cast<quint8>(MOS6510StatusFlag::Carry)) != 0 ? 1 : 0;
+
+    //
+    // The NMOS 6502/6510 determines N, V, Z and C for SBC
+    // from the binary subtraction, even in Decimal Mode.
+    //
+    const quint16 difference = static_cast<quint16>(accumulator) - static_cast<quint16>(operand) - static_cast<quint16>(1 - carryIn);
+    const quint8 binaryResult = static_cast<quint8>(difference);
+    const bool carry = difference < 0x100;
+    const bool overflow = ((accumulator ^ operand) & (accumulator ^ binaryResult) & 0x80) != 0;
+    setStatusFlag(MOS6510StatusFlag::Carry, carry);
+    setStatusFlag(MOS6510StatusFlag::Zero, binaryResult == 0);
+    setStatusFlag(MOS6510StatusFlag::Negative, (binaryResult & 0x80) != 0);
+    setStatusFlag(MOS6510StatusFlag::Overflow, overflow);
+
+    //
+    // Binary Mode
+    //
+    if ((m_status & static_cast<quint8>(MOS6510StatusFlag::Decimal)) == 0)
+    {
+        m_accumulator = binaryResult;
+        return;
+    }
+
+    //
+    // NMOS 6502/6510 Decimal Mode
+    //
+    unsigned decimal = static_cast<unsigned>(accumulator & 0x0F) - static_cast<unsigned>(operand & 0x0F) - (carryIn ? 0U : 1U);
+    if (decimal & 0x10)
+    {
+        decimal = ((decimal - 6U) & 0x0F) | (static_cast<unsigned>(accumulator & 0xF0) - static_cast<unsigned>(operand & 0xF0) - 0x10U);
+    }
+    else
+    {
+        decimal = (decimal & 0x0F) | (static_cast<unsigned>(accumulator & 0xF0) - static_cast<unsigned>(operand & 0xF0));
+    }
+    if (decimal & 0x100)
+        decimal -= 0x60;
+    m_accumulator = static_cast<quint8>(decimal);
 }

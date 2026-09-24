@@ -34,6 +34,8 @@ void MOS6510TestArithmetic::testAdcImmediate_data()
     QTest::newRow("negative and overflow") << quint8(0x40) << quint8(0x40) << quint8(0x00) << quint8(0x80) << quint8(0xF4);
     QTest::newRow("overflow without carry") << quint8(0x50) << quint8(0x50) << quint8(0x00) << quint8(0xA0) << quint8(0xF4);
     QTest::newRow("carry zero overflow") << quint8(0x80) << quint8(0x80) << quint8(0x00) << quint8(0x00) << quint8(0x77);
+    QTest::newRow("negative without overflow") << quint8(0xFF) << quint8(0x81) << quint8(0x00) << quint8(0x80) << quint8(0xB5);
+    QTest::newRow("positive overflow") << quint8(0x7F) << quint8(0x01) << quint8(0x00) << quint8(0x80) << quint8(0xF4);
 }
 void MOS6510TestArithmetic::testAdcImmediate()
 {
@@ -659,6 +661,7 @@ void MOS6510TestArithmetic::testSbcImmediate_data()
     QTest::newRow("negative") << quint8(0x10) << quint8(0x20) << quint8(0x01) << quint8(0xF0) << quint8(0xB4);
     QTest::newRow("overflow") << quint8(0x80) << quint8(0x01) << quint8(0x01) << quint8(0x7F) << quint8(0x75);
     QTest::newRow("overflow negative") << quint8(0x7F) << quint8(0xFF) << quint8(0x01) << quint8(0x80) << quint8(0xF4);
+    QTest::newRow("borrow from zero") << quint8(0x00) << quint8(0x01) << quint8(0x01) << quint8(0xFF) << quint8(0xB4);
 }
 void MOS6510TestArithmetic::testSbcImmediate()
 {
