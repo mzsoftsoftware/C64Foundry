@@ -133,6 +133,8 @@ void MOS6510::clock()
         // for two-cycle instructions.
         //
         pollIrq();
+        if (m_microOperationCount == 1)
+            pollNmi();
 
         m_state = CpuState::Execute;
         break;
@@ -146,6 +148,9 @@ void MOS6510::clock()
             break;
         }
 
+        const bool nmiPollMicroOperation =
+            m_microOperationCount > 1 &&
+            m_microOperationIndex + 2 >= m_microOperationCount;
         const bool finalMicroOperation = m_microOperationIndex + 1 >= m_microOperationCount;
         if (finalMicroOperation)
         {
@@ -168,6 +173,28 @@ void MOS6510::clock()
                 break;
             default:
                 pollIrq();
+                break;
+            }
+        }
+        if (nmiPollMicroOperation)
+        {
+            switch (m_operation)
+            {
+            case MOS6510Operation::BCC:
+            case MOS6510Operation::BCS:
+            case MOS6510Operation::BEQ:
+            case MOS6510Operation::BMI:
+            case MOS6510Operation::BNE:
+            case MOS6510Operation::BPL:
+            case MOS6510Operation::BVC:
+            case MOS6510Operation::BVS:
+            case MOS6510Operation::BRK:
+                //
+                // Branches have their own interrupt polling.
+                //
+                break;
+
+            default:
                 pollNmi();
                 break;
             }

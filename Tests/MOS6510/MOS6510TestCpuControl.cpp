@@ -1178,15 +1178,19 @@ void MOS6510TestCpuControl::testNmiDuringTwoCycleInstruction()
     m_memory.writeRAM(0xFFFB, 0x40);
 
     //
+    // NMI edge before C1.
+    // This is early enough to be recognized by the
+    // interrupt poll belonging to this instruction.
+    //
+    m_cpu.setNmiLine(true);
+
+    //
     // C1: NOP opcode fetch.
     //
     clock();
     verifyRead(0x2000, 0xEA);
 
-    //
-    // NMI edge between C1 and C2.
-    //
-    m_cpu.setNmiLine(true);
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2001));
 
     //
     // C2: NOP dummy read.
