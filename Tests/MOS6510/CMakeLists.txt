@@ -14,6 +14,7 @@ add_executable(MOS6510Test
     MOS6510TestMemoryIncrementDecrement.h MOS6510TestMemoryIncrementDecrement.cpp
     MOS6510TestShiftRotate.h MOS6510TestShiftRotate.cpp
     MOS6510TestBranch.h MOS6510TestBranch.cpp
+    MOS6510TestControlFlow.h MOS6510TestControlFlow.cpp
 )
 
 target_link_libraries(MOS6510Test

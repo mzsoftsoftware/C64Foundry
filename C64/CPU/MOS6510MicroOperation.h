@@ -144,4 +144,19 @@ enum class MOS6510MicroOperation
     Branch,
     BranchPageCrossing,
 
+    ReadAbsoluteAddressHighAndJump,
+    ReadIndirectJumpAddressLow,
+    ReadIndirectJumpAddressHigh,
+
+    ReadJsrAddressLow,
+    ReadJsrStackDummy,
+    WriteJsrReturnAddressHigh,
+    WriteJsrReturnAddressLow,
+    ReadJsrAddressHighAndJump,
+
+    ReadRtsProgramCounterDummy,
+    ReadRtsStackDummy,
+    ReadRtsReturnAddressLow,
+    ReadRtsReturnAddressHigh,
+    RtsIncrementProgramCounter
 };

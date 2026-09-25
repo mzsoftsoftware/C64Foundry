@@ -12,6 +12,7 @@
 #include "MOS6510TestShiftRotate.h"
 #include "MOS6510TestBranch.h"
 #include "MOS6510TestSpecial.h"
+#include "MOS6510TestControlFlow.h"
 #include "MOS6510TestBusCycles.h"
 
 
@@ -29,6 +30,7 @@ int main(int argc, char* argv[])
     MOS6510TestShiftRotate testShiftRotate;
     MOS6510TestBranch testBranch;
     MOS6510TestSpecial testSpecial;
+    MOS6510TestControlFlow testControlFlow;
     MOS6510TestBusCycles testBusCycles;
 
     int result = 0;
@@ -77,6 +79,10 @@ int main(int argc, char* argv[])
         return result;
 
     result = QTest::qExec(&testSpecial, argc, argv);
+    if(result != 0)
+        return result;
+
+    result = QTest::qExec(&testControlFlow, argc, argv);
     if(result != 0)
         return result;
 

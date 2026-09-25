@@ -27,6 +27,7 @@ void MOS6510InstructionTable::initializeInstructions()
     initializeArithmeticInstructions();
     initializeShiftInstructions();
     initializeBranchInstructions();
+    initializeControlFlowInstructions();
     initializeSpecialInstructions();
 }
 
@@ -988,7 +989,6 @@ void MOS6510InstructionTable::initializeShiftInstructions()
 
 void MOS6510InstructionTable::initializeBranchInstructions()
 {
-    // BCC
     m_instructions[0x90].operation = MOS6510Operation::BCC;
     m_instructions[0x90].addressingMode = MOS6510AddressingMode::Relative;
     m_instructions[0x90].microOperations[0] = MOS6510MicroOperation::ReadRelativeBranchCarryClear;
@@ -996,7 +996,6 @@ void MOS6510InstructionTable::initializeBranchInstructions()
     m_instructions[0x90].microOperations[2] = MOS6510MicroOperation::BranchPageCrossing;
     m_instructions[0x90].microOperationCount = 3;
 
-    // BCS
     m_instructions[0xB0].operation = MOS6510Operation::BCS;
     m_instructions[0xB0].addressingMode = MOS6510AddressingMode::Relative;
     m_instructions[0xB0].microOperations[0] = MOS6510MicroOperation::ReadRelativeBranchCarrySet;
@@ -1004,7 +1003,6 @@ void MOS6510InstructionTable::initializeBranchInstructions()
     m_instructions[0xB0].microOperations[2] = MOS6510MicroOperation::BranchPageCrossing;
     m_instructions[0xB0].microOperationCount = 3;
 
-    // BEQ
     m_instructions[0xF0].operation = MOS6510Operation::BEQ;
     m_instructions[0xF0].addressingMode = MOS6510AddressingMode::Relative;
     m_instructions[0xF0].microOperations[0] = MOS6510MicroOperation::ReadRelativeBranchEqual;
@@ -1012,7 +1010,6 @@ void MOS6510InstructionTable::initializeBranchInstructions()
     m_instructions[0xF0].microOperations[2] = MOS6510MicroOperation::BranchPageCrossing;
     m_instructions[0xF0].microOperationCount = 3;
 
-    // BNE
     m_instructions[0xD0].operation = MOS6510Operation::BNE;
     m_instructions[0xD0].addressingMode = MOS6510AddressingMode::Relative;
     m_instructions[0xD0].microOperations[0] = MOS6510MicroOperation::ReadRelativeBranchNotEqual;
@@ -1020,7 +1017,6 @@ void MOS6510InstructionTable::initializeBranchInstructions()
     m_instructions[0xD0].microOperations[2] = MOS6510MicroOperation::BranchPageCrossing;
     m_instructions[0xD0].microOperationCount = 3;
 
-    // BMI
     m_instructions[0x30].operation = MOS6510Operation::BMI;
     m_instructions[0x30].addressingMode = MOS6510AddressingMode::Relative;
     m_instructions[0x30].microOperations[0] = MOS6510MicroOperation::ReadRelativeBranchMinus;
@@ -1028,7 +1024,6 @@ void MOS6510InstructionTable::initializeBranchInstructions()
     m_instructions[0x30].microOperations[2] = MOS6510MicroOperation::BranchPageCrossing;
     m_instructions[0x30].microOperationCount = 3;
 
-    // BPL
     m_instructions[0x10].operation = MOS6510Operation::BPL;
     m_instructions[0x10].addressingMode = MOS6510AddressingMode::Relative;
     m_instructions[0x10].microOperations[0] = MOS6510MicroOperation::ReadRelativeBranchPlus;
@@ -1036,7 +1031,6 @@ void MOS6510InstructionTable::initializeBranchInstructions()
     m_instructions[0x10].microOperations[2] = MOS6510MicroOperation::BranchPageCrossing;
     m_instructions[0x10].microOperationCount = 3;
 
-    // BVC
     m_instructions[0x50].operation = MOS6510Operation::BVC;
     m_instructions[0x50].addressingMode = MOS6510AddressingMode::Relative;
     m_instructions[0x50].microOperations[0] = MOS6510MicroOperation::ReadRelativeBranchOverflowClear;
@@ -1044,13 +1038,47 @@ void MOS6510InstructionTable::initializeBranchInstructions()
     m_instructions[0x50].microOperations[2] = MOS6510MicroOperation::BranchPageCrossing;
     m_instructions[0x50].microOperationCount = 3;
 
-    // BVS
     m_instructions[0x70].operation = MOS6510Operation::BVS;
     m_instructions[0x70].addressingMode = MOS6510AddressingMode::Relative;
     m_instructions[0x70].microOperations[0] = MOS6510MicroOperation::ReadRelativeBranchOverflowSet;
     m_instructions[0x70].microOperations[1] = MOS6510MicroOperation::Branch;
     m_instructions[0x70].microOperations[2] = MOS6510MicroOperation::BranchPageCrossing;
     m_instructions[0x70].microOperationCount = 3;
+}
+
+void MOS6510InstructionTable::initializeControlFlowInstructions()
+{
+    m_instructions[0x4C].operation = MOS6510Operation::JMP;
+    m_instructions[0x4C].addressingMode = MOS6510AddressingMode::Absolute;
+    m_instructions[0x4C].microOperations[0] = MOS6510MicroOperation::ReadAbsoluteAddressLow;
+    m_instructions[0x4C].microOperations[1] = MOS6510MicroOperation::ReadAbsoluteAddressHighAndJump;
+    m_instructions[0x4C].microOperationCount = 2;
+
+    m_instructions[0x6C].operation = MOS6510Operation::JMP;
+    m_instructions[0x6C].addressingMode = MOS6510AddressingMode::Indirect;
+    m_instructions[0x6C].microOperations[0] = MOS6510MicroOperation::ReadAbsoluteAddressLow;
+    m_instructions[0x6C].microOperations[1] = MOS6510MicroOperation::ReadAbsoluteAddressHigh;
+    m_instructions[0x6C].microOperations[2] = MOS6510MicroOperation::ReadIndirectJumpAddressLow;
+    m_instructions[0x6C].microOperations[3] = MOS6510MicroOperation::ReadIndirectJumpAddressHigh;
+    m_instructions[0x6C].microOperationCount = 4;
+
+    m_instructions[0x20].operation = MOS6510Operation::JSR;
+    m_instructions[0x20].addressingMode = MOS6510AddressingMode::Absolute;
+    m_instructions[0x20].microOperations[0] = MOS6510MicroOperation::ReadJsrAddressLow;
+    m_instructions[0x20].microOperations[1] = MOS6510MicroOperation::ReadJsrStackDummy;
+    m_instructions[0x20].microOperations[2] = MOS6510MicroOperation::WriteJsrReturnAddressHigh;
+    m_instructions[0x20].microOperations[3] = MOS6510MicroOperation::WriteJsrReturnAddressLow;
+    m_instructions[0x20].microOperations[4] = MOS6510MicroOperation::ReadJsrAddressHighAndJump;
+    m_instructions[0x20].microOperationCount = 5;
+
+    m_instructions[0x60].operation = MOS6510Operation::RTS;
+    m_instructions[0x60].addressingMode = MOS6510AddressingMode::Implied;
+    m_instructions[0x60].microOperations[0] = MOS6510MicroOperation::ReadRtsProgramCounterDummy;
+    m_instructions[0x60].microOperations[1] = MOS6510MicroOperation::ReadRtsStackDummy;
+    m_instructions[0x60].microOperations[2] = MOS6510MicroOperation::ReadRtsReturnAddressLow;
+    m_instructions[0x60].microOperations[3] = MOS6510MicroOperation::ReadRtsReturnAddressHigh;
+    m_instructions[0x60].microOperations[4] = MOS6510MicroOperation::RtsIncrementProgramCounter;
+    m_instructions[0x60].microOperationCount = 5;
 }
 
 void MOS6510InstructionTable::initializeSpecialInstructions()

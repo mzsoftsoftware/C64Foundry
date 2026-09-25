@@ -24,6 +24,7 @@ private:
     void initializeArithmeticInstructions();
     void initializeShiftInstructions();
     void initializeBranchInstructions();
+    void initializeControlFlowInstructions();
     void initializeSpecialInstructions();
 
 private:

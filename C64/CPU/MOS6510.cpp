@@ -1153,6 +1153,86 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
         m_ptrBus->read(dummyAddress);
         break;
     }
+    case MOS6510MicroOperation::ReadAbsoluteAddressHighAndJump:
+    {
+        const quint8 highByte = m_ptrBus->read(m_programCounter);
+        m_address |= static_cast<quint16>(highByte) << 8;
+        m_programCounter = m_address;
+
+        break;
+    }
+    case MOS6510MicroOperation::ReadIndirectJumpAddressLow:
+    {
+        m_data = m_ptrBus->read(m_address);
+        break;
+    }
+    case MOS6510MicroOperation::ReadIndirectJumpAddressHigh:
+    {
+        const quint16 highAddress = static_cast<quint16>((m_address & 0xFF00) | static_cast<quint8>(m_address + 1));
+        const quint8 highByte = m_ptrBus->read(highAddress);
+        m_programCounter = static_cast<quint16>(static_cast<quint16>(highByte) << 8 | m_data);
+        break;
+    }
+    case MOS6510MicroOperation::ReadJsrAddressLow:
+    {
+        m_address = m_ptrBus->read(m_programCounter);
+        ++m_programCounter;
+        break;
+    }
+    case MOS6510MicroOperation::ReadJsrStackDummy:
+    {
+        m_ptrBus->read(static_cast<quint16>(0x0100 | m_stackPointer));
+        break;
+    }
+    case MOS6510MicroOperation::WriteJsrReturnAddressHigh:
+    {
+        m_ptrBus->write(static_cast<quint16>(0x0100 | m_stackPointer), static_cast<quint8>(m_programCounter >> 8));
+        --m_stackPointer;
+        break;
+    }
+    case MOS6510MicroOperation::WriteJsrReturnAddressLow:
+    {
+        m_ptrBus->write(static_cast<quint16>(0x0100 | m_stackPointer), static_cast<quint8>(m_programCounter & 0x00FF));
+        --m_stackPointer;
+        break;
+    }
+    case MOS6510MicroOperation::ReadJsrAddressHighAndJump:
+    {
+        const quint8 highByte = m_ptrBus->read(m_programCounter);
+        m_address |= static_cast<quint16>(highByte) << 8;
+        m_programCounter = m_address;
+        break;
+    }
+    case MOS6510MicroOperation::ReadRtsProgramCounterDummy:
+    {
+        m_ptrBus->read(m_programCounter);
+        break;
+    }
+    case MOS6510MicroOperation::ReadRtsStackDummy:
+    {
+        m_ptrBus->read(static_cast<quint16>(0x0100 | m_stackPointer));
+        break;
+    }
+    case MOS6510MicroOperation::ReadRtsReturnAddressLow:
+    {
+        ++m_stackPointer;
+        m_address = m_ptrBus->read(static_cast<quint16>(0x0100 | m_stackPointer));
+        break;
+    }
+    case MOS6510MicroOperation::ReadRtsReturnAddressHigh:
+    {
+        ++m_stackPointer;
+        const quint8 highByte = m_ptrBus->read(static_cast<quint16>(0x0100 | m_stackPointer));
+        m_address |= static_cast<quint16>(highByte) << 8;
+        m_programCounter = m_address;
+        break;
+    }
+    case MOS6510MicroOperation::RtsIncrementProgramCounter:
+    {
+        m_ptrBus->read(m_programCounter);
+        ++m_programCounter;
+        break;
+    }
     }
 }
 
