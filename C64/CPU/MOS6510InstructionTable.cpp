@@ -293,11 +293,6 @@ void MOS6510InstructionTable::initializeTransferInstructions()
     m_instructions[0x9A].addressingMode = MOS6510AddressingMode::Implied;
     m_instructions[0x9A].microOperations[0] = MOS6510MicroOperation::TransferXRegisterToStackPointer;
     m_instructions[0x9A].microOperationCount = 1;
-
-    m_instructions[0x9A].operation = MOS6510Operation::TXS;
-    m_instructions[0x9A].addressingMode = MOS6510AddressingMode::Implied;
-    m_instructions[0x9A].microOperations[0] = MOS6510MicroOperation::TransferXRegisterToStackPointer;
-    m_instructions[0x9A].microOperationCount = 1;
 }
 
 void MOS6510InstructionTable::initializeStackInstructions()

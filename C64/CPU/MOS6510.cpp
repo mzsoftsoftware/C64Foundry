@@ -118,6 +118,7 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
     {
     case MOS6510MicroOperation::NoOperation:
     {
+        m_ptrBus->read(m_programCounter);
         break;
     }
     case MOS6510MicroOperation::ReadImmediateToAccumulator:
@@ -670,6 +671,7 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
     }
     case MOS6510MicroOperation::IncrementXRegister:
     {
+        m_ptrBus->read(m_programCounter);
         ++m_x;
         updateLoadFlags(m_x);
         break;
@@ -677,6 +679,7 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
 
     case MOS6510MicroOperation::IncrementYRegister:
     {
+        m_ptrBus->read(m_programCounter);
         ++m_y;
         updateLoadFlags(m_y);
         break;
@@ -684,6 +687,7 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
 
     case MOS6510MicroOperation::DecrementXRegister:
     {
+        m_ptrBus->read(m_programCounter);
         --m_x;
         updateLoadFlags(m_x);
         break;
@@ -691,12 +695,14 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
 
     case MOS6510MicroOperation::DecrementYRegister:
     {
+        m_ptrBus->read(m_programCounter);
         --m_y;
         updateLoadFlags(m_y);
         break;
     }
     case MOS6510MicroOperation::TransferAccumulatorToXRegister:
     {
+        m_ptrBus->read(m_programCounter);
         m_x = m_accumulator;
         updateLoadFlags(m_x);
         break;
@@ -704,6 +710,7 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
 
     case MOS6510MicroOperation::TransferAccumulatorToYRegister:
     {
+        m_ptrBus->read(m_programCounter);
         m_y = m_accumulator;
         updateLoadFlags(m_y);
         break;
@@ -711,6 +718,7 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
 
     case MOS6510MicroOperation::TransferXRegisterToAccumulator:
     {
+        m_ptrBus->read(m_programCounter);
         m_accumulator = m_x;
         updateLoadFlags(m_accumulator);
         break;
@@ -718,6 +726,7 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
 
     case MOS6510MicroOperation::TransferYRegisterToAccumulator:
     {
+        m_ptrBus->read(m_programCounter);
         m_accumulator = m_y;
         updateLoadFlags(m_accumulator);
         break;
@@ -725,6 +734,7 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
 
     case MOS6510MicroOperation::TransferStackPointerToXRegister:
     {
+        m_ptrBus->read(m_programCounter);
         m_x = m_stackPointer;
         updateLoadFlags(m_x);
         break;
@@ -732,6 +742,7 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
 
     case MOS6510MicroOperation::TransferXRegisterToStackPointer:
     {
+        m_ptrBus->read(m_programCounter);
         m_stackPointer = m_x;
         break;
     }
@@ -763,11 +774,13 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
     }
     case MOS6510MicroOperation::SetDecimalFlag:
     {
+        m_ptrBus->read(m_programCounter);
         setStatusFlag(MOS6510StatusFlag::Decimal, true);
         break;
     }
     case MOS6510MicroOperation::ClearDecimalFlag:
     {
+        m_ptrBus->read(m_programCounter);
         setStatusFlag(MOS6510StatusFlag::Decimal, false);
         break;
     }
