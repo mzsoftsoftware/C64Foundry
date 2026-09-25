@@ -22,6 +22,8 @@ void MOS6510::initialize()
     m_state = CpuState::Fetch;
     m_resetCycle = 0;
     m_irqLine = false;
+    m_irqPending = false;
+    m_irqCycle = 0;
 
     m_accumulator = 0x00;
     m_x = 0x00;

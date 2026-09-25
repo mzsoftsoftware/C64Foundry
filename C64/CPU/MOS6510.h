@@ -49,6 +49,7 @@ private:
         Fetch,
         Execute,
         Reset,
+        Irq,
         Stopped
     };
 
@@ -71,6 +72,8 @@ private:
     CpuState m_state = CpuState::Fetch;
     quint8 m_resetCycle = 0;
     bool m_irqLine = false;
+    bool m_irqPending = false;
+    quint8 m_irqCycle = 0;
 
     quint8  m_accumulator = 0;
     quint8  m_x = 0;
