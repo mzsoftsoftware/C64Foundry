@@ -299,25 +299,29 @@ void MOS6510InstructionTable::initializeStackInstructions()
 {
     m_instructions[0x48].operation = MOS6510Operation::PHA;
     m_instructions[0x48].addressingMode = MOS6510AddressingMode::Implied;
-    m_instructions[0x48].microOperations[0] = MOS6510MicroOperation::WriteAccumulatorToStack;
-    m_instructions[0x48].microOperationCount = 1;
+    m_instructions[0x48].microOperations[0] = MOS6510MicroOperation::NoOperation;
+    m_instructions[0x48].microOperations[1] = MOS6510MicroOperation::WriteAccumulatorToStack;
+    m_instructions[0x48].microOperationCount = 2;
 
     m_instructions[0x08].operation = MOS6510Operation::PHP;
     m_instructions[0x08].addressingMode = MOS6510AddressingMode::Implied;
-    m_instructions[0x08].microOperations[0] = MOS6510MicroOperation::WriteStatusToStack;
-    m_instructions[0x08].microOperationCount = 1;
+    m_instructions[0x08].microOperations[0] = MOS6510MicroOperation::NoOperation;
+    m_instructions[0x08].microOperations[1] = MOS6510MicroOperation::WriteStatusToStack;
+    m_instructions[0x08].microOperationCount = 2;
 
     m_instructions[0x68].operation = MOS6510Operation::PLA;
     m_instructions[0x68].addressingMode = MOS6510AddressingMode::Implied;
     m_instructions[0x68].microOperations[0] = MOS6510MicroOperation::NoOperation;
-    m_instructions[0x68].microOperations[1] = MOS6510MicroOperation::ReadStackToAccumulator;
-    m_instructions[0x68].microOperationCount = 2;
+    m_instructions[0x68].microOperations[1] = MOS6510MicroOperation::ReadStackDummy;
+    m_instructions[0x68].microOperations[2] = MOS6510MicroOperation::ReadStackToAccumulator;
+    m_instructions[0x68].microOperationCount = 3;
 
     m_instructions[0x28].operation = MOS6510Operation::PLP;
     m_instructions[0x28].addressingMode = MOS6510AddressingMode::Implied;
     m_instructions[0x28].microOperations[0] = MOS6510MicroOperation::NoOperation;
-    m_instructions[0x28].microOperations[1] = MOS6510MicroOperation::ReadStackToStatus;
-    m_instructions[0x28].microOperationCount = 2;
+    m_instructions[0x28].microOperations[1] = MOS6510MicroOperation::ReadStackDummy;
+    m_instructions[0x28].microOperations[2] = MOS6510MicroOperation::ReadStackToStatus;
+    m_instructions[0x28].microOperationCount = 3;
 }
 
 void MOS6510InstructionTable::initializeLogicalInstructions()

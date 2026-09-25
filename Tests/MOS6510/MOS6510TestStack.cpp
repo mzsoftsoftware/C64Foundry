@@ -59,7 +59,16 @@ void MOS6510TestStack::testPush()
     QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
     QCOMPARE(m_cpu.stackPointer(), quint8(0xFF));
 
-    // Cycle 2: push
+    // Cycle 2: dummy read
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0xFF));
+    QCOMPARE(m_cpu.accumulator(), expectedAccumulator);
+    QCOMPARE(m_cpu.xRegister(), expectedXRegister);
+    QCOMPARE(m_cpu.yRegister(), expectedYRegister);
+    QCOMPARE(m_cpu.status(), status);
+
+    // Cycle 3: push
     m_cpu.clock();
     QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
     QCOMPARE(m_cpu.stackPointer(), expectedStackPointer);
@@ -69,7 +78,7 @@ void MOS6510TestStack::testPush()
     QCOMPARE(m_cpu.status(), status);
     QCOMPARE(m_memory.readRAM(0x01FF), expectedStackValue);
 
-    // Cycle 3: fetch next opcode
+    // Cycle 4: fetch next opcode
     m_cpu.clock();
     QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
 }
@@ -107,13 +116,18 @@ void MOS6510TestStack::testPushWrap()
     QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
     QCOMPARE(m_cpu.stackPointer(), quint8(0x00));
 
-    // Cycle 2: push
+    // Cycle 2: dummy read
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x00));
+
+    // Cycle 3: push
     m_cpu.clock();
     QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
     QCOMPARE(m_cpu.stackPointer(), quint8(0xFF));
     QCOMPARE(m_memory.readRAM(0x0100), expectedStackValue);
 
-    // Cycle 3: fetch next opcode
+    // Cycle 4: fetch next opcode
     m_cpu.clock();
     QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
 }
@@ -150,30 +164,40 @@ void MOS6510TestStack::testPullAccumulator()
     QCOMPARE(m_cpu.accumulator(), quint8(0x11));
     QCOMPARE(m_cpu.status(), quint8(0x7D));
 
-    // Cycle 2: stack dummy cycle
+    // Cycle 2: dummy read from program counter
     m_cpu.clock();
     QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
     QCOMPARE(m_cpu.stackPointer(), quint8(0xFE));
     QCOMPARE(m_cpu.accumulator(), quint8(0x11));
     QCOMPARE(m_cpu.status(), quint8(0x7D));
 
-    // Cycle 3: pull
+    // Cycle 3: stack dummy read
     m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0xFE));
+    QCOMPARE(m_cpu.accumulator(), quint8(0x11));
+    QCOMPARE(m_cpu.status(), quint8(0x7D));
+
+    // Cycle 4: pull
+    m_cpu.clock();
+
     quint8 expectedStatus = 0x7D;
     if (value == 0x00)
         expectedStatus |= 0x02;
     else
         expectedStatus &= ~quint8(0x02);
+
     if (value & 0x80)
         expectedStatus |= 0x80;
     else
         expectedStatus &= ~quint8(0x80);
+
     QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
     QCOMPARE(m_cpu.stackPointer(), quint8(0xFF));
     QCOMPARE(m_cpu.accumulator(), value);
     QCOMPARE(m_cpu.status(), expectedStatus);
 
-    // Cycle 4: fetch next opcode
+    // Cycle 5: fetch next opcode
     m_cpu.clock();
     QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
 }
@@ -197,21 +221,28 @@ void MOS6510TestStack::testPullAccumulatorWrap()
     QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
     QCOMPARE(m_cpu.stackPointer(), quint8(0xFF));
 
-    // Cycle 2: stack dummy cycle
+    // Cycle 2: dummy read from program counter
     m_cpu.clock();
     QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
     QCOMPARE(m_cpu.stackPointer(), quint8(0xFF));
     QCOMPARE(m_cpu.accumulator(), quint8(0x11));
 
-    // Cycle 3: pull
+    // Cycle 3: stack dummy read
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0xFF));
+    QCOMPARE(m_cpu.accumulator(), quint8(0x11));
+
+    // Cycle 4: pull
     m_cpu.clock();
     QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
     QCOMPARE(m_cpu.stackPointer(), quint8(0x00));
     QCOMPARE(m_cpu.accumulator(), quint8(0x80));
+
     // $80 sets Negative and clears Zero.
     QCOMPARE(m_cpu.status(), quint8(0xFD));
 
-    // Cycle 4: fetch next opcode
+    // Cycle 5: fetch next opcode
     m_cpu.clock();
     QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
 }
@@ -246,21 +277,29 @@ void MOS6510TestStack::testPullStatus()
     QCOMPARE(m_cpu.stackPointer(), quint8(0xFE));
     QCOMPARE(m_cpu.status(), quint8(0x7D));
 
-    // Cycle 2: stack dummy cycle
+    // Cycle 2: dummy read from program counter
     m_cpu.clock();
     QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
     QCOMPARE(m_cpu.stackPointer(), quint8(0xFE));
     QCOMPARE(m_cpu.status(), quint8(0x7D));
 
-    // Cycle 3: pull status
+    // Cycle 3: stack dummy read
     m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0xFE));
+    QCOMPARE(m_cpu.status(), quint8(0x7D));
+
+    // Cycle 4: pull status
+    m_cpu.clock();
+
     // Bit 5 (Unused) is always set in the CPU status register.
     const quint8 expectedStatus = value | 0x20;
+
     QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
     QCOMPARE(m_cpu.stackPointer(), quint8(0xFF));
     QCOMPARE(m_cpu.status(), expectedStatus);
 
-    // Cycle 4: fetch next opcode
+    // Cycle 5: fetch next opcode
     m_cpu.clock();
     QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
 }
@@ -283,21 +322,28 @@ void MOS6510TestStack::testPullStatusWrap()
     QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
     QCOMPARE(m_cpu.stackPointer(), quint8(0xFF));
 
-    // Cycle 2: stack dummy cycle
+    // Cycle 2: dummy read from program counter
     m_cpu.clock();
     QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
     QCOMPARE(m_cpu.stackPointer(), quint8(0xFF));
     QCOMPARE(m_cpu.status(), quint8(0x7D));
 
-    // Cycle 3: pull status
+    // Cycle 3: stack dummy read
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0xFF));
+    QCOMPARE(m_cpu.status(), quint8(0x7D));
+
+    // Cycle 4: pull status
     m_cpu.clock();
     QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
     QCOMPARE(m_cpu.stackPointer(), quint8(0x00));
+
     // $C0 = Negative + Overflow.
     // Bit 5 (Unused) is always set in the CPU status register.
     QCOMPARE(m_cpu.status(), quint8(0xE0));
 
-    // Cycle 4: fetch next opcode
+    // Cycle 5: fetch next opcode
     m_cpu.clock();
     QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
 }

@@ -100,6 +100,7 @@ enum class MOS6510MicroOperation
     ReadStackToAccumulator,
     WriteStatusToStack,
     ReadStackToStatus,
+    ReadStackDummy,
 
     SetDecimalFlag,
     ClearDecimalFlag

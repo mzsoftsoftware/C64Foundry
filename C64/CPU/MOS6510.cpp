@@ -772,6 +772,11 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
         m_status = value | 0x20;
         break;
     }
+    case MOS6510MicroOperation::ReadStackDummy:
+    {
+        m_ptrBus->read(0x0100 | m_stackPointer);
+        break;
+    }
     case MOS6510MicroOperation::SetDecimalFlag:
     {
         m_ptrBus->read(m_programCounter);
