@@ -368,9 +368,25 @@ void MOS6510::setNmiLine(const bool active)
 {
     if (active && !m_nmiLine)
     {
+        //
+        // Rising logical edge = assertion of /NMI.
+        //
         m_nmiPending = true;
-        if(m_nmiVectorFetch)
+
+        if (m_nmiVectorFetch)
             m_nmiDelay = true;
+    }
+    else if (!active && m_nmiLine)
+    {
+        //
+        // An NMI pulse that starts and ends inside the
+        // protected vector-fetch window is lost.
+        //
+        if (m_nmiDelay && m_nmiVectorFetch)
+        {
+            m_nmiPending = false;
+            m_nmiDelay = false;
+        }
     }
 
     m_nmiLine = active;

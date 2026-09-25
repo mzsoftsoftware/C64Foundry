@@ -1744,3 +1744,91 @@ void MOS6510TestCpuControl::testNmiLateDuringBrk()
 
     QCOMPARE(m_cpu.programCounter(), quint16(0x3001));
 }
+
+void MOS6510TestCpuControl::testNmiLostDuringIrqVectorFetch()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setStackPointer(0x80);
+    m_cpu.setStatus(0x20);
+
+    m_memory.writeRAM(0x2000, 0xEA);
+
+    //
+    // NMI vector -> $4000
+    //
+    m_memory.writeRAM(0xFFFA, 0x00);
+    m_memory.writeRAM(0xFFFB, 0x40);
+
+    //
+    // IRQ vector -> $3000
+    //
+    m_memory.writeRAM(0xFFFE, 0x00);
+    m_memory.writeRAM(0xFFFF, 0x30);
+
+    //
+    // IRQ handler.
+    //
+    m_memory.writeRAM(0x3000, 0xEA);
+    m_memory.writeRAM(0x3001, 0xEA);
+    m_memory.writeRAM(0x3002, 0xEA);
+
+    m_cpu.setIrqLine(true);
+
+    //
+    // IRQ C1-C5.
+    //
+    for (int i = 0; i < 5; ++i)
+        clock();
+
+    //
+    // IRQ C6: vector low has already been selected.
+    //
+    clock();
+    verifyRead(0xFFFE, 0x00);
+
+    //
+    // Short NMI pulse inside the protected vector-fetch
+    // window.
+    //
+    m_cpu.setNmiLine(true);
+    m_cpu.setNmiLine(false);
+
+    //
+    // IRQ C7 must still use the IRQ vector.
+    //
+    clock();
+    verifyRead(0xFFFF, 0x30);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x3000));
+
+    //
+    // First handler NOP must execute completely.
+    //
+    clock();
+    verifyRead(0x3000, 0xEA);
+    QCOMPARE(m_cpu.programCounter(), quint16(0x3001));
+
+    clock();
+    verifyRead(0x3001, 0xEA);
+    QCOMPARE(m_cpu.programCounter(), quint16(0x3001));
+
+    //
+    // The short NMI pulse must have been lost.
+    //
+    // Therefore the next handler instruction starts normally.
+    //
+    clock();
+    verifyRead(0x3001, 0xEA);
+    QCOMPARE(m_cpu.programCounter(), quint16(0x3002));
+
+    //
+    // And its second cycle also executes normally.
+    //
+    clock();
+    verifyRead(0x3002, 0xEA);
+    QCOMPARE(m_cpu.programCounter(), quint16(0x3002));
+
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
+}

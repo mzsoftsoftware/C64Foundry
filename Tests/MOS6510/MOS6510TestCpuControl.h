@@ -55,4 +55,5 @@ private slots:
 
     void testNmiLateDuringIrq();
     void testNmiLateDuringBrk();
+    void testNmiLostDuringIrqVectorFetch();
 };
