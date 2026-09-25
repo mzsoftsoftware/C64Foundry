@@ -89,6 +89,11 @@ enum class MOS6510MicroOperation
     DecrementXRegister,
     DecrementYRegister,
 
+    ReadMemoryToData,
+    WriteDataToMemory,
+    IncrementDataAndWriteToMemory,
+    DecrementDataAndWriteToMemory,
+
     TransferAccumulatorToXRegister,
     TransferAccumulatorToYRegister,
     TransferXRegisterToAccumulator,
@@ -104,5 +109,6 @@ enum class MOS6510MicroOperation
 
     SetDecimalFlag,
     ClearDecimalFlag
+
 
 };

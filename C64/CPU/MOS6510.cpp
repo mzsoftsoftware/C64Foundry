@@ -700,6 +700,30 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
         updateLoadFlags(m_y);
         break;
     }
+    case MOS6510MicroOperation::ReadMemoryToData:
+    {
+        m_data = m_ptrBus->read(m_address);
+        break;
+    }
+    case MOS6510MicroOperation::WriteDataToMemory:
+    {
+        m_ptrBus->write(m_address, m_data);
+        break;
+    }
+    case MOS6510MicroOperation::IncrementDataAndWriteToMemory:
+    {
+        ++m_data;
+        m_ptrBus->write(m_address, m_data);
+        updateLoadFlags(m_data);
+        break;
+    }
+    case MOS6510MicroOperation::DecrementDataAndWriteToMemory:
+    {
+        --m_data;
+        m_ptrBus->write(m_address, m_data);
+        updateLoadFlags(m_data);
+        break;
+    }
     case MOS6510MicroOperation::TransferAccumulatorToXRegister:
     {
         m_ptrBus->read(m_programCounter);

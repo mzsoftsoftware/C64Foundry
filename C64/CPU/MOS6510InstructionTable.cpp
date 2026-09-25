@@ -660,6 +660,78 @@ void MOS6510InstructionTable::initializeArithmeticInstructions()
     m_instructions[0x88].addressingMode = MOS6510AddressingMode::Implied;
     m_instructions[0x88].microOperations[0] = MOS6510MicroOperation::DecrementYRegister;
     m_instructions[0x88].microOperationCount = 1;
+
+    m_instructions[0xE6].operation = MOS6510Operation::INC;
+    m_instructions[0xE6].addressingMode = MOS6510AddressingMode::ZeroPage;
+    m_instructions[0xE6].microOperations[0] = MOS6510MicroOperation::ReadZeroPageAddress;
+    m_instructions[0xE6].microOperations[1] = MOS6510MicroOperation::ReadMemoryToData;
+    m_instructions[0xE6].microOperations[2] = MOS6510MicroOperation::WriteDataToMemory;
+    m_instructions[0xE6].microOperations[3] = MOS6510MicroOperation::IncrementDataAndWriteToMemory;
+    m_instructions[0xE6].microOperationCount = 4;
+
+    m_instructions[0xF6].operation = MOS6510Operation::INC;
+    m_instructions[0xF6].addressingMode = MOS6510AddressingMode::ZeroPageX;
+    m_instructions[0xF6].microOperations[0] = MOS6510MicroOperation::ReadZeroPageAddress;
+    m_instructions[0xF6].microOperations[1] = MOS6510MicroOperation::ReadZeroPageIndexedAddress;
+    m_instructions[0xF6].microOperations[2] = MOS6510MicroOperation::ReadMemoryToData;
+    m_instructions[0xF6].microOperations[3] = MOS6510MicroOperation::WriteDataToMemory;
+    m_instructions[0xF6].microOperations[4] = MOS6510MicroOperation::IncrementDataAndWriteToMemory;
+    m_instructions[0xF6].microOperationCount = 5;
+
+    m_instructions[0xEE].operation = MOS6510Operation::INC;
+    m_instructions[0xEE].addressingMode = MOS6510AddressingMode::Absolute;
+    m_instructions[0xEE].microOperations[0] = MOS6510MicroOperation::ReadAbsoluteAddressLow;
+    m_instructions[0xEE].microOperations[1] = MOS6510MicroOperation::ReadAbsoluteAddressHigh;
+    m_instructions[0xEE].microOperations[2] = MOS6510MicroOperation::ReadMemoryToData;
+    m_instructions[0xEE].microOperations[3] = MOS6510MicroOperation::WriteDataToMemory;
+    m_instructions[0xEE].microOperations[4] = MOS6510MicroOperation::IncrementDataAndWriteToMemory;
+    m_instructions[0xEE].microOperationCount = 5;
+
+    m_instructions[0xFE].operation = MOS6510Operation::INC;
+    m_instructions[0xFE].addressingMode = MOS6510AddressingMode::AbsoluteX;
+    m_instructions[0xFE].microOperations[0] = MOS6510MicroOperation::ReadAbsoluteAddressLow;
+    m_instructions[0xFE].microOperations[1] = MOS6510MicroOperation::ReadAbsoluteXAddress;
+    m_instructions[0xFE].microOperations[2] = MOS6510MicroOperation::ReadAbsoluteIndexedDummy;
+    m_instructions[0xFE].microOperations[3] = MOS6510MicroOperation::ReadMemoryToData;
+    m_instructions[0xFE].microOperations[4] = MOS6510MicroOperation::WriteDataToMemory;
+    m_instructions[0xFE].microOperations[5] = MOS6510MicroOperation::IncrementDataAndWriteToMemory;
+    m_instructions[0xFE].microOperationCount = 6;
+
+    m_instructions[0xC6].operation = MOS6510Operation::DEC;
+    m_instructions[0xC6].addressingMode = MOS6510AddressingMode::ZeroPage;
+    m_instructions[0xC6].microOperations[0] = MOS6510MicroOperation::ReadZeroPageAddress;
+    m_instructions[0xC6].microOperations[1] = MOS6510MicroOperation::ReadMemoryToData;
+    m_instructions[0xC6].microOperations[2] = MOS6510MicroOperation::WriteDataToMemory;
+    m_instructions[0xC6].microOperations[3] = MOS6510MicroOperation::DecrementDataAndWriteToMemory;
+    m_instructions[0xC6].microOperationCount = 4;
+
+    m_instructions[0xD6].operation = MOS6510Operation::DEC;
+    m_instructions[0xD6].addressingMode = MOS6510AddressingMode::ZeroPageX;
+    m_instructions[0xD6].microOperations[0] = MOS6510MicroOperation::ReadZeroPageAddress;
+    m_instructions[0xD6].microOperations[1] = MOS6510MicroOperation::ReadZeroPageIndexedAddress;
+    m_instructions[0xD6].microOperations[2] = MOS6510MicroOperation::ReadMemoryToData;
+    m_instructions[0xD6].microOperations[3] = MOS6510MicroOperation::WriteDataToMemory;
+    m_instructions[0xD6].microOperations[4] = MOS6510MicroOperation::DecrementDataAndWriteToMemory;
+    m_instructions[0xD6].microOperationCount = 5;
+
+    m_instructions[0xCE].operation = MOS6510Operation::DEC;
+    m_instructions[0xCE].addressingMode = MOS6510AddressingMode::Absolute;
+    m_instructions[0xCE].microOperations[0] = MOS6510MicroOperation::ReadAbsoluteAddressLow;
+    m_instructions[0xCE].microOperations[1] = MOS6510MicroOperation::ReadAbsoluteAddressHigh;
+    m_instructions[0xCE].microOperations[2] = MOS6510MicroOperation::ReadMemoryToData;
+    m_instructions[0xCE].microOperations[3] = MOS6510MicroOperation::WriteDataToMemory;
+    m_instructions[0xCE].microOperations[4] = MOS6510MicroOperation::DecrementDataAndWriteToMemory;
+    m_instructions[0xCE].microOperationCount = 5;
+
+    m_instructions[0xDE].operation = MOS6510Operation::DEC;
+    m_instructions[0xDE].addressingMode = MOS6510AddressingMode::AbsoluteX;
+    m_instructions[0xDE].microOperations[0] = MOS6510MicroOperation::ReadAbsoluteAddressLow;
+    m_instructions[0xDE].microOperations[1] = MOS6510MicroOperation::ReadAbsoluteXAddress;
+    m_instructions[0xDE].microOperations[2] = MOS6510MicroOperation::ReadAbsoluteIndexedDummy;
+    m_instructions[0xDE].microOperations[3] = MOS6510MicroOperation::ReadMemoryToData;
+    m_instructions[0xDE].microOperations[4] = MOS6510MicroOperation::WriteDataToMemory;
+    m_instructions[0xDE].microOperations[5] = MOS6510MicroOperation::DecrementDataAndWriteToMemory;
+    m_instructions[0xDE].microOperationCount = 6;
 }
 
 void MOS6510InstructionTable::initializeSpecialInstructions()
