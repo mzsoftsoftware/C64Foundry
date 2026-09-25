@@ -423,3 +423,494 @@ void MOS6510TestLogical::testLogicalAbsoluteIndexedPageCrossing()
     QCOMPARE(m_cpu.accumulator(), expectedAccumulator);
 }
 // --------------------------------------------------------------------------------------------
+void MOS6510TestLogical::testLogicalAbsoluteY_data()
+{
+    QTest::addColumn<quint8>("opcode");
+    QTest::addColumn<quint8>("accumulator");
+    QTest::addColumn<quint8>("operand");
+    QTest::addColumn<quint8>("expectedAccumulator");
+    QTest::addColumn<quint8>("status");
+
+    QTest::newRow("AND") << quint8(0x39)
+                         << quint8(0x55)
+                         << quint8(0x0F)
+                         << quint8(0x05)
+                         << quint8(0x7D);
+
+    QTest::newRow("ORA") << quint8(0x19)
+                         << quint8(0x55)
+                         << quint8(0x0A)
+                         << quint8(0x5F)
+                         << quint8(0x7D);
+
+    QTest::newRow("EOR") << quint8(0x59)
+                         << quint8(0x55)
+                         << quint8(0x0F)
+                         << quint8(0x5A)
+                         << quint8(0x7D);
+}
+
+void MOS6510TestLogical::testLogicalAbsoluteY()
+{
+    QFETCH(quint8, opcode);
+    QFETCH(quint8, accumulator);
+    QFETCH(quint8, operand);
+    QFETCH(quint8, expectedAccumulator);
+    QFETCH(quint8, status);
+
+    setupCpu();
+    initializeRegisters();
+
+    m_cpu.setAccumulator(accumulator);
+    m_cpu.setYRegister(0x02);
+    m_cpu.setStatus(status);
+
+    m_memory.writeRAM(0x1000, opcode);
+    m_memory.writeRAM(0x1001, 0x40);
+    m_memory.writeRAM(0x1002, 0x23);
+    m_memory.writeRAM(0x2342, operand);
+    m_memory.writeRAM(0x1003, 0xEA);
+
+    m_cpu.setProgramCounter(0x1000);
+
+    // Cycle 1: Opcode
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
+
+    // Cycle 2: Low Byte
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
+
+    // Cycle 3: High Byte + Y
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1003));
+
+    // Cycle 4: Operand lesen und Operation ausführen
+    m_cpu.clock();
+    QCOMPARE(m_cpu.accumulator(), expectedAccumulator);
+    QCOMPARE(m_cpu.status(),
+             expectedLogicalStatus(status, expectedAccumulator));
+
+    QCOMPARE(m_cpu.xRegister(), quint8(0x22));
+    QCOMPARE(m_cpu.yRegister(), quint8(0x02));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0xFF));
+
+    // Cycle 5: nächster Opcode
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1004));
+    QCOMPARE(m_cpu.accumulator(), expectedAccumulator);
+}
+void MOS6510TestLogical::testLogicalAbsoluteYPageCrossing_data()
+{
+    testLogicalAbsoluteY_data();
+}
+
+void MOS6510TestLogical::testLogicalAbsoluteYPageCrossing()
+{
+    QFETCH(quint8, opcode);
+    QFETCH(quint8, accumulator);
+    QFETCH(quint8, operand);
+    QFETCH(quint8, expectedAccumulator);
+    QFETCH(quint8, status);
+
+    setupCpu();
+    initializeRegisters();
+
+    m_cpu.setAccumulator(accumulator);
+    m_cpu.setYRegister(0x02);
+    m_cpu.setStatus(status);
+
+    m_memory.writeRAM(0x1000, opcode);
+    m_memory.writeRAM(0x1001, 0xFF);
+    m_memory.writeRAM(0x1002, 0x23);
+
+    // $23FF + $02 = $2401
+    m_memory.writeRAM(0x2401, operand);
+
+    // Falsche Seite für den Dummy Read.
+    m_memory.writeRAM(0x2301, 0xAA);
+
+    m_memory.writeRAM(0x1003, 0xEA);
+
+    m_cpu.setProgramCounter(0x1000);
+
+    // Cycle 1: Opcode
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
+
+    // Cycle 2: Low Byte
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
+
+    // Cycle 3: High Byte + Y
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1003));
+
+    // Cycle 4: Dummy Read
+    m_cpu.clock();
+    QCOMPARE(m_cpu.accumulator(), accumulator);
+
+    // Cycle 5: echter Operand
+    m_cpu.clock();
+    QCOMPARE(m_cpu.accumulator(), expectedAccumulator);
+    QCOMPARE(m_cpu.status(),
+             expectedLogicalStatus(status, expectedAccumulator));
+
+    QCOMPARE(m_cpu.xRegister(), quint8(0x22));
+    QCOMPARE(m_cpu.yRegister(), quint8(0x02));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0xFF));
+
+    // Cycle 6: nächster Opcode
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1004));
+    QCOMPARE(m_cpu.accumulator(), expectedAccumulator);
+}
+void MOS6510TestLogical::testLogicalIndexedIndirect_data()
+{
+    QTest::addColumn<quint8>("opcode");
+    QTest::addColumn<quint8>("accumulator");
+    QTest::addColumn<quint8>("operand");
+    QTest::addColumn<quint8>("expectedAccumulator");
+    QTest::addColumn<quint8>("status");
+
+    QTest::newRow("AND") << quint8(0x21)
+                         << quint8(0x55)
+                         << quint8(0x0F)
+                         << quint8(0x05)
+                         << quint8(0x7D);
+
+    QTest::newRow("ORA") << quint8(0x01)
+                         << quint8(0x55)
+                         << quint8(0x0A)
+                         << quint8(0x5F)
+                         << quint8(0x7D);
+
+    QTest::newRow("EOR") << quint8(0x41)
+                         << quint8(0x55)
+                         << quint8(0x0F)
+                         << quint8(0x5A)
+                         << quint8(0x7D);
+}
+
+void MOS6510TestLogical::testLogicalIndexedIndirect()
+{
+    QFETCH(quint8, opcode);
+    QFETCH(quint8, accumulator);
+    QFETCH(quint8, operand);
+    QFETCH(quint8, expectedAccumulator);
+    QFETCH(quint8, status);
+
+    setupCpu();
+    initializeRegisters();
+
+    m_cpu.setAccumulator(accumulator);
+    m_cpu.setXRegister(0x04);
+    m_cpu.setStatus(status);
+
+    m_memory.writeRAM(0x1000, opcode);
+    m_memory.writeRAM(0x1001, 0x20);
+    m_memory.writeRAM(0x1002, 0xEA);
+
+    // ($20,X), X=$04 -> Pointer bei $24/$25
+    m_memory.writeRAM(0x0024, 0x42);
+    m_memory.writeRAM(0x0025, 0x23);
+
+    m_memory.writeRAM(0x2342, operand);
+
+    m_cpu.setProgramCounter(0x1000);
+
+    // Cycle 1: Opcode
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
+
+    // Cycle 2: Zero-Page Basisadresse
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
+
+    // Cycle 3: Dummy Read + X addieren
+    m_cpu.clock();
+    QCOMPARE(m_cpu.accumulator(), accumulator);
+
+    // Cycle 4: Pointer Low
+    m_cpu.clock();
+
+    // Cycle 5: Pointer High
+    m_cpu.clock();
+
+    // Cycle 6: Operand + Operation
+    m_cpu.clock();
+    QCOMPARE(m_cpu.accumulator(), expectedAccumulator);
+    QCOMPARE(m_cpu.status(),
+             expectedLogicalStatus(status, expectedAccumulator));
+
+    QCOMPARE(m_cpu.xRegister(), quint8(0x04));
+    QCOMPARE(m_cpu.yRegister(), quint8(0x33));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0xFF));
+
+    // Cycle 7: nächster Opcode
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1003));
+    QCOMPARE(m_cpu.accumulator(), expectedAccumulator);
+}
+
+void MOS6510TestLogical::testLogicalIndexedIndirectWrapAround_data()
+{
+    testLogicalIndexedIndirect_data();
+}
+
+void MOS6510TestLogical::testLogicalIndexedIndirectWrapAround()
+{
+    QFETCH(quint8, opcode);
+    QFETCH(quint8, accumulator);
+    QFETCH(quint8, operand);
+    QFETCH(quint8, expectedAccumulator);
+    QFETCH(quint8, status);
+
+    setupCpu();
+    initializeRegisters();
+
+    m_cpu.setAccumulator(accumulator);
+    m_cpu.setXRegister(0x01);
+    m_cpu.setStatus(status);
+
+    m_memory.writeRAM(0x1000, opcode);
+    m_memory.writeRAM(0x1001, 0xFE);
+    m_memory.writeRAM(0x1002, 0xEA);
+
+    // $FE + X($01) = $FF
+    // Pointer Low  bei $00FF
+    // Pointer High bei $0000 -> Zero-Page-Wrap
+    m_memory.writeRAM(0x00FF, 0x42);
+    m_memory.writeRAM(0x0000, 0x23);
+
+    m_memory.writeRAM(0x2342, operand);
+
+    m_cpu.setProgramCounter(0x1000);
+
+    m_cpu.clock();      // C1 opcode
+    m_cpu.clock();      // C2 operand address
+    m_cpu.clock();      // C3 dummy + X
+    m_cpu.clock();      // C4 pointer low
+    m_cpu.clock();      // C5 pointer high
+    m_cpu.clock();      // C6 operand
+
+    QCOMPARE(m_cpu.accumulator(), expectedAccumulator);
+    QCOMPARE(m_cpu.status(),
+             expectedLogicalStatus(status, expectedAccumulator));
+
+    QCOMPARE(m_cpu.xRegister(), quint8(0x01));
+    QCOMPARE(m_cpu.yRegister(), quint8(0x33));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0xFF));
+
+    m_cpu.clock();      // C7 next opcode
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1003));
+    QCOMPARE(m_cpu.accumulator(), expectedAccumulator);
+}
+void MOS6510TestLogical::testLogicalIndirectIndexed_data()
+{
+    QTest::addColumn<quint8>("opcode");
+    QTest::addColumn<quint8>("accumulator");
+    QTest::addColumn<quint8>("operand");
+    QTest::addColumn<quint8>("expectedAccumulator");
+    QTest::addColumn<quint8>("status");
+
+    QTest::newRow("AND") << quint8(0x31)
+                         << quint8(0x55)
+                         << quint8(0x0F)
+                         << quint8(0x05)
+                         << quint8(0x7D);
+
+    QTest::newRow("ORA") << quint8(0x11)
+                         << quint8(0x55)
+                         << quint8(0x0A)
+                         << quint8(0x5F)
+                         << quint8(0x7D);
+
+    QTest::newRow("EOR") << quint8(0x51)
+                         << quint8(0x55)
+                         << quint8(0x0F)
+                         << quint8(0x5A)
+                         << quint8(0x7D);
+}
+
+void MOS6510TestLogical::testLogicalIndirectIndexed()
+{
+    QFETCH(quint8, opcode);
+    QFETCH(quint8, accumulator);
+    QFETCH(quint8, operand);
+    QFETCH(quint8, expectedAccumulator);
+    QFETCH(quint8, status);
+
+    setupCpu();
+    initializeRegisters();
+
+    m_cpu.setAccumulator(accumulator);
+    m_cpu.setYRegister(0x02);
+    m_cpu.setStatus(status);
+
+    m_memory.writeRAM(0x1000, opcode);
+    m_memory.writeRAM(0x1001, 0x20);
+    m_memory.writeRAM(0x1002, 0xEA);
+
+    // Pointer $2340
+    m_memory.writeRAM(0x0020, 0x40);
+    m_memory.writeRAM(0x0021, 0x23);
+
+    // $2340 + Y($02) = $2342
+    m_memory.writeRAM(0x2342, operand);
+
+    m_cpu.setProgramCounter(0x1000);
+
+    // Cycle 1: Opcode
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
+
+    // Cycle 2: Zero-Page Pointer-Adresse
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
+
+    // Cycle 3: Pointer Low
+    m_cpu.clock();
+
+    // Cycle 4: Pointer High + Y
+    m_cpu.clock();
+
+    // Cycle 5: Operand + Operation
+    m_cpu.clock();
+
+    QCOMPARE(m_cpu.accumulator(), expectedAccumulator);
+    QCOMPARE(m_cpu.status(),
+             expectedLogicalStatus(status, expectedAccumulator));
+
+    QCOMPARE(m_cpu.xRegister(), quint8(0x22));
+    QCOMPARE(m_cpu.yRegister(), quint8(0x02));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0xFF));
+
+    // Cycle 6: nächster Opcode
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1003));
+    QCOMPARE(m_cpu.accumulator(), expectedAccumulator);
+}
+
+void MOS6510TestLogical::testLogicalIndirectIndexedPageCrossing_data()
+{
+    testLogicalIndirectIndexed_data();
+}
+
+void MOS6510TestLogical::testLogicalIndirectIndexedPageCrossing()
+{
+    QFETCH(quint8, opcode);
+    QFETCH(quint8, accumulator);
+    QFETCH(quint8, operand);
+    QFETCH(quint8, expectedAccumulator);
+    QFETCH(quint8, status);
+
+    setupCpu();
+    initializeRegisters();
+
+    m_cpu.setAccumulator(accumulator);
+    m_cpu.setYRegister(0x02);
+    m_cpu.setStatus(status);
+
+    m_memory.writeRAM(0x1000, opcode);
+    m_memory.writeRAM(0x1001, 0x20);
+    m_memory.writeRAM(0x1002, 0xEA);
+
+    // Pointer $23FF
+    m_memory.writeRAM(0x0020, 0xFF);
+    m_memory.writeRAM(0x0021, 0x23);
+
+    // $23FF + $02 = $2401
+    m_memory.writeRAM(0x2401, operand);
+
+    // Adresse des Page-Crossing Dummy Reads
+    m_memory.writeRAM(0x2301, 0xAA);
+
+    m_cpu.setProgramCounter(0x1000);
+
+    // Cycle 1
+    m_cpu.clock();
+
+    // Cycle 2
+    m_cpu.clock();
+
+    // Cycle 3: pointer low
+    m_cpu.clock();
+
+    // Cycle 4: pointer high + Y
+    m_cpu.clock();
+
+    // Cycle 5: Page-Crossing Dummy Read
+    m_cpu.clock();
+    QCOMPARE(m_cpu.accumulator(), accumulator);
+
+    // Cycle 6: Operand + Operation
+    m_cpu.clock();
+
+    QCOMPARE(m_cpu.accumulator(), expectedAccumulator);
+    QCOMPARE(m_cpu.status(),
+             expectedLogicalStatus(status, expectedAccumulator));
+
+    QCOMPARE(m_cpu.xRegister(), quint8(0x22));
+    QCOMPARE(m_cpu.yRegister(), quint8(0x02));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0xFF));
+
+    // Cycle 7: nächster Opcode
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1003));
+    QCOMPARE(m_cpu.accumulator(), expectedAccumulator);
+}
+
+void MOS6510TestLogical::testLogicalIndirectIndexedWrapAround_data()
+{
+    testLogicalIndirectIndexed_data();
+}
+
+void MOS6510TestLogical::testLogicalIndirectIndexedWrapAround()
+{
+    QFETCH(quint8, opcode);
+    QFETCH(quint8, accumulator);
+    QFETCH(quint8, operand);
+    QFETCH(quint8, expectedAccumulator);
+    QFETCH(quint8, status);
+
+    setupCpu();
+    initializeRegisters();
+
+    m_cpu.setAccumulator(accumulator);
+    m_cpu.setYRegister(0x02);
+    m_cpu.setStatus(status);
+
+    m_memory.writeRAM(0x1000, opcode);
+    m_memory.writeRAM(0x1001, 0xFF);
+    m_memory.writeRAM(0x1002, 0xEA);
+
+    // Pointer Low bei $FF,
+    // Pointer High muss von $00 kommen.
+    m_memory.writeRAM(0x00FF, 0x40);
+    m_memory.writeRAM(0x0000, 0x23);
+
+    // $2340 + Y($02)
+    m_memory.writeRAM(0x2342, operand);
+
+    m_cpu.setProgramCounter(0x1000);
+
+    m_cpu.clock();      // C1 opcode
+    m_cpu.clock();      // C2 pointer address
+    m_cpu.clock();      // C3 pointer low
+    m_cpu.clock();      // C4 pointer high + Y
+    m_cpu.clock();      // C5 operand
+
+    QCOMPARE(m_cpu.accumulator(), expectedAccumulator);
+    QCOMPARE(m_cpu.status(),
+             expectedLogicalStatus(status, expectedAccumulator));
+
+    QCOMPARE(m_cpu.xRegister(), quint8(0x22));
+    QCOMPARE(m_cpu.yRegister(), quint8(0x02));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0xFF));
+
+    m_cpu.clock();      // C6 next opcode
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1003));
+    QCOMPARE(m_cpu.accumulator(), expectedAccumulator);
+}
+
