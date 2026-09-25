@@ -305,6 +305,14 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
         setStatusFlag(MOS6510StatusFlag::Negative, (result & 0x80) != 0);
         break;
     }
+    case MOS6510MicroOperation::ReadZeroPageBitTest:
+    {
+        const quint8 operand = m_ptrBus->read(m_address);
+        setStatusFlag(MOS6510StatusFlag::Zero, (m_accumulator & operand) == 0);
+        setStatusFlag(MOS6510StatusFlag::Negative, (operand & 0x80) != 0);
+        setStatusFlag(MOS6510StatusFlag::Overflow, (operand & 0x40) != 0);
+        break;
+    }
     case MOS6510MicroOperation::ReadZeroPageIndexedAddress:
     {
         const quint8 baseAddress = static_cast<quint8>(m_address);
@@ -424,6 +432,14 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
         {
             m_dummyReadPending = true;
         }
+        break;
+    }
+    case MOS6510MicroOperation::ReadAbsoluteBitTest:
+    {
+        const quint8 operand = m_ptrBus->read(m_address);
+        setStatusFlag(MOS6510StatusFlag::Zero, (m_accumulator & operand) == 0);
+        setStatusFlag(MOS6510StatusFlag::Negative, (operand & 0x80) != 0);
+        setStatusFlag(MOS6510StatusFlag::Overflow, (operand & 0x40) != 0);
         break;
     }
     case MOS6510MicroOperation::ReadAbsoluteIndexedDummy:

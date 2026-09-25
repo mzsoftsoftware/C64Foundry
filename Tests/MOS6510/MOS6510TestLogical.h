@@ -56,4 +56,10 @@ private slots:
 
     void testLogicalIndirectIndexedWrapAround_data();
     void testLogicalIndirectIndexedWrapAround();
+
+    void testBitZeroPage_data();
+    void testBitZeroPage();
+
+    void testBitAbsolute_data();
+    void testBitAbsolute();
 };

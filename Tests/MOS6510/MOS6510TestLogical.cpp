@@ -914,3 +914,262 @@ void MOS6510TestLogical::testLogicalIndirectIndexedWrapAround()
     QCOMPARE(m_cpu.accumulator(), expectedAccumulator);
 }
 
+// --------------------------------------------------------------------------------------------
+void MOS6510TestLogical::testBitZeroPage_data()
+{
+    QTest::addColumn<quint8>("accumulator");
+    QTest::addColumn<quint8>("operand");
+    QTest::addColumn<quint8>("status");
+    QTest::addColumn<quint8>("expectedStatus");
+
+    // Z = (A & M) == 0
+    // N = M bit 7
+    // V = M bit 6
+    //
+    // Status $3D:
+    // N=0 V=0 U=1 B=1 D=1 I=1 Z=0 C=1
+    //
+    // C, D and I must remain unchanged.
+
+    QTest::newRow("Z=1 N=0 V=0")
+        << quint8(0x00)
+        << quint8(0x00)
+        << quint8(0x3D)
+        << quint8(0x3F);
+
+    QTest::newRow("Z=1 N=0 V=1")
+        << quint8(0x00)
+        << quint8(0x40)
+        << quint8(0x3D)
+        << quint8(0x7F);
+
+    QTest::newRow("Z=1 N=1 V=0")
+        << quint8(0x00)
+        << quint8(0x80)
+        << quint8(0x3D)
+        << quint8(0xBF);
+
+    QTest::newRow("Z=1 N=1 V=1")
+        << quint8(0x00)
+        << quint8(0xC0)
+        << quint8(0x3D)
+        << quint8(0xFF);
+
+    QTest::newRow("Z=0 N=0 V=0")
+        << quint8(0xFF)
+        << quint8(0x01)
+        << quint8(0x3F)
+        << quint8(0x3D);
+
+    QTest::newRow("Z=0 N=0 V=1")
+        << quint8(0xFF)
+        << quint8(0x40)
+        << quint8(0x3F)
+        << quint8(0x7D);
+
+    QTest::newRow("Z=0 N=1 V=0")
+        << quint8(0xFF)
+        << quint8(0x80)
+        << quint8(0x3F)
+        << quint8(0xBD);
+
+    QTest::newRow("Z=0 N=1 V=1")
+        << quint8(0xFF)
+        << quint8(0xC0)
+        << quint8(0x3F)
+        << quint8(0xFD);
+
+    // Zusätzlicher Fall:
+    // Das Speicherbyte ist ungleich Null, aber A & M ist trotzdem Null.
+    // Damit stellen wir sicher, dass Z wirklich aus A & M entsteht.
+    QTest::newRow("Z from AND result")
+        << quint8(0x0F)
+        << quint8(0xF0)
+        << quint8(0x3D)
+        << quint8(0xFF);
+}
+
+void MOS6510TestLogical::testBitZeroPage()
+{
+    QFETCH(quint8, accumulator);
+    QFETCH(quint8, operand);
+    QFETCH(quint8, status);
+    QFETCH(quint8, expectedStatus);
+
+    setupCpu();
+    initializeRegisters();
+
+    m_cpu.setAccumulator(accumulator);
+    m_cpu.setStatus(status);
+
+    m_memory.writeRAM(0x1000, 0x24);
+    m_memory.writeRAM(0x1001, 0x42);
+    m_memory.writeRAM(0x1002, 0xEA);
+
+    m_memory.writeRAM(0x0042, operand);
+
+    m_cpu.setProgramCounter(0x1000);
+
+    // Cycle 1: Opcode lesen
+    m_cpu.clock();
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
+    QCOMPARE(m_cpu.accumulator(), accumulator);
+
+    // Cycle 2: Zero-Page-Adresse lesen
+    m_cpu.clock();
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
+    QCOMPARE(m_cpu.accumulator(), accumulator);
+
+    // Cycle 3: Operand lesen und BIT ausführen
+    m_cpu.clock();
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
+
+    QCOMPARE(m_cpu.accumulator(), accumulator);
+    QCOMPARE(m_cpu.status(), expectedStatus);
+
+    QCOMPARE(m_cpu.xRegister(), quint8(0x22));
+    QCOMPARE(m_cpu.yRegister(), quint8(0x33));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0xFF));
+
+    // Speicher darf durch BIT nicht verändert werden.
+    QCOMPARE(m_memory.readRAM(0x0042), operand);
+
+    // Cycle 4: Opcode der nächsten Instruktion lesen
+    m_cpu.clock();
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1003));
+
+    // Die nächste Instruktion wurde noch nicht ausgeführt.
+    QCOMPARE(m_cpu.accumulator(), accumulator);
+    QCOMPARE(m_cpu.status(), expectedStatus);
+}
+
+// --------------------------------------------------------------------------------------------
+void MOS6510TestLogical::testBitAbsolute_data()
+{
+    QTest::addColumn<quint8>("accumulator");
+    QTest::addColumn<quint8>("operand");
+    QTest::addColumn<quint8>("status");
+    QTest::addColumn<quint8>("expectedStatus");
+
+    QTest::newRow("Z=1 N=0 V=0")
+        << quint8(0x00)
+        << quint8(0x00)
+        << quint8(0x3D)
+        << quint8(0x3F);
+
+    QTest::newRow("Z=1 N=0 V=1")
+        << quint8(0x00)
+        << quint8(0x40)
+        << quint8(0x3D)
+        << quint8(0x7F);
+
+    QTest::newRow("Z=1 N=1 V=0")
+        << quint8(0x00)
+        << quint8(0x80)
+        << quint8(0x3D)
+        << quint8(0xBF);
+
+    QTest::newRow("Z=1 N=1 V=1")
+        << quint8(0x00)
+        << quint8(0xC0)
+        << quint8(0x3D)
+        << quint8(0xFF);
+
+    QTest::newRow("Z=0 N=0 V=0")
+        << quint8(0xFF)
+        << quint8(0x01)
+        << quint8(0x3F)
+        << quint8(0x3D);
+
+    QTest::newRow("Z=0 N=0 V=1")
+        << quint8(0xFF)
+        << quint8(0x40)
+        << quint8(0x3F)
+        << quint8(0x7D);
+
+    QTest::newRow("Z=0 N=1 V=0")
+        << quint8(0xFF)
+        << quint8(0x80)
+        << quint8(0x3F)
+        << quint8(0xBD);
+
+    QTest::newRow("Z=0 N=1 V=1")
+        << quint8(0xFF)
+        << quint8(0xC0)
+        << quint8(0x3F)
+        << quint8(0xFD);
+
+    QTest::newRow("Z from AND result")
+        << quint8(0x0F)
+        << quint8(0xF0)
+        << quint8(0x3D)
+        << quint8(0xFF);
+}
+
+void MOS6510TestLogical::testBitAbsolute()
+{
+    QFETCH(quint8, accumulator);
+    QFETCH(quint8, operand);
+    QFETCH(quint8, status);
+    QFETCH(quint8, expectedStatus);
+
+    setupCpu();
+    initializeRegisters();
+
+    m_cpu.setAccumulator(accumulator);
+    m_cpu.setStatus(status);
+
+    m_memory.writeRAM(0x1000, 0x2C);
+    m_memory.writeRAM(0x1001, 0x42);
+    m_memory.writeRAM(0x1002, 0x23);
+    m_memory.writeRAM(0x1003, 0xEA);
+
+    m_memory.writeRAM(0x2342, operand);
+
+    m_cpu.setProgramCounter(0x1000);
+
+    // Cycle 1: Opcode lesen
+    m_cpu.clock();
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
+    QCOMPARE(m_cpu.accumulator(), accumulator);
+
+    // Cycle 2: Low-Byte der Adresse lesen
+    m_cpu.clock();
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
+    QCOMPARE(m_cpu.accumulator(), accumulator);
+
+    // Cycle 3: High-Byte der Adresse lesen
+    m_cpu.clock();
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1003));
+    QCOMPARE(m_cpu.accumulator(), accumulator);
+
+    // Cycle 4: Operand lesen und BIT ausführen
+    m_cpu.clock();
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1003));
+
+    QCOMPARE(m_cpu.accumulator(), accumulator);
+    QCOMPARE(m_cpu.status(), expectedStatus);
+
+    QCOMPARE(m_cpu.xRegister(), quint8(0x22));
+    QCOMPARE(m_cpu.yRegister(), quint8(0x33));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0xFF));
+
+    // Speicher darf durch BIT nicht verändert werden.
+    QCOMPARE(m_memory.readRAM(0x2342), operand);
+
+    // Cycle 5: Opcode der nächsten Instruktion lesen
+    m_cpu.clock();
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1004));
+
+    QCOMPARE(m_cpu.accumulator(), accumulator);
+    QCOMPARE(m_cpu.status(), expectedStatus);
+}

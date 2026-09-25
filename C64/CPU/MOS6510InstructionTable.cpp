@@ -495,6 +495,19 @@ void MOS6510InstructionTable::initializeLogicalInstructions()
     m_instructions[0x51].microOperations[3] = MOS6510MicroOperation::ReadIndirectIndexedExclusiveOrAccumulator;
     m_instructions[0x51].microOperationCount = 4;
     m_instructions[0x51].pageCrossingCycle = true;
+
+    m_instructions[0x24].operation = MOS6510Operation::BIT;
+    m_instructions[0x24].addressingMode = MOS6510AddressingMode::ZeroPage;
+    m_instructions[0x24].microOperations[0] = MOS6510MicroOperation::ReadZeroPageAddress;
+    m_instructions[0x24].microOperations[1] = MOS6510MicroOperation::ReadZeroPageBitTest;
+    m_instructions[0x24].microOperationCount = 2;
+
+    m_instructions[0x2C].operation = MOS6510Operation::BIT;
+    m_instructions[0x2C].addressingMode = MOS6510AddressingMode::Absolute;
+    m_instructions[0x2C].microOperations[0] = MOS6510MicroOperation::ReadAbsoluteAddressLow;
+    m_instructions[0x2C].microOperations[1] = MOS6510MicroOperation::ReadAbsoluteAddressHigh;
+    m_instructions[0x2C].microOperations[2] = MOS6510MicroOperation::ReadAbsoluteBitTest;
+    m_instructions[0x2C].microOperationCount = 3;
 }
 
 void MOS6510InstructionTable::initializeArithmeticInstructions()
