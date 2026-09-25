@@ -333,51 +333,291 @@ void MOS6510TestCpuControl::testIrqCycles()
 
     m_cpu.setIrqLine(true);
 
-    // C1
+    // C1: Dummy opcode read
     clock();
     verifyRead(0x3456, 0xEA);
 
+    QCOMPARE(m_cpu.programCounter(), quint16(0x3456));
     QCOMPARE(m_cpu.stackPointer(), quint8(0x80));
     QVERIFY(!m_cpu.statusFlag(MOS6510StatusFlag::InterruptDisable));
 
-    // C2
+    // C2: Second dummy read
     clock();
     verifyRead(0x3456, 0xEA);
 
+    QCOMPARE(m_cpu.programCounter(), quint16(0x3456));
     QCOMPARE(m_cpu.stackPointer(), quint8(0x80));
     QVERIFY(!m_cpu.statusFlag(MOS6510StatusFlag::InterruptDisable));
 
-    // C3
+    // C3: Push PCH
     clock();
     verifyWrite(0x0180, 0x34);
 
     QCOMPARE(m_cpu.stackPointer(), quint8(0x7F));
+    QVERIFY(!m_cpu.statusFlag(MOS6510StatusFlag::InterruptDisable));
 
-    // C4
+    // C4: Push PCL
     clock();
     verifyWrite(0x017F, 0x56);
 
     QCOMPARE(m_cpu.stackPointer(), quint8(0x7E));
     QVERIFY(!m_cpu.statusFlag(MOS6510StatusFlag::InterruptDisable));
 
-    // C5
+    // C5: Push status.
+    // IRQ pushes B=0 and U=1.
+    // I is still clear during this cycle.
     clock();
     verifyWrite(0x017E, 0x29);
 
     QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
-    QVERIFY(m_cpu.statusFlag(MOS6510StatusFlag::InterruptDisable));
+    QVERIFY(!m_cpu.statusFlag(MOS6510StatusFlag::InterruptDisable));
 
-    // C6
+    // C6: Read IRQ vector low and set I
     clock();
     verifyRead(0xFFFE, 0xCD);
 
-    // C7
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
+    QVERIFY(m_cpu.statusFlag(MOS6510StatusFlag::InterruptDisable));
+
+    // C7: Read IRQ vector high and finish interrupt sequence
     clock();
     verifyRead(0xFFFF, 0xAB);
 
     QCOMPARE(m_cpu.programCounter(), quint16(0xABCD));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
+    QVERIFY(m_cpu.statusFlag(MOS6510StatusFlag::InterruptDisable));
 
-    // C8 - first opcode fetch from IRQ handler
+    // C8: First normal opcode fetch in IRQ handler
     clock();
     verifyRead(0xABCD, 0xEA);
+}
+
+void MOS6510TestCpuControl::testIrqAfterCli()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setStatus(0x24); // I = 1
+
+    m_memory.writeRAM(0x2000, 0x58); // CLI
+    m_memory.writeRAM(0x2001, 0xEA); // NOP
+    m_memory.writeRAM(0x2002, 0xEA); // must be interrupted
+
+    m_memory.writeRAM(0xFFFE, 0x00);
+    m_memory.writeRAM(0xFFFF, 0x40);
+
+    m_cpu.setIrqLine(true);
+
+    // CLI
+    clock();
+    verifyRead(0x2000, 0x58);
+
+    clock();
+    verifyRead(0x2001, 0xEA);
+
+    QVERIFY(!m_cpu.statusFlag(
+        MOS6510StatusFlag::InterruptDisable));
+
+    // IRQ must NOT start here.
+    // The following NOP is still executed.
+    clock();
+    verifyRead(0x2001, 0xEA);
+
+    clock();
+    verifyRead(0x2002, 0xEA);
+
+    // Now IRQ starts.
+    clock();
+    verifyRead(0x2002, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2002));
+}
+void MOS6510TestCpuControl::testIrqAfterSei()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setStatus(0x20); // I = 0
+
+    m_memory.writeRAM(0x2000, 0x78); // SEI
+    m_memory.writeRAM(0x2001, 0xEA);
+
+    m_memory.writeRAM(0xFFFE, 0x00);
+    m_memory.writeRAM(0xFFFF, 0x40);
+
+    // Fetch SEI while IRQ is not yet active.
+    clock();
+    verifyRead(0x2000, 0x78);
+
+    // IRQ becomes active during SEI.
+    m_cpu.setIrqLine(true);
+
+    // Finish SEI.
+    clock();
+    verifyRead(0x2001, 0xEA);
+
+    QVERIFY(m_cpu.statusFlag(
+        MOS6510StatusFlag::InterruptDisable));
+
+    // Nevertheless the IRQ was recognized with the old I state.
+    clock();
+    verifyRead(0x2001, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2001));
+}
+void MOS6510TestCpuControl::testIrqAfterPlp()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setStackPointer(0x7F);
+    m_cpu.setStatus(0x24); // U=1, I=1
+
+    m_memory.writeRAM(0x2000, 0x28); // PLP
+    m_memory.writeRAM(0x2001, 0xEA); // NOP
+    m_memory.writeRAM(0x2002, 0xEA);
+
+    // PLP dummy stack read
+    m_memory.writeRAM(0x017F, 0xA5);
+
+    // PLP pulls status from $0180:
+    // U=1, I=0
+    m_memory.writeRAM(0x0180, 0x20);
+
+    m_memory.writeRAM(0xFFFE, 0x00);
+    m_memory.writeRAM(0xFFFF, 0x40);
+
+    m_cpu.setIrqLine(true);
+
+    // --------------------------------------------------------
+    // PLP
+    // --------------------------------------------------------
+
+    // C1: Opcode fetch
+    clock();
+    verifyRead(0x2000, 0x28);
+
+    // C2: Dummy read from PC
+    clock();
+    verifyRead(0x2001, 0xEA);
+
+    // C3: Dummy read from old stack position
+    clock();
+    verifyRead(0x017F, 0xA5);
+
+    // C4: Pull status
+    clock();
+    verifyRead(0x0180, 0x20);
+
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x80));
+
+    QVERIFY(!m_cpu.statusFlag(
+        MOS6510StatusFlag::InterruptDisable));
+
+    // --------------------------------------------------------
+    // Because PLP's change of I is not seen by the IRQ poll
+    // belonging to PLP, one more instruction must execute.
+    //
+    // NOP at $2001
+    // --------------------------------------------------------
+
+    // NOP C1: Opcode fetch
+    clock();
+    verifyRead(0x2001, 0xEA);
+
+    // NOP C2: Implied dummy read
+    clock();
+    verifyRead(0x2002, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2002));
+
+    // --------------------------------------------------------
+    // IRQ starts now.
+    // --------------------------------------------------------
+
+    // IRQ C1
+    clock();
+    verifyRead(0x2002, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2002));
+}
+void MOS6510TestCpuControl::testIrqAfterRti()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setStackPointer(0x7D);
+    m_cpu.setStatus(0x24); // I = 1
+
+    m_memory.writeRAM(0x2000, 0x40); // RTI
+    m_memory.writeRAM(0x2001, 0xEA);
+
+    m_memory.writeRAM(0x017D, 0xA5);
+    m_memory.writeRAM(0x017E, 0x20); // P: I = 0
+    m_memory.writeRAM(0x017F, 0x00); // PCL
+    m_memory.writeRAM(0x0180, 0x30); // PCH
+
+    m_memory.writeRAM(0x3000, 0xEA);
+
+    m_memory.writeRAM(0xFFFE, 0x00);
+    m_memory.writeRAM(0xFFFF, 0x40);
+
+    m_cpu.setIrqLine(true);
+
+    // RTI C1
+    clock();
+    verifyRead(0x2000, 0x40);
+
+    // RTI C2
+    clock();
+    verifyRead(0x2001, 0xEA);
+
+    // RTI C3
+    clock();
+    verifyRead(0x017D, 0xA5);
+
+    // RTI C4: P
+    clock();
+    verifyRead(0x017E, 0x20);
+
+    QVERIFY(!m_cpu.statusFlag(
+        MOS6510StatusFlag::InterruptDisable));
+
+    // RTI C5: PCL
+    clock();
+    verifyRead(0x017F, 0x00);
+
+    // RTI C6: PCH
+    clock();
+    verifyRead(0x0180, 0x30);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x3000));
+
+    // No NOP at $3000 may execute.
+    // IRQ starts immediately.
+    clock();
+    verifyRead(0x3000, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x3000));
+
+    // IRQ C2
+    clock();
+    verifyRead(0x3000, 0xEA);
+}void MOS6510TestCpuControl::testIrqReleased()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setStatus(0x20);
+
+    m_memory.writeRAM(0x2000, 0xEA);
+    m_memory.writeRAM(0x2001, 0xEA);
+
+    m_cpu.setIrqLine(true);
+    m_cpu.setIrqLine(false);
+
+    clock();
+    clock();
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2001));
 }

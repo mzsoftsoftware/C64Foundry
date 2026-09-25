@@ -25,4 +25,9 @@ private slots:
     void testIrqStack();
     void testIrqStatus();
     void testIrqCycles();
+    void testIrqAfterCli();
+    void testIrqAfterSei();
+    void testIrqAfterPlp();
+    void testIrqAfterRti();
+    void testIrqReleased();
 };
