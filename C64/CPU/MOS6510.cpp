@@ -23,7 +23,8 @@ void MOS6510::initialize()
     m_resetCycle = 0;
     m_irqLine = false;
     m_irqPending = false;
-    m_irqPollBeforeIChange = false;
+    m_irqPolled = false;
+    m_initialFetch = false;
     m_irqCycle = 0;
 
     m_accumulator = 0x00;
@@ -51,6 +52,7 @@ void MOS6510::reset()
 {
     m_resetCycle = 0;
     m_irqPending = false;
+    m_irqPolled = false;
     m_irqCycle = 0;
     m_state = CpuState::Reset;
 }
@@ -64,7 +66,8 @@ void MOS6510::clock()
     {
     case CpuState::Fetch:
         if (m_irqPending ||
-            (m_irqLine &&
+            (!m_initialFetch &&
+             m_irqLine &&
              !statusFlag(MOS6510StatusFlag::InterruptDisable)))
         {
             m_irqPending = false;
@@ -74,14 +77,6 @@ void MOS6510::clock()
             executeIrqCycle();
             break;
         }
-
-        //
-        // CLI, SEI and PLP change I after their interrupt poll.
-        // Remember the IRQ condition seen before executing them.
-        //
-        m_irqPollBeforeIChange =
-            m_irqLine &&
-            !statusFlag(MOS6510StatusFlag::InterruptDisable);
 
         fetchOpcode();
         decodeInstruction();
@@ -99,50 +94,59 @@ void MOS6510::clock()
         }
 
         prepareMicroOperations();
+
+        //
+        // The opcode-fetch cycle is the interrupt-poll cycle
+        // for two-cycle instructions.
+        //
+        pollIrq();
+
         m_state = CpuState::Execute;
         break;
     case CpuState::Execute:
     {
-        const bool irqSample =
-            m_irqLine &&
-            !statusFlag(MOS6510StatusFlag::InterruptDisable);
-
         if (m_dummyReadPending)
         {
-            const quint16 dummyAddress =
-                static_cast<quint16>(m_address - 0x0100);
-
+            const quint16 dummyAddress = static_cast<quint16>(m_address - 0x0100);
             m_ptrBus->read(dummyAddress);
             m_dummyReadPending = false;
             break;
         }
 
-        executeMicroOperation(
-            m_microOperations[m_microOperationIndex]);
-
-        ++m_microOperationIndex;
-
-        if (m_microOperationIndex >= m_microOperationCount)
+        const bool finalMicroOperation = m_microOperationIndex + 1 >= m_microOperationCount;
+        if (finalMicroOperation)
         {
             switch (m_operation)
             {
             case MOS6510Operation::CLI:
             case MOS6510Operation::PLP:
+            case MOS6510Operation::BCC:
+            case MOS6510Operation::BCS:
+            case MOS6510Operation::BEQ:
+            case MOS6510Operation::BMI:
+            case MOS6510Operation::BNE:
+            case MOS6510Operation::BPL:
+            case MOS6510Operation::BVC:
+            case MOS6510Operation::BVS:
                 //
-                // These instructions modify I after their
-                // interrupt poll.
+                // I changes after the interrupt poll.
+                // Keep the poll result from the previous cycle.
                 //
-                m_irqPending = m_irqPollBeforeIChange;
                 break;
-
             default:
-                m_irqPending = irqSample;
+                pollIrq();
                 break;
             }
-
-            m_state = CpuState::Fetch;
         }
 
+        executeMicroOperation(m_microOperations[m_microOperationIndex]);
+        ++m_microOperationIndex;
+
+        if (m_microOperationIndex >= m_microOperationCount)
+        {
+            m_irqPending = m_irqPolled;
+            m_state = CpuState::Fetch;
+        }
         break;
     }
     case CpuState::Reset:
@@ -289,6 +293,11 @@ void MOS6510::executeIrqCycle()
     }
 
     ++m_irqCycle;
+}
+
+void MOS6510::pollIrq()
+{
+    m_irqPolled = m_irqLine && !statusFlag(MOS6510StatusFlag::InterruptDisable);
 }
 
 void MOS6510::fetchOpcode()
@@ -1190,6 +1199,7 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
     }
     case MOS6510MicroOperation::ReadRelativeBranchCarryClear:
     {
+        pollIrq();
         const qint8 offset = static_cast<qint8>(m_ptrBus->read(m_programCounter));
         ++m_programCounter;
         // BCC: branch only if Carry is clear.
@@ -1209,6 +1219,7 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
     }
     case MOS6510MicroOperation::ReadRelativeBranchCarrySet:
     {
+        pollIrq();
         const qint8 offset = static_cast<qint8>(m_ptrBus->read(m_programCounter));
         ++m_programCounter;
         // BCS: branch only if Carry is set.
@@ -1228,6 +1239,7 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
     }
     case MOS6510MicroOperation::ReadRelativeBranchEqual:
     {
+        pollIrq();
         const qint8 offset = static_cast<qint8>(m_ptrBus->read(m_programCounter));
         ++m_programCounter;
         // BEQ: branch only if Zero is set.
@@ -1247,6 +1259,7 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
     }
     case MOS6510MicroOperation::ReadRelativeBranchNotEqual:
     {
+        pollIrq();
         const qint8 offset = static_cast<qint8>(m_ptrBus->read(m_programCounter));
         ++m_programCounter;
         // BNE: branch only if Zero is clear.
@@ -1267,6 +1280,7 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
     }
     case MOS6510MicroOperation::ReadRelativeBranchMinus:
     {
+        pollIrq();
         const qint8 offset = static_cast<qint8>(m_ptrBus->read(m_programCounter));
         ++m_programCounter;
         // BMI: branch only if Negative is set.
@@ -1286,6 +1300,7 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
     }
     case MOS6510MicroOperation::ReadRelativeBranchPlus:
     {
+        pollIrq();
         const qint8 offset = static_cast<qint8>(m_ptrBus->read(m_programCounter));
         ++m_programCounter;
         // BPL: branch only if Negative is clear.
@@ -1305,6 +1320,7 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
     }
     case MOS6510MicroOperation::ReadRelativeBranchOverflowClear:
     {
+        pollIrq();
         const qint8 offset = static_cast<qint8>(m_ptrBus->read(m_programCounter));
         ++m_programCounter;
         // BVC: branch only if Overflow is clear.
@@ -1324,6 +1340,7 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
     }
     case MOS6510MicroOperation::ReadRelativeBranchOverflowSet:
     {
+        pollIrq();
         const qint8 offset = static_cast<qint8>(m_ptrBus->read(m_programCounter));
         ++m_programCounter;
         // BVS: branch only if Overflow is set.
@@ -1355,6 +1372,7 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
     }
     case MOS6510MicroOperation::BranchPageCrossing:
     {
+        pollIrq();
         const quint16 dummyAddress = static_cast<quint16>((static_cast<quint16>(m_data) << 8) | (m_address & 0x00FF));
         m_ptrBus->read(dummyAddress);
         break;

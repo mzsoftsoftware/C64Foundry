@@ -55,6 +55,7 @@ private:
 
     void executeResetCycle();
     void executeIrqCycle();
+    void pollIrq();
 
     void fetchOpcode();
     void decodeInstruction();
@@ -74,7 +75,8 @@ private:
     quint8 m_resetCycle = 0;
     bool m_irqLine = false;
     bool m_irqPending = false;
-    bool m_irqPollBeforeIChange = false;
+    bool m_irqPolled = false;
+    bool m_initialFetch = false;
     quint8 m_irqCycle = 0;
 
     quint8  m_accumulator = 0;
