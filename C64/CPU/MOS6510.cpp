@@ -79,8 +79,12 @@ void MOS6510::clock()
     switch (m_state)
     {
     case CpuState::Fetch:
-        if (m_nmiAccepted && !m_nmiDelay)
+        if ((m_nmiAccepted ||
+             (m_initialFetch && m_nmiPending)) &&
+            !m_nmiDelay)
         {
+            m_initialFetch = false;
+            m_nmiPending = false;
             m_nmiAccepted = false;
 
             //
