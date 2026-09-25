@@ -164,5 +164,12 @@ enum class MOS6510MicroOperation
     ReadRtiStackDummy,
     ReadRtiStatus,
     ReadRtiProgramCounterLow,
-    ReadRtiProgramCounterHigh
+    ReadRtiProgramCounterHigh,
+
+    ReadBrkPadding,
+    WriteBrkProgramCounterHigh,
+    WriteBrkProgramCounterLow,
+    WriteBrkStatus,
+    ReadBrkVectorLow,
+    ReadBrkVectorHigh
 };

@@ -1263,6 +1263,42 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
         m_programCounter = static_cast<quint16>((static_cast<quint16>(highByte) << 8) | m_address);
         break;
     }
+    case MOS6510MicroOperation::ReadBrkPadding:
+    {
+        m_ptrBus->read(m_programCounter);
+        ++m_programCounter;
+        break;
+    }
+    case MOS6510MicroOperation::WriteBrkProgramCounterHigh:
+    {
+        m_ptrBus->write(static_cast<quint16>(0x0100 | m_stackPointer), static_cast<quint8>(m_programCounter >> 8));
+        --m_stackPointer;
+        break;
+    }
+    case MOS6510MicroOperation::WriteBrkProgramCounterLow:
+    {
+        m_ptrBus->write(static_cast<quint16>(0x0100 | m_stackPointer), static_cast<quint8>(m_programCounter & 0x00FF));
+        --m_stackPointer;
+        break;
+    }
+    case MOS6510MicroOperation::WriteBrkStatus:
+    {
+        m_ptrBus->write(static_cast<quint16>(0x0100 | m_stackPointer), static_cast<quint8>(m_status | 0x30));
+        --m_stackPointer;
+        setStatusFlag(MOS6510StatusFlag::InterruptDisable, true);
+        break;
+    }
+    case MOS6510MicroOperation::ReadBrkVectorLow:
+    {
+        m_address = m_ptrBus->read(0xFFFE);
+        break;
+    }
+    case MOS6510MicroOperation::ReadBrkVectorHigh:
+    {
+        const quint8 highByte = m_ptrBus->read(0xFFFF);
+        m_programCounter = static_cast<quint16>((static_cast<quint16>(highByte) << 8) | m_address);
+        break;
+    }
     }
 }
 

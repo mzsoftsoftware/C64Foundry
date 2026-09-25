@@ -1088,6 +1088,16 @@ void MOS6510InstructionTable::initializeControlFlowInstructions()
     m_instructions[0x40].microOperations[3] = MOS6510MicroOperation::ReadRtiProgramCounterLow;
     m_instructions[0x40].microOperations[4] = MOS6510MicroOperation::ReadRtiProgramCounterHigh;
     m_instructions[0x40].microOperationCount = 5;
+
+    m_instructions[0x00].operation = MOS6510Operation::BRK;
+    m_instructions[0x00].addressingMode = MOS6510AddressingMode::Implied;
+    m_instructions[0x00].microOperations[0] = MOS6510MicroOperation::ReadBrkPadding;
+    m_instructions[0x00].microOperations[1] = MOS6510MicroOperation::WriteBrkProgramCounterHigh;
+    m_instructions[0x00].microOperations[2] = MOS6510MicroOperation::WriteBrkProgramCounterLow;
+    m_instructions[0x00].microOperations[3] = MOS6510MicroOperation::WriteBrkStatus;
+    m_instructions[0x00].microOperations[4] = MOS6510MicroOperation::ReadBrkVectorLow;
+    m_instructions[0x00].microOperations[5] = MOS6510MicroOperation::ReadBrkVectorHigh;
+    m_instructions[0x00].microOperationCount = 6;
 }
 
 void MOS6510InstructionTable::initializeSpecialInstructions()
