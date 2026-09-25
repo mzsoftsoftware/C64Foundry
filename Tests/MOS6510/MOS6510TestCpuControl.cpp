@@ -1832,3 +1832,241 @@ void MOS6510TestCpuControl::testNmiLostDuringIrqVectorFetch()
 
     QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
 }
+
+void MOS6510TestCpuControl::testNmiPriorityOverIrqHandlerStartsNormally()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setStackPointer(0x80);
+    m_cpu.setStatus(0x20);
+
+    //
+    // Main program: NOP
+    //
+    m_memory.writeRAM(0x2000, 0xEA);
+    m_memory.writeRAM(0x2001, 0xEA);
+
+    //
+    // NMI vector -> $4000
+    //
+    m_memory.writeRAM(0xFFFA, 0x00);
+    m_memory.writeRAM(0xFFFB, 0x40);
+
+    //
+    // IRQ vector -> $5000
+    //
+    m_memory.writeRAM(0xFFFE, 0x00);
+    m_memory.writeRAM(0xFFFF, 0x50);
+
+    //
+    // NMI handler: NOP, NOP
+    //
+    m_memory.writeRAM(0x4000, 0xEA);
+    m_memory.writeRAM(0x4001, 0xEA);
+    m_memory.writeRAM(0x4002, 0xEA);
+
+    //
+    // C1: NOP opcode fetch.
+    //
+    clock();
+    verifyRead(0x2000, 0xEA);
+
+    //
+    // Both interrupts become active during the instruction.
+    //
+    m_cpu.setIrqLine(true);
+    m_cpu.setNmiLine(true);
+
+    //
+    // C2: finish NOP.
+    //
+    clock();
+    verifyRead(0x2001, 0xEA);
+
+    //
+    // NMI has priority and starts now.
+    //
+    for (int i = 0; i < 7; ++i)
+        clock();
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x4000));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
+
+    //
+    // The IRQ that lost against NMI must not start here.
+    // The first NMI-handler instruction must execute.
+    //
+    clock();
+    verifyRead(0x4000, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x4001));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
+
+    //
+    // C2 of handler NOP.
+    //
+    clock();
+    verifyRead(0x4001, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x4001));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
+}
+void MOS6510TestCpuControl::testNmiTooLateDuringTwoCycleInstruction()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setStackPointer(0x80);
+    m_cpu.setStatus(0x20);
+
+    //
+    // Two NOPs.
+    //
+    m_memory.writeRAM(0x2000, 0xEA);
+    m_memory.writeRAM(0x2001, 0xEA);
+    m_memory.writeRAM(0x2002, 0xEA);
+
+    //
+    // NMI vector -> $4000
+    //
+    m_memory.writeRAM(0xFFFA, 0x00);
+    m_memory.writeRAM(0xFFFB, 0x40);
+
+    //
+    // C1 of first NOP.
+    //
+    clock();
+    verifyRead(0x2000, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2001));
+
+    //
+    // NMI edge after C1.
+    //
+    // For a two-cycle instruction this is too late for
+    // the interrupt poll belonging to this instruction.
+    //
+    m_cpu.setNmiLine(true);
+
+    //
+    // C2 of first NOP.
+    //
+    clock();
+    verifyRead(0x2001, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2001));
+
+    //
+    // The next instruction must still start normally.
+    // NMI must NOT start here.
+    //
+    clock();
+    verifyRead(0x2001, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2002));
+
+    //
+    // Finish the second NOP.
+    //
+    clock();
+    verifyRead(0x2002, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2002));
+
+    //
+    // Now NMI may start.
+    //
+    clock();
+    verifyRead(0x2002, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2002));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x80));
+}
+void MOS6510TestCpuControl::testNmiTooLateDuringMultiCycleInstruction()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setStackPointer(0x80);
+    m_cpu.setStatus(0x20);
+
+    //
+    // $2000: LDA $1234
+    // $2003: NOP
+    //
+    m_memory.writeRAM(0x2000, 0xAD);
+    m_memory.writeRAM(0x2001, 0x34);
+    m_memory.writeRAM(0x2002, 0x12);
+    m_memory.writeRAM(0x2003, 0xEA);
+    m_memory.writeRAM(0x2004, 0xEA);
+
+    m_memory.writeRAM(0x1234, 0x42);
+
+    //
+    // NMI vector -> $4000
+    //
+    m_memory.writeRAM(0xFFFA, 0x00);
+    m_memory.writeRAM(0xFFFB, 0x40);
+
+    //
+    // LDA C1: opcode.
+    //
+    clock();
+    verifyRead(0x2000, 0xAD);
+
+    //
+    // LDA C2: address low.
+    //
+    clock();
+    verifyRead(0x2001, 0x34);
+
+    //
+    // LDA C3: address high.
+    //
+    clock();
+    verifyRead(0x2002, 0x12);
+
+    //
+    // NMI edge between C3 and C4.
+    //
+    // The interrupt poll for this instruction has already
+    // happened, therefore this NMI is too late to be taken
+    // immediately after the LDA.
+    //
+    m_cpu.setNmiLine(true);
+
+    //
+    // LDA C4: operand.
+    //
+    clock();
+    verifyRead(0x1234, 0x42);
+
+    QCOMPARE(m_cpu.accumulator(), quint8(0x42));
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2003));
+
+    //
+    // The following NOP must still start normally.
+    //
+    clock();
+    verifyRead(0x2003, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2004));
+
+    //
+    // Finish NOP.
+    //
+    clock();
+    verifyRead(0x2004, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2004));
+
+    //
+    // Only now may NMI start.
+    //
+    clock();
+    verifyRead(0x2004, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2004));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x80));
+}

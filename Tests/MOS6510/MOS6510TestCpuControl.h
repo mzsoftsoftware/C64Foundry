@@ -56,4 +56,8 @@ private slots:
     void testNmiLateDuringIrq();
     void testNmiLateDuringBrk();
     void testNmiLostDuringIrqVectorFetch();
+
+    void testNmiPriorityOverIrqHandlerStartsNormally();
+    void testNmiTooLateDuringTwoCycleInstruction();
+    void testNmiTooLateDuringMultiCycleInstruction();
 };
