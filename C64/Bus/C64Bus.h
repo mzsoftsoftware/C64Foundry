@@ -35,7 +35,7 @@ public:
     quint8 accessCount() const                  { return m_accessCount; }
 
 private:
-    C64Memory* m_ptrMemory;
+    C64Memory* m_ptrMemory = nullptr;
 
     AccessType m_lastAccessType = AccessType::None;
     quint16 m_lastAccessAddress = 0x0000;
