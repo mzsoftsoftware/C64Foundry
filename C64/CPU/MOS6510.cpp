@@ -28,6 +28,7 @@ void MOS6510::initialize()
     m_irqCycle = 0;
     m_nmiLine = false;
     m_nmiPending = false;
+    m_nmiHijack = false;
     m_nmiCycle = 0;
 
     m_accumulator = 0x00;
@@ -60,6 +61,7 @@ void MOS6510::reset()
     m_irqCycle = 0;
     m_nmiPending = false;
     m_nmiCycle = 0;
+    m_nmiHijack = false;
     m_state = CpuState::Reset;
 }
 
@@ -291,25 +293,47 @@ void MOS6510::executeIrqCycle()
     case 5:
         //
         // C6
-        // Set I and read IRQ vector low byte.
+        // Set I and select the interrupt vector.
         //
         setStatusFlag(
             MOS6510StatusFlag::InterruptDisable,
             true);
 
-        m_programCounter =
-            static_cast<quint16>(m_ptrBus->read(0xFFFE));
+        m_nmiHijack = m_nmiPending;
+
+        if (m_nmiHijack)
+        {
+            m_nmiPending = false;
+
+            m_programCounter =
+                static_cast<quint16>(m_ptrBus->read(0xFFFA));
+        }
+        else
+        {
+            m_programCounter =
+                static_cast<quint16>(m_ptrBus->read(0xFFFE));
+        }
         break;
 
     case 6:
         //
         // C7
-        // Read IRQ vector high byte.
+        // Read vector high byte.
         //
-        m_programCounter |=
-            static_cast<quint16>(
-                m_ptrBus->read(0xFFFF)) << 8;
+        if (m_nmiHijack)
+        {
+            m_programCounter |=
+                static_cast<quint16>(
+                    m_ptrBus->read(0xFFFB)) << 8;
+        }
+        else
+        {
+            m_programCounter |=
+                static_cast<quint16>(
+                    m_ptrBus->read(0xFFFF)) << 8;
+        }
 
+        m_nmiHijack = false;
         m_state = CpuState::Fetch;
         return;
     }
@@ -1628,13 +1652,34 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
     }
     case MOS6510MicroOperation::ReadBrkVectorLow:
     {
-        m_address = m_ptrBus->read(0xFFFE);
+        m_nmiHijack = m_nmiPending;
+
+        if (m_nmiHijack)
+        {
+            m_nmiPending = false;
+            m_address = m_ptrBus->read(0xFFFA);
+        }
+        else
+        {
+            m_address = m_ptrBus->read(0xFFFE);
+        }
         break;
     }
     case MOS6510MicroOperation::ReadBrkVectorHigh:
     {
-        const quint8 highByte = m_ptrBus->read(0xFFFF);
-        m_programCounter = static_cast<quint16>((static_cast<quint16>(highByte) << 8) | m_address);
+        quint8 highByte;
+
+        if (m_nmiHijack)
+            highByte = m_ptrBus->read(0xFFFB);
+        else
+            highByte = m_ptrBus->read(0xFFFF);
+
+        m_programCounter =
+            static_cast<quint16>(
+                (static_cast<quint16>(highByte) << 8) |
+                m_address);
+
+        m_nmiHijack = false;
         break;
     }
     }

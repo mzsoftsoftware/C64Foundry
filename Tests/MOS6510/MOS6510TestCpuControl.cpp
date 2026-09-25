@@ -1270,3 +1270,319 @@ void MOS6510TestCpuControl::testNmiDuringBranchPageCrossing()
 
     QCOMPARE(m_cpu.programCounter(), quint16(0x2101));
 }
+
+
+void MOS6510TestCpuControl::testNmiPriorityOverIrq()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setStackPointer(0x80);
+    m_cpu.setStatus(0x20);
+
+    m_memory.writeRAM(0x2000, 0xEA);
+    m_memory.writeRAM(0x2001, 0xEA);
+
+    //
+    // NMI vector
+    //
+    m_memory.writeRAM(0xFFFA, 0x00);
+    m_memory.writeRAM(0xFFFB, 0x40);
+
+    //
+    // IRQ vector
+    //
+    m_memory.writeRAM(0xFFFE, 0x00);
+    m_memory.writeRAM(0xFFFF, 0x50);
+
+    //
+    // Start NOP.
+    //
+    clock();
+    verifyRead(0x2000, 0xEA);
+
+    //
+    // Both interrupts become pending during the instruction.
+    //
+    m_cpu.setIrqLine(true);
+    m_cpu.setNmiLine(true);
+
+    //
+    // Finish NOP.
+    //
+    clock();
+    verifyRead(0x2001, 0xEA);
+
+    //
+    // NMI must have priority.
+    //
+    for (int i = 0; i < 7; ++i)
+        clock();
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x4000));
+}
+void MOS6510TestCpuControl::testNmiDuringIrqBeforeVector()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setStackPointer(0x80);
+    m_cpu.setStatus(0x20);
+
+    m_memory.writeRAM(0x2000, 0xEA);
+
+    m_memory.writeRAM(0xFFFA, 0x00);
+    m_memory.writeRAM(0xFFFB, 0x40);
+
+    m_memory.writeRAM(0xFFFE, 0x00);
+    m_memory.writeRAM(0xFFFF, 0x50);
+
+    m_cpu.setIrqLine(true);
+
+    //
+    // IRQ C1
+    //
+    clock();
+    verifyRead(0x2000, 0xEA);
+
+    //
+    // IRQ C2
+    //
+    clock();
+    verifyRead(0x2000, 0xEA);
+
+    //
+    // IRQ C3: PCH
+    //
+    clock();
+    verifyWrite(0x0180, 0x20);
+
+    //
+    // IRQ C4: PCL
+    //
+    clock();
+    verifyWrite(0x017F, 0x00);
+
+    //
+    // NMI arrives while IRQ sequence is already running.
+    //
+    m_cpu.setNmiLine(true);
+
+    //
+    // IRQ C5 still pushes IRQ-style P.
+    //
+    clock();
+    verifyWrite(0x017E, 0x20);
+
+    //
+    // But vector is hijacked by NMI.
+    //
+    clock();
+    verifyRead(0xFFFA, 0x00);
+
+    clock();
+    verifyRead(0xFFFB, 0x40);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x4000));
+
+    //
+    // Still only one interrupt stack frame.
+    //
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
+}
+void MOS6510TestCpuControl::testNmiDuringIrqTooLateForVector()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setStackPointer(0x80);
+    m_cpu.setStatus(0x20);
+
+    m_memory.writeRAM(0x2000, 0xEA);
+
+    m_memory.writeRAM(0xFFFA, 0x34);
+    m_memory.writeRAM(0xFFFB, 0x12);
+
+    m_memory.writeRAM(0xFFFE, 0x78);
+    m_memory.writeRAM(0xFFFF, 0x56);
+
+    m_cpu.setIrqLine(true);
+
+    //
+    // IRQ C1-C5.
+    //
+    for (int i = 0; i < 5; ++i)
+        clock();
+
+    //
+    // IRQ C6: vector low is already IRQ.
+    //
+    clock();
+    verifyRead(0xFFFE, 0x78);
+
+    //
+    // NMI arrives too late to change this vector.
+    //
+    m_cpu.setNmiLine(true);
+
+    //
+    // High byte must still come from IRQ vector.
+    //
+    clock();
+    verifyRead(0xFFFF, 0x56);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x5678));
+}
+void MOS6510TestCpuControl::testNmiBeforeBrk()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setStackPointer(0x80);
+    m_cpu.setStatus(0x20);
+
+    m_memory.writeRAM(0x2000, 0x00);
+
+    m_memory.writeRAM(0xFFFA, 0x00);
+    m_memory.writeRAM(0xFFFB, 0x40);
+
+    m_cpu.setNmiLine(true);
+
+    //
+    // NMI C1 reads the BRK opcode but does not execute it.
+    //
+    clock();
+
+    verifyRead(0x2000, 0x00);
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2000));
+
+    for (int i = 0; i < 6; ++i)
+        clock();
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x4000));
+
+    //
+    // Only NMI stack frame.
+    //
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
+
+    //
+    // Pushed status has B clear.
+    //
+    QCOMPARE(
+        m_memory.readRAM(0x017E) &
+            static_cast<quint8>(MOS6510StatusFlag::Break),
+        quint8(0x00));
+}
+void MOS6510TestCpuControl::testNmiDuringBrkBeforeVector()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setStackPointer(0x80);
+    m_cpu.setStatus(0x20);
+
+    m_memory.writeRAM(0x2000, 0x00);
+    m_memory.writeRAM(0x2001, 0xEA);
+
+    m_memory.writeRAM(0xFFFA, 0x00);
+    m_memory.writeRAM(0xFFFB, 0x40);
+
+    m_memory.writeRAM(0xFFFE, 0x00);
+    m_memory.writeRAM(0xFFFF, 0x50);
+
+    //
+    // BRK C1.
+    //
+    clock();
+    verifyRead(0x2000, 0x00);
+
+    //
+    // BRK C2: padding byte.
+    //
+    clock();
+    verifyRead(0x2001, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2002));
+
+    //
+    // BRK C3: PCH.
+    //
+    clock();
+    verifyWrite(0x0180, 0x20);
+
+    //
+    // BRK C4: PCL.
+    //
+    clock();
+    verifyWrite(0x017F, 0x02);
+
+    //
+    // NMI arrives early enough to hijack BRK.
+    //
+    m_cpu.setNmiLine(true);
+
+    //
+    // C5 remains BRK: B is pushed SET.
+    //
+    clock();
+    verifyWrite(0x017E, 0x30);
+
+    //
+    // But vector becomes NMI.
+    //
+    clock();
+    verifyRead(0xFFFA, 0x00);
+
+    clock();
+    verifyRead(0xFFFB, 0x40);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x4000));
+
+    //
+    // This proves that this was a hijacked BRK,
+    // not an ordinary NMI.
+    //
+    QVERIFY(
+        (m_memory.readRAM(0x017E) &
+         static_cast<quint8>(MOS6510StatusFlag::Break)) != 0);
+}
+void MOS6510TestCpuControl::testNmiDuringBrkTooLateForVector()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setStackPointer(0x80);
+    m_cpu.setStatus(0x20);
+
+    m_memory.writeRAM(0x2000, 0x00);
+    m_memory.writeRAM(0x2001, 0xEA);
+
+    m_memory.writeRAM(0xFFFA, 0x34);
+    m_memory.writeRAM(0xFFFB, 0x12);
+
+    m_memory.writeRAM(0xFFFE, 0x78);
+    m_memory.writeRAM(0xFFFF, 0x56);
+
+    //
+    // BRK C1-C5.
+    //
+    for (int i = 0; i < 5; ++i)
+        clock();
+
+    //
+    // C6 has already selected IRQ/BRK vector.
+    //
+    clock();
+    verifyRead(0xFFFE, 0x78);
+
+    //
+    // NMI is now too late to replace only the high byte.
+    //
+    m_cpu.setNmiLine(true);
+
+    clock();
+    verifyRead(0xFFFF, 0x56);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x5678));
+}

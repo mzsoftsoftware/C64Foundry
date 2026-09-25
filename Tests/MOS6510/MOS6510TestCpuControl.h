@@ -45,4 +45,11 @@ private slots:
     void testNmiDuringTwoCycleInstruction();
     void testNmiDuringBranchPageCrossing();
 
+    void testNmiPriorityOverIrq();
+    void testNmiDuringIrqBeforeVector();
+    void testNmiDuringIrqTooLateForVector();
+
+    void testNmiBeforeBrk();
+    void testNmiDuringBrkBeforeVector();
+    void testNmiDuringBrkTooLateForVector();
 };
