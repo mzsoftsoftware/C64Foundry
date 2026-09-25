@@ -127,7 +127,6 @@ void MOS6510TestCpuControl::testResetStatus()
 void MOS6510TestCpuControl::testResetCycles()
 {
     setupCpu();
-
     m_cpu.setProgramCounter(0x3456);
     m_cpu.setStackPointer(0x80);
     m_cpu.setStatus(0x20);
@@ -174,23 +173,17 @@ void MOS6510TestCpuControl::testResetCycles()
     verifyRead(0x0180, 0x22);
     QCOMPARE(m_cpu.stackPointer(), quint8(0x7F));
 
-    //
     // C4
-    // Suppressed push of PCL.
-    //
     clock();
-
     verifyRead(0x017F, 0x33);
     QCOMPARE(m_cpu.stackPointer(), quint8(0x7E));
+    QVERIFY(!m_cpu.statusFlag(MOS6510StatusFlag::InterruptDisable));
 
-    //
     // C5
-    // Suppressed push of P.
-    //
     clock();
-
     verifyRead(0x017E, 0x44);
     QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
+    QVERIFY(m_cpu.statusFlag(MOS6510StatusFlag::InterruptDisable));
 
     //
     // C6

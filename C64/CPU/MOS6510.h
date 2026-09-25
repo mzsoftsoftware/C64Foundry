@@ -50,6 +50,8 @@ private:
         Stopped
     };
 
+    void executeResetCycle();
+
     void fetchOpcode();
     void decodeInstruction();
     void prepareMicroOperations();

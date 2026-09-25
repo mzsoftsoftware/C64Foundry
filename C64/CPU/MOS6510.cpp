@@ -45,8 +45,8 @@ void MOS6510::initialize()
 
 void MOS6510::reset()
 {
-    m_state = CpuState::Reset;
     m_resetCycle = 0;
+    m_state = CpuState::Reset;
 }
 
 void MOS6510::clock()
@@ -88,11 +88,60 @@ void MOS6510::clock()
         break;
 
     case CpuState::Reset:
+        executeResetCycle();
         break;
 
     case CpuState::Stopped:
         break;
     }
+}
+
+void MOS6510::executeResetCycle()
+{
+    switch (m_resetCycle)
+    {
+    case 0:
+        // C1: Dummy read from current PC
+        m_ptrBus->read(m_programCounter);
+        break;
+
+    case 1:
+        // C2: Dummy read from current PC
+        m_ptrBus->read(m_programCounter);
+        break;
+
+    case 2:
+        // C3: Stack read, no write
+        m_ptrBus->read(static_cast<quint16>(0x0100 | m_stackPointer));
+        --m_stackPointer;
+        break;
+
+    case 3:
+        // C4: Stack read, no write
+        m_ptrBus->read(static_cast<quint16>(0x0100 | m_stackPointer));
+        --m_stackPointer;
+        break;
+
+    case 4:
+        // C5: Stack read, no write
+        m_ptrBus->read(static_cast<quint16>(0x0100 | m_stackPointer));
+        --m_stackPointer;
+        setStatusFlag(MOS6510StatusFlag::InterruptDisable, true);
+        break;
+
+    case 5:
+        // C6: Read reset vector low
+        m_programCounter = static_cast<quint16>(m_ptrBus->read(0xFFFC));
+        break;
+
+    case 6:
+        // C7: Read reset vector high
+        m_programCounter |= static_cast<quint16>(m_ptrBus->read(0xFFFD)) << 8;
+        m_state = CpuState::Fetch;
+        return;
+    }
+
+    ++m_resetCycle;
 }
 
 void MOS6510::fetchOpcode()
