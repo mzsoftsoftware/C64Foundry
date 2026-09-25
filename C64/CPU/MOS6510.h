@@ -26,6 +26,7 @@ public:
     quint8 status() const                               { return m_status; }
     bool statusFlag(MOS6510StatusFlag flag) const;
     bool irqLine() const                                { return m_irqLine; }
+    bool nmiLine() const                                { return m_nmiLine; }
 
     // Setter
     void setBus(C64Bus* ptrBus);
@@ -37,6 +38,7 @@ public:
     void setStatus(quint8 value)                        { m_status = value; }
     void setStatusFlag(MOS6510StatusFlag flag, bool value);
     void setIrqLine(bool active)                        { m_irqLine = active; }
+    void setNmiLine(bool active)                        { m_nmiLine = active; }
 
     // Operations
     void initialize();
@@ -78,6 +80,7 @@ private:
     bool m_irqPolled = false;
     bool m_initialFetch = true;
     quint8 m_irqCycle = 0;
+    bool m_nmiLine = false;
 
     quint8  m_accumulator = 0;
     quint8  m_x = 0;

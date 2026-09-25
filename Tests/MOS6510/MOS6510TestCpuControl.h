@@ -34,4 +34,15 @@ private slots:
     void testIrqBranchTaken();
     void testIrqBranchTakenPageCrossing();
 
+    void testNmi();
+    void testNmiIgnoredInterruptDisable();
+    void testNmiStack();
+    void testNmiStatus();
+    void testNmiCycles();
+    void testNmiEdgeTriggered();
+    void testNmiSecondEdge();
+    void testNmiDuringInstruction();
+    void testNmiDuringTwoCycleInstruction();
+    void testNmiDuringBranchPageCrossing();
+
 };

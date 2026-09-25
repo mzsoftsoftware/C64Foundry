@@ -787,3 +787,486 @@ void MOS6510TestCpuControl::testIrqBranchTakenPageCrossing()
     clock();
     verifyRead(0x2101, 0xEA);
 }
+
+
+void MOS6510TestCpuControl::testNmi()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x1234);
+    m_cpu.setStackPointer(0x80);
+    m_cpu.setStatus(0x20);
+
+    m_memory.writeRAM(0x1234, 0xEA);
+
+    m_memory.writeRAM(0xFFFA, 0x78);
+    m_memory.writeRAM(0xFFFB, 0x56);
+
+    m_cpu.setNmiLine(true);
+
+    for (int i = 0; i < 7; ++i)
+        clock();
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x5678));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
+
+    QVERIFY(m_cpu.statusFlag(
+        MOS6510StatusFlag::InterruptDisable));
+}
+void MOS6510TestCpuControl::testNmiIgnoredInterruptDisable()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x1234);
+
+    // I = 1
+    m_cpu.setStatus(0x24);
+
+    m_memory.writeRAM(0x1234, 0xEA);
+
+    m_memory.writeRAM(0xFFFA, 0x78);
+    m_memory.writeRAM(0xFFFB, 0x56);
+
+    m_cpu.setNmiLine(true);
+
+    for (int i = 0; i < 7; ++i)
+        clock();
+
+    //
+    // NMI is not masked by I.
+    //
+    QCOMPARE(m_cpu.programCounter(), quint16(0x5678));
+}
+void MOS6510TestCpuControl::testNmiStack()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x3456);
+    m_cpu.setStackPointer(0x80);
+
+    // B deliberately set.
+    m_cpu.setStatus(0x39);
+
+    m_memory.writeRAM(0x3456, 0xEA);
+
+    m_memory.writeRAM(0xFFFA, 0xCD);
+    m_memory.writeRAM(0xFFFB, 0xAB);
+
+    m_cpu.setNmiLine(true);
+
+    for (int i = 0; i < 7; ++i)
+        clock();
+
+    QCOMPARE(m_memory.readRAM(0x0180), quint8(0x34));
+    QCOMPARE(m_memory.readRAM(0x017F), quint8(0x56));
+
+    //
+    // NMI pushes B=0 and U=1.
+    //
+    QCOMPARE(m_memory.readRAM(0x017E), quint8(0x29));
+
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
+}
+void MOS6510TestCpuControl::testNmiStatus()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x1234);
+    m_cpu.setStackPointer(0x80);
+
+    //
+    // N, D, Z, C set; I clear.
+    //
+    m_cpu.setStatus(0xAB);
+
+    m_memory.writeRAM(0x1234, 0xEA);
+
+    m_memory.writeRAM(0xFFFA, 0x78);
+    m_memory.writeRAM(0xFFFB, 0x56);
+
+    m_cpu.setNmiLine(true);
+
+    for (int i = 0; i < 7; ++i)
+        clock();
+
+    QVERIFY(m_cpu.statusFlag(
+        MOS6510StatusFlag::Carry));
+
+    QVERIFY(m_cpu.statusFlag(
+        MOS6510StatusFlag::Zero));
+
+    QVERIFY(m_cpu.statusFlag(
+        MOS6510StatusFlag::Decimal));
+
+    QVERIFY(m_cpu.statusFlag(
+        MOS6510StatusFlag::Negative));
+
+    QVERIFY(m_cpu.statusFlag(
+        MOS6510StatusFlag::InterruptDisable));
+}
+void MOS6510TestCpuControl::testNmiCycles()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x3456);
+    m_cpu.setStackPointer(0x80);
+    m_cpu.setStatus(0x39); // B=1, I=0
+
+    m_memory.writeRAM(0x3456, 0xEA);
+
+    m_memory.writeRAM(0xFFFA, 0xCD);
+    m_memory.writeRAM(0xFFFB, 0xAB);
+
+    m_memory.writeRAM(0xABCD, 0xEA);
+
+    m_cpu.setNmiLine(true);
+
+    //
+    // C1
+    // Suppressed opcode fetch.
+    //
+    clock();
+
+    verifyRead(0x3456, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x3456));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x80));
+
+    //
+    // C2
+    // Second dummy read.
+    //
+    clock();
+
+    verifyRead(0x3456, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x3456));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x80));
+
+    //
+    // C3
+    // Push PCH.
+    //
+    clock();
+
+    verifyWrite(0x0180, 0x34);
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x7F));
+
+    //
+    // C4
+    // Push PCL.
+    //
+    clock();
+
+    verifyWrite(0x017F, 0x56);
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x7E));
+
+    //
+    // C5
+    // Push P with B=0 and U=1.
+    //
+    clock();
+
+    verifyWrite(0x017E, 0x29);
+
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
+
+    QVERIFY(!m_cpu.statusFlag(
+        MOS6510StatusFlag::InterruptDisable));
+
+    //
+    // C6
+    // Set I and read NMI vector low.
+    //
+    clock();
+
+    verifyRead(0xFFFA, 0xCD);
+
+    QVERIFY(m_cpu.statusFlag(
+        MOS6510StatusFlag::InterruptDisable));
+
+    //
+    // C7
+    // Read NMI vector high.
+    //
+    clock();
+
+    verifyRead(0xFFFB, 0xAB);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0xABCD));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
+
+    //
+    // C8
+    // First normal opcode fetch in NMI handler.
+    //
+    clock();
+
+    verifyRead(0xABCD, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0xABCE));
+}
+void MOS6510TestCpuControl::testNmiEdgeTriggered()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setStackPointer(0x80);
+    m_cpu.setStatus(0x20);
+
+    m_memory.writeRAM(0x2000, 0xEA);
+
+    m_memory.writeRAM(0xFFFA, 0x00);
+    m_memory.writeRAM(0xFFFB, 0x40);
+
+    m_memory.writeRAM(0x4000, 0xEA);
+    m_memory.writeRAM(0x4001, 0xEA);
+
+    //
+    // Generate one NMI edge and leave the line active.
+    //
+    m_cpu.setNmiLine(true);
+
+    for (int i = 0; i < 7; ++i)
+        clock();
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x4000));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
+
+    //
+    // NMI line is still active.
+    //
+    QVERIFY(m_cpu.nmiLine());
+
+    //
+    // Nevertheless the first handler instruction must
+    // execute normally. A level-sensitive implementation
+    // would incorrectly start another NMI here.
+    //
+    clock();
+    verifyRead(0x4000, 0xEA);
+
+    clock();
+    verifyRead(0x4001, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x4001));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
+}
+void MOS6510TestCpuControl::testNmiSecondEdge()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setStackPointer(0x80);
+    m_cpu.setStatus(0x20);
+
+    m_memory.writeRAM(0x2000, 0xEA);
+
+    m_memory.writeRAM(0xFFFA, 0x00);
+    m_memory.writeRAM(0xFFFB, 0x40);
+
+    m_memory.writeRAM(0x4000, 0xEA);
+    m_memory.writeRAM(0x4001, 0xEA);
+
+    //
+    // First NMI edge.
+    //
+    m_cpu.setNmiLine(true);
+
+    for (int i = 0; i < 7; ++i)
+        clock();
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x4000));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
+
+    //
+    // Release the NMI line.
+    //
+    m_cpu.setNmiLine(false);
+
+    //
+    // Generate a new edge.
+    //
+    m_cpu.setNmiLine(true);
+
+    //
+    // A second NMI must now be accepted.
+    //
+    for (int i = 0; i < 7; ++i)
+        clock();
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x4000));
+
+    //
+    // Three more bytes were pushed.
+    //
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x7A));
+}
+void MOS6510TestCpuControl::testNmiDuringInstruction()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setStackPointer(0x80);
+    m_cpu.setStatus(0x20);
+
+    //
+    // LDA $1234
+    //
+    m_memory.writeRAM(0x2000, 0xAD);
+    m_memory.writeRAM(0x2001, 0x34);
+    m_memory.writeRAM(0x2002, 0x12);
+    m_memory.writeRAM(0x2003, 0xEA);
+    m_memory.writeRAM(0x1234, 0x42);
+
+    m_memory.writeRAM(0xFFFA, 0x00);
+    m_memory.writeRAM(0xFFFB, 0x40);
+
+    //
+    // C1: Opcode fetch.
+    //
+    clock();
+    verifyRead(0x2000, 0xAD);
+
+    //
+    // NMI edge while the instruction is running.
+    //
+    m_cpu.setNmiLine(true);
+
+    //
+    // C2: Address low.
+    //
+    clock();
+    verifyRead(0x2001, 0x34);
+
+    //
+    // C3: Address high.
+    //
+    clock();
+    verifyRead(0x2002, 0x12);
+
+    //
+    // C4: Operand.
+    //
+    clock();
+    verifyRead(0x1234, 0x42);
+
+    QCOMPARE(m_cpu.accumulator(), quint8(0x42));
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2003));
+
+    //
+    // The following cycle must start NMI, not fetch
+    // the instruction at $2003.
+    //
+    clock();
+    verifyRead(0x2003, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2003));
+}
+void MOS6510TestCpuControl::testNmiDuringTwoCycleInstruction()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setStackPointer(0x80);
+    m_cpu.setStatus(0x20);
+
+    m_memory.writeRAM(0x2000, 0xEA);
+    m_memory.writeRAM(0x2001, 0xEA);
+
+    m_memory.writeRAM(0xFFFA, 0x00);
+    m_memory.writeRAM(0xFFFB, 0x40);
+
+    //
+    // C1: NOP opcode fetch.
+    //
+    clock();
+    verifyRead(0x2000, 0xEA);
+
+    //
+    // NMI edge between C1 and C2.
+    //
+    m_cpu.setNmiLine(true);
+
+    //
+    // C2: NOP dummy read.
+    //
+    clock();
+    verifyRead(0x2001, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2001));
+
+    //
+    // NMI C1: suppressed opcode fetch.
+    //
+    clock();
+    verifyRead(0x2001, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2001));
+}
+void MOS6510TestCpuControl::testNmiDuringBranchPageCrossing()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x20FD);
+    m_cpu.setStackPointer(0x80);
+
+    //
+    // Z = 0 -> BNE taken.
+    //
+    m_cpu.setStatus(0x20);
+
+    //
+    // $20FD: BNE +2
+    // Base after operand = $20FF
+    // Target             = $2101
+    //
+    m_memory.writeRAM(0x20FD, 0xD0);
+    m_memory.writeRAM(0x20FE, 0x02);
+    m_memory.writeRAM(0x20FF, 0xEA);
+    m_memory.writeRAM(0x2001, 0xEA);
+    m_memory.writeRAM(0x2101, 0xEA);
+
+    m_memory.writeRAM(0xFFFA, 0x00);
+    m_memory.writeRAM(0xFFFB, 0x40);
+
+    //
+    // C1: opcode.
+    //
+    clock();
+    verifyRead(0x20FD, 0xD0);
+
+    //
+    // C2: offset.
+    //
+    clock();
+    verifyRead(0x20FE, 0x02);
+
+    //
+    // NMI edge after C2.
+    //
+    m_cpu.setNmiLine(true);
+
+    //
+    // C3: taken-branch dummy read.
+    //
+    clock();
+    verifyRead(0x20FF, 0xEA);
+
+    //
+    // C4: page-crossing dummy read.
+    //
+    clock();
+    verifyRead(0x2001, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2101));
+
+    //
+    // Branch is finished. NMI starts now.
+    // Target opcode must not execute.
+    //
+    clock();
+    verifyRead(0x2101, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2101));
+}
