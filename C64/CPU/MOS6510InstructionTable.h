@@ -23,6 +23,7 @@ private:
     void initializeLogicalInstructions();
     void initializeArithmeticInstructions();
     void initializeShiftInstructions();
+    void initializeBranchInstructions();
     void initializeSpecialInstructions();
 
 private:

@@ -10,6 +10,7 @@
 #include "MOS6510TestIncrementDecrement.h"
 #include "MOS6510TestMemoryIncrementDecrement.h"
 #include "MOS6510TestShiftRotate.h"
+#include "MOS6510TestBranch.h"
 #include "MOS6510TestSpecial.h"
 #include "MOS6510TestBusCycles.h"
 
@@ -26,6 +27,7 @@ int main(int argc, char* argv[])
     MOS6510TestIncrementDecrement testIncDec;
     MOS6510TestMemoryIncrementDecrement testMemoryIncrementDecrement;
     MOS6510TestShiftRotate testShiftRotate;
+    MOS6510TestBranch testBranch;
     MOS6510TestSpecial testSpecial;
     MOS6510TestBusCycles testBusCycles;
 
@@ -67,6 +69,10 @@ int main(int argc, char* argv[])
         return result;
 
     result = QTest::qExec(&testShiftRotate, argc, argv);
+    if(result != 0)
+        return result;
+
+    result = QTest::qExec(&testBranch, argc, argv);
     if(result != 0)
         return result;
 

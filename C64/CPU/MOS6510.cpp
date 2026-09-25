@@ -982,6 +982,177 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
         setStatusFlag(MOS6510StatusFlag::Overflow, false);
         break;
     }
+    case MOS6510MicroOperation::ReadRelativeBranchCarryClear:
+    {
+        const qint8 offset = static_cast<qint8>(m_ptrBus->read(m_programCounter));
+        ++m_programCounter;
+        // BCC: branch only if Carry is clear.
+        if ((m_status & static_cast<quint8>(MOS6510StatusFlag::Carry)) != 0)
+        {
+            m_microOperationIndex = m_microOperationCount - 1;
+            break;
+        }
+        const quint16 baseAddress = m_programCounter;
+        m_address = static_cast<quint16>(static_cast<qint32>(baseAddress) + static_cast<qint32>(offset));
+        m_pageCrossed = (baseAddress & 0xFF00) != (m_address & 0xFF00);
+        if (m_pageCrossed)
+        {
+            m_data = static_cast<quint8>(baseAddress >> 8);
+        }
+        break;
+    }
+    case MOS6510MicroOperation::ReadRelativeBranchCarrySet:
+    {
+        const qint8 offset = static_cast<qint8>(m_ptrBus->read(m_programCounter));
+        ++m_programCounter;
+        // BCS: branch only if Carry is set.
+        if ((m_status & static_cast<quint8>(MOS6510StatusFlag::Carry)) == 0)
+        {
+            m_microOperationIndex = m_microOperationCount - 1;
+            break;
+        }
+        const quint16 baseAddress = m_programCounter;
+        m_address = static_cast<quint16>(static_cast<qint32>(baseAddress) + static_cast<qint32>(offset));
+        m_pageCrossed = (baseAddress & 0xFF00) != (m_address & 0xFF00);
+        if (m_pageCrossed)
+        {
+            m_data = static_cast<quint8>(baseAddress >> 8);
+        }
+        break;
+    }
+    case MOS6510MicroOperation::ReadRelativeBranchEqual:
+    {
+        const qint8 offset = static_cast<qint8>(m_ptrBus->read(m_programCounter));
+        ++m_programCounter;
+        // BEQ: branch only if Zero is set.
+        if ((m_status & static_cast<quint8>(MOS6510StatusFlag::Zero)) == 0)
+        {
+            m_microOperationIndex = m_microOperationCount - 1;
+            break;
+        }
+        const quint16 baseAddress = m_programCounter;
+        m_address = static_cast<quint16>(static_cast<qint32>(baseAddress) + static_cast<qint32>(offset));
+        m_pageCrossed = (baseAddress & 0xFF00) != (m_address & 0xFF00);
+        if (m_pageCrossed)
+        {
+            m_data = static_cast<quint8>(baseAddress >> 8);
+        }
+        break;
+    }
+    case MOS6510MicroOperation::ReadRelativeBranchNotEqual:
+    {
+        const qint8 offset = static_cast<qint8>(m_ptrBus->read(m_programCounter));
+        ++m_programCounter;
+        // BNE: branch only if Zero is clear.
+        if ((m_status & static_cast<quint8>(MOS6510StatusFlag::Zero)) != 0)
+        {
+            m_microOperationIndex = m_microOperationCount - 1;
+            break;
+        }
+
+        const quint16 baseAddress = m_programCounter;
+        m_address = static_cast<quint16>(static_cast<qint32>(baseAddress) + static_cast<qint32>(offset));
+        m_pageCrossed = (baseAddress & 0xFF00) != (m_address & 0xFF00);
+        if (m_pageCrossed)
+        {
+            m_data = static_cast<quint8>(baseAddress >> 8);
+        }
+        break;
+    }
+    case MOS6510MicroOperation::ReadRelativeBranchMinus:
+    {
+        const qint8 offset = static_cast<qint8>(m_ptrBus->read(m_programCounter));
+        ++m_programCounter;
+        // BMI: branch only if Negative is set.
+        if ((m_status & static_cast<quint8>(MOS6510StatusFlag::Negative)) == 0)
+        {
+            m_microOperationIndex = m_microOperationCount - 1;
+            break;
+        }
+        const quint16 baseAddress = m_programCounter;
+        m_address = static_cast<quint16>(static_cast<qint32>(baseAddress) + static_cast<qint32>(offset));
+        m_pageCrossed = (baseAddress & 0xFF00) != (m_address & 0xFF00);
+        if (m_pageCrossed)
+        {
+            m_data = static_cast<quint8>(baseAddress >> 8);
+        }
+        break;
+    }
+    case MOS6510MicroOperation::ReadRelativeBranchPlus:
+    {
+        const qint8 offset = static_cast<qint8>(m_ptrBus->read(m_programCounter));
+        ++m_programCounter;
+        // BPL: branch only if Negative is clear.
+        if ((m_status & static_cast<quint8>(MOS6510StatusFlag::Negative)) != 0)
+        {
+            m_microOperationIndex = m_microOperationCount - 1;
+            break;
+        }
+        const quint16 baseAddress = m_programCounter;
+        m_address = static_cast<quint16>(static_cast<qint32>(baseAddress) + static_cast<qint32>(offset));
+        m_pageCrossed = (baseAddress & 0xFF00) != (m_address & 0xFF00);
+        if (m_pageCrossed)
+        {
+            m_data = static_cast<quint8>(baseAddress >> 8);
+        }
+        break;
+    }
+    case MOS6510MicroOperation::ReadRelativeBranchOverflowClear:
+    {
+        const qint8 offset = static_cast<qint8>(m_ptrBus->read(m_programCounter));
+        ++m_programCounter;
+        // BVC: branch only if Overflow is clear.
+        if ((m_status & static_cast<quint8>(MOS6510StatusFlag::Overflow)) != 0)
+        {
+            m_microOperationIndex = m_microOperationCount - 1;
+            break;
+        }
+        const quint16 baseAddress = m_programCounter;
+        m_address = static_cast<quint16>(static_cast<qint32>(baseAddress) + static_cast<qint32>(offset));
+        m_pageCrossed = (baseAddress & 0xFF00) != (m_address & 0xFF00);
+        if (m_pageCrossed)
+        {
+            m_data = static_cast<quint8>(baseAddress >> 8);
+        }
+        break;
+    }
+    case MOS6510MicroOperation::ReadRelativeBranchOverflowSet:
+    {
+        const qint8 offset = static_cast<qint8>(m_ptrBus->read(m_programCounter));
+        ++m_programCounter;
+        // BVS: branch only if Overflow is set.
+        if ((m_status & static_cast<quint8>(MOS6510StatusFlag::Overflow)) == 0)
+        {
+            m_microOperationIndex = m_microOperationCount - 1;
+            break;
+        }
+        const quint16 baseAddress = m_programCounter;
+        m_address = static_cast<quint16>(static_cast<qint32>(baseAddress) + static_cast<qint32>(offset));
+        m_pageCrossed = (baseAddress & 0xFF00) != (m_address & 0xFF00);
+        if (m_pageCrossed)
+        {
+            m_data = static_cast<quint8>(baseAddress >> 8);
+        }
+        break;
+    }
+    case MOS6510MicroOperation::Branch:
+    {
+        // Taken branch always performs a dummy read from the
+        // instruction following the branch operand.
+        m_ptrBus->read(m_programCounter);
+        m_programCounter = m_address;
+        if (!m_pageCrossed)
+        {
+            m_microOperationIndex = m_microOperationCount - 1;
+        }
+        break;
+    }
+    case MOS6510MicroOperation::BranchPageCrossing:
+    {
+        const quint16 dummyAddress = static_cast<quint16>((static_cast<quint16>(m_data) << 8) | (m_address & 0x00FF));
+        m_ptrBus->read(dummyAddress);
+        break;
+    }
     }
 }
 

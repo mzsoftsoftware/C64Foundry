@@ -131,6 +131,17 @@ enum class MOS6510MicroOperation
     ClearCarryFlag,
     SetInterruptDisableFlag,
     ClearInterruptDisableFlag,
-    ClearOverflowFlag
+    ClearOverflowFlag,
+
+    ReadRelativeBranchCarryClear,
+    ReadRelativeBranchCarrySet,
+    ReadRelativeBranchEqual,
+    ReadRelativeBranchNotEqual,
+    ReadRelativeBranchMinus,
+    ReadRelativeBranchPlus,
+    ReadRelativeBranchOverflowClear,
+    ReadRelativeBranchOverflowSet,
+    Branch,
+    BranchPageCrossing,
 
 };
