@@ -1,3 +1,4 @@
+
 add_executable(MOS6510Test
     main.cpp
     MOS6510TestBase.h MOS6510TestBase.cpp
@@ -16,6 +17,13 @@ add_executable(MOS6510Test
     MOS6510TestBranch.h MOS6510TestBranch.cpp
     MOS6510TestControlFlow.h MOS6510TestControlFlow.cpp
     MOS6510TestCpuControl.h MOS6510TestCpuControl.cpp
+
+    MOS6510TestFunctional.h MOS6510TestFunctional.cpp
+    FunctionalTest/MOS6510FunctionalTest.qrc
+)
+
+set_target_properties(MOS6510Test PROPERTIES
+    AUTORCC ON
 )
 
 target_link_libraries(MOS6510Test

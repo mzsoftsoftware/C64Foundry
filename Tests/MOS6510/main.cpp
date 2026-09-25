@@ -16,6 +16,8 @@
 #include "MOS6510TestBusCycles.h"
 #include "MOS6510TestCpuControl.h"
 
+#include "MOS6510TestFunctional.h"
+
 
 int main(int argc, char* argv[])
 {
@@ -34,6 +36,8 @@ int main(int argc, char* argv[])
     MOS6510TestControlFlow testControlFlow;
     MOS6510TestBusCycles testBusCycles;
     MOS6510TestCpuControl testCpuControl;
+
+    MOS6510TestFunctional testFunctional;
 
     int result = 0;
     result = QTest::qExec(&testLoad, argc, argv);
@@ -93,6 +97,10 @@ int main(int argc, char* argv[])
         return result;
 
     result = QTest::qExec(&testCpuControl, argc, argv);
+    if(result != 0)
+        return result;
+
+    result = QTest::qExec(&testFunctional, argc, argv);
     if(result != 0)
         return result;
 

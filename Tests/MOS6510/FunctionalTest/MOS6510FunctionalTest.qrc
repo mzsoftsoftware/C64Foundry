@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/MOS6510/FunctionalTest">
+        <file alias="6502_functional_test.bin">6502_functional_test.bin</file>
+    </qresource>
+</RCC>
+
