@@ -1079,6 +1079,15 @@ void MOS6510InstructionTable::initializeControlFlowInstructions()
     m_instructions[0x60].microOperations[3] = MOS6510MicroOperation::ReadRtsReturnAddressHigh;
     m_instructions[0x60].microOperations[4] = MOS6510MicroOperation::RtsIncrementProgramCounter;
     m_instructions[0x60].microOperationCount = 5;
+
+    m_instructions[0x40].operation = MOS6510Operation::RTI;
+    m_instructions[0x40].addressingMode = MOS6510AddressingMode::Implied;
+    m_instructions[0x40].microOperations[0] = MOS6510MicroOperation::ReadRtiProgramCounterDummy;
+    m_instructions[0x40].microOperations[1] = MOS6510MicroOperation::ReadRtiStackDummy;
+    m_instructions[0x40].microOperations[2] = MOS6510MicroOperation::ReadRtiStatus;
+    m_instructions[0x40].microOperations[3] = MOS6510MicroOperation::ReadRtiProgramCounterLow;
+    m_instructions[0x40].microOperations[4] = MOS6510MicroOperation::ReadRtiProgramCounterHigh;
+    m_instructions[0x40].microOperationCount = 5;
 }
 
 void MOS6510InstructionTable::initializeSpecialInstructions()

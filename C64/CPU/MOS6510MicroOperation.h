@@ -158,5 +158,11 @@ enum class MOS6510MicroOperation
     ReadRtsStackDummy,
     ReadRtsReturnAddressLow,
     ReadRtsReturnAddressHigh,
-    RtsIncrementProgramCounter
+    RtsIncrementProgramCounter,
+
+    ReadRtiProgramCounterDummy,
+    ReadRtiStackDummy,
+    ReadRtiStatus,
+    ReadRtiProgramCounterLow,
+    ReadRtiProgramCounterHigh
 };

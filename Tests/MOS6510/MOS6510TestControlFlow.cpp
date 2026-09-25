@@ -495,8 +495,8 @@ void MOS6510TestControlFlow::testRti()
     QCOMPARE(m_cpu.stackPointer(), quint8(0xFF));
     QCOMPARE(m_cpu.programCounter(), quint16(0x3456));
 
-    // B is not a physical flag in the NMOS status register.
-    // Bit 5 remains set.
+    // RTI restores the status byte from the stack.
+    // Bit 5 (Unused) is always set in the emulated status register.
     QCOMPARE(m_cpu.status(), quint8(0xED));
 
     m_cpu.clock();
@@ -529,4 +529,92 @@ void MOS6510TestControlFlow::testRtiStackPointerWrapAround()
     QCOMPARE(m_cpu.stackPointer(), quint8(0x01));
     QCOMPARE(m_cpu.programCounter(), quint16(0x3456));
     QCOMPARE(m_cpu.status(), quint8(0x24));
+}
+
+void MOS6510TestControlFlow::testRtiStatus_data()
+{
+    QTest::addColumn<quint8>("stackStatus");
+    QTest::addColumn<quint8>("expectedStatus");
+
+    QTest::newRow("all clear")
+        << quint8(0x00)
+        << quint8(0x20);
+
+    QTest::newRow("break clear")
+        << quint8(0x45)
+        << quint8(0x65);
+
+    QTest::newRow("break set")
+        << quint8(0x55)
+        << quint8(0x75);
+
+    QTest::newRow("unused clear")
+        << quint8(0x8D)
+        << quint8(0xAD);
+
+    QTest::newRow("all set")
+        << quint8(0xFF)
+        << quint8(0xFF);
+}
+
+void MOS6510TestControlFlow::testRtiStatus()
+{
+    QFETCH(quint8, stackStatus);
+    QFETCH(quint8, expectedStatus);
+
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setStackPointer(0xFC);
+    m_cpu.setStatus(0x00);
+
+    m_memory.writeRAM(0x1000, 0x40); // RTI
+    m_memory.writeRAM(0x1001, 0xEA);
+
+    m_memory.writeRAM(0x01FD, stackStatus);
+    m_memory.writeRAM(0x01FE, 0x56);
+    m_memory.writeRAM(0x01FF, 0x34);
+
+    m_memory.writeRAM(0x3456, 0xEA);
+
+    // Cycle 1: opcode fetch
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0xFC));
+    QCOMPARE(m_cpu.status(), quint8(0x00));
+
+    // Cycle 2: dummy read from program counter
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0xFC));
+    QCOMPARE(m_cpu.status(), quint8(0x00));
+
+    // Cycle 3: dummy read from current stack position
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0xFC));
+    QCOMPARE(m_cpu.status(), quint8(0x00));
+
+    // Cycle 4: pull status
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0xFD));
+    QCOMPARE(m_cpu.status(), expectedStatus);
+
+    // Cycle 5: pull PCL
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1001));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0xFE));
+    QCOMPARE(m_cpu.status(), expectedStatus);
+
+    // Cycle 6: pull PCH and restore PC
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x3456));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0xFF));
+    QCOMPARE(m_cpu.status(), expectedStatus);
+
+    // Cycle 7: fetch first opcode at restored PC
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x3457));
+    QCOMPARE(m_cpu.status(), expectedStatus);
 }

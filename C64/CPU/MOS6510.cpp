@@ -1233,6 +1233,36 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
         ++m_programCounter;
         break;
     }
+    case MOS6510MicroOperation::ReadRtiProgramCounterDummy:
+    {
+        m_ptrBus->read(m_programCounter);
+        break;
+    }
+    case MOS6510MicroOperation::ReadRtiStackDummy:
+    {
+        m_ptrBus->read(static_cast<quint16>(0x0100 | m_stackPointer));
+        break;
+    }
+    case MOS6510MicroOperation::ReadRtiStatus:
+    {
+        ++m_stackPointer;
+        const quint8 value = m_ptrBus->read(static_cast<quint16>(0x0100 | m_stackPointer));
+        m_status = value | 0x20;
+        break;
+    }
+    case MOS6510MicroOperation::ReadRtiProgramCounterLow:
+    {
+        ++m_stackPointer;
+        m_address = m_ptrBus->read(static_cast<quint16>(0x0100 | m_stackPointer));
+        break;
+    }
+    case MOS6510MicroOperation::ReadRtiProgramCounterHigh:
+    {
+        ++m_stackPointer;
+        const quint8 highByte = m_ptrBus->read(static_cast<quint16>(0x0100 | m_stackPointer));
+        m_programCounter = static_cast<quint16>((static_cast<quint16>(highByte) << 8) | m_address);
+        break;
+    }
     }
 }
 

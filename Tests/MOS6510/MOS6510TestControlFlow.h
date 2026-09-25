@@ -40,4 +40,8 @@ private slots:
     // RTI
     void testRti();
     void testRtiStackPointerWrapAround();
+
+    void testRtiStatus_data();
+    void testRtiStatus();
+
 };
