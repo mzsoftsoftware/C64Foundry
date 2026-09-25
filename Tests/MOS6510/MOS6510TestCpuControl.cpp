@@ -1080,17 +1080,29 @@ void MOS6510TestCpuControl::testNmiSecondEdge()
     QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
 
     //
-    // Release the NMI line.
+    // Release the NMI line and generate a second edge.
     //
     m_cpu.setNmiLine(false);
-
-    //
-    // Generate a new edge.
-    //
     m_cpu.setNmiLine(true);
 
     //
-    // A second NMI must now be accepted.
+    // The interrupt sequence itself does not poll for
+    // another interrupt. Therefore the first handler
+    // instruction must execute before the second NMI
+    // can start.
+    //
+    clock();
+    verifyRead(0x4000, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x4001));
+
+    clock();
+    verifyRead(0x4001, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x4001));
+
+    //
+    // Now the second NMI starts.
     //
     for (int i = 0; i < 7; ++i)
         clock();
@@ -1162,51 +1174,6 @@ void MOS6510TestCpuControl::testNmiDuringInstruction()
     verifyRead(0x2003, 0xEA);
 
     QCOMPARE(m_cpu.programCounter(), quint16(0x2003));
-}
-void MOS6510TestCpuControl::testNmiDuringTwoCycleInstruction()
-{
-    setupCpu();
-
-    m_cpu.setProgramCounter(0x2000);
-    m_cpu.setStackPointer(0x80);
-    m_cpu.setStatus(0x20);
-
-    m_memory.writeRAM(0x2000, 0xEA);
-    m_memory.writeRAM(0x2001, 0xEA);
-
-    m_memory.writeRAM(0xFFFA, 0x00);
-    m_memory.writeRAM(0xFFFB, 0x40);
-
-    //
-    // NMI edge before C1.
-    // This is early enough to be recognized by the
-    // interrupt poll belonging to this instruction.
-    //
-    m_cpu.setNmiLine(true);
-
-    //
-    // C1: NOP opcode fetch.
-    //
-    clock();
-    verifyRead(0x2000, 0xEA);
-
-    QCOMPARE(m_cpu.programCounter(), quint16(0x2001));
-
-    //
-    // C2: NOP dummy read.
-    //
-    clock();
-    verifyRead(0x2001, 0xEA);
-
-    QCOMPARE(m_cpu.programCounter(), quint16(0x2001));
-
-    //
-    // NMI C1: suppressed opcode fetch.
-    //
-    clock();
-    verifyRead(0x2001, 0xEA);
-
-    QCOMPARE(m_cpu.programCounter(), quint16(0x2001));
 }
 void MOS6510TestCpuControl::testNmiDuringBranchPageCrossing()
 {

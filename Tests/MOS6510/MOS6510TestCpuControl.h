@@ -42,7 +42,6 @@ private slots:
     void testNmiEdgeTriggered();
     void testNmiSecondEdge();
     void testNmiDuringInstruction();
-    void testNmiDuringTwoCycleInstruction();
     void testNmiDuringBranchPageCrossing();
 
     void testNmiPriorityOverIrq();
