@@ -2249,3 +2249,164 @@ void MOS6510TestCpuControl::testNmiDuringCli()
 
     QCOMPARE(m_cpu.programCounter(), quint16(0x2002));
 }
+void MOS6510TestCpuControl::testResetDuringInstruction()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setStackPointer(0x80);
+    m_cpu.setAccumulator(0x42);
+    m_cpu.setStatus(0x20);
+
+    //
+    // LDA $1234
+    //
+    m_memory.writeRAM(0x2000, 0xAD);
+    m_memory.writeRAM(0x2001, 0x34);
+    m_memory.writeRAM(0x2002, 0x12);
+    m_memory.writeRAM(0x1234, 0x99);
+
+    //
+    // Marker values for the three RESET stack reads.
+    //
+    m_memory.writeRAM(0x0180, 0x11);
+    m_memory.writeRAM(0x017F, 0x22);
+    m_memory.writeRAM(0x017E, 0x33);
+
+    //
+    // RESET vector.
+    //
+    m_memory.writeRAM(0xFFFC, 0x00);
+    m_memory.writeRAM(0xFFFD, 0x40);
+
+    //
+    // First instruction after RESET.
+    //
+    m_memory.writeRAM(0x4000, 0xEA);
+
+    //
+    // LDA C1: opcode fetch.
+    //
+    clock();
+    verifyRead(0x2000, 0xAD);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2001));
+    QCOMPARE(m_cpu.accumulator(), quint8(0x42));
+
+    //
+    // LDA C2: absolute address low byte.
+    //
+    clock();
+    verifyRead(0x2001, 0x34);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2002));
+    QCOMPARE(m_cpu.accumulator(), quint8(0x42));
+
+    //
+    // RESET is asserted while LDA is still in progress.
+    // The remaining LDA cycles must never execute.
+    //
+    m_cpu.reset();
+
+    //
+    // RESET C1:
+    // Dummy read from the current PC.
+    //
+    clock();
+    verifyRead(0x2002, 0x12);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2002));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x80));
+    QCOMPARE(m_cpu.accumulator(), quint8(0x42));
+
+    //
+    // RESET C2:
+    // Second dummy read from the current PC.
+    //
+    clock();
+    verifyRead(0x2002, 0x12);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2002));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x80));
+    QCOMPARE(m_cpu.accumulator(), quint8(0x42));
+
+    //
+    // RESET C3:
+    // Suppressed PCH push, therefore a stack read.
+    //
+    clock();
+    verifyRead(0x0180, 0x11);
+
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x7F));
+    QCOMPARE(m_cpu.accumulator(), quint8(0x42));
+
+    //
+    // RESET C4:
+    // Suppressed PCL push, therefore a stack read.
+    //
+    clock();
+    verifyRead(0x017F, 0x22);
+
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x7E));
+    QCOMPARE(m_cpu.accumulator(), quint8(0x42));
+
+    QVERIFY(!m_cpu.statusFlag(
+        MOS6510StatusFlag::InterruptDisable));
+
+    //
+    // RESET C5:
+    // Suppressed status push, therefore a stack read.
+    // I becomes set during this cycle.
+    //
+    clock();
+    verifyRead(0x017E, 0x33);
+
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
+    QCOMPARE(m_cpu.accumulator(), quint8(0x42));
+
+    QVERIFY(m_cpu.statusFlag(
+        MOS6510StatusFlag::InterruptDisable));
+
+    //
+    // RESET C6:
+    // Read RESET vector low byte.
+    //
+    clock();
+    verifyRead(0xFFFC, 0x00);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x0000));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
+    QCOMPARE(m_cpu.accumulator(), quint8(0x42));
+
+    //
+    // RESET C7:
+    // Read RESET vector high byte and finish RESET.
+    //
+    clock();
+    verifyRead(0xFFFD, 0x40);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x4000));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
+
+    //
+    // The interrupted LDA must never have completed.
+    //
+    QCOMPARE(m_cpu.accumulator(), quint8(0x42));
+
+    //
+    // The three stack locations must not have been modified.
+    //
+    QCOMPARE(m_memory.readRAM(0x0180), quint8(0x11));
+    QCOMPARE(m_memory.readRAM(0x017F), quint8(0x22));
+    QCOMPARE(m_memory.readRAM(0x017E), quint8(0x33));
+
+    //
+    // C8:
+    // First normal opcode fetch after RESET.
+    //
+    clock();
+    verifyRead(0x4000, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x4001));
+    QCOMPARE(m_cpu.accumulator(), quint8(0x42));
+}
