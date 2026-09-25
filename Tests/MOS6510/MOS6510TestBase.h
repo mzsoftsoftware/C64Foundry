@@ -14,6 +14,12 @@ public:
     void setupCpu();
 
 protected:
+    void clock();
+    void verifyRead(quint16 address, quint8 value);
+    void verifyWrite(quint16 address, quint8 value);
+    void verifyNoAccess();
+
+protected:
     C64Memory m_memory;
     C64Bus m_bus;
     MOS6510 m_cpu;

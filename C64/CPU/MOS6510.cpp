@@ -55,7 +55,7 @@ void MOS6510::clock()
 
         if (m_operation == MOS6510Operation::Unknown)
         {
-            qDebug() << "MOS6510: unknown opcode" << Qt::hex << m_opcode << "at" << m_programCounter - 1;
+            qDebug() << "MOS6510: unknown opcode" << Qt::hex << m_opcode << "at" << static_cast<quint16>(m_programCounter - 1);
             m_state = CpuState::Stopped;
             break;
         }

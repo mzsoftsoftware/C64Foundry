@@ -14,12 +14,6 @@ public:
     explicit MOS6510TestBusCycles();
     virtual ~MOS6510TestBusCycles();
 
-private:
-    void clock();
-    void verifyRead(quint16 address, quint8 value);
-    void verifyWrite(quint16 address, quint8 value);
-    void verifyNoAccess();
-
 private slots:
     void init();
 

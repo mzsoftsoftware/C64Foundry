@@ -15,31 +15,6 @@ void MOS6510TestBusCycles::init()
     setupCpu();
     m_cpu.setProgramCounter(0x1000);
 }
-void MOS6510TestBusCycles::clock()
-{
-    m_bus.clock();
-    m_cpu.clock();
-}
-
-void MOS6510TestBusCycles::verifyRead(const quint16 address, const quint8 value)
-{
-    QCOMPARE(m_bus.accessCount(), quint8(1));
-    QCOMPARE(m_bus.lastAccessType(), C64Bus::AccessType::Read);
-    QCOMPARE(m_bus.lastAccessAddress(), address);
-    QCOMPARE(m_bus.lastAccessValue(), value);
-}
-void MOS6510TestBusCycles::verifyWrite(const quint16 address, const quint8 value)
-{
-    QCOMPARE(m_bus.accessCount(), quint8(1));
-    QCOMPARE(m_bus.lastAccessType(), C64Bus::AccessType::Write);
-    QCOMPARE(m_bus.lastAccessAddress(), address);
-    QCOMPARE(m_bus.lastAccessValue(), value);
-}
-void MOS6510TestBusCycles::verifyNoAccess()
-{
-    QCOMPARE(m_bus.accessCount(), quint8(0));
-    QCOMPARE(m_bus.lastAccessType(), C64Bus::AccessType::None);
-}
 
 void MOS6510TestBusCycles::testAdcImmediate()
 {
