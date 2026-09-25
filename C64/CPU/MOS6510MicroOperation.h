@@ -74,11 +74,17 @@ enum class MOS6510MicroOperation
     ReadIndirectAddToAccumulator,
     ReadIndirectSubtractFromAccumulator,
     ReadIndirectCompareAccumulator,
+    ReadIndirectAndAccumulator,
+    ReadIndirectOrAccumulator,
+    ReadIndirectExclusiveOrAccumulator,
 
     ReadIndirectIndexedToAccumulator,
     ReadIndirectIndexedAddToAccumulator,
     ReadIndirectIndexedSubtractFromAccumulator,
     ReadIndirectIndexedCompareAccumulator,
+    ReadIndirectIndexedAndAccumulator,
+    ReadIndirectIndexedOrAccumulator,
+    ReadIndirectIndexedExclusiveOrAccumulator,
 
     WriteAccumulator,
     WriteXRegister,

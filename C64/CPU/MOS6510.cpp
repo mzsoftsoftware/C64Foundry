@@ -625,6 +625,26 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
         setStatusFlag(MOS6510StatusFlag::Negative, (result & 0x80) != 0);
         break;
     }
+    case MOS6510MicroOperation::ReadIndirectAndAccumulator:
+    {
+        m_accumulator &= m_ptrBus->read(m_address);
+        updateLoadFlags(m_accumulator);
+        break;
+    }
+
+    case MOS6510MicroOperation::ReadIndirectOrAccumulator:
+    {
+        m_accumulator |= m_ptrBus->read(m_address);
+        updateLoadFlags(m_accumulator);
+        break;
+    }
+
+    case MOS6510MicroOperation::ReadIndirectExclusiveOrAccumulator:
+    {
+        m_accumulator ^= m_ptrBus->read(m_address);
+        updateLoadFlags(m_accumulator);
+        break;
+    }
     case MOS6510MicroOperation::ReadIndirectIndexedToAccumulator:
     {
         const quint8 value = m_ptrBus->read(m_address);
@@ -652,6 +672,26 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
         setStatusFlag(MOS6510StatusFlag::Carry, accumulator >= operand);
         setStatusFlag(MOS6510StatusFlag::Zero, result == 0);
         setStatusFlag(MOS6510StatusFlag::Negative, (result & 0x80) != 0);
+        break;
+    }
+    case MOS6510MicroOperation::ReadIndirectIndexedAndAccumulator:
+    {
+        m_accumulator &= m_ptrBus->read(m_address);
+        updateLoadFlags(m_accumulator);
+        break;
+    }
+
+    case MOS6510MicroOperation::ReadIndirectIndexedOrAccumulator:
+    {
+        m_accumulator |= m_ptrBus->read(m_address);
+        updateLoadFlags(m_accumulator);
+        break;
+    }
+
+    case MOS6510MicroOperation::ReadIndirectIndexedExclusiveOrAccumulator:
+    {
+        m_accumulator ^= m_ptrBus->read(m_address);
+        updateLoadFlags(m_accumulator);
         break;
     }
     case MOS6510MicroOperation::WriteAccumulator:
