@@ -59,4 +59,7 @@ private slots:
     void testNmiPriorityOverIrqHandlerStartsNormally();
     void testNmiTooLateDuringTwoCycleInstruction();
     void testNmiTooLateDuringMultiCycleInstruction();
+
+    void testNmiBranchNotTaken();
+    void testNmiBranchTaken();
 };

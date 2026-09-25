@@ -2041,3 +2041,139 @@ void MOS6510TestCpuControl::testNmiTooLateDuringMultiCycleInstruction()
     QCOMPARE(m_cpu.programCounter(), quint16(0x2004));
     QCOMPARE(m_cpu.stackPointer(), quint8(0x80));
 }
+
+void MOS6510TestCpuControl::testNmiBranchNotTaken()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setStackPointer(0x80);
+
+    //
+    // U=1, Z=1.
+    // BNE is therefore not taken.
+    //
+    m_cpu.setStatus(0x22);
+
+    m_memory.writeRAM(0x2000, 0xD0); // BNE
+    m_memory.writeRAM(0x2001, 0x10); // Offset
+    m_memory.writeRAM(0x2002, 0xEA); // Next opcode
+
+    m_memory.writeRAM(0xFFFA, 0x00);
+    m_memory.writeRAM(0xFFFB, 0x40);
+
+    //
+    // Branch C1: opcode fetch.
+    //
+    clock();
+    verifyRead(0x2000, 0xD0);
+
+    //
+    // NMI edge before the branch interrupt poll.
+    //
+    m_cpu.setNmiLine(true);
+
+    //
+    // Branch C2: operand fetch and interrupt poll.
+    // The branch is not taken.
+    //
+    clock();
+    verifyRead(0x2001, 0x10);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2002));
+
+    //
+    // NMI C1.
+    // The opcode at $2002 must not execute.
+    //
+    clock();
+    verifyRead(0x2002, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2002));
+
+    //
+    // NMI C2.
+    //
+    clock();
+    verifyRead(0x2002, 0xEA);
+}
+void MOS6510TestCpuControl::testNmiBranchTaken()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setStackPointer(0x80);
+
+    //
+    // U=1, Z=0.
+    // BNE is therefore taken.
+    //
+    m_cpu.setStatus(0x20);
+
+    m_memory.writeRAM(0x2000, 0xD0); // BNE
+    m_memory.writeRAM(0x2001, 0x10); // Target = $2012
+
+    m_memory.writeRAM(0x2002, 0xEA); // Branch dummy read
+    m_memory.writeRAM(0x2012, 0xEA); // NOP at branch target
+    m_memory.writeRAM(0x2013, 0xEA);
+
+    m_memory.writeRAM(0xFFFA, 0x00);
+    m_memory.writeRAM(0xFFFB, 0x40);
+
+    //
+    // Branch C1: opcode fetch.
+    //
+    clock();
+    verifyRead(0x2000, 0xD0);
+
+    //
+    // Branch C2: operand fetch and interrupt poll.
+    // NMI is not active yet.
+    //
+    clock();
+    verifyRead(0x2001, 0x10);
+
+    //
+    // NMI edge AFTER the branch poll.
+    //
+    m_cpu.setNmiLine(true);
+
+    //
+    // Branch C3:
+    // Taken-branch dummy read.
+    // A taken branch without a page crossing has no
+    // additional interrupt poll here.
+    //
+    clock();
+    verifyRead(0x2002, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2012));
+
+    //
+    // Therefore the instruction at the branch target
+    // must still execute.
+    //
+    // NOP C1.
+    //
+    clock();
+    verifyRead(0x2012, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2013));
+
+    //
+    // NOP C2.
+    // Its opcode-fetch cycle provided the NMI poll.
+    //
+    clock();
+    verifyRead(0x2013, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2013));
+
+    //
+    // NMI starts only now.
+    //
+    clock();
+    verifyRead(0x2013, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2013));
+}
