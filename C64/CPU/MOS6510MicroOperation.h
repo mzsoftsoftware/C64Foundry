@@ -126,7 +126,11 @@ enum class MOS6510MicroOperation
     ReadStackDummy,
 
     SetDecimalFlag,
-    ClearDecimalFlag
-
+    ClearDecimalFlag,
+    SetCarryFlag,
+    ClearCarryFlag,
+    SetInterruptDisableFlag,
+    ClearInterruptDisableFlag,
+    ClearOverflowFlag
 
 };

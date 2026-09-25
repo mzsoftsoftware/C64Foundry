@@ -17,4 +17,7 @@ private:
 
 private slots:
     void testNOP();
+
+    void testFlagInstructions_data();
+    void testFlagInstructions();
 };

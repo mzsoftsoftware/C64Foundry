@@ -1002,4 +1002,28 @@ void MOS6510InstructionTable::initializeSpecialInstructions()
     m_instructions[0xD8].microOperations[0] = MOS6510MicroOperation::ClearDecimalFlag;
     m_instructions[0xD8].microOperationCount = 1;
 
+    m_instructions[0x18].operation = MOS6510Operation::CLC;
+    m_instructions[0x18].addressingMode = MOS6510AddressingMode::Implied;
+    m_instructions[0x18].microOperations[0] = MOS6510MicroOperation::ClearCarryFlag;
+    m_instructions[0x18].microOperationCount = 1;
+
+    m_instructions[0x38].operation = MOS6510Operation::SEC;
+    m_instructions[0x38].addressingMode = MOS6510AddressingMode::Implied;
+    m_instructions[0x38].microOperations[0] = MOS6510MicroOperation::SetCarryFlag;
+    m_instructions[0x38].microOperationCount = 1;
+
+    m_instructions[0x58].operation = MOS6510Operation::CLI;
+    m_instructions[0x58].addressingMode = MOS6510AddressingMode::Implied;
+    m_instructions[0x58].microOperations[0] = MOS6510MicroOperation::ClearInterruptDisableFlag;
+    m_instructions[0x58].microOperationCount = 1;
+
+    m_instructions[0x78].operation = MOS6510Operation::SEI;
+    m_instructions[0x78].addressingMode = MOS6510AddressingMode::Implied;
+    m_instructions[0x78].microOperations[0] = MOS6510MicroOperation::SetInterruptDisableFlag;
+    m_instructions[0x78].microOperationCount = 1;
+
+    m_instructions[0xB8].operation = MOS6510Operation::CLV;
+    m_instructions[0xB8].addressingMode = MOS6510AddressingMode::Implied;
+    m_instructions[0xB8].microOperations[0] = MOS6510MicroOperation::ClearOverflowFlag;
+    m_instructions[0xB8].microOperationCount = 1;
 }

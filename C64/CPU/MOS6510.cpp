@@ -952,6 +952,36 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
         setStatusFlag(MOS6510StatusFlag::Decimal, false);
         break;
     }
+    case MOS6510MicroOperation::ClearCarryFlag:
+    {
+        m_ptrBus->read(m_programCounter);
+        setStatusFlag(MOS6510StatusFlag::Carry, false);
+        break;
+    }
+    case MOS6510MicroOperation::SetCarryFlag:
+    {
+        m_ptrBus->read(m_programCounter);
+        setStatusFlag(MOS6510StatusFlag::Carry, true);
+        break;
+    }
+    case MOS6510MicroOperation::ClearInterruptDisableFlag:
+    {
+        m_ptrBus->read(m_programCounter);
+        setStatusFlag(MOS6510StatusFlag::InterruptDisable, false);
+        break;
+    }
+    case MOS6510MicroOperation::SetInterruptDisableFlag:
+    {
+        m_ptrBus->read(m_programCounter);
+        setStatusFlag(MOS6510StatusFlag::InterruptDisable, true);
+        break;
+    }
+    case MOS6510MicroOperation::ClearOverflowFlag:
+    {
+        m_ptrBus->read(m_programCounter);
+        setStatusFlag(MOS6510StatusFlag::Overflow, false);
+        break;
+    }
     }
 }
 
