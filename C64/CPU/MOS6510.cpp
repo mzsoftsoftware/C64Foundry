@@ -28,6 +28,8 @@ void MOS6510::initialize()
     m_irqCycle = 0;
     m_nmiLine = false;
     m_nmiPending = false;
+    m_nmiDelay = false;
+    m_nmiVectorFetch = false;
     m_nmiHijack = false;
     m_nmiCycle = 0;
 
@@ -61,6 +63,8 @@ void MOS6510::reset()
     m_irqCycle = 0;
     m_nmiPending = false;
     m_nmiCycle = 0;
+    m_nmiDelay = false;
+    m_nmiVectorFetch = false;
     m_nmiHijack = false;
     m_state = CpuState::Reset;
 }
@@ -73,7 +77,7 @@ void MOS6510::clock()
     switch (m_state)
     {
     case CpuState::Fetch:
-        if (m_nmiPending)
+        if (m_nmiPending && !m_nmiDelay)
         {
             m_nmiPending = false;
             m_nmiCycle = 0;
@@ -164,6 +168,12 @@ void MOS6510::clock()
 
         if (m_microOperationIndex >= m_microOperationCount)
         {
+            if (m_nmiDelay &&
+                m_operation != MOS6510Operation::BRK)
+            {
+                m_nmiDelay = false;
+            }
+
             m_irqPending = m_irqPolled;
             m_state = CpuState::Fetch;
         }
@@ -313,6 +323,12 @@ void MOS6510::executeIrqCycle()
             m_programCounter =
                 static_cast<quint16>(m_ptrBus->read(0xFFFE));
         }
+
+        //
+        // From now until vector high, a newly arriving
+        // NMI is too late to hijack this interrupt.
+        //
+        m_nmiVectorFetch = true;
         break;
 
     case 6:
@@ -333,6 +349,7 @@ void MOS6510::executeIrqCycle()
                     m_ptrBus->read(0xFFFF)) << 8;
         }
 
+        m_nmiVectorFetch = false;
         m_nmiHijack = false;
         m_state = CpuState::Fetch;
         return;
@@ -350,7 +367,12 @@ void MOS6510::pollIrq()
 void MOS6510::setNmiLine(const bool active)
 {
     if (active && !m_nmiLine)
+    {
         m_nmiPending = true;
+        if(m_nmiVectorFetch)
+            m_nmiDelay = true;
+    }
+
     m_nmiLine = active;
 }
 void MOS6510::executeNmiCycle()
@@ -1663,6 +1685,7 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
         {
             m_address = m_ptrBus->read(0xFFFE);
         }
+        m_nmiVectorFetch = true;
         break;
     }
     case MOS6510MicroOperation::ReadBrkVectorHigh:
@@ -1679,6 +1702,7 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
                 (static_cast<quint16>(highByte) << 8) |
                 m_address);
 
+        m_nmiVectorFetch = false;
         m_nmiHijack = false;
         break;
     }

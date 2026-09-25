@@ -84,6 +84,8 @@ private:
     quint8 m_irqCycle = 0;
     bool m_nmiLine = false;
     bool m_nmiPending = false;
+    bool m_nmiDelay = false;
+    bool m_nmiVectorFetch = false;
     bool m_nmiHijack = false;
     quint8 m_nmiCycle = 0;
 

@@ -1586,3 +1586,161 @@ void MOS6510TestCpuControl::testNmiDuringBrkTooLateForVector()
 
     QCOMPARE(m_cpu.programCounter(), quint16(0x5678));
 }
+
+
+void MOS6510TestCpuControl::testNmiLateDuringIrq()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setStackPointer(0x80);
+    m_cpu.setStatus(0x20);
+
+    m_memory.writeRAM(0x2000, 0xEA);
+
+    //
+    // NMI vector -> $4000
+    //
+    m_memory.writeRAM(0xFFFA, 0x00);
+    m_memory.writeRAM(0xFFFB, 0x40);
+
+    //
+    // IRQ vector -> $3000
+    //
+    m_memory.writeRAM(0xFFFE, 0x00);
+    m_memory.writeRAM(0xFFFF, 0x30);
+
+    //
+    // First IRQ-handler instruction: NOP
+    //
+    m_memory.writeRAM(0x3000, 0xEA);
+    m_memory.writeRAM(0x3001, 0xEA);
+
+    m_cpu.setIrqLine(true);
+
+    //
+    // IRQ C1-C5.
+    //
+    for (int i = 0; i < 5; ++i)
+        clock();
+
+    //
+    // IRQ C6: vector low.
+    //
+    clock();
+    verifyRead(0xFFFE, 0x00);
+
+    //
+    // NMI becomes active inside the protected vector-fetch
+    // window. It is too late to hijack this IRQ.
+    //
+    m_cpu.setNmiLine(true);
+
+    //
+    // IRQ C7: vector high must remain IRQ.
+    //
+    clock();
+    verifyRead(0xFFFF, 0x30);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x3000));
+
+    //
+    // The first instruction of the IRQ handler really executes.
+    //
+    // NOP C1
+    //
+    clock();
+    verifyRead(0x3000, 0xEA);
+    QCOMPARE(m_cpu.programCounter(), quint16(0x3001));
+
+    //
+    // NOP C2
+    //
+    clock();
+    verifyRead(0x3001, 0xEA);
+    QCOMPARE(m_cpu.programCounter(), quint16(0x3001));
+
+    //
+    // Only now may NMI start.
+    //
+    clock();
+    verifyRead(0x3001, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x3001));
+}
+void MOS6510TestCpuControl::testNmiLateDuringBrk()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setStackPointer(0x80);
+    m_cpu.setStatus(0x20);
+
+    //
+    // BRK
+    //
+    m_memory.writeRAM(0x2000, 0x00);
+    m_memory.writeRAM(0x2001, 0xEA);
+
+    //
+    // NMI -> $4000
+    //
+    m_memory.writeRAM(0xFFFA, 0x00);
+    m_memory.writeRAM(0xFFFB, 0x40);
+
+    //
+    // BRK -> $3000
+    //
+    m_memory.writeRAM(0xFFFE, 0x00);
+    m_memory.writeRAM(0xFFFF, 0x30);
+
+    //
+    // First BRK-handler instruction.
+    //
+    m_memory.writeRAM(0x3000, 0xEA);
+    m_memory.writeRAM(0x3001, 0xEA);
+
+    //
+    // BRK C1-C5.
+    //
+    for (int i = 0; i < 5; ++i)
+        clock();
+
+    //
+    // BRK C6: vector low.
+    //
+    clock();
+    verifyRead(0xFFFE, 0x00);
+
+    //
+    // NMI too late for hijacking.
+    //
+    m_cpu.setNmiLine(true);
+
+    //
+    // BRK C7.
+    //
+    clock();
+    verifyRead(0xFFFF, 0x30);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x3000));
+
+    //
+    // First handler NOP executes completely.
+    //
+    clock();
+    verifyRead(0x3000, 0xEA);
+
+    clock();
+    verifyRead(0x3001, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x3001));
+
+    //
+    // Now NMI starts.
+    //
+    clock();
+    verifyRead(0x3001, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x3001));
+}

@@ -52,4 +52,7 @@ private slots:
     void testNmiBeforeBrk();
     void testNmiDuringBrkBeforeVector();
     void testNmiDuringBrkTooLateForVector();
+
+    void testNmiLateDuringIrq();
+    void testNmiLateDuringBrk();
 };
