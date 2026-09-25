@@ -22,15 +22,8 @@ private:
     void initializeStackInstructions();
     void initializeLogicalInstructions();
     void initializeArithmeticInstructions();
+    void initializeShiftInstructions();
     void initializeSpecialInstructions();
-
-
-    //void initializeCompareInstructions();
-    //void initializeIncrementInstructions();
-    //void initializeShiftInstructions();
-    //void initializeBranchInstructions();
-    //void initializeJumpInstructions();
-    //void initializeFlagInstructions();
 
 private:
     MOS6510Instruction m_instructions[256];

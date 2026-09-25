@@ -724,6 +724,89 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
         updateLoadFlags(m_data);
         break;
     }
+    case MOS6510MicroOperation::ShiftLeftAccumulator:
+    {
+        m_ptrBus->read(m_programCounter);
+        const bool carry = (m_accumulator & 0x80) != 0;
+        m_accumulator = static_cast<quint8>(m_accumulator << 1);
+        setStatusFlag(MOS6510StatusFlag::Carry, carry);
+        updateLoadFlags(m_accumulator);
+        break;
+    }
+
+    case MOS6510MicroOperation::ShiftRightAccumulator:
+    {
+        m_ptrBus->read(m_programCounter);
+        const bool carry = (m_accumulator & 0x01) != 0;
+        m_accumulator = static_cast<quint8>(m_accumulator >> 1);
+        setStatusFlag(MOS6510StatusFlag::Carry, carry);
+        updateLoadFlags(m_accumulator);
+        break;
+    }
+
+    case MOS6510MicroOperation::RotateLeftAccumulator:
+    {
+        m_ptrBus->read(m_programCounter);
+        const bool carryIn = (m_status & static_cast<quint8>(MOS6510StatusFlag::Carry)) != 0;
+        const bool carryOut = (m_accumulator & 0x80) != 0;
+        m_accumulator = static_cast<quint8>((m_accumulator << 1) | (carryIn ? 0x01 : 0x00));
+        setStatusFlag(MOS6510StatusFlag::Carry, carryOut);
+        updateLoadFlags(m_accumulator);
+        break;
+    }
+
+    case MOS6510MicroOperation::RotateRightAccumulator:
+    {
+        m_ptrBus->read(m_programCounter);
+        const bool carryIn = (m_status & static_cast<quint8>(MOS6510StatusFlag::Carry)) != 0;
+        const bool carryOut = (m_accumulator & 0x01) != 0;
+        m_accumulator = static_cast<quint8>((m_accumulator >> 1) | (carryIn ? 0x80 : 0x00));
+        setStatusFlag(MOS6510StatusFlag::Carry, carryOut);
+        updateLoadFlags(m_accumulator);
+        break;
+    }
+
+    case MOS6510MicroOperation::ShiftLeftDataAndWriteToMemory:
+    {
+        const bool carry = (m_data & 0x80) != 0;
+        m_data = static_cast<quint8>(m_data << 1);
+        m_ptrBus->write(m_address, m_data);
+        setStatusFlag(MOS6510StatusFlag::Carry, carry);
+        updateLoadFlags(m_data);
+        break;
+    }
+
+    case MOS6510MicroOperation::ShiftRightDataAndWriteToMemory:
+    {
+        const bool carry = (m_data & 0x01) != 0;
+        m_data = static_cast<quint8>(m_data >> 1);
+        m_ptrBus->write(m_address, m_data);
+        setStatusFlag(MOS6510StatusFlag::Carry, carry);
+        updateLoadFlags(m_data);
+        break;
+    }
+
+    case MOS6510MicroOperation::RotateLeftDataAndWriteToMemory:
+    {
+        const bool carryIn = (m_status & static_cast<quint8>(MOS6510StatusFlag::Carry)) != 0;
+        const bool carryOut = (m_data & 0x80) != 0;
+        m_data = static_cast<quint8>((m_data << 1) | (carryIn ? 0x01 : 0x00));
+        m_ptrBus->write(m_address, m_data);
+        setStatusFlag(MOS6510StatusFlag::Carry, carryOut);
+        updateLoadFlags(m_data);
+        break;
+    }
+
+    case MOS6510MicroOperation::RotateRightDataAndWriteToMemory:
+    {
+        const bool carryIn = (m_status & static_cast<quint8>(MOS6510StatusFlag::Carry)) != 0;
+        const bool carryOut = (m_data & 0x01) != 0;
+        m_data = static_cast<quint8>((m_data >> 1) | (carryIn ? 0x80 : 0x00));
+        m_ptrBus->write(m_address, m_data);
+        setStatusFlag(MOS6510StatusFlag::Carry, carryOut);
+        updateLoadFlags(m_data);
+        break;
+    }
     case MOS6510MicroOperation::TransferAccumulatorToXRegister:
     {
         m_ptrBus->read(m_programCounter);
