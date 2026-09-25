@@ -16,4 +16,5 @@ private slots:
     void testLoadFunctionalTest();
     void testStartFunctionalTest();
     void testFunctionalTest();
+    void testFunctionalTestPerformance();
 };
