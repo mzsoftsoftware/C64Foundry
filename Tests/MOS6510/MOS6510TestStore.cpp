@@ -232,16 +232,24 @@ void MOS6510TestStore::testIndexedStore()
         QCOMPARE(m_cpu.programCounter(), quint16(0x1003));
     }
 
-    // Cycle 4: Wert schreiben
-    m_cpu.clock();
-    QCOMPARE(m_memory.readRAM(expectedAddress), expectedValue);
     if (addressingMode == MOS6510AddressingMode::ZeroPageX ||
         addressingMode == MOS6510AddressingMode::ZeroPageY)
     {
+        // Cycle 4: Wert schreiben
+        m_cpu.clock();
+        QCOMPARE(m_memory.readRAM(expectedAddress), expectedValue);
         QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
     }
     else
     {
+        // Cycle 4: Dummy Read
+        m_cpu.clock();
+        QCOMPARE(m_memory.readRAM(expectedAddress), quint8(0x00));
+        QCOMPARE(m_cpu.programCounter(), quint16(0x1003));
+
+        // Cycle 5: Wert schreiben
+        m_cpu.clock();
+        QCOMPARE(m_memory.readRAM(expectedAddress), expectedValue);
         QCOMPARE(m_cpu.programCounter(), quint16(0x1003));
     }
 
@@ -259,18 +267,22 @@ void MOS6510TestStore::testIndexedStore()
             verifyRegisters(0x11, index, 0x33, 0x7D);
         }
         break;
+
     case MOS6510Operation::STX:
         verifyRegisters(0x11, 0x22, index, 0x7D);
         break;
+
     case MOS6510Operation::STY:
         verifyRegisters(0x11, index, 0x33, 0x7D);
         break;
+
     default:
         QFAIL("Unsupported store operation");
     }
 
-    // Cycle 5: nächsten Opcode holen
+    // Nächsten Opcode holen
     m_cpu.clock();
+
     if (addressingMode == MOS6510AddressingMode::ZeroPageX ||
         addressingMode == MOS6510AddressingMode::ZeroPageY)
     {
@@ -280,6 +292,7 @@ void MOS6510TestStore::testIndexedStore()
     {
         QCOMPARE(m_cpu.programCounter(), quint16(0x1004));
     }
+
     QCOMPARE(m_memory.readRAM(expectedAddress), expectedValue);
 }
 // --------------------------------------------------------------------------------------------
@@ -394,13 +407,20 @@ void MOS6510TestStore::testIndirectIndexedStore()
     m_cpu.clock();
     QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
 
-    // Cycle 5: Wert schreiben
+    // Cycle 5: Dummy Read
+    m_cpu.clock();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
+    QCOMPARE(m_memory.readRAM(expectedAddress), quint8(0x00));
+
+    // Cycle 6: Wert schreiben
     m_cpu.clock();
     QCOMPARE(m_cpu.programCounter(), quint16(0x1002));
     QCOMPARE(m_memory.readRAM(expectedAddress), quint8(0x11));
+
+    // Register und Status dürfen durch STORE nicht verändert werden.
     verifyRegisters(0x11, 0x22, index, 0x7D);
 
-    // Cycle 6: nächsten Opcode holen
+    // Cycle 7: nächsten Opcode holen
     m_cpu.clock();
     QCOMPARE(m_cpu.programCounter(), quint16(0x1003));
     QCOMPARE(m_memory.readRAM(expectedAddress), quint8(0x11));
