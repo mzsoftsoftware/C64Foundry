@@ -2177,3 +2177,75 @@ void MOS6510TestCpuControl::testNmiBranchTaken()
 
     QCOMPARE(m_cpu.programCounter(), quint16(0x2013));
 }
+void MOS6510TestCpuControl::testNmiDuringCli()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setStackPointer(0x80);
+
+    //
+    // U=1, I=1.
+    //
+    m_cpu.setStatus(0x24);
+
+    m_memory.writeRAM(0x2000, 0x58); // CLI
+    m_memory.writeRAM(0x2001, 0xEA); // Next opcode
+
+    m_memory.writeRAM(0xFFFA, 0x00);
+    m_memory.writeRAM(0xFFFB, 0x40);
+
+    //
+    // CLI C1: opcode fetch.
+    //
+    clock();
+    verifyRead(0x2000, 0x58);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2001));
+
+    //
+    // NMI edge after C1.
+    //
+    // For a two-cycle instruction this is too late for
+    // the interrupt poll belonging to CLI.
+    //
+    m_cpu.setNmiLine(true);
+
+    //
+    // CLI C2.
+    //
+    clock();
+    verifyRead(0x2001, 0xEA);
+
+    QVERIFY(!m_cpu.statusFlag(
+        MOS6510StatusFlag::InterruptDisable));
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2001));
+
+    //
+    // The following NOP must still execute because the
+    // NMI edge occurred after CLI's interrupt poll.
+    //
+    // NOP C1.
+    //
+    clock();
+    verifyRead(0x2001, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2002));
+
+    //
+    // NOP C2.
+    //
+    clock();
+    verifyRead(0x2002, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2002));
+
+    //
+    // NMI starts now.
+    //
+    clock();
+    verifyRead(0x2002, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2002));
+}

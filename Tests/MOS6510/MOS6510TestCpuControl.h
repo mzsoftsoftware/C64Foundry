@@ -62,4 +62,5 @@ private slots:
 
     void testNmiBranchNotTaken();
     void testNmiBranchTaken();
+    void testNmiDuringCli();
 };
