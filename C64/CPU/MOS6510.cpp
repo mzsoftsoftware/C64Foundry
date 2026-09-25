@@ -150,7 +150,7 @@ void MOS6510::clock()
 
         const bool nmiPollMicroOperation =
             m_microOperationCount > 1 &&
-            m_microOperationIndex + 2 >= m_microOperationCount;
+            m_microOperationIndex + 2 == m_microOperationCount;
         const bool finalMicroOperation = m_microOperationIndex + 1 >= m_microOperationCount;
         if (finalMicroOperation)
         {
