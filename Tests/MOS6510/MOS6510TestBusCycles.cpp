@@ -6617,3 +6617,691 @@ void MOS6510TestBusCycles::testTya()
     clock();                            // Fetch next opcode
     verifyRead(0x1001, 0xEA);
 }
+void MOS6510TestBusCycles::testBccTakenBackwardWithoutPageCrossing()
+{
+    m_memory.writeRAM(0x1010, 0x90);    // BCC -$08
+    m_memory.writeRAM(0x1011, 0xF8);
+    m_memory.writeRAM(0x1012, 0x11);    // Dummy-read value
+    m_memory.writeRAM(0x100A, 0xEA);    // Branch target
+
+    m_cpu.setProgramCounter(0x1010);
+    m_cpu.setStatus(0x00);              // C clear -> taken
+
+    clock();                            // C1
+    verifyRead(0x1010, 0x90);
+
+    clock();                            // C2
+    verifyRead(0x1011, 0xF8);
+
+    clock();                            // C3: Dummy read at PC after operand
+    verifyRead(0x1012, 0x11);
+
+    clock();                            // Next opcode at target
+    verifyRead(0x100A, 0xEA);
+}
+
+void MOS6510TestBusCycles::testBccTakenBackwardWithPageCrossing()
+{
+    m_memory.writeRAM(0x1100, 0x90);    // BCC -$04
+    m_memory.writeRAM(0x1101, 0xFC);
+    m_memory.writeRAM(0x1102, 0x11);
+    m_memory.writeRAM(0x11FE, 0x22);    // Wrong-page dummy read
+    m_memory.writeRAM(0x10FE, 0xEA);    // Branch target
+
+    m_cpu.setProgramCounter(0x1100);
+    m_cpu.setStatusFlag(MOS6510StatusFlag::Carry, false);
+
+    clock();
+    verifyRead(0x1100, 0x90);
+
+    clock();
+    verifyRead(0x1101, 0xFC);
+
+    clock();
+    verifyRead(0x1102, 0x11);
+
+    clock();
+    verifyRead(0x11FE, 0x22);
+
+    clock();
+    verifyRead(0x10FE, 0xEA);
+}
+
+void MOS6510TestBusCycles::testBcsTakenBackwardWithoutPageCrossing()
+{
+    m_memory.writeRAM(0x1010, 0xB0);    // BCS -$08
+    m_memory.writeRAM(0x1011, 0xF8);
+    m_memory.writeRAM(0x1012, 0x11);
+    m_memory.writeRAM(0x100A, 0xEA);
+
+    m_cpu.setProgramCounter(0x1010);
+    m_cpu.setStatusFlag(MOS6510StatusFlag::Carry, true);
+
+    clock();
+    verifyRead(0x1010, 0xB0);
+
+    clock();
+    verifyRead(0x1011, 0xF8);
+
+    clock();
+    verifyRead(0x1012, 0x11);
+
+    clock();
+    verifyRead(0x100A, 0xEA);
+}
+
+void MOS6510TestBusCycles::testBcsTakenBackwardWithPageCrossing()
+{
+    m_memory.writeRAM(0x1100, 0xB0);    // BCS -$04
+    m_memory.writeRAM(0x1101, 0xFC);
+    m_memory.writeRAM(0x1102, 0x11);
+    m_memory.writeRAM(0x11FE, 0x22);
+    m_memory.writeRAM(0x10FE, 0xEA);
+
+    m_cpu.setProgramCounter(0x1100);
+    m_cpu.setStatusFlag(MOS6510StatusFlag::Carry, true);
+
+    clock();
+    verifyRead(0x1100, 0xB0);
+
+    clock();
+    verifyRead(0x1101, 0xFC);
+
+    clock();
+    verifyRead(0x1102, 0x11);
+
+    clock();
+    verifyRead(0x11FE, 0x22);
+
+    clock();
+    verifyRead(0x10FE, 0xEA);
+}
+
+void MOS6510TestBusCycles::testBeqTakenBackwardWithoutPageCrossing()
+{
+    m_memory.writeRAM(0x1010, 0xF0);    // BEQ -$08
+    m_memory.writeRAM(0x1011, 0xF8);
+    m_memory.writeRAM(0x1012, 0x11);
+    m_memory.writeRAM(0x100A, 0xEA);
+
+    m_cpu.setProgramCounter(0x1010);
+    m_cpu.setStatusFlag(MOS6510StatusFlag::Zero, true);
+
+    clock();
+    verifyRead(0x1010, 0xF0);
+
+    clock();
+    verifyRead(0x1011, 0xF8);
+
+    clock();
+    verifyRead(0x1012, 0x11);
+
+    clock();
+    verifyRead(0x100A, 0xEA);
+}
+
+void MOS6510TestBusCycles::testBeqTakenBackwardWithPageCrossing()
+{
+    m_memory.writeRAM(0x1100, 0xF0);    // BEQ -$04
+    m_memory.writeRAM(0x1101, 0xFC);
+    m_memory.writeRAM(0x1102, 0x11);
+    m_memory.writeRAM(0x11FE, 0x22);
+    m_memory.writeRAM(0x10FE, 0xEA);
+
+    m_cpu.setProgramCounter(0x1100);
+    m_cpu.setStatusFlag(MOS6510StatusFlag::Zero, true);
+
+    clock();
+    verifyRead(0x1100, 0xF0);
+
+    clock();
+    verifyRead(0x1101, 0xFC);
+
+    clock();
+    verifyRead(0x1102, 0x11);
+
+    clock();
+    verifyRead(0x11FE, 0x22);
+
+    clock();
+    verifyRead(0x10FE, 0xEA);
+}
+
+void MOS6510TestBusCycles::testBmiTakenBackwardWithoutPageCrossing()
+{
+    m_memory.writeRAM(0x1010, 0x30);    // BMI -$08
+    m_memory.writeRAM(0x1011, 0xF8);
+    m_memory.writeRAM(0x1012, 0x11);
+    m_memory.writeRAM(0x100A, 0xEA);
+
+    m_cpu.setProgramCounter(0x1010);
+    m_cpu.setStatusFlag(MOS6510StatusFlag::Negative, true);
+
+    clock();
+    verifyRead(0x1010, 0x30);
+
+    clock();
+    verifyRead(0x1011, 0xF8);
+
+    clock();
+    verifyRead(0x1012, 0x11);
+
+    clock();
+    verifyRead(0x100A, 0xEA);
+}
+
+void MOS6510TestBusCycles::testBmiTakenBackwardWithPageCrossing()
+{
+    m_memory.writeRAM(0x1100, 0x30);    // BMI -$04
+    m_memory.writeRAM(0x1101, 0xFC);
+    m_memory.writeRAM(0x1102, 0x11);
+    m_memory.writeRAM(0x11FE, 0x22);
+    m_memory.writeRAM(0x10FE, 0xEA);
+
+    m_cpu.setProgramCounter(0x1100);
+    m_cpu.setStatusFlag(MOS6510StatusFlag::Negative, true);
+
+    clock();
+    verifyRead(0x1100, 0x30);
+
+    clock();
+    verifyRead(0x1101, 0xFC);
+
+    clock();
+    verifyRead(0x1102, 0x11);
+
+    clock();
+    verifyRead(0x11FE, 0x22);
+
+    clock();
+    verifyRead(0x10FE, 0xEA);
+}
+
+void MOS6510TestBusCycles::testBneTakenBackwardWithoutPageCrossing()
+{
+    m_memory.writeRAM(0x1010, 0xD0);    // BNE -$08
+    m_memory.writeRAM(0x1011, 0xF8);
+    m_memory.writeRAM(0x1012, 0x11);
+    m_memory.writeRAM(0x100A, 0xEA);
+
+    m_cpu.setProgramCounter(0x1010);
+    m_cpu.setStatusFlag(MOS6510StatusFlag::Zero, false);
+
+    clock();
+    verifyRead(0x1010, 0xD0);
+
+    clock();
+    verifyRead(0x1011, 0xF8);
+
+    clock();
+    verifyRead(0x1012, 0x11);
+
+    clock();
+    verifyRead(0x100A, 0xEA);
+}
+
+void MOS6510TestBusCycles::testBneTakenBackwardWithPageCrossing()
+{
+    m_memory.writeRAM(0x1100, 0xD0);    // BNE -$04
+    m_memory.writeRAM(0x1101, 0xFC);
+    m_memory.writeRAM(0x1102, 0x11);
+    m_memory.writeRAM(0x11FE, 0x22);
+    m_memory.writeRAM(0x10FE, 0xEA);
+
+    m_cpu.setProgramCounter(0x1100);
+    m_cpu.setStatusFlag(MOS6510StatusFlag::Zero, false);
+
+    clock();
+    verifyRead(0x1100, 0xD0);
+
+    clock();
+    verifyRead(0x1101, 0xFC);
+
+    clock();
+    verifyRead(0x1102, 0x11);
+
+    clock();
+    verifyRead(0x11FE, 0x22);
+
+    clock();
+    verifyRead(0x10FE, 0xEA);
+}
+
+void MOS6510TestBusCycles::testBplTakenBackwardWithoutPageCrossing()
+{
+    m_memory.writeRAM(0x1010, 0x10);    // BPL -$08
+    m_memory.writeRAM(0x1011, 0xF8);
+    m_memory.writeRAM(0x1012, 0x11);
+    m_memory.writeRAM(0x100A, 0xEA);
+
+    m_cpu.setProgramCounter(0x1010);
+    m_cpu.setStatusFlag(MOS6510StatusFlag::Negative, false);
+
+    clock();
+    verifyRead(0x1010, 0x10);
+
+    clock();
+    verifyRead(0x1011, 0xF8);
+
+    clock();
+    verifyRead(0x1012, 0x11);
+
+    clock();
+    verifyRead(0x100A, 0xEA);
+}
+
+void MOS6510TestBusCycles::testBplTakenBackwardWithPageCrossing()
+{
+    m_memory.writeRAM(0x1100, 0x10);    // BPL -$04
+    m_memory.writeRAM(0x1101, 0xFC);
+    m_memory.writeRAM(0x1102, 0x11);
+    m_memory.writeRAM(0x11FE, 0x22);
+    m_memory.writeRAM(0x10FE, 0xEA);
+
+    m_cpu.setProgramCounter(0x1100);
+    m_cpu.setStatusFlag(MOS6510StatusFlag::Negative, false);
+
+    clock();
+    verifyRead(0x1100, 0x10);
+
+    clock();
+    verifyRead(0x1101, 0xFC);
+
+    clock();
+    verifyRead(0x1102, 0x11);
+
+    clock();
+    verifyRead(0x11FE, 0x22);
+
+    clock();
+    verifyRead(0x10FE, 0xEA);
+}
+
+void MOS6510TestBusCycles::testBvcTakenBackwardWithoutPageCrossing()
+{
+    m_memory.writeRAM(0x1010, 0x50);    // BVC -$08
+    m_memory.writeRAM(0x1011, 0xF8);
+    m_memory.writeRAM(0x1012, 0x11);
+    m_memory.writeRAM(0x100A, 0xEA);
+
+    m_cpu.setProgramCounter(0x1010);
+    m_cpu.setStatusFlag(MOS6510StatusFlag::Overflow, false);
+
+    clock();
+    verifyRead(0x1010, 0x50);
+
+    clock();
+    verifyRead(0x1011, 0xF8);
+
+    clock();
+    verifyRead(0x1012, 0x11);
+
+    clock();
+    verifyRead(0x100A, 0xEA);
+}
+
+void MOS6510TestBusCycles::testBvcTakenBackwardWithPageCrossing()
+{
+    m_memory.writeRAM(0x1100, 0x50);    // BVC -$04
+    m_memory.writeRAM(0x1101, 0xFC);
+    m_memory.writeRAM(0x1102, 0x11);
+    m_memory.writeRAM(0x11FE, 0x22);
+    m_memory.writeRAM(0x10FE, 0xEA);
+
+    m_cpu.setProgramCounter(0x1100);
+    m_cpu.setStatusFlag(MOS6510StatusFlag::Overflow, false);
+
+    clock();
+    verifyRead(0x1100, 0x50);
+
+    clock();
+    verifyRead(0x1101, 0xFC);
+
+    clock();
+    verifyRead(0x1102, 0x11);
+
+    clock();
+    verifyRead(0x11FE, 0x22);
+
+    clock();
+    verifyRead(0x10FE, 0xEA);
+}
+
+void MOS6510TestBusCycles::testBvsTakenBackwardWithoutPageCrossing()
+{
+    m_memory.writeRAM(0x1010, 0x70);    // BVS -$08
+    m_memory.writeRAM(0x1011, 0xF8);
+    m_memory.writeRAM(0x1012, 0x11);
+    m_memory.writeRAM(0x100A, 0xEA);
+
+    m_cpu.setProgramCounter(0x1010);
+    m_cpu.setStatusFlag(MOS6510StatusFlag::Overflow, true);
+
+    clock();
+    verifyRead(0x1010, 0x70);
+
+    clock();
+    verifyRead(0x1011, 0xF8);
+
+    clock();
+    verifyRead(0x1012, 0x11);
+
+    clock();
+    verifyRead(0x100A, 0xEA);
+}
+
+void MOS6510TestBusCycles::testBvsTakenBackwardWithPageCrossing()
+{
+    m_memory.writeRAM(0x1100, 0x70);    // BVS -$04
+    m_memory.writeRAM(0x1101, 0xFC);
+    m_memory.writeRAM(0x1102, 0x11);
+    m_memory.writeRAM(0x11FE, 0x22);
+    m_memory.writeRAM(0x10FE, 0xEA);
+
+    m_cpu.setProgramCounter(0x1100);
+    m_cpu.setStatusFlag(MOS6510StatusFlag::Overflow, true);
+
+    clock();
+    verifyRead(0x1100, 0x70);
+
+    clock();
+    verifyRead(0x1101, 0xFC);
+
+    clock();
+    verifyRead(0x1102, 0x11);
+
+    clock();
+    verifyRead(0x11FE, 0x22);
+
+    clock();
+    verifyRead(0x10FE, 0xEA);
+}
+
+void MOS6510TestBusCycles::testLdaImmediateProgramCounterWrapAround()
+{
+    m_memory.writeRAM(0xFFFF, 0xA9);    // LDA #$42
+    m_memory.writeRAM(0x0000, 0x42);
+    m_memory.writeRAM(0x0001, 0xEA);
+
+    m_cpu.setProgramCounter(0xFFFF);
+
+    clock();                            // C1: Fetch opcode
+    verifyRead(0xFFFF, 0xA9);
+
+    clock();                            // C2: Operand after PC wrap
+    verifyRead(0x0000, 0x42);
+
+    clock();                            // Next opcode
+    verifyRead(0x0001, 0xEA);
+}
+
+void MOS6510TestBusCycles::testLdaAbsoluteXAddressSpaceWrapAround()
+{
+    m_memory.writeRAM(0x1000, 0xBD);    // LDA $FFFE,X
+    m_memory.writeRAM(0x1001, 0xFE);
+    m_memory.writeRAM(0x1002, 0xFF);
+
+    m_memory.writeRAM(0xFF03, 0x11);    // Wrong-page read
+    m_memory.writeRAM(0x0003, 0x42);    // Effective address after 16-bit wrap
+    m_memory.writeRAM(0x1003, 0xEA);
+
+    m_cpu.setXRegister(0x05);
+
+    clock();
+    verifyRead(0x1000, 0xBD);
+
+    clock();
+    verifyRead(0x1001, 0xFE);
+
+    clock();
+    verifyRead(0x1002, 0xFF);
+
+    clock();
+    verifyRead(0xFF03, 0x11);
+
+    clock();
+    verifyRead(0x0003, 0x42);
+
+    clock();
+    verifyRead(0x1003, 0xEA);
+}
+
+void MOS6510TestBusCycles::testLdaAbsoluteYAddressSpaceWrapAround()
+{
+    m_memory.writeRAM(0x1000, 0xB9);    // LDA $FFFE,Y
+    m_memory.writeRAM(0x1001, 0xFE);
+    m_memory.writeRAM(0x1002, 0xFF);
+
+    m_memory.writeRAM(0xFF03, 0x11);
+    m_memory.writeRAM(0x0003, 0x42);
+    m_memory.writeRAM(0x1003, 0xEA);
+
+    m_cpu.setYRegister(0x05);
+
+    clock();
+    verifyRead(0x1000, 0xB9);
+
+    clock();
+    verifyRead(0x1001, 0xFE);
+
+    clock();
+    verifyRead(0x1002, 0xFF);
+
+    clock();
+    verifyRead(0xFF03, 0x11);
+
+    clock();
+    verifyRead(0x0003, 0x42);
+
+    clock();
+    verifyRead(0x1003, 0xEA);
+}
+
+void MOS6510TestBusCycles::testLdaIndirectIndexedAddressSpaceWrapAround()
+{
+    m_memory.writeRAM(0x1000, 0xB1);    // LDA ($20),Y
+    m_memory.writeRAM(0x1001, 0x20);
+
+    m_memory.writeRAM(0x0020, 0xFE);
+    m_memory.writeRAM(0x0021, 0xFF);
+
+    m_memory.writeRAM(0xFF03, 0x11);    // Wrong-page read
+    m_memory.writeRAM(0x0003, 0x42);    // Effective address
+    m_memory.writeRAM(0x1002, 0xEA);
+
+    m_cpu.setYRegister(0x05);
+
+    clock();
+    verifyRead(0x1000, 0xB1);
+
+    clock();
+    verifyRead(0x1001, 0x20);
+
+    clock();
+    verifyRead(0x0020, 0xFE);
+
+    clock();
+    verifyRead(0x0021, 0xFF);
+
+    clock();
+    verifyRead(0xFF03, 0x11);
+
+    clock();
+    verifyRead(0x0003, 0x42);
+
+    clock();
+    verifyRead(0x1002, 0xEA);
+}
+
+void MOS6510TestBusCycles::testStaAbsoluteXAddressSpaceWrapAround()
+{
+    m_memory.writeRAM(0x1000, 0x9D);    // STA $FFFE,X
+    m_memory.writeRAM(0x1001, 0xFE);
+    m_memory.writeRAM(0x1002, 0xFF);
+
+    m_memory.writeRAM(0xFF03, 0x11);    // Dummy read
+    m_memory.writeRAM(0x1003, 0xEA);
+
+    m_cpu.setXRegister(0x05);
+    m_cpu.setAccumulator(0x42);
+
+    clock();
+    verifyRead(0x1000, 0x9D);
+
+    clock();
+    verifyRead(0x1001, 0xFE);
+
+    clock();
+    verifyRead(0x1002, 0xFF);
+
+    clock();
+    verifyRead(0xFF03, 0x11);
+
+    clock();
+    verifyWrite(0x0003, 0x42);
+
+    clock();
+    verifyRead(0x1003, 0xEA);
+}
+
+void MOS6510TestBusCycles::testStaAbsoluteYAddressSpaceWrapAround()
+{
+    m_memory.writeRAM(0x1000, 0x99);    // STA $FFFE,Y
+    m_memory.writeRAM(0x1001, 0xFE);
+    m_memory.writeRAM(0x1002, 0xFF);
+
+    m_memory.writeRAM(0xFF03, 0x11);
+    m_memory.writeRAM(0x1003, 0xEA);
+
+    m_cpu.setYRegister(0x05);
+    m_cpu.setAccumulator(0x42);
+
+    clock();
+    verifyRead(0x1000, 0x99);
+
+    clock();
+    verifyRead(0x1001, 0xFE);
+
+    clock();
+    verifyRead(0x1002, 0xFF);
+
+    clock();
+    verifyRead(0xFF03, 0x11);
+
+    clock();
+    verifyWrite(0x0003, 0x42);
+
+    clock();
+    verifyRead(0x1003, 0xEA);
+}
+
+void MOS6510TestBusCycles::testStaIndirectIndexedAddressSpaceWrapAround()
+{
+    m_memory.writeRAM(0x1000, 0x91);    // STA ($20),Y
+    m_memory.writeRAM(0x1001, 0x20);
+
+    m_memory.writeRAM(0x0020, 0xFE);
+    m_memory.writeRAM(0x0021, 0xFF);
+
+    m_memory.writeRAM(0xFF03, 0x11);
+    m_memory.writeRAM(0x1002, 0xEA);
+
+    m_cpu.setYRegister(0x05);
+    m_cpu.setAccumulator(0x42);
+
+    clock();
+    verifyRead(0x1000, 0x91);
+
+    clock();
+    verifyRead(0x1001, 0x20);
+
+    clock();
+    verifyRead(0x0020, 0xFE);
+
+    clock();
+    verifyRead(0x0021, 0xFF);
+
+    clock();
+    verifyRead(0xFF03, 0x11);
+
+    clock();
+    verifyWrite(0x0003, 0x42);
+
+    clock();
+    verifyRead(0x1002, 0xEA);
+}
+
+void MOS6510TestBusCycles::testIncAbsoluteXAddressSpaceWrapAround()
+{
+    m_memory.writeRAM(0x1000, 0xFE);    // INC $FFFE,X
+    m_memory.writeRAM(0x1001, 0xFE);
+    m_memory.writeRAM(0x1002, 0xFF);
+
+    m_memory.writeRAM(0xFF03, 0x11);    // Wrong-page dummy read
+    m_memory.writeRAM(0x0003, 0x41);    // Old value
+    m_memory.writeRAM(0x1003, 0xEA);
+
+    m_cpu.setXRegister(0x05);
+
+    clock();                            // C1
+    verifyRead(0x1000, 0xFE);
+
+    clock();                            // C2
+    verifyRead(0x1001, 0xFE);
+
+    clock();                            // C3
+    verifyRead(0x1002, 0xFF);
+
+    clock();                            // C4: Indexed dummy read
+    verifyRead(0xFF03, 0x11);
+
+    clock();                            // C5: Read old value
+    verifyRead(0x0003, 0x41);
+
+    clock();                            // C6: Dummy write old value
+    verifyWrite(0x0003, 0x41);
+
+    clock();                            // C7: Write new value
+    verifyWrite(0x0003, 0x42);
+
+    clock();                            // Next opcode
+    verifyRead(0x1003, 0xEA);
+}
+
+void MOS6510TestBusCycles::testRtsProgramCounterWrapAround()
+{
+    m_memory.writeRAM(0x1000, 0x60);    // RTS
+    m_memory.writeRAM(0x1001, 0x11);    // Dummy-read value
+
+    // SP starts at $FD.
+    // RTS pulls $FFFF from $01FE/$01FF and then increments it to $0000.
+    m_memory.writeRAM(0x01FD, 0x22);    // Dummy stack read
+    m_memory.writeRAM(0x01FE, 0xFF);    // Return address low
+    m_memory.writeRAM(0x01FF, 0xFF);    // Return address high
+
+    m_memory.writeRAM(0xFFFF, 0x33);    // Final RTS dummy read
+    m_memory.writeRAM(0x0000, 0xEA);    // Next opcode after PC wrap
+
+    m_cpu.setStackPointer(0xFD);
+
+    clock();                            // C1: Fetch RTS
+    verifyRead(0x1000, 0x60);
+
+    clock();                            // C2: Dummy read at PC
+    verifyRead(0x1001, 0x11);
+
+    clock();                            // C3: Dummy stack read
+    verifyRead(0x01FD, 0x22);
+
+    clock();                            // C4: Pull PCL
+    verifyRead(0x01FE, 0xFF);
+
+    clock();                            // C5: Pull PCH
+    verifyRead(0x01FF, 0xFF);
+
+    clock();                            // C6: Dummy read at pulled address
+    verifyRead(0xFFFF, 0x33);
+
+    clock();                            // Next opcode after RTS increments PC
+    verifyRead(0x0000, 0xEA);
+}

@@ -340,4 +340,44 @@ private slots:
     void testTxa();
     void testTxs();
     void testTya();
+
+    // Boundary cases - backward branches
+    void testBccTakenBackwardWithoutPageCrossing();
+    void testBccTakenBackwardWithPageCrossing();
+
+    void testBcsTakenBackwardWithoutPageCrossing();
+    void testBcsTakenBackwardWithPageCrossing();
+
+    void testBeqTakenBackwardWithoutPageCrossing();
+    void testBeqTakenBackwardWithPageCrossing();
+
+    void testBmiTakenBackwardWithoutPageCrossing();
+    void testBmiTakenBackwardWithPageCrossing();
+
+    void testBneTakenBackwardWithoutPageCrossing();
+    void testBneTakenBackwardWithPageCrossing();
+
+    void testBplTakenBackwardWithoutPageCrossing();
+    void testBplTakenBackwardWithPageCrossing();
+
+    void testBvcTakenBackwardWithoutPageCrossing();
+    void testBvcTakenBackwardWithPageCrossing();
+
+    void testBvsTakenBackwardWithoutPageCrossing();
+    void testBvsTakenBackwardWithPageCrossing();
+
+    // Boundary cases - address space wrap-around
+    void testLdaImmediateProgramCounterWrapAround();
+
+    void testLdaAbsoluteXAddressSpaceWrapAround();
+    void testLdaAbsoluteYAddressSpaceWrapAround();
+    void testLdaIndirectIndexedAddressSpaceWrapAround();
+
+    void testStaAbsoluteXAddressSpaceWrapAround();
+    void testStaAbsoluteYAddressSpaceWrapAround();
+    void testStaIndirectIndexedAddressSpaceWrapAround();
+
+    void testIncAbsoluteXAddressSpaceWrapAround();
+
+    void testRtsProgramCounterWrapAround();
 };

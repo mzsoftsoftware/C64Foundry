@@ -34,6 +34,7 @@ public:
     void setStackPointer(quint8 value)                  { m_stackPointer = value; }
     void setProgramCounter(quint16 address)             { m_programCounter = address; }
     void setStatus(quint8 value)                        { m_status = value; }
+    void setStatusFlag(MOS6510StatusFlag flag, bool value);
 
     // Operations
     void reset();
@@ -52,7 +53,6 @@ private:
     void prepareMicroOperations();
     void executeMicroOperation(MOS6510MicroOperation microOperation);
 
-    void setStatusFlag(MOS6510StatusFlag flag, bool value);
     void updateLoadFlags(quint8 value);
 
     void addToAccumulator(quint8 operand);
