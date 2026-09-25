@@ -44,6 +44,7 @@ enum class MOS6510MicroOperation
     ReadAbsoluteAddressHigh,
     ReadAbsoluteXAddress,
     ReadAbsoluteYAddress,
+    ReadAbsoluteIndexedDummy,
     ReadAbsoluteToAccumulator,
     ReadAbsoluteToXRegister,
     ReadAbsoluteToYRegister,

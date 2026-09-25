@@ -6625,7 +6625,7 @@ void MOS6510TestBusCycles::testBccTakenBackwardWithoutPageCrossing()
     m_memory.writeRAM(0x100A, 0xEA);    // Branch target
 
     m_cpu.setProgramCounter(0x1010);
-    m_cpu.setStatus(0x00);              // C clear -> taken
+    m_cpu.setStatusFlag(MOS6510StatusFlag::Carry, false);
 
     clock();                            // C1
     verifyRead(0x1010, 0x90);

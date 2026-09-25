@@ -67,6 +67,8 @@ void MOS6510::clock()
     case CpuState::Execute:
         if (m_dummyReadPending)
         {
+            const quint16 dummyAddress = static_cast<quint16>(m_address - 0x0100);
+            m_ptrBus->read(dummyAddress);
             m_dummyReadPending = false;
             break;
         }
@@ -305,6 +307,9 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
     case MOS6510MicroOperation::ReadZeroPageIndexedAddress:
     {
         const quint8 baseAddress = static_cast<quint8>(m_address);
+        // NMOS 6502/6510 performs a dummy read from the
+        // unindexed zero-page address during this cycle.
+        m_ptrBus->read(baseAddress);
         switch (m_addressingMode)
         {
         case MOS6510AddressingMode::ZeroPageX:
@@ -418,6 +423,16 @@ void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
         {
             m_dummyReadPending = true;
         }
+        break;
+    }
+    case MOS6510MicroOperation::ReadAbsoluteIndexedDummy:
+    {
+        quint16 dummyAddress = m_address;
+        if (m_pageCrossed)
+        {
+            dummyAddress = static_cast<quint16>(dummyAddress - 0x0100);
+        }
+        m_ptrBus->read(dummyAddress);
         break;
     }
     case MOS6510MicroOperation::ReadAbsoluteToAccumulator:
