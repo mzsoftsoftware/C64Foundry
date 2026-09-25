@@ -27,6 +27,8 @@ void MOS6510::initialize()
     m_initialFetch = true;
     m_irqCycle = 0;
     m_nmiLine = false;
+    m_nmiPending = false;
+    m_nmiCycle = 0;
 
     m_accumulator = 0x00;
     m_x = 0x00;
@@ -56,6 +58,8 @@ void MOS6510::reset()
     m_irqPolled = false;
     m_initialFetch = false;
     m_irqCycle = 0;
+    m_nmiPending = false;
+    m_nmiCycle = 0;
     m_state = CpuState::Reset;
 }
 
@@ -67,6 +71,16 @@ void MOS6510::clock()
     switch (m_state)
     {
     case CpuState::Fetch:
+        if (m_nmiPending)
+        {
+            m_nmiPending = false;
+            m_nmiCycle = 0;
+            m_state = CpuState::Nmi;
+
+            executeNmiCycle();
+            break;
+        }
+
         if (m_irqPending ||
             (m_initialFetch &&
              m_irqLine &&
@@ -159,6 +173,10 @@ void MOS6510::clock()
 
     case CpuState::Irq:
         executeIrqCycle();
+        break;
+
+    case CpuState::Nmi:
+        executeNmiCycle();
         break;
 
     case CpuState::Stopped:
@@ -302,6 +320,98 @@ void MOS6510::executeIrqCycle()
 void MOS6510::pollIrq()
 {
     m_irqPolled = m_irqLine && !statusFlag(MOS6510StatusFlag::InterruptDisable);
+}
+
+
+void MOS6510::setNmiLine(const bool active)
+{
+    if (active && !m_nmiLine)
+        m_nmiPending = true;
+    m_nmiLine = active;
+}
+void MOS6510::executeNmiCycle()
+{
+    switch (m_nmiCycle)
+    {
+    case 0:
+        //
+        // C1
+        // Suppressed opcode fetch.
+        //
+        m_ptrBus->read(m_programCounter);
+        break;
+
+    case 1:
+        //
+        // C2
+        // Second dummy read from the current PC.
+        //
+        m_ptrBus->read(m_programCounter);
+        break;
+
+    case 2:
+        //
+        // C3
+        // Push program counter high byte.
+        //
+        m_ptrBus->write(
+            static_cast<quint16>(0x0100 | m_stackPointer),
+            static_cast<quint8>(m_programCounter >> 8));
+
+        --m_stackPointer;
+        break;
+
+    case 3:
+        //
+        // C4
+        // Push program counter low byte.
+        //
+        m_ptrBus->write(
+            static_cast<quint16>(0x0100 | m_stackPointer),
+            static_cast<quint8>(m_programCounter & 0x00FF));
+
+        --m_stackPointer;
+        break;
+
+    case 4:
+        //
+        // C5
+        // Push status with B clear and U set.
+        //
+        m_ptrBus->write(
+            static_cast<quint16>(0x0100 | m_stackPointer),
+            static_cast<quint8>((m_status & 0xEF) | 0x20));
+
+        --m_stackPointer;
+        break;
+
+    case 5:
+        //
+        // C6
+        // Set I and read NMI vector low byte.
+        //
+        setStatusFlag(
+            MOS6510StatusFlag::InterruptDisable,
+            true);
+
+        m_programCounter =
+            static_cast<quint16>(m_ptrBus->read(0xFFFA));
+        break;
+
+    case 6:
+        //
+        // C7
+        // Read NMI vector high byte.
+        //
+        m_programCounter |=
+            static_cast<quint16>(
+                m_ptrBus->read(0xFFFB)) << 8;
+
+        m_state = CpuState::Fetch;
+        return;
+    }
+
+    ++m_nmiCycle;
 }
 
 void MOS6510::fetchOpcode()

@@ -38,7 +38,7 @@ public:
     void setStatus(quint8 value)                        { m_status = value; }
     void setStatusFlag(MOS6510StatusFlag flag, bool value);
     void setIrqLine(bool active)                        { m_irqLine = active; }
-    void setNmiLine(bool active)                        { m_nmiLine = active; }
+    void setNmiLine(bool active);
 
     // Operations
     void initialize();
@@ -52,12 +52,14 @@ private:
         Execute,
         Reset,
         Irq,
+        Nmi,
         Stopped
     };
 
     void executeResetCycle();
     void executeIrqCycle();
     void pollIrq();
+    void executeNmiCycle();
 
     void fetchOpcode();
     void decodeInstruction();
@@ -81,6 +83,8 @@ private:
     bool m_initialFetch = true;
     quint8 m_irqCycle = 0;
     bool m_nmiLine = false;
+    bool m_nmiPending = false;
+    quint8 m_nmiCycle = 0;
 
     quint8  m_accumulator = 0;
     quint8  m_x = 0;
