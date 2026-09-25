@@ -14,7 +14,7 @@ void MOS6510TestBase::setupCpu()
 {
     m_bus.setMemory(&m_memory);
     m_cpu.setBus(&m_bus);
-    m_cpu.reset();
+    m_cpu.initialize();
 }
 
 void MOS6510TestBase::clock()

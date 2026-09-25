@@ -37,6 +37,7 @@ public:
     void setStatusFlag(MOS6510StatusFlag flag, bool value);
 
     // Operations
+    void initialize();
     void reset();
     void clock();
 
@@ -45,6 +46,7 @@ private:
     {
         Fetch,
         Execute,
+        Reset,
         Stopped
     };
 
@@ -63,6 +65,7 @@ private:
 
     MOS6510InstructionTable m_instructionTable;
     CpuState m_state = CpuState::Fetch;
+    quint8 m_resetCycle = 0;
 
     quint8  m_accumulator = 0;
     quint8  m_x = 0;

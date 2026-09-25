@@ -17,18 +17,18 @@ void MOS6510::setBus(C64Bus* ptrBus)
     m_ptrBus = ptrBus;
 }
 
-void MOS6510::reset()
+void MOS6510::initialize()
 {
     m_state = CpuState::Fetch;
+    m_resetCycle = 0;
 
-    // PC aus dem Reset-Vector holen
-    m_programCounter = static_cast<quint16>(m_ptrBus->read(0xFFFC)) | (static_cast<quint16>(m_ptrBus->read(0xFFFD)) << 8);
     m_accumulator = 0x00;
     m_x = 0x00;
     m_y = 0x00;
     m_stackPointer = 0xFF;
+    m_programCounter = 0x0000;
     m_status = 0x20;
-    
+
     m_opcode = 0x00;
     m_address = 0x0000;
     m_data = 0x00;
@@ -40,6 +40,13 @@ void MOS6510::reset()
 
     m_pageCrossed = false;
     m_dummyReadPending = false;
+    m_pageCrossingCycle = false;
+}
+
+void MOS6510::reset()
+{
+    m_state = CpuState::Reset;
+    m_resetCycle = 0;
 }
 
 void MOS6510::clock()
@@ -78,6 +85,9 @@ void MOS6510::clock()
         {
             m_state = CpuState::Fetch;
         }
+        break;
+
+    case CpuState::Reset:
         break;
 
     case CpuState::Stopped:

@@ -31,7 +31,7 @@ void MOS6510TestCpuControl::testReset()
     // RESET takes seven cycles.
     //
     for (int i = 0; i < 7; ++i)
-        m_cpu.clock();
+        clock();
 
     QCOMPARE(m_cpu.programCounter(), quint16(0x3456));
     QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
@@ -62,7 +62,7 @@ void MOS6510TestCpuControl::testResetVector()
     m_cpu.reset();
 
     for (int i = 0; i < 7; ++i)
-        m_cpu.clock();
+        clock();
 
     QCOMPARE(m_cpu.programCounter(), quint16(0xABCD));
 
@@ -94,7 +94,7 @@ void MOS6510TestCpuControl::testResetStackPointer()
     m_cpu.reset();
 
     for (int i = 0; i < 7; ++i)
-        m_cpu.clock();
+        clock();
 
     QCOMPARE(m_cpu.stackPointer(), quint8(0xFE));
 
@@ -119,7 +119,7 @@ void MOS6510TestCpuControl::testResetStatus()
     m_cpu.reset();
 
     for (int i = 0; i < 7; ++i)
-        m_cpu.clock();
+        clock();
 
     QVERIFY(m_cpu.statusFlag(MOS6510StatusFlag::InterruptDisable));
 }
