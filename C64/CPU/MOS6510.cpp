@@ -24,7 +24,7 @@ void MOS6510::initialize()
     m_irqLine = false;
     m_irqPending = false;
     m_irqPolled = false;
-    m_initialFetch = false;
+    m_initialFetch = true;
     m_irqCycle = 0;
 
     m_accumulator = 0x00;
@@ -53,6 +53,7 @@ void MOS6510::reset()
     m_resetCycle = 0;
     m_irqPending = false;
     m_irqPolled = false;
+    m_initialFetch = false;
     m_irqCycle = 0;
     m_state = CpuState::Reset;
 }
@@ -66,7 +67,7 @@ void MOS6510::clock()
     {
     case CpuState::Fetch:
         if (m_irqPending ||
-            (!m_initialFetch &&
+            (m_initialFetch &&
              m_irqLine &&
              !statusFlag(MOS6510StatusFlag::InterruptDisable)))
         {
@@ -77,6 +78,8 @@ void MOS6510::clock()
             executeIrqCycle();
             break;
         }
+
+        m_initialFetch = false;
 
         fetchOpcode();
         decodeInstruction();

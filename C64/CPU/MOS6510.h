@@ -76,7 +76,7 @@ private:
     bool m_irqLine = false;
     bool m_irqPending = false;
     bool m_irqPolled = false;
-    bool m_initialFetch = false;
+    bool m_initialFetch = true;
     quint8 m_irqCycle = 0;
 
     quint8  m_accumulator = 0;
