@@ -20,5 +20,9 @@ private slots:
     void testResetStatus();
     void testResetCycles();
 
-
+    void testIrq();
+    void testIrqMasked();
+    void testIrqStack();
+    void testIrqStatus();
+    void testIrqCycles();
 };

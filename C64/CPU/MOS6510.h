@@ -25,6 +25,7 @@ public:
     quint16 programCounter() const                      { return m_programCounter; }
     quint8 status() const                               { return m_status; }
     bool statusFlag(MOS6510StatusFlag flag) const;
+    bool irqLine() const                                { return m_irqLine; }
 
     // Setter
     void setBus(C64Bus* ptrBus);
@@ -35,6 +36,7 @@ public:
     void setProgramCounter(quint16 address)             { m_programCounter = address; }
     void setStatus(quint8 value)                        { m_status = value; }
     void setStatusFlag(MOS6510StatusFlag flag, bool value);
+    void setIrqLine(bool active)                        { m_irqLine = active; }
 
     // Operations
     void initialize();
@@ -68,6 +70,7 @@ private:
     MOS6510InstructionTable m_instructionTable;
     CpuState m_state = CpuState::Fetch;
     quint8 m_resetCycle = 0;
+    bool m_irqLine = false;
 
     quint8  m_accumulator = 0;
     quint8  m_x = 0;
