@@ -30,4 +30,8 @@ private slots:
     void testIrqAfterPlp();
     void testIrqAfterRti();
     void testIrqReleased();
+    void testIrqBranchNotTaken();
+    void testIrqBranchTaken();
+    void testIrqBranchTakenPageCrossing();
+
 };

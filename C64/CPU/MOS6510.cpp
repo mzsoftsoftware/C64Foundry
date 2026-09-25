@@ -23,6 +23,7 @@ void MOS6510::initialize()
     m_resetCycle = 0;
     m_irqLine = false;
     m_irqPending = false;
+    m_irqPollBeforeIChange = false;
     m_irqCycle = 0;
 
     m_accumulator = 0x00;
@@ -49,6 +50,8 @@ void MOS6510::initialize()
 void MOS6510::reset()
 {
     m_resetCycle = 0;
+    m_irqPending = false;
+    m_irqCycle = 0;
     m_state = CpuState::Reset;
 }
 
@@ -60,12 +63,37 @@ void MOS6510::clock()
     switch (m_state)
     {
     case CpuState::Fetch:
+        if (m_irqPending ||
+            (m_irqLine &&
+             !statusFlag(MOS6510StatusFlag::InterruptDisable)))
+        {
+            m_irqPending = false;
+            m_irqCycle = 0;
+            m_state = CpuState::Irq;
+
+            executeIrqCycle();
+            break;
+        }
+
+        //
+        // CLI, SEI and PLP change I after their interrupt poll.
+        // Remember the IRQ condition seen before executing them.
+        //
+        m_irqPollBeforeIChange =
+            m_irqLine &&
+            !statusFlag(MOS6510StatusFlag::InterruptDisable);
+
         fetchOpcode();
         decodeInstruction();
 
         if (m_operation == MOS6510Operation::Unknown)
         {
-            qDebug() << "MOS6510: unknown opcode" << Qt::hex << m_opcode << "at" << static_cast<quint16>(m_programCounter - 1);
+            qDebug() << "MOS6510: unknown opcode"
+                     << Qt::hex
+                     << m_opcode
+                     << "at"
+                     << static_cast<quint16>(m_programCounter - 1);
+
             m_state = CpuState::Stopped;
             break;
         }
@@ -73,25 +101,56 @@ void MOS6510::clock()
         prepareMicroOperations();
         m_state = CpuState::Execute;
         break;
-
     case CpuState::Execute:
+    {
+        const bool irqSample =
+            m_irqLine &&
+            !statusFlag(MOS6510StatusFlag::InterruptDisable);
+
         if (m_dummyReadPending)
         {
-            const quint16 dummyAddress = static_cast<quint16>(m_address - 0x0100);
+            const quint16 dummyAddress =
+                static_cast<quint16>(m_address - 0x0100);
+
             m_ptrBus->read(dummyAddress);
             m_dummyReadPending = false;
             break;
         }
-        executeMicroOperation(m_microOperations[m_microOperationIndex]);
+
+        executeMicroOperation(
+            m_microOperations[m_microOperationIndex]);
+
         ++m_microOperationIndex;
-        if(m_microOperationIndex >= m_microOperationCount)
+
+        if (m_microOperationIndex >= m_microOperationCount)
         {
+            switch (m_operation)
+            {
+            case MOS6510Operation::CLI:
+            case MOS6510Operation::PLP:
+                //
+                // These instructions modify I after their
+                // interrupt poll.
+                //
+                m_irqPending = m_irqPollBeforeIChange;
+                break;
+
+            default:
+                m_irqPending = irqSample;
+                break;
+            }
+
             m_state = CpuState::Fetch;
         }
-        break;
 
+        break;
+    }
     case CpuState::Reset:
         executeResetCycle();
+        break;
+
+    case CpuState::Irq:
+        executeIrqCycle();
         break;
 
     case CpuState::Stopped:
@@ -145,6 +204,91 @@ void MOS6510::executeResetCycle()
     }
 
     ++m_resetCycle;
+}
+
+void MOS6510::executeIrqCycle()
+{
+    switch (m_irqCycle)
+    {
+    case 0:
+        //
+        // C1
+        // Suppressed opcode fetch.
+        //
+        m_ptrBus->read(m_programCounter);
+        break;
+
+    case 1:
+        //
+        // C2
+        // Second dummy read from the current PC.
+        //
+        m_ptrBus->read(m_programCounter);
+        break;
+
+    case 2:
+        //
+        // C3
+        // Push program counter high byte.
+        //
+        m_ptrBus->write(
+            static_cast<quint16>(0x0100 | m_stackPointer),
+            static_cast<quint8>(m_programCounter >> 8));
+
+        --m_stackPointer;
+        break;
+
+    case 3:
+        //
+        // C4
+        // Push program counter low byte.
+        //
+        m_ptrBus->write(
+            static_cast<quint16>(0x0100 | m_stackPointer),
+            static_cast<quint8>(m_programCounter & 0x00FF));
+
+        --m_stackPointer;
+        break;
+
+    case 4:
+        //
+        // C5
+        // Push status with B clear and U set.
+        //
+        m_ptrBus->write(
+            static_cast<quint16>(0x0100 | m_stackPointer),
+            static_cast<quint8>((m_status & 0xEF) | 0x20));
+
+        --m_stackPointer;
+        break;
+
+    case 5:
+        //
+        // C6
+        // Set I and read IRQ vector low byte.
+        //
+        setStatusFlag(
+            MOS6510StatusFlag::InterruptDisable,
+            true);
+
+        m_programCounter =
+            static_cast<quint16>(m_ptrBus->read(0xFFFE));
+        break;
+
+    case 6:
+        //
+        // C7
+        // Read IRQ vector high byte.
+        //
+        m_programCounter |=
+            static_cast<quint16>(
+                m_ptrBus->read(0xFFFF)) << 8;
+
+        m_state = CpuState::Fetch;
+        return;
+    }
+
+    ++m_irqCycle;
 }
 
 void MOS6510::fetchOpcode()

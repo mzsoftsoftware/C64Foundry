@@ -621,3 +621,169 @@ void MOS6510TestCpuControl::testIrqAfterRti()
 
     QCOMPARE(m_cpu.programCounter(), quint16(0x2001));
 }
+
+void MOS6510TestCpuControl::testIrqBranchNotTaken()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+
+    // U=1, Z=1, I=0
+    // BNE is therefore not taken.
+    m_cpu.setStatus(0x22);
+
+    m_memory.writeRAM(0x2000, 0xD0); // BNE
+    m_memory.writeRAM(0x2001, 0x10); // Offset
+    m_memory.writeRAM(0x2002, 0xEA); // Next opcode
+
+    m_memory.writeRAM(0xFFFE, 0x00);
+    m_memory.writeRAM(0xFFFF, 0x40);
+
+    // Branch C1: opcode fetch.
+    clock();
+    verifyRead(0x2000, 0xD0);
+
+    // IRQ becomes active before the branch interrupt poll.
+    m_cpu.setIrqLine(true);
+
+    // Branch C2: operand fetch.
+    clock();
+    verifyRead(0x2001, 0x10);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2002));
+
+    // IRQ C1.
+    // The opcode at $2002 must not execute.
+    clock();
+    verifyRead(0x2002, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2002));
+
+    // IRQ C2.
+    clock();
+    verifyRead(0x2002, 0xEA);
+}
+void MOS6510TestCpuControl::testIrqBranchTaken()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+
+    // U=1, Z=0, I=0
+    // BNE is taken.
+    m_cpu.setStatus(0x20);
+
+    m_memory.writeRAM(0x2000, 0xD0); // BNE
+    m_memory.writeRAM(0x2001, 0x10); // Target = $2012
+
+    m_memory.writeRAM(0x2002, 0xEA); // Branch dummy read
+    m_memory.writeRAM(0x2012, 0xEA); // NOP at branch target
+    m_memory.writeRAM(0x2013, 0xEA);
+
+    m_memory.writeRAM(0xFFFE, 0x00);
+    m_memory.writeRAM(0xFFFF, 0x40);
+
+    // Branch C1: opcode fetch.
+    clock();
+    verifyRead(0x2000, 0xD0);
+
+    // Branch C2: operand fetch and interrupt poll.
+    // IRQ is not active yet.
+    clock();
+    verifyRead(0x2001, 0x10);
+
+    // IRQ becomes active AFTER the branch poll.
+    m_cpu.setIrqLine(true);
+
+    // Branch C3:
+    // Taken branch dummy read.
+    // No additional interrupt poll occurs here.
+    clock();
+    verifyRead(0x2002, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2012));
+
+    // Therefore the instruction at the branch target must
+    // still execute.
+
+    // NOP C1.
+    clock();
+    verifyRead(0x2012, 0xEA);
+
+    // NOP C2.
+    clock();
+    verifyRead(0x2013, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2013));
+
+    // IRQ starts only now.
+    clock();
+    verifyRead(0x2013, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2013));
+}
+void MOS6510TestCpuControl::testIrqBranchTakenPageCrossing()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x20FD);
+
+    // U=1, Z=0, I=0
+    // BNE is taken.
+    m_cpu.setStatus(0x20);
+
+    m_memory.writeRAM(0x20FD, 0xD0); // BNE
+    m_memory.writeRAM(0x20FE, 0x02); // Target = $2101
+
+    // C3 dummy read.
+    m_memory.writeRAM(0x20FF, 0xEA);
+
+    // C4 wrong-page dummy read.
+    m_memory.writeRAM(0x2001, 0xEA);
+
+    // Branch target.
+    m_memory.writeRAM(0x2101, 0xEA);
+
+    m_memory.writeRAM(0xFFFE, 0x00);
+    m_memory.writeRAM(0xFFFF, 0x40);
+
+    // Branch C1: opcode fetch.
+    clock();
+    verifyRead(0x20FD, 0xD0);
+
+    // Branch C2: operand fetch and first interrupt poll.
+    // IRQ is not active yet.
+    clock();
+    verifyRead(0x20FE, 0x02);
+
+    // IRQ becomes active after the first poll.
+    m_cpu.setIrqLine(true);
+
+    // Branch C3:
+    // Taken branch dummy read.
+    clock();
+    verifyRead(0x20FF, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2101));
+
+    // Branch C4:
+    // Page-crossing dummy read.
+    //
+    // The additional interrupt polling opportunity caused
+    // by the page crossing must recognize the IRQ.
+    clock();
+    verifyRead(0x2001, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2101));
+
+    // IRQ C1.
+    // Opcode at the branch target must NOT execute.
+    clock();
+    verifyRead(0x2101, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2101));
+
+    // IRQ C2.
+    clock();
+    verifyRead(0x2101, 0xEA);
+}
