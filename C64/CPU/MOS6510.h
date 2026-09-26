@@ -62,9 +62,6 @@ private:
     void executeNmiCycle();
     void pollNmi();
 
-    void fetchOpcode();
-    void decodeInstruction();
-    void prepareMicroOperations();
     void executeMicroOperation(MOS6510MicroOperation microOperation);
 
     void updateLoadFlags(quint8 value);

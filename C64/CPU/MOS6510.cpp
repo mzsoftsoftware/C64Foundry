@@ -116,8 +116,14 @@ void MOS6510::clock()
 
         m_initialFetch = false;
 
-        fetchOpcode();
-        decodeInstruction();
+        m_opcode = m_ptrBus->read(m_programCounter);
+        ++m_programCounter;
+
+        m_ptrInstruction = &m_instructionTable.instruction(m_opcode);
+
+        m_operation = m_ptrInstruction->operation;
+        m_addressingMode = m_ptrInstruction->addressingMode;
+        m_microOperationCount = m_ptrInstruction->microOperationCount;
 
         if (m_operation == MOS6510Operation::Unknown)
         {
@@ -131,7 +137,10 @@ void MOS6510::clock()
             break;
         }
 
-        prepareMicroOperations();
+        m_microOperationIndex = 0;
+        m_pageCrossed = false;
+        m_dummyReadPending = false;
+        m_pageCrossingCycle = m_ptrInstruction->pageCrossingCycle;
 
         //
         // The opcode-fetch cycle is the interrupt-poll cycle
@@ -522,28 +531,6 @@ void MOS6510::pollNmi()
         m_nmiPending = false;
         m_nmiAccepted = true;
     }
-}
-
-void MOS6510::fetchOpcode()
-{
-    m_opcode = m_ptrBus->read(m_programCounter);
-    ++m_programCounter;
-}
-
-void MOS6510::decodeInstruction()
-{
-    m_ptrInstruction = &m_instructionTable.instruction(m_opcode);
-    m_operation = m_ptrInstruction->operation;
-    m_addressingMode = m_ptrInstruction->addressingMode;
-}
-
-void MOS6510::prepareMicroOperations()
-{
-    m_microOperationCount = m_ptrInstruction->microOperationCount;
-    m_microOperationIndex = 0;
-    m_pageCrossed = false;
-    m_dummyReadPending = false;
-    m_pageCrossingCycle = m_ptrInstruction->pageCrossingCycle;
 }
 
 void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)
