@@ -47,6 +47,7 @@ void MOS6510::initialize()
 
     m_operation = MOS6510Operation::Unknown;
     m_addressingMode = MOS6510AddressingMode::Implied;
+    m_ptrInstruction = nullptr;
     m_microOperationCount = 0;
     m_microOperationIndex = 0;
 
@@ -152,9 +153,7 @@ void MOS6510::clock()
             break;
         }
 
-        const bool nmiPollMicroOperation =
-            m_microOperationCount > 1 &&
-            m_microOperationIndex + 2 == m_microOperationCount;
+        const bool nmiPollMicroOperation = m_microOperationCount > 1 && m_microOperationIndex + 2 == m_microOperationCount;
         const bool finalMicroOperation = m_microOperationIndex + 1 >= m_microOperationCount;
         if (finalMicroOperation)
         {
@@ -204,7 +203,7 @@ void MOS6510::clock()
             }
         }
 
-        executeMicroOperation(m_microOperations[m_microOperationIndex]);
+        executeMicroOperation(m_ptrInstruction->microOperations[m_microOperationIndex]);
         ++m_microOperationIndex;
 
         if (m_microOperationIndex >= m_microOperationCount)
@@ -533,23 +532,18 @@ void MOS6510::fetchOpcode()
 
 void MOS6510::decodeInstruction()
 {
-    const MOS6510Instruction& instruction = m_instructionTable.instruction(m_opcode);
-    m_operation = instruction.operation;
-    m_addressingMode = instruction.addressingMode;
+    m_ptrInstruction = &m_instructionTable.instruction(m_opcode);
+    m_operation = m_ptrInstruction->operation;
+    m_addressingMode = m_ptrInstruction->addressingMode;
 }
 
 void MOS6510::prepareMicroOperations()
 {
-    const MOS6510Instruction& instruction = m_instructionTable.instruction(m_opcode);
-    m_microOperationCount = instruction.microOperationCount;
+    m_microOperationCount = m_ptrInstruction->microOperationCount;
     m_microOperationIndex = 0;
-    for (quint8 i = 0; i < m_microOperationCount; ++i)
-    {
-        m_microOperations[i] = instruction.microOperations[i];
-    }
     m_pageCrossed = false;
     m_dummyReadPending = false;
-    m_pageCrossingCycle = instruction.pageCrossingCycle;
+    m_pageCrossingCycle = m_ptrInstruction->pageCrossingCycle;
 }
 
 void MOS6510::executeMicroOperation(MOS6510MicroOperation microOperation)

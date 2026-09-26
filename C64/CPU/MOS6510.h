@@ -104,7 +104,7 @@ private:
 
     MOS6510Operation m_operation = MOS6510Operation::Unknown;
     MOS6510AddressingMode m_addressingMode = MOS6510AddressingMode::Implied;
-    MOS6510MicroOperation m_microOperations[8];
+    const MOS6510Instruction* m_ptrInstruction = nullptr;
     quint8 m_microOperationCount = 0;
     quint8 m_microOperationIndex = 0;
 
