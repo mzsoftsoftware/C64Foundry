@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/MOS6510/SeddonTest">
+        <file alias="6502-tests-generic.dat">6502-tests-generic.20221022T231937.dat</file>
+    </qresource>
+</RCC>
+

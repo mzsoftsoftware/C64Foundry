@@ -1,4 +1,4 @@
-#include "MOS6510TestFunctional.h"
+#include "MOS6510TestDormann.h"
 
 #include <QTest>
 #include <QElapsedTimer>
@@ -7,18 +7,18 @@
 #include <limits>
 
 
-MOS6510TestFunctional::MOS6510TestFunctional()
+MOS6510TestDormann::MOS6510TestDormann()
 {
 }
-MOS6510TestFunctional::~MOS6510TestFunctional()
+MOS6510TestDormann::~MOS6510TestDormann()
 {
 }
 
-void MOS6510TestFunctional::testLoadFunctionalTest()
+void MOS6510TestDormann::testLoadDormannTest()
 {
     QFile file(
         QStringLiteral(
-            ":/MOS6510/FunctionalTest/6502_functional_test.bin"));
+            ":/MOS6510/DormannTest/6502_functional_test.bin"));
 
     QVERIFY2(
         file.open(QIODevice::ReadOnly),
@@ -53,11 +53,11 @@ void MOS6510TestFunctional::testLoadFunctionalTest()
         quint8(0x34));
 }
 
-void MOS6510TestFunctional::testStartFunctionalTest()
+void MOS6510TestDormann::testStartDormannTest()
 {
     QFile file(
         QStringLiteral(
-            ":/MOS6510/FunctionalTest/6502_functional_test.bin"));
+            ":/MOS6510/DormannTest/6502_functional_test.bin"));
 
     QVERIFY2(
         file.open(QIODevice::ReadOnly),
@@ -107,11 +107,11 @@ void MOS6510TestFunctional::testStartFunctionalTest()
         false);
 }
 
-void MOS6510TestFunctional::testFunctionalTest()
+void MOS6510TestDormann::testDormannTest()
 {
     QFile file(
         QStringLiteral(
-            ":/MOS6510/FunctionalTest/6502_functional_test.bin"));
+            ":/MOS6510/DormannTest/6502_functional_test.bin"));
 
     QVERIFY2(
         file.open(QIODevice::ReadOnly),
@@ -299,11 +299,11 @@ void MOS6510TestFunctional::testFunctionalTest()
                    2);
 }
 
-void MOS6510TestFunctional::testFunctionalTestPerformance()
+void MOS6510TestDormann::testDormannTestPerformance()
 {
     QFile file(
         QStringLiteral(
-            ":/MOS6510/FunctionalTest/6502_functional_test.bin"));
+            ":/MOS6510/DormannTest/6502_functional_test.bin"));
 
     QVERIFY2(
         file.open(QIODevice::ReadOnly),

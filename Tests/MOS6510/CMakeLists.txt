@@ -18,8 +18,11 @@ add_executable(MOS6510Test
     MOS6510TestControlFlow.h MOS6510TestControlFlow.cpp
     MOS6510TestCpuControl.h MOS6510TestCpuControl.cpp
 
-    MOS6510TestFunctional.h MOS6510TestFunctional.cpp
-    FunctionalTest/MOS6510FunctionalTest.qrc
+    MOS6510TestDormann.h MOS6510TestDormann.cpp
+    DormannTest/MOS6510DormannTest.qrc
+
+    MOS6510TestSeddon.h MOS6510TestSeddon.cpp
+    SeddonTest/MOS6510SeddonTest.qrc
 )
 
 set_target_properties(MOS6510Test PROPERTIES
