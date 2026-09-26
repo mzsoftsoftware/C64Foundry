@@ -62,8 +62,6 @@ private:
     void executeNmiCycle();
     void pollNmi();
 
-    void executeMicroOperation(MOS6510MicroOperation microOperation);
-
     void updateLoadFlags(quint8 value);
 
     void addToAccumulator(quint8 operand);
