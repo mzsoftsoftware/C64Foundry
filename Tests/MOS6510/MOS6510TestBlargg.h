@@ -28,6 +28,7 @@ private:
     QString readBlarggOutput();
 
     void addBlarggTestData();
+    void clearTestMemory();
 
 private:
     static constexpr quint16 PrgLoadAddress = 0x8000;

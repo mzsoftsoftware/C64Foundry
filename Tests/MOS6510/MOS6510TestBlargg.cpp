@@ -65,7 +65,17 @@ void MOS6510TestBlargg::addBlarggTestData()
     QTest::newRow("16-special")
         << QStringLiteral("16-special.nes");
 }
-
+void MOS6510TestBlargg::clearTestMemory()
+{
+    for (quint32 address = 0;
+         address < 0x10000;
+         ++address)
+    {
+        m_memory.writeRAM(
+            static_cast<quint16>(address),
+            0x00);
+    }
+}
 
 QByteArray MOS6510TestBlargg::loadBlarggRom(
     const QString& romName)
@@ -245,6 +255,7 @@ void MOS6510TestBlargg::testLoadBlarggTest()
         qsizetype(32 * 1024));
 
     setupCpu();
+    clearTestMemory();
 
     //
     // Map PRG to:
@@ -349,6 +360,7 @@ void MOS6510TestBlargg::testBlarggTest()
         prgErrorMessage.constData());
 
     setupCpu();
+    clearTestMemory();
 
     //
     // Map PRG image to $8000-$FFFF.
