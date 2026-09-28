@@ -33,6 +33,7 @@
 
 #include "MOS6510TestDormann.h"
 #include "MOS6510TestSeddon.h"
+#include "MOS6510TestBlargg.h"
 
 
 int main(int argc, char* argv[])
@@ -70,6 +71,8 @@ int main(int argc, char* argv[])
 
     MOS6510TestDormann testDormann;
     MOS6510TestSeddon testSeddon;
+    MOS6510TestBlargg testBlargg;
+
 
     int result = 0;
     result = QTest::qExec(&testLoad, argc, argv);
@@ -166,9 +169,11 @@ int main(int argc, char* argv[])
     /*result = QTest::qExec(&testDormann, argc, argv);
     if(result != 0) return result;*/
 
-    result = QTest::qExec(&testSeddon, argc, argv);
-    if(result != 0) return result;
+    /*result = QTest::qExec(&testSeddon, argc, argv);
+    if(result != 0) return result;*/
 
+    result = QTest::qExec(&testBlargg, argc, argv);
+    if(result != 0) return result;
 
     return result;
 }

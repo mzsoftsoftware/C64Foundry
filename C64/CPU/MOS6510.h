@@ -27,6 +27,7 @@ public:
     bool statusFlag(MOS6510StatusFlag flag) const;
     bool irqLine() const                                { return m_irqLine; }
     bool nmiLine() const                                { return m_nmiLine; }
+    bool stopped() const                                { return m_state == CpuState::Stopped; }
 
     // Setter
     void setBus(C64Bus* ptrBus);

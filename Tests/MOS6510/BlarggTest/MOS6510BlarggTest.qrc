@@ -1,0 +1,21 @@
+<RCC>
+    <qresource prefix="/MOS6510/BlarggTest">
+        <file>01-basics.nes</file>
+        <file>02-implied.nes</file>
+        <file>03-immediate.nes</file>
+        <file>04-zero_page.nes</file>
+        <file>05-zp_xy.nes</file>
+        <file>06-absolute.nes</file>
+        <file>07-abs_xy.nes</file>
+        <file>08-ind_x.nes</file>
+        <file>09-ind_y.nes</file>
+        <file>10-branches.nes</file>
+        <file>11-stack.nes</file>
+        <file>12-jmp_jsr.nes</file>
+        <file>13-rts.nes</file>
+        <file>14-rti.nes</file>
+        <file>15-brk.nes</file>
+        <file>16-special.nes</file>
+    </qresource>
+</RCC>
+
