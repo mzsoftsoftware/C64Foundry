@@ -36,6 +36,7 @@ add_executable(MOS6510Test
     MOS6510TestUndocumentedRRA.h MOS6510TestUndocumentedRRA.cpp
     MOS6510TestUndocumentedSAX.h MOS6510TestUndocumentedSAX.cpp
     MOS6510TestUndocumentedSLO.h MOS6510TestUndocumentedSLO.cpp
+    MOS6510TestUndocumentedSRE.h MOS6510TestUndocumentedSRE.cpp
 )
 
 set_target_properties(MOS6510Test PROPERTIES

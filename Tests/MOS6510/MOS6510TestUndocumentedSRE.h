@@ -1,0 +1,10 @@
+#ifndef MOS651_TESTUNDOCUMENTEDSRE_H
+#define MOS651_TESTUNDOCUMENTEDSRE_H
+
+class MOS6510TestUndocumentedSRE
+{
+public:
+    MOS6510TestUndocumentedSRE();
+};
+
+#endif // MOS651_TESTUNDOCUMENTEDSRE_H
