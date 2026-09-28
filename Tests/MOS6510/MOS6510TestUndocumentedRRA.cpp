@@ -77,48 +77,68 @@ MOS6510TestUndocumentedRRA::referenceRRA(
     //
     // NMOS 6502 decimal ADC.
     //
-    // N, V and Z are derived from the binary addition.
-    // Decimal correction determines the final accumulator
-    // and carry.
+    // This deliberately mirrors the independently verified
+    // ADC decimal reference from MOS6510TestDecimal.
     //
-    quint16 low =
-        static_cast<quint16>(
-            accumulator & 0x0F)
-        + static_cast<quint16>(
-            result.memory & 0x0F)
-        + static_cast<quint16>(
-            adcCarry ? 1 : 0);
+    // Z comes from the unadjusted binary result.
+    // N and V come from the intermediate result after
+    // low-digit correction but before high-digit correction.
+    //
+    unsigned temp =
+        (accumulator & 0x0F)
+        + (result.memory & 0x0F)
+        + (adcCarry ? 1U : 0U);
 
-    if (low > 0x09)
+    if (temp > 9)
     {
-        low += 0x06;
+        temp += 6;
     }
 
-    quint16 decimalSum =
-        static_cast<quint16>(
-            accumulator & 0xF0)
-        + static_cast<quint16>(
-            result.memory & 0xF0)
-        + (low & 0x0F)
-        + (low > 0x0F ? 0x10 : 0x00);
-
-    if (decimalSum > 0x9F)
+    if (temp <= 0x0F)
     {
-        decimalSum += 0x60;
+        temp =
+            (temp & 0x0F)
+            + (accumulator & 0xF0)
+            + (result.memory & 0xF0);
+    }
+    else
+    {
+        temp =
+            (temp & 0x0F)
+            + (accumulator & 0xF0)
+            + (result.memory & 0xF0)
+            + 0x10;
     }
 
-    result.accumulator =
-        static_cast<quint8>(
-            decimalSum);
-
-    result.carry =
-        decimalSum > 0xFF;
-
+    //
+    // Z uses the unadjusted binary result.
+    //
     result.zero =
         binaryResult == 0;
 
+    //
+    // N and V use the intermediate result.
+    //
     result.negative =
-        (binaryResult & 0x80) != 0;
+        (temp & 0x80) != 0;
+
+    result.overflow =
+        (((accumulator ^ temp) & 0x80) != 0)
+        && (((accumulator ^ result.memory) & 0x80) == 0);
+
+    //
+    // High-digit decimal correction.
+    //
+    if ((temp & 0x1F0) > 0x90)
+    {
+        temp += 0x60;
+    }
+
+    result.carry =
+        (temp & 0xFF0) > 0xF0;
+
+    result.accumulator =
+        static_cast<quint8>(temp);
 
     return result;
 }
