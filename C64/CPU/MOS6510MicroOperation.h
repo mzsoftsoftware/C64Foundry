@@ -124,6 +124,8 @@ enum class MOS6510MicroOperation
     RotateLeftDataAndWriteToMemory,
     RotateRightDataAndWriteToMemory,
 
+    RotateDataLeftAndAccumulatorAndWriteToMemory,
+
     TransferAccumulatorToXRegister,
     TransferAccumulatorToYRegister,
     TransferXRegisterToAccumulator,
