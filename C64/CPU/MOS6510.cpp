@@ -1182,6 +1182,17 @@ void MOS6510::clock()
             setStatusFlag(MOS6510StatusFlag::Negative, (m_accumulator & 0x80) != 0);
             break;
         }
+        case MOS6510MicroOperation::ShiftDataRightAndExclusiveOrAccumulatorAndWriteToMemory:
+        {
+            const bool newCarry = (m_data & 0x01) != 0;
+            m_data = static_cast<quint8>(m_data >> 1);
+            m_ptrBus->write(m_address, m_data);
+            m_accumulator = static_cast<quint8>(m_accumulator ^ m_data);
+            setStatusFlag(MOS6510StatusFlag::Carry, newCarry);
+            setStatusFlag(MOS6510StatusFlag::Zero, m_accumulator == 0);
+            setStatusFlag(MOS6510StatusFlag::Negative, (m_accumulator & 0x80) != 0);
+            break;
+        }
         case MOS6510MicroOperation::TransferAccumulatorToXRegister:
         {
             m_ptrBus->read(m_programCounter);

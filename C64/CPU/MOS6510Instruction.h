@@ -79,6 +79,7 @@ enum class MOS6510Operation
     SED,
     SEI,
     SLO,
+    SRE,
 
     STA,
     STX,
