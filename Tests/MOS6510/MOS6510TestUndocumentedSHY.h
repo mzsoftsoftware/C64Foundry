@@ -1,0 +1,10 @@
+#ifndef MOS651_TESTUNDOCUMENTEDSHY_H
+#define MOS651_TESTUNDOCUMENTEDSHY_H
+
+class MOS6510TestUndocumentedSHY
+{
+public:
+    MOS6510TestUndocumentedSHY();
+};
+
+#endif // MOS651_TESTUNDOCUMENTEDSHY_H

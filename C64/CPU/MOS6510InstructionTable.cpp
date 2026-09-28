@@ -1844,7 +1844,10 @@ void MOS6510InstructionTable::InitializeUndocumentedInstructions()
     m_instructions[0xA7].microOperations[1] = MOS6510MicroOperation::ReadMemoryToAccumulatorAndXRegister;
     m_instructions[0xA7].microOperationCount = 2;
 
-
+    m_instructions[0xCB].operation = MOS6510Operation::AXS;
+    m_instructions[0xCB].addressingMode = MOS6510AddressingMode::Immediate;
+    m_instructions[0xCB].microOperations[0] = MOS6510MicroOperation::ReadImmediateAXS;
+    m_instructions[0xCB].microOperationCount = 1;
 
 
 

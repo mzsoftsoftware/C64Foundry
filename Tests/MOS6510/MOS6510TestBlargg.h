@@ -29,6 +29,7 @@ private:
     void addBlarggTestData();
     void clearTestMemory();
     void runBlarggTest(const QString& romName);
+    bool isExpectedFailure(const QString& romName, quint8 status, const QString& output) const;
 
 private:
     static constexpr quint16 PrgLoadAddress = 0x8000;

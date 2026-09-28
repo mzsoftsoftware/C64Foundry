@@ -596,6 +596,21 @@ void MOS6510TestBlargg::runBlarggTest(
             return;
 
         //
+        // Some Blargg tests have known differences because
+        // instr_test-v5 targets the NES Ricoh CPU rather than
+        // the NMOS MOS6510.
+        //
+        // Only explicitly verified differences are accepted.
+        //
+        if (isExpectedFailure(
+                romName,
+                status,
+                output))
+        {
+            return;
+        }
+
+        //
         // $01-$7F = FAIL.
         //
         const QString message =
@@ -646,4 +661,89 @@ void MOS6510TestBlargg::runBlarggTest(
 
     QFAIL(
         qPrintable(message));
+}
+
+bool MOS6510TestBlargg::isExpectedFailure(
+    const QString& romName,
+    const quint8 status,
+    const QString& output) const
+{
+    //
+    // Blargg instr_test-v5 targets the NES Ricoh CPU.
+    //
+    // Its decimal-mode behaviour differs from the NMOS
+    // MOS6510 used by the C64. In addition, unstable
+    // undocumented opcodes may have CPU-specific results.
+    //
+    // Accept only explicitly known and verified
+    // differences. Any additional or changed output must
+    // remain a test failure.
+    //
+    if (status != 0x01)
+        return false;
+
+    if (romName == QStringLiteral("03-immediate.nes"))
+    {
+        const QString ExpectedOutput =
+            QStringLiteral(
+                "69 ADC #n\n"
+                "E9 SBC #n\n"
+                "EB SBC #n\n"
+                "6B ARR #n\n"
+                "AB ATX #n\n"
+                "\n"
+                "03-immediate\n"
+                "\n"
+                "Failed\n");
+
+        return output == ExpectedOutput;
+    }
+    if (romName == QStringLiteral("04-zero_page.nes"))
+    {
+        const QString ExpectedOutput =
+            QStringLiteral(
+                "65 ADC z\n"
+                "E5 SBC z\n"
+                "67 RRA z\n"
+                "E7 ISC z\n"
+                "\n"
+                "04-zero_page\n"
+                "\n"
+                "Failed\n");
+
+        return output == ExpectedOutput;
+    }
+    if (romName == QStringLiteral("05-zp_xy.nes"))
+    {
+        const QString ExpectedOutput =
+            QStringLiteral(
+                "75 ADC z,X\n"
+                "F5 SBC z,X\n"
+                "77 RRA z,X\n"
+                "F7 ISC z,X\n"
+                "\n"
+                "05-zp_xy\n"
+                "\n"
+                "Failed\n");
+
+        return output == ExpectedOutput;
+    }
+    if (romName == QStringLiteral("06-absolute.nes"))
+    {
+        const QString ExpectedOutput =
+            QStringLiteral(
+                "6D ADC a\n"
+                "ED SBC a\n"
+                "6F RRA abs\n"
+                "EF ISC abs\n"
+                "\n"
+                "06-absolute\n"
+                "\n"
+                "Failed\n");
+
+        return output == ExpectedOutput;
+    }
+
+
+    return false;
 }

@@ -43,6 +43,7 @@ add_executable(MOS6510Test
     BlarggTest/MOS6510BlarggTest.qrc
     MOS6510TestUndocumentedLaxImmediate.h MOS6510TestUndocumentedLaxImmediate.cpp
     MOS6510TestUndocumentedAXS.h MOS6510TestUndocumentedAXS.cpp
+    MOS6510TestUndocumentedSHY.h MOS6510TestUndocumentedSHY.cpp
 )
 
 set_target_properties(MOS6510Test PROPERTIES

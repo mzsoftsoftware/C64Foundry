@@ -12,6 +12,8 @@ enum class MOS6510Operation
     ARR,
     ASL,
     ASR,
+    AXS,
+
     BCC,
     BCS,
     BEQ,

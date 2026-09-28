@@ -335,6 +335,31 @@ void MOS6510::clock()
             setStatusFlag(MOS6510StatusFlag::Negative, false);
             break;
         }
+        case MOS6510MicroOperation::ReadImmediateAXS:
+        {
+            const quint16 address = m_programCounter;
+            const quint8 operand = m_ptrBus->read(address);
+            ++m_programCounter;
+
+            //
+            // AXS/SBX:
+            //
+            //   value  = A & X
+            //   result = value - operand
+            //
+            // X receives the result.
+            //
+            // Carry follows CMP-style subtraction:
+            // set when no borrow occurred.
+            //
+            const quint8 value = static_cast<quint8>(m_accumulator & m_x);
+            const quint8 result = static_cast<quint8>(value - operand);
+            m_x = result;
+            setStatusFlag(MOS6510StatusFlag::Carry, value >= operand);
+            setStatusFlag(MOS6510StatusFlag::Zero, result == 0);
+            setStatusFlag(MOS6510StatusFlag::Negative, (result & 0x80) != 0);
+            break;
+        }
         case MOS6510MicroOperation::ReadImmediateLAXUnstable:
         {
             const quint16 address = m_programCounter;
