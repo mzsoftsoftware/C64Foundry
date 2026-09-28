@@ -23,6 +23,9 @@ add_executable(MOS6510Test
 
     MOS6510TestSeddon.h MOS6510TestSeddon.cpp
     SeddonTest/MOS6510SeddonTest.qrc
+    MOS6510TestUndocumentedNOP.h MOS6510TestUndocumentedNOP.cpp
+    MOS6510TestUndocumentedSBC.h MOS6510TestUndocumentedSBC.cpp
+    MOS6510TestUndocumentedARR.h MOS6510TestUndocumentedARR.cpp
 )
 
 set_target_properties(MOS6510Test PROPERTIES

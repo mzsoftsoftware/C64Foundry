@@ -16,6 +16,10 @@
 #include "MOS6510TestBusCycles.h"
 #include "MOS6510TestCpuControl.h"
 
+#include "MOS6510TestUndocumentedNOP.h"
+#include "MOS6510TestUndocumentedSBC.h"
+#include "MOS6510TestUndocumentedARR.h"
+
 #include "MOS6510TestDormann.h"
 #include "MOS6510TestSeddon.h"
 
@@ -37,6 +41,10 @@ int main(int argc, char* argv[])
     MOS6510TestControlFlow testControlFlow;
     MOS6510TestBusCycles testBusCycles;
     MOS6510TestCpuControl testCpuControl;
+
+    MOS6510TestUndocumentedNOP testUndocNOP;
+    MOS6510TestUndocumentedSBC testUndocSBC;
+    MOS6510TestUndocumentedARR testUndocARR;
 
     MOS6510TestDormann testDormann;
     MOS6510TestSeddon testSeddon;
@@ -102,10 +110,25 @@ int main(int argc, char* argv[])
     if(result != 0)
         return result;
 
+    // --------------------------
 
-    result = QTest::qExec(&testDormann, argc, argv);
+    result = QTest::qExec(&testUndocNOP, argc, argv);
     if(result != 0)
         return result;
+
+    result = QTest::qExec(&testUndocSBC, argc, argv);
+    if(result != 0)
+        return result;
+
+    result = QTest::qExec(&testUndocARR, argc, argv);
+    if(result != 0)
+        return result;
+
+    // --------------------------
+
+    /*result = QTest::qExec(&testDormann, argc, argv);
+    if(result != 0)
+        return result;*/
 
     result = QTest::qExec(&testSeddon, argc, argv);
     if(result != 0)

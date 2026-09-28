@@ -213,6 +213,12 @@ void MOS6510::clock()
             m_ptrBus->read(m_programCounter);
             break;
         }
+        case MOS6510MicroOperation::ReadImmediate:
+        {
+            m_ptrBus->read(m_programCounter);
+            ++m_programCounter;
+            break;
+        }
         case MOS6510MicroOperation::ReadImmediateToAccumulator:
         {
             const quint16 address = m_programCounter;
@@ -313,6 +319,11 @@ void MOS6510::clock()
             setStatusFlag(MOS6510StatusFlag::Negative, (result & 0x80) != 0);
             break;
         }
+        case MOS6510MicroOperation::ReadZeroPage:
+        {
+            m_ptrBus->read(m_address);
+            break;
+        }
         case MOS6510MicroOperation::ReadZeroPageAddress:
         {
             m_address = m_ptrBus->read(m_programCounter);
@@ -405,6 +416,11 @@ void MOS6510::clock()
             setStatusFlag(MOS6510StatusFlag::Overflow, (operand & 0x40) != 0);
             break;
         }
+        case MOS6510MicroOperation::ReadZeroPageIndexed:
+        {
+            m_ptrBus->read(m_address);
+            break;
+        }
         case MOS6510MicroOperation::ReadZeroPageIndexedAddress:
         {
             const quint8 baseAddress = static_cast<quint8>(m_address);
@@ -483,6 +499,11 @@ void MOS6510::clock()
             setStatusFlag(MOS6510StatusFlag::Carry, accumulator >= operand);
             setStatusFlag(MOS6510StatusFlag::Zero, result == 0);
             setStatusFlag(MOS6510StatusFlag::Negative, (result & 0x80) != 0);
+            break;
+        }
+        case MOS6510MicroOperation::ReadAbsolute:
+        {
+            m_ptrBus->read(m_address);
             break;
         }
         case MOS6510MicroOperation::ReadAbsoluteAddressLow:
@@ -620,6 +641,11 @@ void MOS6510::clock()
             setStatusFlag(MOS6510StatusFlag::Carry, y >= operand);
             setStatusFlag(MOS6510StatusFlag::Zero, result == 0);
             setStatusFlag(MOS6510StatusFlag::Negative, (result & 0x80) != 0);
+            break;
+        }
+        case MOS6510MicroOperation::ReadAbsoluteIndexed:
+        {
+            m_ptrBus->read(m_address);
             break;
         }
         case MOS6510MicroOperation::ReadAbsoluteIndexedToAccumulator:

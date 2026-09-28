@@ -4,6 +4,8 @@ enum class MOS6510MicroOperation
 {
     NoOperation,
 
+    ReadImmediate,
+    ReadImmediateARR,
     ReadImmediateToAccumulator,
     ReadImmediateToXRegister,
     ReadImmediateToYRegister,
@@ -16,6 +18,7 @@ enum class MOS6510MicroOperation
     ReadImmediateCompareXRegister,
     ReadImmediateCompareYRegister,
 
+    ReadZeroPage,
     ReadZeroPageAddress,
     ReadZeroPageToAccumulator,
     ReadZeroPageToXRegister,
@@ -30,6 +33,7 @@ enum class MOS6510MicroOperation
     ReadZeroPageCompareYRegister,
     ReadZeroPageBitTest,
 
+    ReadZeroPageIndexed,
     ReadZeroPageIndexedAddress,
     ReadZeroPageIndexedToAccumulator,
     ReadZeroPageIndexedToXRegister,
@@ -41,6 +45,7 @@ enum class MOS6510MicroOperation
     ReadZeroPageIndexedSubtractFromAccumulator,
     ReadZeroPageIndexedCompareAccumulator,
 
+    ReadAbsolute,
     ReadAbsoluteAddressLow,
     ReadAbsoluteAddressHigh,
     ReadAbsoluteXAddress,
@@ -59,6 +64,7 @@ enum class MOS6510MicroOperation
     ReadAbsoluteCompareYRegister,
     ReadAbsoluteBitTest,
 
+    ReadAbsoluteIndexed,
     ReadAbsoluteIndexedToAccumulator,
     ReadAbsoluteIndexedToXRegister,
     ReadAbsoluteIndexedToYRegister,

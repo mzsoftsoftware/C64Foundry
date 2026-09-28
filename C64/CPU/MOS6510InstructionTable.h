@@ -26,6 +26,7 @@ private:
     void initializeBranchInstructions();
     void initializeControlFlowInstructions();
     void initializeSpecialInstructions();
+    void InitializeUndocumentedInstructions();
 
 private:
     MOS6510Instruction m_instructions[256];

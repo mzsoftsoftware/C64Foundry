@@ -303,7 +303,7 @@ void MOS6510TestDormann::testDormannTestPerformance()
 {
     QFile file(
         QStringLiteral(
-            ":/MOS6510/DormannTest/6502_functional_test.bin"));
+            ":/MOS6510/DormannWie kann Test/6502_functional_test.bin"));
 
     QVERIFY2(
         file.open(QIODevice::ReadOnly),
