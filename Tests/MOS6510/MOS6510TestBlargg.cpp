@@ -65,6 +65,8 @@ void MOS6510TestBlargg::addBlarggTestData()
     QTest::newRow("16-special")
         << QStringLiteral("16-special.nes");
 }
+
+
 void MOS6510TestBlargg::clearTestMemory()
 {
     for (quint32 address = 0;
@@ -76,6 +78,7 @@ void MOS6510TestBlargg::clearTestMemory()
             0x00);
     }
 }
+
 
 QByteArray MOS6510TestBlargg::loadBlarggRom(
     const QString& romName)
@@ -300,37 +303,109 @@ void MOS6510TestBlargg::testLoadBlarggTest()
     QVERIFY2(
         resetVector >= PrgLoadAddress,
         "Blargg reset vector does not point into PRG ROM");
-
-    qInfo().noquote()
-        << QStringLiteral(
-               "Blargg %1 loaded\n"
-               "  ROM size:     %2 bytes\n"
-               "  PRG size:     %3 bytes\n"
-               "  Reset vector: $%4")
-               .arg(romName)
-               .arg(rom.size())
-               .arg(prg.size())
-               .arg(
-                   resetVector,
-                   4,
-                   16,
-                   QLatin1Char('0'))
-               .toUpper();
-}
-
-
-void MOS6510TestBlargg::testBlarggTest_data()
-{
-    addBlarggTestData();
 }
 
 
 void MOS6510TestBlargg::testBlarggTest()
 {
-    QFETCH(
-        QString,
-        romName);
+    runBlarggTest(
+        QStringLiteral("01-basics.nes"));
 
+    if (QTest::currentTestFailed())
+        return;
+
+    runBlarggTest(
+        QStringLiteral("02-implied.nes"));
+
+    if (QTest::currentTestFailed())
+        return;
+
+    runBlarggTest(
+        QStringLiteral("03-immediate.nes"));
+
+    if (QTest::currentTestFailed())
+        return;
+
+    runBlarggTest(
+        QStringLiteral("04-zero_page.nes"));
+
+    if (QTest::currentTestFailed())
+        return;
+
+    runBlarggTest(
+        QStringLiteral("05-zp_xy.nes"));
+
+    if (QTest::currentTestFailed())
+        return;
+
+    runBlarggTest(
+        QStringLiteral("06-absolute.nes"));
+
+    if (QTest::currentTestFailed())
+        return;
+
+    runBlarggTest(
+        QStringLiteral("07-abs_xy.nes"));
+
+    if (QTest::currentTestFailed())
+        return;
+
+    runBlarggTest(
+        QStringLiteral("08-ind_x.nes"));
+
+    if (QTest::currentTestFailed())
+        return;
+
+    runBlarggTest(
+        QStringLiteral("09-ind_y.nes"));
+
+    if (QTest::currentTestFailed())
+        return;
+
+    runBlarggTest(
+        QStringLiteral("10-branches.nes"));
+
+    if (QTest::currentTestFailed())
+        return;
+
+    runBlarggTest(
+        QStringLiteral("11-stack.nes"));
+
+    if (QTest::currentTestFailed())
+        return;
+
+    runBlarggTest(
+        QStringLiteral("12-jmp_jsr.nes"));
+
+    if (QTest::currentTestFailed())
+        return;
+
+    runBlarggTest(
+        QStringLiteral("13-rts.nes"));
+
+    if (QTest::currentTestFailed())
+        return;
+
+    runBlarggTest(
+        QStringLiteral("14-rti.nes"));
+
+    if (QTest::currentTestFailed())
+        return;
+
+    runBlarggTest(
+        QStringLiteral("15-brk.nes"));
+
+    if (QTest::currentTestFailed())
+        return;
+
+    runBlarggTest(
+        QStringLiteral("16-special.nes"));
+}
+
+
+void MOS6510TestBlargg::runBlarggTest(
+    const QString& romName)
+{
     const QByteArray rom =
         loadBlarggRom(
             romName);
@@ -476,16 +551,7 @@ void MOS6510TestBlargg::testBlarggTest()
         if (!interfaceSeen)
         {
             if (status == 0x80)
-            {
                 interfaceSeen = true;
-
-                qInfo().noquote()
-                    << QStringLiteral(
-                           "Blargg %1 test interface active\n"
-                           "  Cycles: %2")
-                           .arg(romName)
-                           .arg(cycles);
-            }
 
             continue;
         }
@@ -524,32 +590,37 @@ void MOS6510TestBlargg::testBlarggTest()
         }
 
         //
-        // $00-$7F = completed.
-        //
-        qInfo().noquote()
-            << QStringLiteral(
-                   "Blargg %1 finished\n"
-                   "  Result: $%2\n"
-                   "  Cycles: %3\n"
-                   "  Output:\n%4")
-                   .arg(romName)
-                   .arg(
-                       status,
-                       2,
-                       16,
-                       QLatin1Char('0'))
-                   .arg(cycles)
-                   .arg(output)
-                   .toUpper();
-
-        //
         // $00 = PASS.
         //
-        QCOMPARE(
-            status,
-            quint8(0x00));
+        if (status == 0x00)
+            return;
 
-        return;
+        //
+        // $01-$7F = FAIL.
+        //
+        const QString message =
+            QStringLiteral(
+                "Blargg %1 failed\n"
+                "Result: $%2\n"
+                "PC:     $%3\n"
+                "Cycles: %4\n"
+                "Output:\n%5")
+                .arg(romName)
+                .arg(
+                    status,
+                    2,
+                    16,
+                    QLatin1Char('0'))
+                .arg(
+                    m_cpu.programCounter(),
+                    4,
+                    16,
+                    QLatin1Char('0'))
+                .arg(cycles)
+                .arg(output);
+
+        QFAIL(
+            qPrintable(message));
     }
 
     //

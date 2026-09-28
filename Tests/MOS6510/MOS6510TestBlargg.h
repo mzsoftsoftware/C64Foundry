@@ -19,7 +19,6 @@ private slots:
     void testLoadBlarggTest_data();
     void testLoadBlarggTest();
 
-    void testBlarggTest_data();
     void testBlarggTest();
 
 private:
@@ -29,6 +28,7 @@ private:
 
     void addBlarggTestData();
     void clearTestMemory();
+    void runBlarggTest(const QString& romName);
 
 private:
     static constexpr quint16 PrgLoadAddress = 0x8000;
