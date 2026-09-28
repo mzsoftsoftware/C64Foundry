@@ -32,6 +32,7 @@ enum class MOS6510Operation
     CPX,
     CPY,
 
+    DCP,
     DEC,
     DEX,
     DEY,

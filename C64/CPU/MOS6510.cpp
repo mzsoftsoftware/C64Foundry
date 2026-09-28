@@ -1014,6 +1014,29 @@ void MOS6510::clock()
             updateLoadFlags(m_data);
             break;
         }
+        case MOS6510MicroOperation::DecrementDataCompareAccumulatorAndWriteToMemory:
+        {
+            //
+            // DCP first decrements the memory value.
+            //
+            --m_data;
+
+            //
+            // Final RMW write.
+            //
+            m_ptrBus->write(m_address, m_data);
+
+            //
+            // Then compare the accumulator with the decremented value.
+            // This is equivalent to CMP A,memory.
+            //
+            const quint8 accumulator = m_accumulator;
+            const quint8 result = static_cast<quint8>(accumulator - m_data);
+            setStatusFlag(MOS6510StatusFlag::Carry, accumulator >= m_data);
+            setStatusFlag(MOS6510StatusFlag::Zero, result == 0);
+            setStatusFlag(MOS6510StatusFlag::Negative, (result & 0x80) != 0);
+            break;
+        }
         case MOS6510MicroOperation::ShiftLeftAccumulator:
         {
             m_ptrBus->read(m_programCounter);

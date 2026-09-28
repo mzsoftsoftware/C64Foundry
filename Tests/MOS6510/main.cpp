@@ -22,6 +22,7 @@
 #include "MOS6510TestUndocumentedASR.h"
 #include "MOS6510TestUndocumentedANC.h"
 #include "MOS6510TestUndocumentedDCP.h"
+#include "MOS6510TestUndocumentedISB.h"
 
 #include "MOS6510TestDormann.h"
 #include "MOS6510TestSeddon.h"
@@ -51,106 +52,87 @@ int main(int argc, char* argv[])
     MOS6510TestUndocumentedASR testUndocASR;
     MOS6510TestUndocumentedANC testUndocANC;
     MOS6510TestUndocumentedDCP testUndocDCP;
+    MOS6510TestUndocumentedISB testUndocISB;
 
     MOS6510TestDormann testDormann;
     MOS6510TestSeddon testSeddon;
 
     int result = 0;
     result = QTest::qExec(&testLoad, argc, argv);
-    if(result != 0)
-        return result;
+    if(result != 0) return result;
 
     result = QTest::qExec(&testStore, argc, argv);
-    if(result != 0)
-        return result;
+    if(result != 0) return result;
 
     result = QTest::qExec(&testTransfer, argc, argv);
-    if(result != 0)
-        return result;
+    if(result != 0) return result;
 
     result = QTest::qExec(&testStack, argc, argv);
-    if(result != 0)
-        return result;
+    if(result != 0) return result;
 
     result = QTest::qExec(&testLogical, argc, argv);
-    if(result != 0)
-        return result;
+    if(result != 0) return result;
 
     result = QTest::qExec(&testArithmetic, argc, argv);
-    if(result != 0)
-        return result;
+    if(result != 0) return result;
 
     result = QTest::qExec(&testDecimal, argc, argv);
-    if(result != 0)
-        return result;
+    if(result != 0) return result;
 
     result = QTest::qExec(&testIncDec, argc, argv);
-    if(result != 0)
-        return result;
+    if(result != 0) return result;
 
     result = QTest::qExec(&testMemoryIncrementDecrement, argc, argv);
-    if(result != 0)
-        return result;
+    if(result != 0) return result;
 
     result = QTest::qExec(&testShiftRotate, argc, argv);
-    if(result != 0)
-        return result;
+    if(result != 0) return result;
 
     result = QTest::qExec(&testBranch, argc, argv);
-    if(result != 0)
-        return result;
+    if(result != 0) return result;
 
     result = QTest::qExec(&testSpecial, argc, argv);
-    if(result != 0)
-        return result;
+    if(result != 0) return result;
 
     result = QTest::qExec(&testControlFlow, argc, argv);
-    if(result != 0)
-        return result;
+    if(result != 0) return result;
 
     result = QTest::qExec(&testBusCycles, argc, argv);
-    if(result != 0)
-        return result;
+    if(result != 0) return result;
 
     result = QTest::qExec(&testCpuControl, argc, argv);
-    if(result != 0)
-        return result;
+    if(result != 0) return result;
 
     // --------------------------
 
     result = QTest::qExec(&testUndocNOP, argc, argv);
-    if(result != 0)
-        return result;
+    if(result != 0) return result;
 
     result = QTest::qExec(&testUndocSBC, argc, argv);
-    if(result != 0)
-        return result;
+    if(result != 0) return result;
 
     result = QTest::qExec(&testUndocARR, argc, argv);
-    if(result != 0)
-        return result;
+    if(result != 0) return result;
 
     result = QTest::qExec(&testUndocASR, argc, argv);
-    if(result != 0)
-        return result;
+    if(result != 0) return result;
 
     result = QTest::qExec(&testUndocANC, argc, argv);
-    if(result != 0)
-        return result;
+    if(result != 0) return result;
 
     result = QTest::qExec(&testUndocDCP, argc, argv);
-    if(result != 0)
-        return result;
+    if(result != 0) return result;
+
+    result = QTest::qExec(&testUndocISB, argc, argv);
+    if(result != 0) return result;
 
     // --------------------------
 
     /*result = QTest::qExec(&testDormann, argc, argv);
-    if(result != 0)
-        return result;*/
+    if(result != 0) return result;*/
 
     result = QTest::qExec(&testSeddon, argc, argv);
-    if(result != 0)
-        return result;
+    if(result != 0) return result;
 
 
     return result;
