@@ -106,6 +106,7 @@ enum class MOS6510MicroOperation
     DecrementYRegister,
 
     ReadMemoryToData,
+    ReadMemoryToAccumulatorAndXRegister,
     WriteDataToMemory,
     IncrementDataAndWriteToMemory,
     DecrementDataAndWriteToMemory,

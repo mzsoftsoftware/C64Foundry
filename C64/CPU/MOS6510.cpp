@@ -995,6 +995,14 @@ void MOS6510::clock()
             m_data = m_ptrBus->read(m_address);
             break;
         }
+        case MOS6510MicroOperation::ReadMemoryToAccumulatorAndXRegister:
+        {
+            const quint8 value = m_ptrBus->read(m_address);
+            m_accumulator = value;
+            m_x = value;
+            updateLoadFlags(value);
+            break;
+        }
         case MOS6510MicroOperation::WriteDataToMemory:
         {
             m_ptrBus->write(m_address, m_data);

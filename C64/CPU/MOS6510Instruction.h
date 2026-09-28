@@ -48,6 +48,8 @@ enum class MOS6510Operation
     JMP,
     JSR,
 
+    LAX,
+
     LDA,
     LDX,
     LDY,
