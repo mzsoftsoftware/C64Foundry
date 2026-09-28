@@ -1,10 +1,26 @@
-#ifndef MOS651_TESTUNDOCUMENTEDSHY_H
-#define MOS651_TESTUNDOCUMENTEDSHY_H
+#pragma once
+
+#include <QObject>
+
+#include "MOS6510TestBase.h"
+
 
 class MOS6510TestUndocumentedSHY
+    : public QObject
+    , public MOS6510TestBase
 {
-public:
-    MOS6510TestUndocumentedSHY();
-};
+    Q_OBJECT
 
-#endif // MOS651_TESTUNDOCUMENTEDSHY_H
+public:
+    explicit MOS6510TestUndocumentedSHY();
+    virtual ~MOS6510TestUndocumentedSHY();
+
+private slots:
+    void testSHYAbsoluteX_data();
+    void testSHYAbsoluteX();
+
+    void testSHYAbsoluteXFlags();
+
+    void testSHYAbsoluteXCycles();
+    void testSHYAbsoluteXCyclesPageCrossing();
+};
