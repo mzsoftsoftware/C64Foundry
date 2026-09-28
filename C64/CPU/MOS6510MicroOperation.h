@@ -107,6 +107,7 @@ enum class MOS6510MicroOperation
 
     ReadMemoryToData,
     ReadMemoryToAccumulatorAndXRegister,
+    ReadMemoryToAccumulatorXRegisterAndStackPointer,
     WriteDataToMemory,
     IncrementDataAndWriteToMemory,
     DecrementDataAndWriteToMemory,

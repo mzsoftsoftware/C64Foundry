@@ -1003,6 +1003,15 @@ void MOS6510::clock()
             updateLoadFlags(value);
             break;
         }
+        case MOS6510MicroOperation::ReadMemoryToAccumulatorXRegisterAndStackPointer:
+        {
+            const quint8 value = static_cast<quint8>(m_ptrBus->read(m_address) & m_stackPointer);
+            m_accumulator = value;
+            m_x = value;
+            m_stackPointer = value;
+            updateLoadFlags(value);
+            break;
+        }
         case MOS6510MicroOperation::WriteDataToMemory:
         {
             m_ptrBus->write(m_address, m_data);

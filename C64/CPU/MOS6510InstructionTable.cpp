@@ -1524,6 +1524,16 @@ void MOS6510InstructionTable::InitializeUndocumentedInstructions()
     m_instructions[0xB3].microOperationCount = 4;
     m_instructions[0xB3].pageCrossingCycle = true;
 
+    m_instructions[0xBB].operation = MOS6510Operation::LAS;
+    m_instructions[0xBB].addressingMode = MOS6510AddressingMode::AbsoluteY;
+    m_instructions[0xBB].microOperations[0] = MOS6510MicroOperation::ReadAbsoluteAddressLow;
+    m_instructions[0xBB].microOperations[1] = MOS6510MicroOperation::ReadAbsoluteYAddress;
+    m_instructions[0xBB].microOperations[2] = MOS6510MicroOperation::ReadMemoryToAccumulatorXRegisterAndStackPointer;
+    m_instructions[0xBB].microOperationCount = 3;
+    m_instructions[0xBB].pageCrossingCycle = true;
+
+
+
 
 
 }
