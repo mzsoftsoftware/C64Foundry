@@ -10,6 +10,7 @@ enum class MOS6510Operation
     AND,
     ARR,
     ASL,
+    ASR,
     BCC,
     BCS,
     BEQ,

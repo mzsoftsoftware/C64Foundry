@@ -283,6 +283,32 @@ void MOS6510::clock()
             m_accumulator = result;
             break;
         }
+        case MOS6510MicroOperation::ReadImmediateASR:
+        {
+            const quint16 address = m_programCounter;
+            const quint8 operand = m_ptrBus->read(address);
+            ++m_programCounter;
+
+            //
+            // ASR first performs AND and then shifts the result
+            // one bit to the right.
+            //
+            const quint8 andResult = static_cast<quint8>(m_accumulator & operand);
+
+            //
+            // Carry receives bit 0 of the value before the shift.
+            //
+            setStatusFlag(MOS6510StatusFlag::Carry, (andResult & 0x01) != 0);
+            m_accumulator = static_cast<quint8>(andResult >> 1);
+
+            //
+            // ASR is equivalent to a logical shift right.
+            // Therefore bit 7 of the result is always clear.
+            //
+            setStatusFlag(MOS6510StatusFlag::Zero, m_accumulator == 0);
+            setStatusFlag(MOS6510StatusFlag::Negative, false);
+            break;
+        }
         case MOS6510MicroOperation::ReadImmediateToAccumulator:
         {
             const quint16 address = m_programCounter;
