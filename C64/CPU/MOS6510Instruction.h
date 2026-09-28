@@ -67,9 +67,9 @@ enum class MOS6510Operation
     PLP,
 
     RLA,
-
     ROL,
     ROR,
+    RRA,
     RTI,
     RTS,
 
