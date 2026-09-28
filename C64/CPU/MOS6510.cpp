@@ -219,6 +219,32 @@ void MOS6510::clock()
             ++m_programCounter;
             break;
         }
+        case MOS6510MicroOperation::ReadImmediateANC:
+        {
+            const quint16 address = m_programCounter;
+            const quint8 operand = m_ptrBus->read(address);
+            ++m_programCounter;
+
+            //
+            // ANC performs an AND between the accumulator and the
+            // immediate operand.
+            //
+            m_accumulator = static_cast<quint8>(m_accumulator & operand);
+
+            //
+            // Z and N are determined from the AND result.
+            //
+            setStatusFlag(MOS6510StatusFlag::Zero, m_accumulator == 0);
+            const bool negative = (m_accumulator & 0x80) != 0;
+            setStatusFlag(MOS6510StatusFlag::Negative, negative);
+
+            //
+            // ANC copies bit 7 of the result into Carry.
+            // Therefore C and N are always identical.
+            //
+            setStatusFlag(MOS6510StatusFlag::Carry, negative);
+            break;
+        }
         case MOS6510MicroOperation::ReadImmediateARR:
         {
             const quint16 address = m_programCounter;

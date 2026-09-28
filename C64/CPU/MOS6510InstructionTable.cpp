@@ -1331,4 +1331,14 @@ void MOS6510InstructionTable::InitializeUndocumentedInstructions()
     m_instructions[0x4B].addressingMode = MOS6510AddressingMode::Immediate;
     m_instructions[0x4B].microOperations[0] = MOS6510MicroOperation::ReadImmediateASR;
     m_instructions[0x4B].microOperationCount = 1;
+
+    m_instructions[0x0B].operation = MOS6510Operation::ANC;
+    m_instructions[0x0B].addressingMode = MOS6510AddressingMode::Immediate;
+    m_instructions[0x0B].microOperations[0] = MOS6510MicroOperation::ReadImmediateANC;
+    m_instructions[0x0B].microOperationCount = 1;
+
+    m_instructions[0x2B].operation = MOS6510Operation::ANC;
+    m_instructions[0x2B].addressingMode = MOS6510AddressingMode::Immediate;
+    m_instructions[0x2B].microOperations[0] = MOS6510MicroOperation::ReadImmediateANC;
+    m_instructions[0x2B].microOperationCount = 1;
 }

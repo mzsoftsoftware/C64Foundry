@@ -5,6 +5,7 @@ enum class MOS6510MicroOperation
     NoOperation,
 
     ReadImmediate,
+    ReadImmediateANC,
     ReadImmediateARR,
     ReadImmediateASR,
     ReadImmediateToAccumulator,
