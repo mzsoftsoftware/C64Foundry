@@ -80,6 +80,7 @@ enum class MOS6510Operation
     SEC,
     SED,
     SEI,
+    SHY,
     SLO,
     SRE,
 

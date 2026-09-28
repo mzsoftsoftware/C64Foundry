@@ -101,6 +101,7 @@ enum class MOS6510MicroOperation
     WriteAccumulator,
     WriteXRegister,
     WriteYRegister,
+    WriteSHYAbsoluteX,
 
     IncrementXRegister,
     IncrementYRegister,
