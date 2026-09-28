@@ -30,6 +30,7 @@ add_executable(MOS6510Test
     MOS6510TestUndocumentedANC.h MOS6510TestUndocumentedANC.cpp
     MOS6510TestUndocumentedDCP.h MOS6510TestUndocumentedDCP.cpp
     MOS6510TestUndocumentedISB.h MOS6510TestUndocumentedISB.cpp
+    MOS6510TestUndocumentedLAX.h MOS6510TestUndocumentedLAX.cpp
 )
 
 set_target_properties(MOS6510Test PROPERTIES

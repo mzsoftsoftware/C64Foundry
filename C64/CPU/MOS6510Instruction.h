@@ -43,6 +43,8 @@ enum class MOS6510Operation
     INX,
     INY,
 
+    ISB,
+
     JMP,
     JSR,
 

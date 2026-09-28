@@ -1037,6 +1037,13 @@ void MOS6510::clock()
             setStatusFlag(MOS6510StatusFlag::Negative, (result & 0x80) != 0);
             break;
         }
+        case MOS6510MicroOperation::IncrementDataSubtractFromAccumulatorAndWriteToMemory:
+        {
+            ++m_data;
+            m_ptrBus->write(m_address, m_data);
+            subtractFromAccumulator(m_data);
+            break;
+        }
         case MOS6510MicroOperation::ShiftLeftAccumulator:
         {
             m_ptrBus->read(m_programCounter);
