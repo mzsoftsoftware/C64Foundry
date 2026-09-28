@@ -73,6 +73,7 @@ enum class MOS6510Operation
     RTI,
     RTS,
 
+    SAX,
     SBC,
     SEC,
     SED,

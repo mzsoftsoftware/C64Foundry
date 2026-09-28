@@ -1017,6 +1017,11 @@ void MOS6510::clock()
             m_ptrBus->write(m_address, m_data);
             break;
         }
+        case MOS6510MicroOperation::WriteAccumulatorAndXRegisterToMemory:
+        {
+            m_ptrBus->write(m_address, static_cast<quint8>(m_accumulator & m_x));
+            break;
+        }
         case MOS6510MicroOperation::IncrementDataAndWriteToMemory:
         {
             ++m_data;

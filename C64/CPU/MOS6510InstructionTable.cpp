@@ -1668,6 +1668,35 @@ void MOS6510InstructionTable::InitializeUndocumentedInstructions()
     m_instructions[0x73].microOperations[6] = MOS6510MicroOperation::RotateDataRightAndAddToAccumulatorAndWriteToMemory;
     m_instructions[0x73].microOperationCount = 7;
 
+    m_instructions[0x87].operation = MOS6510Operation::SAX;
+    m_instructions[0x87].addressingMode = MOS6510AddressingMode::ZeroPage;
+    m_instructions[0x87].microOperations[0] = MOS6510MicroOperation::ReadZeroPageAddress;
+    m_instructions[0x87].microOperations[1] = MOS6510MicroOperation::WriteAccumulatorAndXRegisterToMemory;
+    m_instructions[0x87].microOperationCount = 2;
+
+    m_instructions[0x97].operation = MOS6510Operation::SAX;
+    m_instructions[0x97].addressingMode = MOS6510AddressingMode::ZeroPageY;
+    m_instructions[0x97].microOperations[0] = MOS6510MicroOperation::ReadZeroPageAddress;
+    m_instructions[0x97].microOperations[1] = MOS6510MicroOperation::ReadZeroPageIndexedAddress;
+    m_instructions[0x97].microOperations[2] = MOS6510MicroOperation::WriteAccumulatorAndXRegisterToMemory;
+    m_instructions[0x97].microOperationCount = 3;
+
+    m_instructions[0x8F].operation = MOS6510Operation::SAX;
+    m_instructions[0x8F].addressingMode = MOS6510AddressingMode::Absolute;
+    m_instructions[0x8F].microOperations[0] = MOS6510MicroOperation::ReadAbsoluteAddressLow;
+    m_instructions[0x8F].microOperations[1] = MOS6510MicroOperation::ReadAbsoluteAddressHigh;
+    m_instructions[0x8F].microOperations[2] = MOS6510MicroOperation::WriteAccumulatorAndXRegisterToMemory;
+    m_instructions[0x8F].microOperationCount = 3;
+
+    m_instructions[0x83].operation = MOS6510Operation::SAX;
+    m_instructions[0x83].addressingMode = MOS6510AddressingMode::IndexedIndirect;
+    m_instructions[0x83].microOperations[0] = MOS6510MicroOperation::ReadZeroPageAddress;
+    m_instructions[0x83].microOperations[1] = MOS6510MicroOperation::ReadZeroPageIndexedAddress;
+    m_instructions[0x83].microOperations[2] = MOS6510MicroOperation::ReadIndirectAddressLow;
+    m_instructions[0x83].microOperations[3] = MOS6510MicroOperation::ReadIndirectAddressHigh;
+    m_instructions[0x83].microOperations[4] = MOS6510MicroOperation::WriteAccumulatorAndXRegisterToMemory;
+    m_instructions[0x83].microOperationCount = 5;
+
 
 
 }
