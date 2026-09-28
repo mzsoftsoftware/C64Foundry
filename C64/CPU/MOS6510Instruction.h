@@ -8,6 +8,7 @@ enum class MOS6510Operation
 {
     ADC,
     AND,
+    ARR,
     ASL,
     BCC,
     BCS,

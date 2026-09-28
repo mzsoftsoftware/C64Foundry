@@ -219,6 +219,70 @@ void MOS6510::clock()
             ++m_programCounter;
             break;
         }
+        case MOS6510MicroOperation::ReadImmediateARR:
+        {
+            const quint16 address = m_programCounter;
+            const quint8 operand = m_ptrBus->read(address);
+            ++m_programCounter;
+
+            const bool carryIn = (m_status & static_cast<quint8>(MOS6510StatusFlag::Carry)) != 0;
+            const quint8 andResult = static_cast<quint8>(m_accumulator & operand);
+            quint8 result = static_cast<quint8>((andResult >> 1) | (carryIn ? 0x80 : 0x00));
+
+            //
+            // N and Z are determined before any decimal correction.
+            //
+            setStatusFlag(MOS6510StatusFlag::Negative, (result & 0x80) != 0);
+            setStatusFlag(MOS6510StatusFlag::Zero, result == 0);
+
+            //
+            // Binary Mode
+            //
+            if ((m_status & static_cast<quint8>(MOS6510StatusFlag::Decimal)) == 0)
+            {
+                //
+                // C = bit 6 of the rotated result.
+                //
+                setStatusFlag(MOS6510StatusFlag::Carry, (result & 0x40) != 0);
+
+                //
+                // V = bit 6 XOR bit 5 of the rotated result.
+                //
+                setStatusFlag(MOS6510StatusFlag::Overflow, (((result >> 6) ^ (result >> 5)) & 0x01) != 0);
+                m_accumulator = result;
+                break;
+            }
+
+            //
+            // NMOS 6502/6510 Decimal Mode
+            //
+            // V is determined before decimal correction.
+            //
+            setStatusFlag(MOS6510StatusFlag::Overflow, ((result ^ andResult) & 0x40) != 0);
+            const quint8 lowNibble = static_cast<quint8>(andResult & 0x0F);
+            const quint8 highNibble = static_cast<quint8>(andResult >> 4);
+
+            //
+            // Low-nibble decimal correction.
+            //
+            if (static_cast<quint8>(lowNibble + (lowNibble & 0x01)) > 5)
+            {
+                result = static_cast<quint8>((result & 0xF0) | ((result + 0x06) & 0x0F));
+            }
+
+            //
+            // High-nibble decimal correction also determines C.
+            //
+            const bool carry = static_cast<quint8>(highNibble + (highNibble & 0x01)) > 5;
+            setStatusFlag(MOS6510StatusFlag::Carry, carry);
+            if (carry)
+            {
+                result = static_cast<quint8>(result + 0x60);
+            }
+
+            m_accumulator = result;
+            break;
+        }
         case MOS6510MicroOperation::ReadImmediateToAccumulator:
         {
             const quint16 address = m_programCounter;
