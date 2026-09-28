@@ -1833,7 +1833,16 @@ void MOS6510InstructionTable::InitializeUndocumentedInstructions()
     m_instructions[0x53].microOperations[6] = MOS6510MicroOperation::ShiftDataRightAndExclusiveOrAccumulatorAndWriteToMemory;
     m_instructions[0x53].microOperationCount = 7;
 
+    m_instructions[0xAB].operation = MOS6510Operation::LAX;
+    m_instructions[0xAB].addressingMode = MOS6510AddressingMode::Immediate;
+    m_instructions[0xAB].microOperations[0] = MOS6510MicroOperation::ReadImmediateLAXUnstable;
+    m_instructions[0xAB].microOperationCount = 1;
 
+    m_instructions[0xA7].operation = MOS6510Operation::LAX;
+    m_instructions[0xA7].addressingMode = MOS6510AddressingMode::ZeroPage;
+    m_instructions[0xA7].microOperations[0] = MOS6510MicroOperation::ReadZeroPageAddress;
+    m_instructions[0xA7].microOperations[1] = MOS6510MicroOperation::ReadMemoryToAccumulatorAndXRegister;
+    m_instructions[0xA7].microOperationCount = 2;
 
 
 

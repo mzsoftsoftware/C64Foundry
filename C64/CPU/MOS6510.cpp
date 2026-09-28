@@ -335,6 +335,29 @@ void MOS6510::clock()
             setStatusFlag(MOS6510StatusFlag::Negative, false);
             break;
         }
+        case MOS6510MicroOperation::ReadImmediateLAXUnstable:
+        {
+            const quint16 address = m_programCounter;
+            const quint8 operand = m_ptrBus->read(address);
+            ++m_programCounter;
+
+            //
+            // Unstable NMOS LAX immediate ($AB).
+            //
+            // The actual hardware behavior depends on analog effects
+            // inside the NMOS CPU and is not completely stable.
+            //
+            // C64Foundry models the commonly documented $EE magic
+            // constant:
+            //
+            //   result = (A | $EE) & operand
+            //
+            const quint8 result = static_cast<quint8>((m_accumulator | 0xEE) & operand);
+            m_accumulator = result;
+            m_x = result;
+            updateLoadFlags(result);
+            break;
+        }
         case MOS6510MicroOperation::ReadImmediateToAccumulator:
         {
             const quint16 address = m_programCounter;
