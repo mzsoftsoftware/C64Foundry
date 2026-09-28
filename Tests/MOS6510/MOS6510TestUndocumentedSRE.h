@@ -1,10 +1,39 @@
-#ifndef MOS651_TESTUNDOCUMENTEDSRE_H
-#define MOS651_TESTUNDOCUMENTEDSRE_H
+#pragma once
 
-class MOS6510TestUndocumentedSRE
+#include "MOS6510TestBase.h"
+
+#include <QObject>
+
+
+class MOS6510TestUndocumentedSRE : public QObject, public MOS6510TestBase
 {
-public:
-    MOS6510TestUndocumentedSRE();
-};
+    Q_OBJECT
 
-#endif // MOS651_TESTUNDOCUMENTEDSRE_H
+public:
+    explicit MOS6510TestUndocumentedSRE();
+    virtual ~MOS6510TestUndocumentedSRE();
+
+private slots:
+    void testZeroPage_data();
+    void testZeroPage();
+
+    void testZeroPageX();
+    void testZeroPageXWrap();
+
+    void testAbsolute();
+
+    void testAbsoluteX();
+    void testAbsoluteXPageCross();
+
+    void testAbsoluteY();
+    void testAbsoluteYPageCross();
+
+    void testIndexedIndirect();
+    void testIndexedIndirectPointerWrap();
+
+    void testIndirectIndexed();
+    void testIndirectIndexedPageCross();
+    void testIndirectIndexedPointerWrap();
+
+    void testExhaustive();
+};
