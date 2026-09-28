@@ -33,6 +33,7 @@
 #include "MOS6510TestUndocumentedLaxImmediate.h"
 #include "MOS6510TestUndocumentedAXS.h"
 #include "MOS6510TestUndocumentedSHY.h"
+#include "MOS6510TestUndocumentedSHX.h"
 
 #include "MOS6510TestDormann.h"
 #include "MOS6510TestSeddon.h"
@@ -74,6 +75,7 @@ int main(int argc, char* argv[])
     MOS6510TestUndocumentedLaxImmediate testUndocLAXImm;
     MOS6510TestUndocumentedAXS testUndocAXS;
     MOS6510TestUndocumentedSHY testUndocSHY;
+    MOS6510TestUndocumentedSHX testUndocSHX;
 
     MOS6510TestDormann testDormann;
     MOS6510TestSeddon testSeddon;
@@ -177,6 +179,9 @@ int main(int argc, char* argv[])
     if(result != 0) return result;
 
     result = QTest::qExec(&testUndocSHY, argc, argv);
+    if(result != 0) return result;
+
+    result = QTest::qExec(&testUndocSHX, argc, argv);
     if(result != 0) return result;
 
     // --------------------------
