@@ -32,7 +32,6 @@ quint8 C64Bus::read(const quint16 address)
     ++m_accessCount;
     return value;
 }
-
 void C64Bus::write(const quint16 address,
                    const quint8 value)
 {
@@ -41,4 +40,21 @@ void C64Bus::write(const quint16 address,
     m_lastAccessValue = value;
     ++m_accessCount;
     m_ptrMemory->writeRAM(address, value);
+}
+
+void C64Bus::readCycle(const quint16 address,
+                        const quint8 value)
+{
+    m_lastAccessType = AccessType::Read;
+    m_lastAccessAddress = address;
+    m_lastAccessValue = value;
+    ++m_accessCount;
+}
+void C64Bus::writeCycle(const quint16 address,
+                         const quint8 value)
+{
+    m_lastAccessType = AccessType::Write;
+    m_lastAccessAddress = address;
+    m_lastAccessValue = value;
+    ++m_accessCount;
 }

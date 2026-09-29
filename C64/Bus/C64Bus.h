@@ -26,8 +26,12 @@ public:
 
     // Operations
     void clock();
+
     quint8 read(quint16 address);
     void write(quint16 address, quint8 value);
+
+    void readCycle(quint16 address, quint8 value);
+    void writeCycle(quint16 address, quint8 value);
 
     AccessType lastAccessType() const           { return m_lastAccessType; }
     quint16 lastAccessAddress() const           { return m_lastAccessAddress; }
