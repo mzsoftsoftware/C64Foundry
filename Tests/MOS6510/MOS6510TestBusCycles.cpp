@@ -16,7 +16,7 @@ void MOS6510TestBusCycles::init()
     m_cpu.setProgramCounter(0x1000);
 }
 
-void MOS6510TestBusCycles::testWriteDataBusDriven()
+void MOS6510TestBusCycles::testWriteCpuDrivesDataBus()
 {
     setupCpu();
 
@@ -39,7 +39,7 @@ void MOS6510TestBusCycles::testWriteDataBusDriven()
     clock();                            // C4: Write
     verifyWrite(0x1234, 0x2A);
 
-    QVERIFY(m_bus.dataBusDriven());
+    QVERIFY(m_bus.cpuDrivesDataBus());
 }
 
 

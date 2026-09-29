@@ -1840,7 +1840,7 @@ quint8 MOS6510::read(const quint16 address)
     if (address == 0x0000)
     {
         const quint8 value = m_portDataDirection;
-        m_ptrBus->readCycle(address, value);
+        m_ptrBus->readCycle(address);
         return value;
     }
     if (address == 0x0001)
@@ -1848,7 +1848,7 @@ quint8 MOS6510::read(const quint16 address)
         const quint8 outputs = m_portData & m_portDataDirection;
         const quint8 inputs = m_portInput & static_cast<quint8>(~m_portDataDirection);
         const quint8 value = static_cast<quint8>((outputs | inputs) & 0x3F);
-        m_ptrBus->readCycle(address, value);
+        m_ptrBus->readCycle(address);
         return value;
     }
     return m_ptrBus->read(address);

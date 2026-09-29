@@ -194,7 +194,7 @@ void MOS6510TestPort::testDataDirectionRegisterWriteDataBusNotDriven()
     clock();
     verifyWriteCycle(0x0000);
 
-    QVERIFY(!m_bus.dataBusDriven());
+    QVERIFY(!m_bus.cpuDrivesDataBus());
 }
 void MOS6510TestPort::testDataRegisterWriteDataBusNotDriven()
 {
@@ -215,7 +215,7 @@ void MOS6510TestPort::testDataRegisterWriteDataBusNotDriven()
     clock();
     verifyWriteCycle(0x0001);
 
-    QVERIFY(!m_bus.dataBusDriven());
+    QVERIFY(!m_bus.cpuDrivesDataBus());
 }
 
 void MOS6510TestPort::testDataDirectionRegisterWriteBusCycle()
@@ -291,7 +291,7 @@ void MOS6510TestPort::testDataDirectionRegisterWritePreservesDataBusValue()
     clock();                            // C3: Write DDR
     verifyWriteCycle(0x0000);
 
-    QVERIFY(!m_bus.dataBusDriven());
+    QVERIFY(!m_bus.cpuDrivesDataBus());
     QCOMPARE(m_bus.dataBusValue(), quint8(0xA5));
 }
 
@@ -320,7 +320,7 @@ void MOS6510TestPort::testDataRegisterWritePreservesDataBusValue()
     clock();                            // C3: Write data register
     verifyWriteCycle(0x0001);
 
-    QVERIFY(!m_bus.dataBusDriven());
+    QVERIFY(!m_bus.cpuDrivesDataBus());
     QCOMPARE(m_bus.dataBusValue(), quint8(0x5A));
 }
 
@@ -352,13 +352,13 @@ void MOS6510TestPort::testDataDirectionRegisterWriteWritesDataBusValueToRAM()
     clock();                            // C3: Write DDR
     verifyWriteCycle(0x0000);
 
-    QVERIFY(!m_bus.dataBusDriven());
+    QVERIFY(!m_bus.cpuDrivesDataBus());
 
     //
     // The internal register receives the CPU value, while the
     // physical RAM underneath receives the external bus value.
     //
-    QVERIFY(!m_bus.dataBusDriven());
+    QVERIFY(!m_bus.cpuDrivesDataBus());
     QCOMPARE(m_memory.readRAM(0x0000), quint8(0xA5));
 }
 
@@ -385,8 +385,7 @@ void MOS6510TestPort::testDataRegisterWriteWritesDataBusValueToRAM()
     clock();                            // C3: Write data register
     verifyWriteCycle(0x0001);
 
-    QVERIFY(!m_bus.dataBusDriven());
-
+    QVERIFY(!m_bus.cpuDrivesDataBus());
     QCOMPARE(m_memory.readRAM(0x0001), quint8(0x5A));
 }
 

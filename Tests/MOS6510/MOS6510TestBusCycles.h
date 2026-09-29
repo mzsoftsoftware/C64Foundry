@@ -17,7 +17,7 @@ public:
 private slots:
     void init();
 
-    void testWriteDataBusDriven();
+    void testWriteCpuDrivesDataBus();
 
     // ADC
     void testAdcImmediate();
