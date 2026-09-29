@@ -855,6 +855,16 @@ void MOS6510TestUndocumentedDCP::testIndirectYZeroPageWrap()
     const DCPResult expected =
         referenceDCP(accumulator, initialMemory);
 
+    //
+    // Pointer high byte after zero-page wrap is read from $0000,
+    // which is the MOS6510 data-direction register.
+    //
+    setDataDirectionRegister(0x12);
+
+    //
+    // setDataDirectionRegister() changes A and PC.
+    // Restore the state required by this test.
+    //
     m_cpu.setAccumulator(accumulator);
     m_cpu.setYRegister(0x10);
     m_cpu.setStatus(0x20);
@@ -868,7 +878,6 @@ void MOS6510TestUndocumentedDCP::testIndirectYZeroPageWrap()
     // Pointer low byte at $FF and high byte at $00.
     //
     m_memory.writeRAM(0x00FF, 0x20);
-    m_memory.writeRAM(0x0000, 0x12);
     m_memory.writeRAM(0x1230, initialMemory);
 
     clock();

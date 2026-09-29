@@ -614,6 +614,11 @@ void MOS6510TestUndocumentedSRE::testIndexedIndirectPointerWrap()
 {
     setupCpu();
 
+    setDataDirectionRegister(0x12);
+
+    //
+    // Restore the complete CPU state required by this test.
+    //
     m_cpu.setAccumulator(0x80);
     m_cpu.setXRegister(0x0F);
     m_cpu.setYRegister(0x59);
@@ -630,7 +635,6 @@ void MOS6510TestUndocumentedSRE::testIndexedIndirectPointerWrap()
 
     // Pointer high wraps from $FF to $00
     m_memory.writeRAM(0x00FF, 0x34);
-    m_memory.writeRAM(0x0000, 0x12);
 
     m_memory.writeRAM(0x1234, 0x03);
 
@@ -794,6 +798,11 @@ void MOS6510TestUndocumentedSRE::testIndirectIndexedPointerWrap()
 {
     setupCpu();
 
+    setDataDirectionRegister(0x12);
+
+    //
+    // Restore the complete CPU state required by this test.
+    //
     m_cpu.setAccumulator(0x10);
     m_cpu.setXRegister(0x37);
     m_cpu.setYRegister(0x05);
@@ -807,7 +816,6 @@ void MOS6510TestUndocumentedSRE::testIndirectIndexedPointerWrap()
 
     // Pointer low at $FF, high wraps to $00
     m_memory.writeRAM(0x00FF, 0x20);
-    m_memory.writeRAM(0x0000, 0x12);
 
     m_memory.writeRAM(0x1225, 0x43);
 

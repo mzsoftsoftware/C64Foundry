@@ -525,6 +525,15 @@ void MOS6510TestUndocumentedAHX::testAHXIndirectYZeroPageWrap()
 {
     setupCpu();
 
+    //
+    // Pointer high byte after zero-page wrap is read from $0000,
+    // which is the MOS6510 data-direction register.
+    //
+    setDataDirectionRegister(0x12);
+
+    //
+    // Restore the CPU state required by this test.
+    //
     m_cpu.setProgramCounter(0x1000);
     m_cpu.setAccumulator(0xFF);
     m_cpu.setXRegister(0xFF);
@@ -545,7 +554,6 @@ void MOS6510TestUndocumentedAHX::testAHXIndirectYZeroPageWrap()
     // NOT [$0100].
     //
     m_memory.writeRAM(0x00FF, 0x34);
-    m_memory.writeRAM(0x0000, 0x12);
     m_memory.writeRAM(0x0100, 0x56);
 
     //

@@ -678,6 +678,15 @@ void MOS6510TestUndocumentedLAX::testIndirectXZeroPageWrap()
     const LAXResult expected =
         referenceLAX(operand);
 
+    //
+    // Pointer high byte after zero-page wrap is read from $0000,
+    // which is the MOS6510 data-direction register.
+    //
+    setDataDirectionRegister(0x12);
+
+    //
+    // Restore the complete CPU state required by this test.
+    //
     m_cpu.setAccumulator(0x11);
     m_cpu.setXRegister(0x01);
     m_cpu.setYRegister(0x33);
@@ -694,7 +703,6 @@ void MOS6510TestUndocumentedLAX::testIndirectXZeroPageWrap()
     //
     m_memory.writeRAM(0x00FE, 0x5A);
     m_memory.writeRAM(0x00FF, 0x34);
-    m_memory.writeRAM(0x0000, 0x12);
     m_memory.writeRAM(0x1234, operand);
 
     clock();
@@ -917,6 +925,15 @@ void MOS6510TestUndocumentedLAX::testIndirectYZeroPageWrap()
     const LAXResult expected =
         referenceLAX(operand);
 
+    //
+    // Pointer high byte after zero-page wrap is read from $0000,
+    // which is the MOS6510 data-direction register.
+    //
+    setDataDirectionRegister(0x12);
+
+    //
+    // Restore the complete CPU state required by this test.
+    //
     m_cpu.setAccumulator(0x11);
     m_cpu.setXRegister(0x22);
     m_cpu.setYRegister(0x10);
@@ -933,7 +950,6 @@ void MOS6510TestUndocumentedLAX::testIndirectYZeroPageWrap()
     // Effective address = $1230.
     //
     m_memory.writeRAM(0x00FF, 0x20);
-    m_memory.writeRAM(0x0000, 0x12);
     m_memory.writeRAM(0x1230, operand);
 
     clock();
@@ -962,6 +978,7 @@ void MOS6510TestUndocumentedLAX::testIndirectYZeroPageWrap()
     clock();
     verifyRead(0x1002, 0xEA);
 }
+
 
 
 void MOS6510TestUndocumentedLAX::testExhaustive()

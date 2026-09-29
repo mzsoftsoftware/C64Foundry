@@ -1018,6 +1018,15 @@ void MOS6510TestUndocumentedRRA::testIndirectXZeroPageWrap()
             0x20,
             expected);
 
+    //
+    // Pointer high byte after zero-page wrap is read from $0000,
+    // which is the MOS6510 data-direction register.
+    //
+    setDataDirectionRegister(0x12);
+
+    //
+    // Restore the complete CPU state required by this test.
+    //
     m_cpu.setAccumulator(
         initialAccumulator);
 
@@ -1035,7 +1044,6 @@ void MOS6510TestUndocumentedRRA::testIndirectXZeroPageWrap()
     //
     m_memory.writeRAM(0x00FE, 0x5A);
     m_memory.writeRAM(0x00FF, 0x34);
-    m_memory.writeRAM(0x0000, 0x12);
 
     m_memory.writeRAM(0x1234, oldMemory);
 
@@ -1271,6 +1279,15 @@ void MOS6510TestUndocumentedRRA::testIndirectYZeroPageWrap()
             0x20,
             expected);
 
+    //
+    // Pointer high byte after zero-page wrap is read from $0000,
+    // which is the MOS6510 data-direction register.
+    //
+    setDataDirectionRegister(0x12);
+
+    //
+    // Restore the complete CPU state required by this test.
+    //
     m_cpu.setAccumulator(
         initialAccumulator);
 
@@ -1287,7 +1304,6 @@ void MOS6510TestUndocumentedRRA::testIndirectYZeroPageWrap()
     // Base = $1220, +Y = $1230.
     //
     m_memory.writeRAM(0x00FF, 0x20);
-    m_memory.writeRAM(0x0000, 0x12);
 
     m_memory.writeRAM(0x1230, oldMemory);
 

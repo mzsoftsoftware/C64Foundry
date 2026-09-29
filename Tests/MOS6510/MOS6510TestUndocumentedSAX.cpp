@@ -435,6 +435,15 @@ void MOS6510TestUndocumentedSAX::testIndexedIndirectPointerWrap()
 {
     setupCpu();
 
+    //
+    // Pointer high byte after zero-page wrap is read from $0000,
+    // which is the MOS6510 data-direction register.
+    //
+    setDataDirectionRegister(0x12);
+
+    //
+    // Restore the complete CPU state required by this test.
+    //
     m_cpu.setAccumulator(0xF3);
     m_cpu.setXRegister(0x0F);
     m_cpu.setYRegister(0x37);
@@ -455,7 +464,6 @@ void MOS6510TestUndocumentedSAX::testIndexedIndirectPointerWrap()
     // Pointer low at $FF, pointer high wraps to $00.
     //
     m_memory.writeRAM(0x00FF, 0x34);
-    m_memory.writeRAM(0x0000, 0x12);
 
     m_memory.writeRAM(0x1234, 0xCC);
 
