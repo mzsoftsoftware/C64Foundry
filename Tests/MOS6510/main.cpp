@@ -1,5 +1,7 @@
 #include <QTest>
 
+#include "MOS6510TestPort.h"
+
 #include "MOS6510TestLoad.h"
 #include "MOS6510TestStore.h"
 #include "MOS6510TestTransfer.h"
@@ -46,6 +48,8 @@
 
 int main(int argc, char* argv[])
 {
+    MOS6510TestPort testPort;
+
     MOS6510TestLoad testLoad;
     MOS6510TestStore testStore;
     MOS6510TestTransfer testTransfer;
@@ -91,6 +95,11 @@ int main(int argc, char* argv[])
 
 
     int result = 0;
+    result = QTest::qExec(&testPort, argc, argv);
+    if(result != 0) return result;
+
+    // --------------------------
+
     result = QTest::qExec(&testLoad, argc, argv);
     if(result != 0) return result;
 

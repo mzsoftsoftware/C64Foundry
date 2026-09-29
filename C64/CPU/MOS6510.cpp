@@ -19,6 +19,10 @@ void MOS6510::setBus(C64Bus* ptrBus)
 
 void MOS6510::initialize()
 {
+    m_portDataDirection = 0x00;
+    m_portData = 0x00;
+    m_portInput = 0x3F;
+
     m_state = CpuState::Fetch;
     m_resetCycle = 0;
     m_irqLine = false;
@@ -111,7 +115,7 @@ void MOS6510::clock()
 
         m_initialFetch = false;
 
-        m_opcode = m_ptrBus->read(m_programCounter);
+        m_opcode = read(m_programCounter);
         ++m_programCounter;
 
         m_ptrInstruction = &m_instructionTable.instruction(m_opcode);
@@ -156,7 +160,7 @@ void MOS6510::clock()
         if (m_dummyReadPending)
         {
             const quint16 dummyAddress = static_cast<quint16>(m_address - 0x0100);
-            m_ptrBus->read(dummyAddress);
+            read(dummyAddress);
             m_dummyReadPending = false;
             break;
         }
@@ -215,19 +219,19 @@ void MOS6510::clock()
         {
         case MOS6510MicroOperation::NoOperation:
         {
-            m_ptrBus->read(m_programCounter);
+            read(m_programCounter);
             break;
         }
         case MOS6510MicroOperation::ReadImmediate:
         {
-            m_ptrBus->read(m_programCounter);
+            read(m_programCounter);
             ++m_programCounter;
             break;
         }
         case MOS6510MicroOperation::ReadImmediateANC:
         {
             const quint16 address = m_programCounter;
-            const quint8 operand = m_ptrBus->read(address);
+            const quint8 operand = read(address);
             ++m_programCounter;
 
             //
@@ -253,7 +257,7 @@ void MOS6510::clock()
         case MOS6510MicroOperation::ReadImmediateARR:
         {
             const quint16 address = m_programCounter;
-            const quint8 operand = m_ptrBus->read(address);
+            const quint8 operand = read(address);
             ++m_programCounter;
 
             const bool carryIn = (m_status & static_cast<quint8>(MOS6510StatusFlag::Carry)) != 0;
@@ -317,7 +321,7 @@ void MOS6510::clock()
         case MOS6510MicroOperation::ReadImmediateASR:
         {
             const quint16 address = m_programCounter;
-            const quint8 operand = m_ptrBus->read(address);
+            const quint8 operand = read(address);
             ++m_programCounter;
 
             //
@@ -343,7 +347,7 @@ void MOS6510::clock()
         case MOS6510MicroOperation::ReadImmediateAXS:
         {
             const quint16 address = m_programCounter;
-            const quint8 operand = m_ptrBus->read(address);
+            const quint8 operand = read(address);
             ++m_programCounter;
 
             //
@@ -367,7 +371,7 @@ void MOS6510::clock()
         }
         case MOS6510MicroOperation::ReadImmediateXAA:
         {
-            const quint8 operand = m_ptrBus->read(m_programCounter);
+            const quint8 operand = read(m_programCounter);
             ++m_programCounter;
             m_accumulator = static_cast<quint8>((m_accumulator | 0xEE) & m_x & operand);
             updateLoadFlags(m_accumulator);
@@ -376,7 +380,7 @@ void MOS6510::clock()
         case MOS6510MicroOperation::ReadImmediateLAXUnstable:
         {
             const quint16 address = m_programCounter;
-            const quint8 operand = m_ptrBus->read(address);
+            const quint8 operand = read(address);
             ++m_programCounter;
 
             //
@@ -399,7 +403,7 @@ void MOS6510::clock()
         case MOS6510MicroOperation::ReadImmediateToAccumulator:
         {
             const quint16 address = m_programCounter;
-            m_accumulator = m_ptrBus->read(address);
+            m_accumulator = read(address);
             ++m_programCounter;
             updateLoadFlags(m_accumulator);
             break;
@@ -407,7 +411,7 @@ void MOS6510::clock()
         case MOS6510MicroOperation::ReadImmediateToXRegister:
         {
             const quint16 address = m_programCounter;
-            m_x = m_ptrBus->read(address);
+            m_x = read(address);
             ++m_programCounter;
             updateLoadFlags(m_x);
             break;
@@ -415,7 +419,7 @@ void MOS6510::clock()
         case MOS6510MicroOperation::ReadImmediateToYRegister:
         {
             const quint16 address = m_programCounter;
-            m_y = m_ptrBus->read(address);
+            m_y = read(address);
             ++m_programCounter;
             updateLoadFlags(m_y);
             break;
@@ -423,7 +427,7 @@ void MOS6510::clock()
         case MOS6510MicroOperation::ReadImmediateAndAccumulator:
         {
             const quint16 address = m_programCounter;
-            m_accumulator &= m_ptrBus->read(address);
+            m_accumulator &= read(address);
             ++m_programCounter;
             updateLoadFlags(m_accumulator);
             break;
@@ -431,7 +435,7 @@ void MOS6510::clock()
         case MOS6510MicroOperation::ReadImmediateOrAccumulator:
         {
             const quint16 address = m_programCounter;
-            m_accumulator |= m_ptrBus->read(address);
+            m_accumulator |= read(address);
             ++m_programCounter;
             updateLoadFlags(m_accumulator);
             break;
@@ -439,7 +443,7 @@ void MOS6510::clock()
         case MOS6510MicroOperation::ReadImmediateExclusiveOrAccumulator:
         {
             const quint16 address = m_programCounter;
-            m_accumulator ^= m_ptrBus->read(address);
+            m_accumulator ^= read(address);
             ++m_programCounter;
             updateLoadFlags(m_accumulator);
             break;
@@ -447,7 +451,7 @@ void MOS6510::clock()
         case MOS6510MicroOperation::ReadImmediateAddToAccumulator:
         {
             const quint16 address = m_programCounter;
-            const quint8 operand = m_ptrBus->read(address);
+            const quint8 operand = read(address);
             ++m_programCounter;
             addToAccumulator(operand);
             break;
@@ -455,7 +459,7 @@ void MOS6510::clock()
         case MOS6510MicroOperation::ReadImmediateSubtractFromAccumulator:
         {
             const quint16 address = m_programCounter;
-            const quint8 operand = m_ptrBus->read(address);
+            const quint8 operand = read(address);
             ++m_programCounter;
             subtractFromAccumulator(operand);
             break;
@@ -463,7 +467,7 @@ void MOS6510::clock()
         case MOS6510MicroOperation::ReadImmediateCompareAccumulator:
         {
             const quint16 address = m_programCounter;
-            const quint8 operand = m_ptrBus->read(address);
+            const quint8 operand = read(address);
             ++m_programCounter;
             const quint8 accumulator = m_accumulator;
             const quint8 result = static_cast<quint8>(accumulator - operand);
@@ -475,7 +479,7 @@ void MOS6510::clock()
         case MOS6510MicroOperation::ReadImmediateCompareXRegister:
         {
             const quint16 address = m_programCounter;
-            const quint8 operand = m_ptrBus->read(address);
+            const quint8 operand = read(address);
             ++m_programCounter;
             const quint8 x = m_x;
             const quint8 result = static_cast<quint8>(x - operand);
@@ -487,7 +491,7 @@ void MOS6510::clock()
         case MOS6510MicroOperation::ReadImmediateCompareYRegister:
         {
             const quint16 address = m_programCounter;
-            const quint8 operand = m_ptrBus->read(address);
+            const quint8 operand = read(address);
             ++m_programCounter;
             const quint8 y = m_y;
             const quint8 result = static_cast<quint8>(y - operand);
@@ -498,66 +502,66 @@ void MOS6510::clock()
         }
         case MOS6510MicroOperation::ReadZeroPage:
         {
-            m_ptrBus->read(m_address);
+            read(m_address);
             break;
         }
         case MOS6510MicroOperation::ReadZeroPageAddress:
         {
-            m_address = m_ptrBus->read(m_programCounter);
+            m_address = read(m_programCounter);
             ++m_programCounter;
             break;
         }
         case MOS6510MicroOperation::ReadZeroPageToAccumulator:
         {
-            m_accumulator = m_ptrBus->read(m_address);
+            m_accumulator = read(m_address);
             updateLoadFlags(m_accumulator);
             break;
         }
         case MOS6510MicroOperation::ReadZeroPageToXRegister:
         {
-            m_x = m_ptrBus->read(m_address);
+            m_x = read(m_address);
             updateLoadFlags(m_x);
             break;
         }
         case MOS6510MicroOperation::ReadZeroPageToYRegister:
         {
-            m_y = m_ptrBus->read(m_address);
+            m_y = read(m_address);
             updateLoadFlags(m_y);
             break;
         }
         case MOS6510MicroOperation::ReadZeroPageAndAccumulator:
         {
-            m_accumulator &= m_ptrBus->read(m_address);
+            m_accumulator &= read(m_address);
             updateLoadFlags(m_accumulator);
             break;
         }
         case MOS6510MicroOperation::ReadZeroPageOrAccumulator:
         {
-            m_accumulator |= m_ptrBus->read(m_address);
+            m_accumulator |= read(m_address);
             updateLoadFlags(m_accumulator);
             break;
         }
         case MOS6510MicroOperation::ReadZeroPageExclusiveOrAccumulator:
         {
-            m_accumulator ^= m_ptrBus->read(m_address);
+            m_accumulator ^= read(m_address);
             updateLoadFlags(m_accumulator);
             break;
         }
         case MOS6510MicroOperation::ReadZeroPageAddToAccumulator:
         {
-            const quint8 operand = m_ptrBus->read(m_address);
+            const quint8 operand = read(m_address);
             addToAccumulator(operand);
             break;
         }
         case MOS6510MicroOperation::ReadZeroPageSubtractFromAccumulator:
         {
-            const quint8 operand = m_ptrBus->read(m_address);
+            const quint8 operand = read(m_address);
             subtractFromAccumulator(operand);
             break;
         }
         case MOS6510MicroOperation::ReadZeroPageCompareAccumulator:
         {
-            const quint8 operand = m_ptrBus->read(m_address);
+            const quint8 operand = read(m_address);
             const quint8 accumulator = m_accumulator;
             const quint8 result = static_cast<quint8>(accumulator - operand);
             setStatusFlag(MOS6510StatusFlag::Carry, accumulator >= operand);
@@ -567,7 +571,7 @@ void MOS6510::clock()
         }
         case MOS6510MicroOperation::ReadZeroPageCompareXRegister:
         {
-            const quint8 operand = m_ptrBus->read(m_address);
+            const quint8 operand = read(m_address);
             const quint8 x = m_x;
             const quint8 result = static_cast<quint8>(x - operand);
             setStatusFlag(MOS6510StatusFlag::Carry, x >= operand);
@@ -577,7 +581,7 @@ void MOS6510::clock()
         }
         case MOS6510MicroOperation::ReadZeroPageCompareYRegister:
         {
-            const quint8 operand = m_ptrBus->read(m_address);
+            const quint8 operand = read(m_address);
             const quint8 y = m_y;
             const quint8 result = static_cast<quint8>(y - operand);
             setStatusFlag(MOS6510StatusFlag::Carry, y >= operand);
@@ -587,7 +591,7 @@ void MOS6510::clock()
         }
         case MOS6510MicroOperation::ReadZeroPageBitTest:
         {
-            const quint8 operand = m_ptrBus->read(m_address);
+            const quint8 operand = read(m_address);
             setStatusFlag(MOS6510StatusFlag::Zero, (m_accumulator & operand) == 0);
             setStatusFlag(MOS6510StatusFlag::Negative, (operand & 0x80) != 0);
             setStatusFlag(MOS6510StatusFlag::Overflow, (operand & 0x40) != 0);
@@ -595,7 +599,7 @@ void MOS6510::clock()
         }
         case MOS6510MicroOperation::ReadZeroPageIndexed:
         {
-            m_ptrBus->read(m_address);
+            read(m_address);
             break;
         }
         case MOS6510MicroOperation::ReadZeroPageIndexedAddress:
@@ -603,7 +607,7 @@ void MOS6510::clock()
             const quint8 baseAddress = static_cast<quint8>(m_address);
             // NMOS 6502/6510 performs a dummy read from the
             // unindexed zero-page address during this cycle.
-            m_ptrBus->read(baseAddress);
+            read(baseAddress);
             switch (m_addressingMode)
             {
             case MOS6510AddressingMode::ZeroPageX:
@@ -620,57 +624,57 @@ void MOS6510::clock()
         }
         case MOS6510MicroOperation::ReadZeroPageIndexedToAccumulator:
         {
-            m_accumulator = m_ptrBus->read(m_address);
+            m_accumulator = read(m_address);
             updateLoadFlags(m_accumulator);
             break;
         }
         case MOS6510MicroOperation::ReadZeroPageIndexedToXRegister:
         {
-            m_x = m_ptrBus->read(m_address);
+            m_x = read(m_address);
             updateLoadFlags(m_x);
             break;
         }
         case MOS6510MicroOperation::ReadZeroPageIndexedToYRegister:
         {
-            m_y = m_ptrBus->read(m_address);
+            m_y = read(m_address);
             updateLoadFlags(m_y);
             break;
         }
         case MOS6510MicroOperation::ReadZeroPageIndexedAndAccumulator:
         {
-            m_accumulator &= m_ptrBus->read(m_address);
+            m_accumulator &= read(m_address);
             updateLoadFlags(m_accumulator);
             break;
         }
 
         case MOS6510MicroOperation::ReadZeroPageIndexedOrAccumulator:
         {
-            m_accumulator |= m_ptrBus->read(m_address);
+            m_accumulator |= read(m_address);
             updateLoadFlags(m_accumulator);
             break;
         }
 
         case MOS6510MicroOperation::ReadZeroPageIndexedExclusiveOrAccumulator:
         {
-            m_accumulator ^= m_ptrBus->read(m_address);
+            m_accumulator ^= read(m_address);
             updateLoadFlags(m_accumulator);
             break;
         }
         case MOS6510MicroOperation::ReadZeroPageIndexedAddToAccumulator:
         {
-            const quint8 operand = m_ptrBus->read(m_address);
+            const quint8 operand = read(m_address);
             addToAccumulator(operand);
             break;
         }
         case MOS6510MicroOperation::ReadZeroPageIndexedSubtractFromAccumulator:
         {
-            const quint8 operand = m_ptrBus->read(m_address);
+            const quint8 operand = read(m_address);
             subtractFromAccumulator(operand);
             break;
         }
         case MOS6510MicroOperation::ReadZeroPageIndexedCompareAccumulator:
         {
-            const quint8 operand = m_ptrBus->read(m_address);
+            const quint8 operand = read(m_address);
             const quint8 accumulator = m_accumulator;
             const quint8 result = static_cast<quint8>(accumulator - operand);
             setStatusFlag(MOS6510StatusFlag::Carry, accumulator >= operand);
@@ -680,25 +684,25 @@ void MOS6510::clock()
         }
         case MOS6510MicroOperation::ReadAbsolute:
         {
-            m_ptrBus->read(m_address);
+            read(m_address);
             break;
         }
         case MOS6510MicroOperation::ReadAbsoluteAddressLow:
         {
-            m_address = m_ptrBus->read(m_programCounter);
+            m_address = read(m_programCounter);
             ++m_programCounter;
             break;
         }
         case MOS6510MicroOperation::ReadAbsoluteAddressHigh:
         {
-            const quint8 highByte = m_ptrBus->read(m_programCounter);
+            const quint8 highByte = read(m_programCounter);
             ++m_programCounter;
             m_address |= static_cast<quint16>(highByte) << 8;
             break;
         }
         case MOS6510MicroOperation::ReadAbsoluteXAddress:
         {
-            const quint8 highByte = m_ptrBus->read(m_programCounter);
+            const quint8 highByte = read(m_programCounter);
             ++m_programCounter;
             m_address |= static_cast<quint16>(highByte) << 8;
             const quint16 baseAddress = m_address;
@@ -712,7 +716,7 @@ void MOS6510::clock()
         }
         case MOS6510MicroOperation::ReadAbsoluteYAddress:
         {
-            const quint8 highByte = m_ptrBus->read(m_programCounter);
+            const quint8 highByte = read(m_programCounter);
             ++m_programCounter;
             m_address |= static_cast<quint16>(highByte) << 8;
             const quint16 baseAddress = m_address;
@@ -726,7 +730,7 @@ void MOS6510::clock()
         }
         case MOS6510MicroOperation::ReadAbsoluteBitTest:
         {
-            const quint8 operand = m_ptrBus->read(m_address);
+            const quint8 operand = read(m_address);
             setStatusFlag(MOS6510StatusFlag::Zero, (m_accumulator & operand) == 0);
             setStatusFlag(MOS6510StatusFlag::Negative, (operand & 0x80) != 0);
             setStatusFlag(MOS6510StatusFlag::Overflow, (operand & 0x40) != 0);
@@ -739,60 +743,60 @@ void MOS6510::clock()
             {
                 dummyAddress = static_cast<quint16>(dummyAddress - 0x0100);
             }
-            m_ptrBus->read(dummyAddress);
+            read(dummyAddress);
             break;
         }
         case MOS6510MicroOperation::ReadAbsoluteToAccumulator:
         {
-            m_accumulator = m_ptrBus->read(m_address);
+            m_accumulator = read(m_address);
             updateLoadFlags(m_accumulator);
             break;
         }
         case MOS6510MicroOperation::ReadAbsoluteToXRegister:
         {
-            m_x = m_ptrBus->read(m_address);
+            m_x = read(m_address);
             updateLoadFlags(m_x);
             break;
         }
         case MOS6510MicroOperation::ReadAbsoluteToYRegister:
         {
-            m_y = m_ptrBus->read(m_address);
+            m_y = read(m_address);
             updateLoadFlags(m_y);
             break;
         }
         case MOS6510MicroOperation::ReadAbsoluteAndAccumulator:
         {
-            m_accumulator &= m_ptrBus->read(m_address);
+            m_accumulator &= read(m_address);
             updateLoadFlags(m_accumulator);
             break;
         }
         case MOS6510MicroOperation::ReadAbsoluteOrAccumulator:
         {
-            m_accumulator |= m_ptrBus->read(m_address);
+            m_accumulator |= read(m_address);
             updateLoadFlags(m_accumulator);
             break;
         }
         case MOS6510MicroOperation::ReadAbsoluteExclusiveOrAccumulator:
         {
-            m_accumulator ^= m_ptrBus->read(m_address);
+            m_accumulator ^= read(m_address);
             updateLoadFlags(m_accumulator);
             break;
         }
         case MOS6510MicroOperation::ReadAbsoluteAddToAccumulator:
         {
-            const quint8 operand = m_ptrBus->read(m_address);
+            const quint8 operand = read(m_address);
             addToAccumulator(operand);
             break;
         }
         case MOS6510MicroOperation::ReadAbsoluteSubtractFromAccumulator:
         {
-            const quint8 operand = m_ptrBus->read(m_address);
+            const quint8 operand = read(m_address);
             subtractFromAccumulator(operand);
             break;
         }
         case MOS6510MicroOperation::ReadAbsoluteCompareAccumulator:
         {
-            const quint8 operand = m_ptrBus->read(m_address);
+            const quint8 operand = read(m_address);
             const quint8 accumulator = m_accumulator;
             const quint8 result = static_cast<quint8>(accumulator - operand);
             setStatusFlag(MOS6510StatusFlag::Carry, accumulator >= operand);
@@ -802,7 +806,7 @@ void MOS6510::clock()
         }
         case MOS6510MicroOperation::ReadAbsoluteCompareXRegister:
         {
-            const quint8 operand = m_ptrBus->read(m_address);
+            const quint8 operand = read(m_address);
             const quint8 x = m_x;
             const quint8 result = static_cast<quint8>(x - operand);
             setStatusFlag(MOS6510StatusFlag::Carry, x >= operand);
@@ -812,7 +816,7 @@ void MOS6510::clock()
         }
         case MOS6510MicroOperation::ReadAbsoluteCompareYRegister:
         {
-            const quint8 operand = m_ptrBus->read(m_address);
+            const quint8 operand = read(m_address);
             const quint8 y = m_y;
             const quint8 result = static_cast<quint8>(y - operand);
             setStatusFlag(MOS6510StatusFlag::Carry, y >= operand);
@@ -822,60 +826,60 @@ void MOS6510::clock()
         }
         case MOS6510MicroOperation::ReadAbsoluteIndexed:
         {
-            m_ptrBus->read(m_address);
+            read(m_address);
             break;
         }
         case MOS6510MicroOperation::ReadAbsoluteIndexedToAccumulator:
         {
-            m_accumulator = m_ptrBus->read(m_address);
+            m_accumulator = read(m_address);
             updateLoadFlags(m_accumulator);
             break;
         }
         case MOS6510MicroOperation::ReadAbsoluteIndexedToXRegister:
         {
-            m_x = m_ptrBus->read(m_address);
+            m_x = read(m_address);
             updateLoadFlags(m_x);
             break;
         }
         case MOS6510MicroOperation::ReadAbsoluteIndexedToYRegister:
         {
-            m_y = m_ptrBus->read(m_address);
+            m_y = read(m_address);
             updateLoadFlags(m_y);
             break;
         }
         case MOS6510MicroOperation::ReadAbsoluteIndexedAndAccumulator:
         {
-            m_accumulator &= m_ptrBus->read(m_address);
+            m_accumulator &= read(m_address);
             updateLoadFlags(m_accumulator);
             break;
         }
         case MOS6510MicroOperation::ReadAbsoluteIndexedOrAccumulator:
         {
-            m_accumulator |= m_ptrBus->read(m_address);
+            m_accumulator |= read(m_address);
             updateLoadFlags(m_accumulator);
             break;
         }
         case MOS6510MicroOperation::ReadAbsoluteIndexedExclusiveOrAccumulator:
         {
-            m_accumulator ^= m_ptrBus->read(m_address);
+            m_accumulator ^= read(m_address);
             updateLoadFlags(m_accumulator);
             break;
         }
         case MOS6510MicroOperation::ReadAbsoluteIndexedAddToAccumulator:
         {
-            const quint8 operand = m_ptrBus->read(m_address);
+            const quint8 operand = read(m_address);
             addToAccumulator(operand);
             break;
         }
         case MOS6510MicroOperation::ReadAbsoluteIndexedSubtractFromAccumulator:
         {
-            const quint8 operand = m_ptrBus->read(m_address);
+            const quint8 operand = read(m_address);
             subtractFromAccumulator(operand);
             break;
         }
         case MOS6510MicroOperation::ReadAbsoluteIndexedCompareAccumulator:
         {
-            const quint8 operand = m_ptrBus->read(m_address);
+            const quint8 operand = read(m_address);
             const quint8 accumulator = m_accumulator;
             const quint8 result = static_cast<quint8>(accumulator - operand);
             setStatusFlag(MOS6510StatusFlag::Carry, accumulator >= operand);
@@ -885,18 +889,18 @@ void MOS6510::clock()
         }
         case MOS6510MicroOperation::ReadIndirectAddressLow:
         {
-            m_data = m_ptrBus->read(m_address);
+            m_data = read(m_address);
             break;
         }
         case MOS6510MicroOperation::ReadIndirectAddressHigh:
         {
-            const quint8 highByte = m_ptrBus->read(static_cast<quint8>(m_address + 1));
+            const quint8 highByte = read(static_cast<quint8>(m_address + 1));
             m_address = static_cast<quint16>(m_data) | (static_cast<quint16>(highByte) << 8);
             break;
         }
         case MOS6510MicroOperation::ReadIndirectAddressHighIndexed:
         {
-            const quint8 highByte = m_ptrBus->read(static_cast<quint8>(m_address + 1));
+            const quint8 highByte = read(static_cast<quint8>(m_address + 1));
             m_address = static_cast<quint16>(m_data) | (static_cast<quint16>(highByte) << 8);
             const quint16 baseAddress = m_address;
             m_address += m_y;
@@ -909,26 +913,26 @@ void MOS6510::clock()
         }
         case MOS6510MicroOperation::ReadIndirectToAccumulator:
         {
-            const quint8 value = m_ptrBus->read(m_address);
+            const quint8 value = read(m_address);
             m_accumulator = value;
             updateLoadFlags(value);
             break;
         }
         case MOS6510MicroOperation::ReadIndirectAddToAccumulator:
         {
-            const quint8 operand = m_ptrBus->read(m_address);
+            const quint8 operand = read(m_address);
             addToAccumulator(operand);
             break;
         }
         case MOS6510MicroOperation::ReadIndirectSubtractFromAccumulator:
         {
-            const quint8 operand = m_ptrBus->read(m_address);
+            const quint8 operand = read(m_address);
             subtractFromAccumulator(operand);
             break;
         }
         case MOS6510MicroOperation::ReadIndirectCompareAccumulator:
         {
-            const quint8 operand = m_ptrBus->read(m_address);
+            const quint8 operand = read(m_address);
             const quint8 accumulator = m_accumulator;
             const quint8 result = static_cast<quint8>(accumulator - operand);
             setStatusFlag(MOS6510StatusFlag::Carry, accumulator >= operand);
@@ -938,46 +942,46 @@ void MOS6510::clock()
         }
         case MOS6510MicroOperation::ReadIndirectAndAccumulator:
         {
-            m_accumulator &= m_ptrBus->read(m_address);
+            m_accumulator &= read(m_address);
             updateLoadFlags(m_accumulator);
             break;
         }
 
         case MOS6510MicroOperation::ReadIndirectOrAccumulator:
         {
-            m_accumulator |= m_ptrBus->read(m_address);
+            m_accumulator |= read(m_address);
             updateLoadFlags(m_accumulator);
             break;
         }
 
         case MOS6510MicroOperation::ReadIndirectExclusiveOrAccumulator:
         {
-            m_accumulator ^= m_ptrBus->read(m_address);
+            m_accumulator ^= read(m_address);
             updateLoadFlags(m_accumulator);
             break;
         }
         case MOS6510MicroOperation::ReadIndirectIndexedToAccumulator:
         {
-            const quint8 value = m_ptrBus->read(m_address);
+            const quint8 value = read(m_address);
             m_accumulator = value;
             updateLoadFlags(value);
             break;
         }
         case MOS6510MicroOperation::ReadIndirectIndexedAddToAccumulator:
         {
-            const quint8 operand = m_ptrBus->read(m_address);
+            const quint8 operand = read(m_address);
             addToAccumulator(operand);
             break;
         }
         case MOS6510MicroOperation::ReadIndirectIndexedSubtractFromAccumulator:
         {
-            const quint8 operand = m_ptrBus->read(m_address);
+            const quint8 operand = read(m_address);
             subtractFromAccumulator(operand);
             break;
         }
         case MOS6510MicroOperation::ReadIndirectIndexedCompareAccumulator:
         {
-            const quint8 operand = m_ptrBus->read(m_address);
+            const quint8 operand = read(m_address);
             const quint8 accumulator = m_accumulator;
             const quint8 result = static_cast<quint8>(accumulator - operand);
             setStatusFlag(MOS6510StatusFlag::Carry, accumulator >= operand);
@@ -987,37 +991,37 @@ void MOS6510::clock()
         }
         case MOS6510MicroOperation::ReadIndirectIndexedAndAccumulator:
         {
-            m_accumulator &= m_ptrBus->read(m_address);
+            m_accumulator &= read(m_address);
             updateLoadFlags(m_accumulator);
             break;
         }
 
         case MOS6510MicroOperation::ReadIndirectIndexedOrAccumulator:
         {
-            m_accumulator |= m_ptrBus->read(m_address);
+            m_accumulator |= read(m_address);
             updateLoadFlags(m_accumulator);
             break;
         }
 
         case MOS6510MicroOperation::ReadIndirectIndexedExclusiveOrAccumulator:
         {
-            m_accumulator ^= m_ptrBus->read(m_address);
+            m_accumulator ^= read(m_address);
             updateLoadFlags(m_accumulator);
             break;
         }
         case MOS6510MicroOperation::WriteAccumulator:
         {
-            m_ptrBus->write(m_address, m_accumulator);
+            write(m_address, m_accumulator);
             break;
         }
         case MOS6510MicroOperation::WriteXRegister:
         {
-            m_ptrBus->write(m_address, m_x);
+            write(m_address, m_x);
             break;
         }
         case MOS6510MicroOperation::WriteYRegister:
         {
-            m_ptrBus->write(m_address, m_y);
+            write(m_address, m_y);
             break;
         }
         case MOS6510MicroOperation::WriteSHYAbsoluteX:
@@ -1033,7 +1037,7 @@ void MOS6510::clock()
             {
                 writeAddress = static_cast<quint16>((static_cast<quint16>(value) << 8) | (m_address & 0x00FF));
             }
-            m_ptrBus->write(writeAddress, value);
+            write(writeAddress, value);
             break;
         }
         case MOS6510MicroOperation::WriteSHXAbsoluteY:
@@ -1049,7 +1053,7 @@ void MOS6510::clock()
             {
                 writeAddress = static_cast<quint16>((static_cast<quint16>(value) << 8) | (m_address & 0x00FF));
             }
-            m_ptrBus->write(writeAddress, value);
+            write(writeAddress, value);
             break;
         }
         case MOS6510MicroOperation::WriteAHX:
@@ -1065,7 +1069,7 @@ void MOS6510::clock()
             {
                 writeAddress = static_cast<quint16>((static_cast<quint16>(value) << 8) | (m_address & 0x00FF));
             }
-            m_ptrBus->write(writeAddress, value);
+            write(writeAddress, value);
             break;
         }
         case MOS6510MicroOperation::WriteTASAbsoluteY:
@@ -1082,12 +1086,12 @@ void MOS6510::clock()
             {
                 writeAddress = static_cast<quint16>((static_cast<quint16>(value) << 8) | (m_address & 0x00FF));
             }
-            m_ptrBus->write(writeAddress, value);
+            write(writeAddress, value);
             break;
         }
         case MOS6510MicroOperation::IncrementXRegister:
         {
-            m_ptrBus->read(m_programCounter);
+            read(m_programCounter);
             ++m_x;
             updateLoadFlags(m_x);
             break;
@@ -1095,7 +1099,7 @@ void MOS6510::clock()
 
         case MOS6510MicroOperation::IncrementYRegister:
         {
-            m_ptrBus->read(m_programCounter);
+            read(m_programCounter);
             ++m_y;
             updateLoadFlags(m_y);
             break;
@@ -1103,7 +1107,7 @@ void MOS6510::clock()
 
         case MOS6510MicroOperation::DecrementXRegister:
         {
-            m_ptrBus->read(m_programCounter);
+            read(m_programCounter);
             --m_x;
             updateLoadFlags(m_x);
             break;
@@ -1111,19 +1115,19 @@ void MOS6510::clock()
 
         case MOS6510MicroOperation::DecrementYRegister:
         {
-            m_ptrBus->read(m_programCounter);
+            read(m_programCounter);
             --m_y;
             updateLoadFlags(m_y);
             break;
         }
         case MOS6510MicroOperation::ReadMemoryToData:
         {
-            m_data = m_ptrBus->read(m_address);
+            m_data = read(m_address);
             break;
         }
         case MOS6510MicroOperation::ReadMemoryToAccumulatorAndXRegister:
         {
-            const quint8 value = m_ptrBus->read(m_address);
+            const quint8 value = read(m_address);
             m_accumulator = value;
             m_x = value;
             updateLoadFlags(value);
@@ -1131,7 +1135,7 @@ void MOS6510::clock()
         }
         case MOS6510MicroOperation::ReadMemoryToAccumulatorXRegisterAndStackPointer:
         {
-            const quint8 value = static_cast<quint8>(m_ptrBus->read(m_address) & m_stackPointer);
+            const quint8 value = static_cast<quint8>(read(m_address) & m_stackPointer);
             m_accumulator = value;
             m_x = value;
             m_stackPointer = value;
@@ -1140,25 +1144,25 @@ void MOS6510::clock()
         }
         case MOS6510MicroOperation::WriteDataToMemory:
         {
-            m_ptrBus->write(m_address, m_data);
+            write(m_address, m_data);
             break;
         }
         case MOS6510MicroOperation::WriteAccumulatorAndXRegisterToMemory:
         {
-            m_ptrBus->write(m_address, static_cast<quint8>(m_accumulator & m_x));
+            write(m_address, static_cast<quint8>(m_accumulator & m_x));
             break;
         }
         case MOS6510MicroOperation::IncrementDataAndWriteToMemory:
         {
             ++m_data;
-            m_ptrBus->write(m_address, m_data);
+            write(m_address, m_data);
             updateLoadFlags(m_data);
             break;
         }
         case MOS6510MicroOperation::DecrementDataAndWriteToMemory:
         {
             --m_data;
-            m_ptrBus->write(m_address, m_data);
+            write(m_address, m_data);
             updateLoadFlags(m_data);
             break;
         }
@@ -1172,7 +1176,7 @@ void MOS6510::clock()
             //
             // Final RMW write.
             //
-            m_ptrBus->write(m_address, m_data);
+            write(m_address, m_data);
 
             //
             // Then compare the accumulator with the decremented value.
@@ -1188,13 +1192,13 @@ void MOS6510::clock()
         case MOS6510MicroOperation::IncrementDataSubtractFromAccumulatorAndWriteToMemory:
         {
             ++m_data;
-            m_ptrBus->write(m_address, m_data);
+            write(m_address, m_data);
             subtractFromAccumulator(m_data);
             break;
         }
         case MOS6510MicroOperation::ShiftLeftAccumulator:
         {
-            m_ptrBus->read(m_programCounter);
+            read(m_programCounter);
             const bool carry = (m_accumulator & 0x80) != 0;
             m_accumulator = static_cast<quint8>(m_accumulator << 1);
             setStatusFlag(MOS6510StatusFlag::Carry, carry);
@@ -1204,7 +1208,7 @@ void MOS6510::clock()
 
         case MOS6510MicroOperation::ShiftRightAccumulator:
         {
-            m_ptrBus->read(m_programCounter);
+            read(m_programCounter);
             const bool carry = (m_accumulator & 0x01) != 0;
             m_accumulator = static_cast<quint8>(m_accumulator >> 1);
             setStatusFlag(MOS6510StatusFlag::Carry, carry);
@@ -1214,7 +1218,7 @@ void MOS6510::clock()
 
         case MOS6510MicroOperation::RotateLeftAccumulator:
         {
-            m_ptrBus->read(m_programCounter);
+            read(m_programCounter);
             const bool carryIn = (m_status & static_cast<quint8>(MOS6510StatusFlag::Carry)) != 0;
             const bool carryOut = (m_accumulator & 0x80) != 0;
             m_accumulator = static_cast<quint8>((m_accumulator << 1) | (carryIn ? 0x01 : 0x00));
@@ -1225,7 +1229,7 @@ void MOS6510::clock()
 
         case MOS6510MicroOperation::RotateRightAccumulator:
         {
-            m_ptrBus->read(m_programCounter);
+            read(m_programCounter);
             const bool carryIn = (m_status & static_cast<quint8>(MOS6510StatusFlag::Carry)) != 0;
             const bool carryOut = (m_accumulator & 0x01) != 0;
             m_accumulator = static_cast<quint8>((m_accumulator >> 1) | (carryIn ? 0x80 : 0x00));
@@ -1238,7 +1242,7 @@ void MOS6510::clock()
         {
             const bool carry = (m_data & 0x80) != 0;
             m_data = static_cast<quint8>(m_data << 1);
-            m_ptrBus->write(m_address, m_data);
+            write(m_address, m_data);
             setStatusFlag(MOS6510StatusFlag::Carry, carry);
             updateLoadFlags(m_data);
             break;
@@ -1248,7 +1252,7 @@ void MOS6510::clock()
         {
             const bool carry = (m_data & 0x01) != 0;
             m_data = static_cast<quint8>(m_data >> 1);
-            m_ptrBus->write(m_address, m_data);
+            write(m_address, m_data);
             setStatusFlag(MOS6510StatusFlag::Carry, carry);
             updateLoadFlags(m_data);
             break;
@@ -1259,7 +1263,7 @@ void MOS6510::clock()
             const bool carryIn = (m_status & static_cast<quint8>(MOS6510StatusFlag::Carry)) != 0;
             const bool carryOut = (m_data & 0x80) != 0;
             m_data = static_cast<quint8>((m_data << 1) | (carryIn ? 0x01 : 0x00));
-            m_ptrBus->write(m_address, m_data);
+            write(m_address, m_data);
             setStatusFlag(MOS6510StatusFlag::Carry, carryOut);
             updateLoadFlags(m_data);
             break;
@@ -1270,7 +1274,7 @@ void MOS6510::clock()
             const bool carryIn = (m_status & static_cast<quint8>(MOS6510StatusFlag::Carry)) != 0;
             const bool carryOut = (m_data & 0x01) != 0;
             m_data = static_cast<quint8>((m_data >> 1) | (carryIn ? 0x80 : 0x00));
-            m_ptrBus->write(m_address, m_data);
+            write(m_address, m_data);
             setStatusFlag(MOS6510StatusFlag::Carry, carryOut);
             updateLoadFlags(m_data);
             break;
@@ -1280,7 +1284,7 @@ void MOS6510::clock()
             const bool oldCarry = statusFlag(MOS6510StatusFlag::Carry);
             const bool newCarry = (m_data & 0x80) != 0;
             m_data = static_cast<quint8>((m_data << 1) | (oldCarry ? 0x01 : 0x00));
-            m_ptrBus->write(m_address, m_data);
+            write(m_address, m_data);
             m_accumulator = static_cast<quint8>(m_accumulator & m_data);
             setStatusFlag(MOS6510StatusFlag::Carry, newCarry);
             setStatusFlag(MOS6510StatusFlag::Zero, m_accumulator == 0);
@@ -1292,7 +1296,7 @@ void MOS6510::clock()
             const bool oldCarry = statusFlag(MOS6510StatusFlag::Carry);
             const bool adcCarry = (m_data & 0x01) != 0;
             m_data = static_cast<quint8>((m_data >> 1) | (oldCarry ? 0x80 : 0x00));
-            m_ptrBus->write(m_address, m_data);
+            write(m_address, m_data);
             setStatusFlag(MOS6510StatusFlag::Carry, adcCarry);
             addToAccumulator(m_data);
             break;
@@ -1301,7 +1305,7 @@ void MOS6510::clock()
         {
             const bool newCarry = (m_data & 0x80) != 0;
             m_data = static_cast<quint8>(m_data << 1);
-            m_ptrBus->write(m_address, m_data);
+            write(m_address, m_data);
             m_accumulator = static_cast<quint8>(m_accumulator | m_data);
             setStatusFlag(MOS6510StatusFlag::Carry, newCarry);
             setStatusFlag(MOS6510StatusFlag::Zero, m_accumulator == 0);
@@ -1312,7 +1316,7 @@ void MOS6510::clock()
         {
             const bool newCarry = (m_data & 0x01) != 0;
             m_data = static_cast<quint8>(m_data >> 1);
-            m_ptrBus->write(m_address, m_data);
+            write(m_address, m_data);
             m_accumulator = static_cast<quint8>(m_accumulator ^ m_data);
             setStatusFlag(MOS6510StatusFlag::Carry, newCarry);
             setStatusFlag(MOS6510StatusFlag::Zero, m_accumulator == 0);
@@ -1321,7 +1325,7 @@ void MOS6510::clock()
         }
         case MOS6510MicroOperation::TransferAccumulatorToXRegister:
         {
-            m_ptrBus->read(m_programCounter);
+            read(m_programCounter);
             m_x = m_accumulator;
             updateLoadFlags(m_x);
             break;
@@ -1329,7 +1333,7 @@ void MOS6510::clock()
 
         case MOS6510MicroOperation::TransferAccumulatorToYRegister:
         {
-            m_ptrBus->read(m_programCounter);
+            read(m_programCounter);
             m_y = m_accumulator;
             updateLoadFlags(m_y);
             break;
@@ -1337,7 +1341,7 @@ void MOS6510::clock()
 
         case MOS6510MicroOperation::TransferXRegisterToAccumulator:
         {
-            m_ptrBus->read(m_programCounter);
+            read(m_programCounter);
             m_accumulator = m_x;
             updateLoadFlags(m_accumulator);
             break;
@@ -1345,7 +1349,7 @@ void MOS6510::clock()
 
         case MOS6510MicroOperation::TransferYRegisterToAccumulator:
         {
-            m_ptrBus->read(m_programCounter);
+            read(m_programCounter);
             m_accumulator = m_y;
             updateLoadFlags(m_accumulator);
             break;
@@ -1353,7 +1357,7 @@ void MOS6510::clock()
 
         case MOS6510MicroOperation::TransferStackPointerToXRegister:
         {
-            m_ptrBus->read(m_programCounter);
+            read(m_programCounter);
             m_x = m_stackPointer;
             updateLoadFlags(m_x);
             break;
@@ -1361,80 +1365,80 @@ void MOS6510::clock()
 
         case MOS6510MicroOperation::TransferXRegisterToStackPointer:
         {
-            m_ptrBus->read(m_programCounter);
+            read(m_programCounter);
             m_stackPointer = m_x;
             break;
         }
         case MOS6510MicroOperation::WriteAccumulatorToStack:
         {
-            m_ptrBus->write(0x0100 | m_stackPointer, m_accumulator);
+            write(0x0100 | m_stackPointer, m_accumulator);
             --m_stackPointer;
             break;
         }
         case MOS6510MicroOperation::ReadStackToAccumulator:
         {
             ++m_stackPointer;
-            m_accumulator = m_ptrBus->read(0x0100 | m_stackPointer);
+            m_accumulator = read(0x0100 | m_stackPointer);
             updateLoadFlags(m_accumulator);
             break;
         }
         case MOS6510MicroOperation::WriteStatusToStack:
         {
-            m_ptrBus->write(0x0100 | m_stackPointer, m_status | 0x30);
+            write(0x0100 | m_stackPointer, m_status | 0x30);
             --m_stackPointer;
             break;
         }
         case MOS6510MicroOperation::ReadStackToStatus:
         {
             ++m_stackPointer;
-            const quint8 value = m_ptrBus->read(0x0100 | m_stackPointer);
+            const quint8 value = read(0x0100 | m_stackPointer);
             m_status = value | 0x20;
             break;
         }
         case MOS6510MicroOperation::ReadStackDummy:
         {
-            m_ptrBus->read(0x0100 | m_stackPointer);
+            read(0x0100 | m_stackPointer);
             break;
         }
         case MOS6510MicroOperation::SetDecimalFlag:
         {
-            m_ptrBus->read(m_programCounter);
+            read(m_programCounter);
             setStatusFlag(MOS6510StatusFlag::Decimal, true);
             break;
         }
         case MOS6510MicroOperation::ClearDecimalFlag:
         {
-            m_ptrBus->read(m_programCounter);
+            read(m_programCounter);
             setStatusFlag(MOS6510StatusFlag::Decimal, false);
             break;
         }
         case MOS6510MicroOperation::ClearCarryFlag:
         {
-            m_ptrBus->read(m_programCounter);
+            read(m_programCounter);
             setStatusFlag(MOS6510StatusFlag::Carry, false);
             break;
         }
         case MOS6510MicroOperation::SetCarryFlag:
         {
-            m_ptrBus->read(m_programCounter);
+            read(m_programCounter);
             setStatusFlag(MOS6510StatusFlag::Carry, true);
             break;
         }
         case MOS6510MicroOperation::ClearInterruptDisableFlag:
         {
-            m_ptrBus->read(m_programCounter);
+            read(m_programCounter);
             setStatusFlag(MOS6510StatusFlag::InterruptDisable, false);
             break;
         }
         case MOS6510MicroOperation::SetInterruptDisableFlag:
         {
-            m_ptrBus->read(m_programCounter);
+            read(m_programCounter);
             setStatusFlag(MOS6510StatusFlag::InterruptDisable, true);
             break;
         }
         case MOS6510MicroOperation::ClearOverflowFlag:
         {
-            m_ptrBus->read(m_programCounter);
+            read(m_programCounter);
             setStatusFlag(MOS6510StatusFlag::Overflow, false);
             break;
         }
@@ -1442,7 +1446,7 @@ void MOS6510::clock()
         {
             pollIrq();
             pollNmi();
-            const qint8 offset = static_cast<qint8>(m_ptrBus->read(m_programCounter));
+            const qint8 offset = static_cast<qint8>(read(m_programCounter));
             ++m_programCounter;
             // BCC: branch only if Carry is clear.
             if ((m_status & static_cast<quint8>(MOS6510StatusFlag::Carry)) != 0)
@@ -1463,7 +1467,7 @@ void MOS6510::clock()
         {
             pollIrq();
             pollNmi();
-            const qint8 offset = static_cast<qint8>(m_ptrBus->read(m_programCounter));
+            const qint8 offset = static_cast<qint8>(read(m_programCounter));
             ++m_programCounter;
             // BCS: branch only if Carry is set.
             if ((m_status & static_cast<quint8>(MOS6510StatusFlag::Carry)) == 0)
@@ -1484,7 +1488,7 @@ void MOS6510::clock()
         {
             pollIrq();
             pollNmi();
-            const qint8 offset = static_cast<qint8>(m_ptrBus->read(m_programCounter));
+            const qint8 offset = static_cast<qint8>(read(m_programCounter));
             ++m_programCounter;
             // BEQ: branch only if Zero is set.
             if ((m_status & static_cast<quint8>(MOS6510StatusFlag::Zero)) == 0)
@@ -1505,7 +1509,7 @@ void MOS6510::clock()
         {
             pollIrq();
             pollNmi();
-            const qint8 offset = static_cast<qint8>(m_ptrBus->read(m_programCounter));
+            const qint8 offset = static_cast<qint8>(read(m_programCounter));
             ++m_programCounter;
             // BNE: branch only if Zero is clear.
             if ((m_status & static_cast<quint8>(MOS6510StatusFlag::Zero)) != 0)
@@ -1527,7 +1531,7 @@ void MOS6510::clock()
         {
             pollIrq();
             pollNmi();
-            const qint8 offset = static_cast<qint8>(m_ptrBus->read(m_programCounter));
+            const qint8 offset = static_cast<qint8>(read(m_programCounter));
             ++m_programCounter;
             // BMI: branch only if Negative is set.
             if ((m_status & static_cast<quint8>(MOS6510StatusFlag::Negative)) == 0)
@@ -1548,7 +1552,7 @@ void MOS6510::clock()
         {
             pollIrq();
             pollNmi();
-            const qint8 offset = static_cast<qint8>(m_ptrBus->read(m_programCounter));
+            const qint8 offset = static_cast<qint8>(read(m_programCounter));
             ++m_programCounter;
             // BPL: branch only if Negative is clear.
             if ((m_status & static_cast<quint8>(MOS6510StatusFlag::Negative)) != 0)
@@ -1569,7 +1573,7 @@ void MOS6510::clock()
         {
             pollIrq();
             pollNmi();
-            const qint8 offset = static_cast<qint8>(m_ptrBus->read(m_programCounter));
+            const qint8 offset = static_cast<qint8>(read(m_programCounter));
             ++m_programCounter;
             // BVC: branch only if Overflow is clear.
             if ((m_status & static_cast<quint8>(MOS6510StatusFlag::Overflow)) != 0)
@@ -1590,7 +1594,7 @@ void MOS6510::clock()
         {
             pollIrq();
             pollNmi();
-            const qint8 offset = static_cast<qint8>(m_ptrBus->read(m_programCounter));
+            const qint8 offset = static_cast<qint8>(read(m_programCounter));
             ++m_programCounter;
             // BVS: branch only if Overflow is set.
             if ((m_status & static_cast<quint8>(MOS6510StatusFlag::Overflow)) == 0)
@@ -1611,7 +1615,7 @@ void MOS6510::clock()
         {
             // Taken branch always performs a dummy read from the
             // instruction following the branch operand.
-            m_ptrBus->read(m_programCounter);
+            read(m_programCounter);
             m_programCounter = m_address;
             if (!m_pageCrossed)
             {
@@ -1624,12 +1628,12 @@ void MOS6510::clock()
             pollIrq();
             pollNmi();
             const quint16 dummyAddress = static_cast<quint16>((static_cast<quint16>(m_data) << 8) | (m_address & 0x00FF));
-            m_ptrBus->read(dummyAddress);
+            read(dummyAddress);
             break;
         }
         case MOS6510MicroOperation::ReadAbsoluteAddressHighAndJump:
         {
-            const quint8 highByte = m_ptrBus->read(m_programCounter);
+            const quint8 highByte = read(m_programCounter);
             m_address |= static_cast<quint16>(highByte) << 8;
             m_programCounter = m_address;
 
@@ -1637,127 +1641,127 @@ void MOS6510::clock()
         }
         case MOS6510MicroOperation::ReadIndirectJumpAddressLow:
         {
-            m_data = m_ptrBus->read(m_address);
+            m_data = read(m_address);
             break;
         }
         case MOS6510MicroOperation::ReadIndirectJumpAddressHigh:
         {
             const quint16 highAddress = static_cast<quint16>((m_address & 0xFF00) | static_cast<quint8>(m_address + 1));
-            const quint8 highByte = m_ptrBus->read(highAddress);
+            const quint8 highByte = read(highAddress);
             m_programCounter = static_cast<quint16>(static_cast<quint16>(highByte) << 8 | m_data);
             break;
         }
         case MOS6510MicroOperation::ReadJsrAddressLow:
         {
-            m_address = m_ptrBus->read(m_programCounter);
+            m_address = read(m_programCounter);
             ++m_programCounter;
             break;
         }
         case MOS6510MicroOperation::ReadJsrStackDummy:
         {
-            m_ptrBus->read(static_cast<quint16>(0x0100 | m_stackPointer));
+            read(static_cast<quint16>(0x0100 | m_stackPointer));
             break;
         }
         case MOS6510MicroOperation::WriteJsrReturnAddressHigh:
         {
-            m_ptrBus->write(static_cast<quint16>(0x0100 | m_stackPointer), static_cast<quint8>(m_programCounter >> 8));
+            write(static_cast<quint16>(0x0100 | m_stackPointer), static_cast<quint8>(m_programCounter >> 8));
             --m_stackPointer;
             break;
         }
         case MOS6510MicroOperation::WriteJsrReturnAddressLow:
         {
-            m_ptrBus->write(static_cast<quint16>(0x0100 | m_stackPointer), static_cast<quint8>(m_programCounter & 0x00FF));
+            write(static_cast<quint16>(0x0100 | m_stackPointer), static_cast<quint8>(m_programCounter & 0x00FF));
             --m_stackPointer;
             break;
         }
         case MOS6510MicroOperation::ReadJsrAddressHighAndJump:
         {
-            const quint8 highByte = m_ptrBus->read(m_programCounter);
+            const quint8 highByte = read(m_programCounter);
             m_address |= static_cast<quint16>(highByte) << 8;
             m_programCounter = m_address;
             break;
         }
         case MOS6510MicroOperation::ReadRtsProgramCounterDummy:
         {
-            m_ptrBus->read(m_programCounter);
+            read(m_programCounter);
             break;
         }
         case MOS6510MicroOperation::ReadRtsStackDummy:
         {
-            m_ptrBus->read(static_cast<quint16>(0x0100 | m_stackPointer));
+            read(static_cast<quint16>(0x0100 | m_stackPointer));
             break;
         }
         case MOS6510MicroOperation::ReadRtsReturnAddressLow:
         {
             ++m_stackPointer;
-            m_address = m_ptrBus->read(static_cast<quint16>(0x0100 | m_stackPointer));
+            m_address = read(static_cast<quint16>(0x0100 | m_stackPointer));
             break;
         }
         case MOS6510MicroOperation::ReadRtsReturnAddressHigh:
         {
             ++m_stackPointer;
-            const quint8 highByte = m_ptrBus->read(static_cast<quint16>(0x0100 | m_stackPointer));
+            const quint8 highByte = read(static_cast<quint16>(0x0100 | m_stackPointer));
             m_address |= static_cast<quint16>(highByte) << 8;
             m_programCounter = m_address;
             break;
         }
         case MOS6510MicroOperation::RtsIncrementProgramCounter:
         {
-            m_ptrBus->read(m_programCounter);
+            read(m_programCounter);
             ++m_programCounter;
             break;
         }
         case MOS6510MicroOperation::ReadRtiProgramCounterDummy:
         {
-            m_ptrBus->read(m_programCounter);
+            read(m_programCounter);
             break;
         }
         case MOS6510MicroOperation::ReadRtiStackDummy:
         {
-            m_ptrBus->read(static_cast<quint16>(0x0100 | m_stackPointer));
+            read(static_cast<quint16>(0x0100 | m_stackPointer));
             break;
         }
         case MOS6510MicroOperation::ReadRtiStatus:
         {
             ++m_stackPointer;
-            const quint8 value = m_ptrBus->read(static_cast<quint16>(0x0100 | m_stackPointer));
+            const quint8 value = read(static_cast<quint16>(0x0100 | m_stackPointer));
             m_status = value | 0x20;
             break;
         }
         case MOS6510MicroOperation::ReadRtiProgramCounterLow:
         {
             ++m_stackPointer;
-            m_address = m_ptrBus->read(static_cast<quint16>(0x0100 | m_stackPointer));
+            m_address = read(static_cast<quint16>(0x0100 | m_stackPointer));
             break;
         }
         case MOS6510MicroOperation::ReadRtiProgramCounterHigh:
         {
             ++m_stackPointer;
-            const quint8 highByte = m_ptrBus->read(static_cast<quint16>(0x0100 | m_stackPointer));
+            const quint8 highByte = read(static_cast<quint16>(0x0100 | m_stackPointer));
             m_programCounter = static_cast<quint16>((static_cast<quint16>(highByte) << 8) | m_address);
             break;
         }
         case MOS6510MicroOperation::ReadBrkPadding:
         {
-            m_ptrBus->read(m_programCounter);
+            read(m_programCounter);
             ++m_programCounter;
             break;
         }
         case MOS6510MicroOperation::WriteBrkProgramCounterHigh:
         {
-            m_ptrBus->write(static_cast<quint16>(0x0100 | m_stackPointer), static_cast<quint8>(m_programCounter >> 8));
+            write(static_cast<quint16>(0x0100 | m_stackPointer), static_cast<quint8>(m_programCounter >> 8));
             --m_stackPointer;
             break;
         }
         case MOS6510MicroOperation::WriteBrkProgramCounterLow:
         {
-            m_ptrBus->write(static_cast<quint16>(0x0100 | m_stackPointer), static_cast<quint8>(m_programCounter & 0x00FF));
+            write(static_cast<quint16>(0x0100 | m_stackPointer), static_cast<quint8>(m_programCounter & 0x00FF));
             --m_stackPointer;
             break;
         }
         case MOS6510MicroOperation::WriteBrkStatus:
         {
-            m_ptrBus->write(static_cast<quint16>(0x0100 | m_stackPointer), static_cast<quint8>(m_status | 0x30));
+            write(static_cast<quint16>(0x0100 | m_stackPointer), static_cast<quint8>(m_status | 0x30));
             --m_stackPointer;
             setStatusFlag(MOS6510StatusFlag::InterruptDisable, true);
             break;
@@ -1769,11 +1773,11 @@ void MOS6510::clock()
             if (m_nmiHijack)
             {
                 m_nmiPending = false;
-                m_address = m_ptrBus->read(0xFFFA);
+                m_address = read(0xFFFA);
             }
             else
             {
-                m_address = m_ptrBus->read(0xFFFE);
+                m_address = read(0xFFFE);
             }
             m_nmiVectorFetch = true;
             break;
@@ -1783,9 +1787,9 @@ void MOS6510::clock()
             quint8 highByte;
 
             if (m_nmiHijack)
-                highByte = m_ptrBus->read(0xFFFB);
+                highByte = read(0xFFFB);
             else
-                highByte = m_ptrBus->read(0xFFFF);
+                highByte = read(0xFFFF);
 
             m_programCounter =
                 static_cast<quint16>(
@@ -1830,47 +1834,77 @@ void MOS6510::clock()
     }
 }
 
+
+quint8 MOS6510::read(const quint16 address)
+{
+    if (address == 0x0000)
+    {
+        return m_portDataDirection;
+    }
+    if (address == 0x0001)
+    {
+        const quint8 outputs = m_portData & m_portDataDirection;
+        const quint8 inputs = m_portInput & static_cast<quint8>(~m_portDataDirection);
+        return static_cast<quint8>((outputs | inputs) & 0x3F);
+    }
+    return m_ptrBus->read(address);
+}
+void MOS6510::write(const quint16 address, const quint8 value)
+{
+    if (address == 0x0000)
+    {
+        m_portDataDirection = static_cast<quint8>(value & 0x3F);
+        return;
+    }
+    if (address == 0x0001)
+    {
+        m_portData = static_cast<quint8>(value & 0x3F);
+        return;
+    }
+    m_ptrBus->write(address, value);
+}
+
 void MOS6510::executeResetCycle()
 {
     switch (m_resetCycle)
     {
     case 0:
         // C1: Dummy read from current PC
-        m_ptrBus->read(m_programCounter);
+        read(m_programCounter);
         break;
 
     case 1:
         // C2: Dummy read from current PC
-        m_ptrBus->read(m_programCounter);
+        read(m_programCounter);
         break;
 
     case 2:
         // C3: Stack read, no write
-        m_ptrBus->read(static_cast<quint16>(0x0100 | m_stackPointer));
+        read(static_cast<quint16>(0x0100 | m_stackPointer));
         --m_stackPointer;
         break;
 
     case 3:
         // C4: Stack read, no write
-        m_ptrBus->read(static_cast<quint16>(0x0100 | m_stackPointer));
+        read(static_cast<quint16>(0x0100 | m_stackPointer));
         --m_stackPointer;
         break;
 
     case 4:
         // C5: Stack read, no write
-        m_ptrBus->read(static_cast<quint16>(0x0100 | m_stackPointer));
+        read(static_cast<quint16>(0x0100 | m_stackPointer));
         --m_stackPointer;
         setStatusFlag(MOS6510StatusFlag::InterruptDisable, true);
         break;
 
     case 5:
         // C6: Read reset vector low
-        m_programCounter = static_cast<quint16>(m_ptrBus->read(0xFFFC));
+        m_programCounter = static_cast<quint16>(read(0xFFFC));
         break;
 
     case 6:
         // C7: Read reset vector high
-        m_programCounter |= static_cast<quint16>(m_ptrBus->read(0xFFFD)) << 8;
+        m_programCounter |= static_cast<quint16>(read(0xFFFD)) << 8;
         m_state = CpuState::Fetch;
         return;
     }
@@ -1887,7 +1921,7 @@ void MOS6510::executeIrqCycle()
         // C1
         // Suppressed opcode fetch.
         //
-        m_ptrBus->read(m_programCounter);
+        read(m_programCounter);
         break;
 
     case 1:
@@ -1895,7 +1929,7 @@ void MOS6510::executeIrqCycle()
         // C2
         // Second dummy read from the current PC.
         //
-        m_ptrBus->read(m_programCounter);
+        read(m_programCounter);
         break;
 
     case 2:
@@ -1903,7 +1937,7 @@ void MOS6510::executeIrqCycle()
         // C3
         // Push program counter high byte.
         //
-        m_ptrBus->write(static_cast<quint16>(0x0100 | m_stackPointer), static_cast<quint8>(m_programCounter >> 8));
+        write(static_cast<quint16>(0x0100 | m_stackPointer), static_cast<quint8>(m_programCounter >> 8));
         --m_stackPointer;
         break;
 
@@ -1912,7 +1946,7 @@ void MOS6510::executeIrqCycle()
         // C4
         // Push program counter low byte.
         //
-        m_ptrBus->write(static_cast<quint16>(0x0100 | m_stackPointer), static_cast<quint8>(m_programCounter & 0x00FF));
+        write(static_cast<quint16>(0x0100 | m_stackPointer), static_cast<quint8>(m_programCounter & 0x00FF));
         --m_stackPointer;
         break;
 
@@ -1921,7 +1955,7 @@ void MOS6510::executeIrqCycle()
         // C5
         // Push status with B clear and U set.
         //
-        m_ptrBus->write(static_cast<quint16>(0x0100 | m_stackPointer), static_cast<quint8>((m_status & 0xEF) | 0x20));
+        write(static_cast<quint16>(0x0100 | m_stackPointer), static_cast<quint8>((m_status & 0xEF) | 0x20));
         --m_stackPointer;
         break;
 
@@ -1935,11 +1969,11 @@ void MOS6510::executeIrqCycle()
         if (m_nmiHijack)
         {
             m_nmiPending = false;
-            m_programCounter = static_cast<quint16>(m_ptrBus->read(0xFFFA));
+            m_programCounter = static_cast<quint16>(read(0xFFFA));
         }
         else
         {
-            m_programCounter = static_cast<quint16>(m_ptrBus->read(0xFFFE));
+            m_programCounter = static_cast<quint16>(read(0xFFFE));
         }
 
         //
@@ -1956,11 +1990,11 @@ void MOS6510::executeIrqCycle()
         //
         if (m_nmiHijack)
         {
-            m_programCounter |= static_cast<quint16>(m_ptrBus->read(0xFFFB)) << 8;
+            m_programCounter |= static_cast<quint16>(read(0xFFFB)) << 8;
         }
         else
         {
-            m_programCounter |= static_cast<quint16>(m_ptrBus->read(0xFFFF)) << 8;
+            m_programCounter |= static_cast<quint16>(read(0xFFFF)) << 8;
         }
 
         m_nmiVectorFetch = false;
@@ -2013,7 +2047,7 @@ void MOS6510::executeNmiCycle()
         // C1
         // Suppressed opcode fetch.
         //
-        m_ptrBus->read(m_programCounter);
+        read(m_programCounter);
         break;
 
     case 1:
@@ -2021,7 +2055,7 @@ void MOS6510::executeNmiCycle()
         // C2
         // Second dummy read from the current PC.
         //
-        m_ptrBus->read(m_programCounter);
+        read(m_programCounter);
         break;
 
     case 2:
@@ -2029,7 +2063,7 @@ void MOS6510::executeNmiCycle()
         // C3
         // Push program counter high byte.
         //
-        m_ptrBus->write(static_cast<quint16>(0x0100 | m_stackPointer), static_cast<quint8>(m_programCounter >> 8));
+        write(static_cast<quint16>(0x0100 | m_stackPointer), static_cast<quint8>(m_programCounter >> 8));
         --m_stackPointer;
         break;
 
@@ -2038,7 +2072,7 @@ void MOS6510::executeNmiCycle()
         // C4
         // Push program counter low byte.
         //
-        m_ptrBus->write(static_cast<quint16>(0x0100 | m_stackPointer), static_cast<quint8>(m_programCounter & 0x00FF));
+        write(static_cast<quint16>(0x0100 | m_stackPointer), static_cast<quint8>(m_programCounter & 0x00FF));
         --m_stackPointer;
         break;
 
@@ -2047,7 +2081,7 @@ void MOS6510::executeNmiCycle()
         // C5
         // Push status with B clear and U set.
         //
-        m_ptrBus->write(static_cast<quint16>(0x0100 | m_stackPointer), static_cast<quint8>((m_status & 0xEF) | 0x20));
+        write(static_cast<quint16>(0x0100 | m_stackPointer), static_cast<quint8>((m_status & 0xEF) | 0x20));
         --m_stackPointer;
         break;
 
@@ -2057,7 +2091,7 @@ void MOS6510::executeNmiCycle()
         // Set I and read NMI vector low byte.
         //
         setStatusFlag(MOS6510StatusFlag::InterruptDisable, true);
-        m_programCounter = static_cast<quint16>(m_ptrBus->read(0xFFFA));
+        m_programCounter = static_cast<quint16>(read(0xFFFA));
         break;
 
     case 6:
@@ -2065,7 +2099,7 @@ void MOS6510::executeNmiCycle()
         // C7
         // Read NMI vector high byte.
         //
-        m_programCounter |= static_cast<quint16>(m_ptrBus->read(0xFFFB)) << 8;
+        m_programCounter |= static_cast<quint16>(read(0xFFFB)) << 8;
         m_state = CpuState::Fetch;
         return;
     }

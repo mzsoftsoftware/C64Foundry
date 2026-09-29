@@ -59,6 +59,9 @@ private:
         Error
     };
 
+    quint8 read(quint16 address);
+    void write(quint16 address, quint8 value);
+
     void executeResetCycle();
     void executeIrqCycle();
     void pollIrq();
@@ -72,6 +75,10 @@ private:
 
 private:
     C64Bus* m_ptrBus = nullptr;
+
+    quint8 m_portDataDirection = 0x00;
+    quint8 m_portData = 0x00;
+    quint8 m_portInput = 0x3F;
 
     MOS6510InstructionTable m_instructionTable;
     CpuState m_state = CpuState::Fetch;

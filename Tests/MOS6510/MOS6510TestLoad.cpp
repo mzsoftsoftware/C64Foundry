@@ -129,7 +129,7 @@ void MOS6510TestLoad::testImmediateLoadPcWrap_data()
     QTest::addColumn<quint16>("nextOperandAddress");
 
     QTest::newRow("LDA at $FFFE") << quint16(0xFFFE) << quint16(0xFFFF) << quint16(0x0000) << quint16(0x0001);
-    QTest::newRow("LDA at $FFFF") << quint16(0xFFFF) << quint16(0x0000) << quint16(0x0001) << quint16(0x0002);
+    // später im PORT-Test : QTest::newRow("LDA at $FFFF") << quint16(0xFFFF) << quint16(0x0000) << quint16(0x0001) << quint16(0x0002);
 }
 void MOS6510TestLoad::testImmediateLoadPcWrap()
 {
@@ -182,19 +182,19 @@ void MOS6510TestLoad::testZeroPageLoad_data()
     QTest::newRow("LDA positive") << LoadRegister::Accumulator << quint8(0xA5) << quint8(0x42) << quint8(0x37) << quint8(0x7D);
     QTest::newRow("LDA zero") << LoadRegister::Accumulator << quint8(0xA5) << quint8(0x42) << quint8(0x00) << quint8(0x7D);
     QTest::newRow("LDA negative") << LoadRegister::Accumulator << quint8(0xA5) << quint8(0x42) << quint8(0x80) << quint8(0x7D);
-    QTest::newRow("LDA $00") << LoadRegister::Accumulator << quint8(0xA5) << quint8(0x00) << quint8(0x11) << quint8(0x7D);
+    // Port : QTest::newRow("LDA $00") << LoadRegister::Accumulator << quint8(0xA5) << quint8(0x00) << quint8(0x11) << quint8(0x7D);
     QTest::newRow("LDA $FF") << LoadRegister::Accumulator << quint8(0xA5) << quint8(0xFF) << quint8(0x22) << quint8(0x7D);
 
     QTest::newRow("LDX positive") << LoadRegister::X << quint8(0xA6) << quint8(0x42) << quint8(0x37) << quint8(0x7D);
     QTest::newRow("LDX zero") << LoadRegister::X << quint8(0xA6) << quint8(0x42) << quint8(0x00) << quint8(0x7D);
     QTest::newRow("LDX negative") << LoadRegister::X << quint8(0xA6) << quint8(0x42) << quint8(0x80) << quint8(0x7D);
-    QTest::newRow("LDX $00") << LoadRegister::X << quint8(0xA6) << quint8(0x00) << quint8(0x33) << quint8(0x7D);
+    // Port : QTest::newRow("LDX $00") << LoadRegister::X << quint8(0xA6) << quint8(0x00) << quint8(0x33) << quint8(0x7D);
     QTest::newRow("LDX $FF") << LoadRegister::X << quint8(0xA6) << quint8(0xFF) << quint8(0x44) << quint8(0x7D);
 
     QTest::newRow("LDY positive") << LoadRegister::Y << quint8(0xA4) << quint8(0x42) << quint8(0x37) << quint8(0x7D);
     QTest::newRow("LDY zero") << LoadRegister::Y << quint8(0xA4) << quint8(0x42) << quint8(0x00) << quint8(0x7D);
     QTest::newRow("LDY negative") << LoadRegister::Y << quint8(0xA4) << quint8(0x42) << quint8(0x80) << quint8(0x7D);
-    QTest::newRow("LDY $00") << LoadRegister::Y << quint8(0xA4) << quint8(0x00) << quint8(0x55) << quint8(0x7D);
+    // Port : QTest::newRow("LDY $00") << LoadRegister::Y << quint8(0xA4) << quint8(0x00) << quint8(0x55) << quint8(0x7D);
     QTest::newRow("LDY $FF") << LoadRegister::Y << quint8(0xA4) << quint8(0xFF) << quint8(0x66) << quint8(0x7D);
 }
 void MOS6510TestLoad::testZeroPageLoad()
@@ -311,17 +311,17 @@ void MOS6510TestLoad::testZeroPageIndexedLoad_data()
     QTest::newRow("LDA positive") << LoadRegister::Accumulator << IndexRegister::X << quint8(0xB5) << quint8(0x40) << quint8(0x02) << quint8(0x37) << quint8(0x7D);
     QTest::newRow("LDA zero") << LoadRegister::Accumulator << IndexRegister::X << quint8(0xB5) << quint8(0x40) << quint8(0x02) << quint8(0x00) << quint8(0x7D);
     QTest::newRow("LDA negative") << LoadRegister::Accumulator << IndexRegister::X << quint8(0xB5) << quint8(0x40) << quint8(0x02) << quint8(0x80) << quint8(0x7D);
-    QTest::newRow("LDA zero-page wrap") << LoadRegister::Accumulator << IndexRegister::X << quint8(0xB5) << quint8(0xFF) << quint8(0x01) << quint8(0x42) << quint8(0x7D);
+    QTest::newRow("LDA zero-page wrap") << LoadRegister::Accumulator << IndexRegister::X << quint8(0xB5) << quint8(0xFE) << quint8(0x04) << quint8(0x42) << quint8(0x7D);
 
     QTest::newRow("LDX positive") << LoadRegister::X << IndexRegister::Y << quint8(0xB6) << quint8(0x40) << quint8(0x02) << quint8(0x37) << quint8(0x7D);
     QTest::newRow("LDX zero") << LoadRegister::X << IndexRegister::Y << quint8(0xB6) << quint8(0x40) << quint8(0x02) << quint8(0x00) << quint8(0x7D);
     QTest::newRow("LDX negative") << LoadRegister::X << IndexRegister::Y << quint8(0xB6) << quint8(0x40) << quint8(0x02) << quint8(0x80) << quint8(0x7D);
-    QTest::newRow("LDX zero-page wrap") << LoadRegister::X << IndexRegister::Y << quint8(0xB6) << quint8(0xFF) << quint8(0x01) << quint8(0x43) << quint8(0x7D);
+    QTest::newRow("LDX zero-page wrap") << LoadRegister::X << IndexRegister::Y << quint8(0xB6) << quint8(0xFE) << quint8(0x04) << quint8(0x43) << quint8(0x7D);
 
     QTest::newRow("LDY positive") << LoadRegister::Y << IndexRegister::X << quint8(0xB4) << quint8(0x40) << quint8(0x02) << quint8(0x37) << quint8(0x7D);
     QTest::newRow("LDY zero") << LoadRegister::Y << IndexRegister::X << quint8(0xB4) << quint8(0x40) << quint8(0x02) << quint8(0x00) << quint8(0x7D);
     QTest::newRow("LDY negative") << LoadRegister::Y << IndexRegister::X << quint8(0xB4) << quint8(0x40) << quint8(0x02) << quint8(0x80) << quint8(0x7D);
-    QTest::newRow("LDY zero-page wrap") << LoadRegister::Y << IndexRegister::X << quint8(0xB4) << quint8(0xFF) << quint8(0x01) << quint8(0x44) << quint8(0x7D);
+    QTest::newRow("LDY zero-page wrap") << LoadRegister::Y << IndexRegister::X << quint8(0xB4) << quint8(0xFE) << quint8(0x04) << quint8(0x44) << quint8(0x7D);
 }
 void MOS6510TestLoad::testZeroPageIndexedLoad()
 {
@@ -412,19 +412,19 @@ void MOS6510TestLoad::testAbsoluteLoad_data()
     QTest::newRow("LDA positive") << LoadRegister::Accumulator << quint8(0xAD) << quint16(0x1234) << quint8(0x37) << quint8(0x7D);
     QTest::newRow("LDA zero") << LoadRegister::Accumulator << quint8(0xAD) << quint16(0x1234) << quint8(0x00) << quint8(0x7D);
     QTest::newRow("LDA negative") << LoadRegister::Accumulator << quint8(0xAD) << quint16(0x1234) << quint8(0x80) << quint8(0x7D);
-    QTest::newRow("LDA $0000") << LoadRegister::Accumulator << quint8(0xAD) << quint16(0x0000) << quint8(0x11) << quint8(0x7D);
+    // PORT : QTest::newRow("LDA $0000") << LoadRegister::Accumulator << quint8(0xAD) << quint16(0x0000) << quint8(0x11) << quint8(0x7D);
     QTest::newRow("LDA $FFFF") << LoadRegister::Accumulator << quint8(0xAD) << quint16(0xFFFF) << quint8(0x22) << quint8(0x7D);
 
     QTest::newRow("LDX positive") << LoadRegister::X << quint8(0xAE) << quint16(0x2345) << quint8(0x37) << quint8(0x7D);
     QTest::newRow("LDX zero") << LoadRegister::X << quint8(0xAE) << quint16(0x2345) << quint8(0x00) << quint8(0x7D);
     QTest::newRow("LDX negative") << LoadRegister::X << quint8(0xAE) << quint16(0x2345) << quint8(0x80) << quint8(0x7D);
-    QTest::newRow("LDX $0000") << LoadRegister::X << quint8(0xAE) << quint16(0x0000) << quint8(0x33) << quint8(0x7D);
+    // PORT : QTest::newRow("LDX $0000") << LoadRegister::X << quint8(0xAE) << quint16(0x0000) << quint8(0x33) << quint8(0x7D);
     QTest::newRow("LDX $FFFF") << LoadRegister::X << quint8(0xAE) << quint16(0xFFFF) << quint8(0x44) << quint8(0x7D);
 
     QTest::newRow("LDY positive") << LoadRegister::Y << quint8(0xAC) << quint16(0x3456) << quint8(0x37) << quint8(0x7D);
     QTest::newRow("LDY zero") << LoadRegister::Y << quint8(0xAC) << quint16(0x3456) << quint8(0x00) << quint8(0x7D);
     QTest::newRow("LDY negative") << LoadRegister::Y << quint8(0xAC) << quint16(0x3456) << quint8(0x80) << quint8(0x7D);
-    QTest::newRow("LDY $0000") << LoadRegister::Y << quint8(0xAC) << quint16(0x0000) << quint8(0x55) << quint8(0x7D);
+    // PORT : QTest::newRow("LDY $0000") << LoadRegister::Y << quint8(0xAC) << quint16(0x0000) << quint8(0x55) << quint8(0x7D);
     QTest::newRow("LDY $FFFF") << LoadRegister::Y << quint8(0xAC) << quint16(0xFFFF) << quint8(0x66) << quint8(0x7D);
 }
 void MOS6510TestLoad::testAbsoluteLoad()
@@ -696,8 +696,8 @@ void MOS6510TestLoad::testIndirectLoad_data()
     QTest::newRow("LDA indexed indirect") << IndirectLoadMode::IndexedIndirect << quint8(0x20) << quint8(0x05) << quint16(0x1234) << quint16(0x1234) << quint8(0x37) << quint8(0x7D);
     QTest::newRow("LDA indirect indexed") << IndirectLoadMode::IndirectIndexed << quint8(0x20) << quint8(0x05) << quint16(0x122F) << quint16(0x1234) << quint8(0x37) << quint8(0x7D);
     QTest::newRow("LDA indexed indirect zero page wrap") << IndirectLoadMode::IndexedIndirect << quint8(0xFE) << quint8(0x05) << quint16(0x1234) << quint16(0x1234) << quint8(0x37) << quint8(0x7D);
-    QTest::newRow("LDA indexed indirect pointer wrap") << IndirectLoadMode::IndexedIndirect << quint8(0xFE) << quint8(0x01) << quint16(0x1234) << quint16(0x1234) << quint8(0x37) << quint8(0x7D);
-    QTest::newRow("LDA indirect indexed pointer wrap") << IndirectLoadMode::IndirectIndexed << quint8(0xFF) << quint8(0x00) << quint16(0x1234) << quint16(0x1234) << quint8(0x37) << quint8(0x7D);
+    // PORT : QTest::newRow("LDA indexed indirect pointer wrap") << IndirectLoadMode::IndexedIndirect << quint8(0xFE) << quint8(0x01) << quint16(0x1234) << quint16(0x1234) << quint8(0x37) << quint8(0x7D);
+    // PORT : QTest::newRow("LDA indirect indexed pointer wrap") << IndirectLoadMode::IndirectIndexed << quint8(0xFF) << quint8(0x00) << quint16(0x1234) << quint16(0x1234) << quint8(0x37) << quint8(0x7D);
     QTest::newRow("LDA indirect indexed page crossing") << IndirectLoadMode::IndirectIndexed << quint8(0x20) << quint8(0x01) << quint16(0x12FF) << quint16(0x1300) << quint8(0x37) << quint8(0x7D);
 }
 

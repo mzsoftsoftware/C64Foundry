@@ -49,6 +49,7 @@ add_executable(MOS6510Test
 
     MOS6510TestBlargg.h MOS6510TestBlargg.cpp
     BlarggTest/MOS6510BlarggTest.qrc
+    MOS6510TestPort.h MOS6510TestPort.cpp
 )
 
 set_target_properties(MOS6510Test PROPERTIES

@@ -1,0 +1,452 @@
+#include "MOS6510TestPort.h"
+
+#include <QtTest>
+
+
+MOS6510TestPort::MOS6510TestPort()
+{
+}
+
+MOS6510TestPort::~MOS6510TestPort()
+{
+}
+
+
+void MOS6510TestPort::testDataDirectionRegisterWrite()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x2A);
+
+    m_memory.writeRAM(0x1000, 0x85);    // STA $00
+    m_memory.writeRAM(0x1001, 0x00);
+    m_memory.writeRAM(0x1002, 0xEA);
+
+    clock();                            // C1: Fetch opcode
+    verifyRead(0x1000, 0x85);
+
+    clock();                            // C2: Fetch zero-page address
+    verifyRead(0x1001, 0x00);
+
+    clock();                            // C3: Write DDR
+    verifyNoAccess();
+
+    clock();                            // Fetch next opcode
+    verifyRead(0x1002, 0xEA);
+}
+
+void MOS6510TestPort::testDataDirectionRegisterRead()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x1000);
+
+    //
+    // First write $2A to the data direction register.
+    //
+    m_cpu.setAccumulator(0x2A);
+
+    m_memory.writeRAM(0x1000, 0x85);    // STA $00
+    m_memory.writeRAM(0x1001, 0x00);
+
+    //
+    // Then read the data direction register back.
+    //
+    m_memory.writeRAM(0x1002, 0xA5);    // LDA $00
+    m_memory.writeRAM(0x1003, 0x00);
+    m_memory.writeRAM(0x1004, 0xEA);
+
+    clock();                            // STA C1
+    verifyRead(0x1000, 0x85);
+
+    clock();                            // STA C2
+    verifyRead(0x1001, 0x00);
+
+    clock();                            // STA C3
+    verifyNoAccess();
+
+    clock();                            // LDA C1
+    verifyRead(0x1002, 0xA5);
+
+    clock();                            // LDA C2
+    verifyRead(0x1003, 0x00);
+
+    clock();                            // LDA C3
+    verifyNoAccess();
+
+    QCOMPARE(m_cpu.accumulator(), quint8(0x2A));
+
+    clock();                            // Fetch next opcode
+    verifyRead(0x1004, 0xEA);
+}
+
+void MOS6510TestPort::testDataRegisterWrite()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x15);
+
+    m_memory.writeRAM(0x1000, 0x85);    // STA $01
+    m_memory.writeRAM(0x1001, 0x01);
+    m_memory.writeRAM(0x1002, 0xEA);
+
+    clock();                            // C1: Fetch opcode
+    verifyRead(0x1000, 0x85);
+
+    clock();                            // C2: Fetch zero-page address
+    verifyRead(0x1001, 0x01);
+
+    clock();                            // C3: Write data register
+    verifyNoAccess();
+
+    clock();                            // Fetch next opcode
+    verifyRead(0x1002, 0xEA);
+}
+
+void MOS6510TestPort::testDataRegisterReadOutputs()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x1000);
+
+    //
+    // Configure P0-P5 as outputs.
+    //
+    m_cpu.setAccumulator(0x3F);
+
+    m_memory.writeRAM(0x1000, 0x85);    // STA $00
+    m_memory.writeRAM(0x1001, 0x00);
+
+    //
+    // Write a pattern to the port data register.
+    //
+    m_memory.writeRAM(0x1002, 0xA9);    // LDA #$15
+    m_memory.writeRAM(0x1003, 0x15);
+    m_memory.writeRAM(0x1004, 0x85);    // STA $01
+    m_memory.writeRAM(0x1005, 0x01);
+
+    //
+    // Read the port data register.
+    //
+    m_memory.writeRAM(0x1006, 0xA5);    // LDA $01
+    m_memory.writeRAM(0x1007, 0x01);
+    m_memory.writeRAM(0x1008, 0xEA);
+
+    clock();                            // STA $00 C1
+    verifyRead(0x1000, 0x85);
+
+    clock();                            // STA $00 C2
+    verifyRead(0x1001, 0x00);
+
+    clock();                            // STA $00 C3
+    verifyNoAccess();
+
+    clock();                            // LDA #$15 C1
+    verifyRead(0x1002, 0xA9);
+
+    clock();                            // LDA #$15 C2
+    verifyRead(0x1003, 0x15);
+
+    QCOMPARE(m_cpu.accumulator(), quint8(0x15));
+
+    clock();                            // STA $01 C1
+    verifyRead(0x1004, 0x85);
+
+    clock();                            // STA $01 C2
+    verifyRead(0x1005, 0x01);
+
+    clock();                            // STA $01 C3
+    verifyNoAccess();
+
+    clock();                            // LDA $01 C1
+    verifyRead(0x1006, 0xA5);
+
+    clock();                            // LDA $01 C2
+    verifyRead(0x1007, 0x01);
+
+    clock();                            // LDA $01 C3
+    verifyNoAccess();
+
+    QCOMPARE(m_cpu.accumulator(), quint8(0x15));
+
+    clock();                            // Fetch next opcode
+    verifyRead(0x1008, 0xEA);
+}
+
+void MOS6510TestPort::testPortRegistersDoNotModifyRAM()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x1000);
+
+    //
+    // RAM physically exists below the two internal 6510
+    // port registers. Accesses by the CPU to $0000/$0001
+    // must not modify that RAM.
+    //
+    m_memory.writeRAM(0x0000, 0xA5);
+    m_memory.writeRAM(0x0001, 0x5A);
+
+    m_cpu.setAccumulator(0x3F);
+
+    m_memory.writeRAM(0x1000, 0x85);    // STA $00
+    m_memory.writeRAM(0x1001, 0x00);
+
+    m_memory.writeRAM(0x1002, 0xA9);    // LDA #$15
+    m_memory.writeRAM(0x1003, 0x15);
+
+    m_memory.writeRAM(0x1004, 0x85);    // STA $01
+    m_memory.writeRAM(0x1005, 0x01);
+
+    m_memory.writeRAM(0x1006, 0xEA);
+
+    clock();
+    verifyRead(0x1000, 0x85);
+
+    clock();
+    verifyRead(0x1001, 0x00);
+
+    clock();
+    verifyNoAccess();
+
+    QCOMPARE(m_memory.readRAM(0x0000), quint8(0xA5));
+    QCOMPARE(m_memory.readRAM(0x0001), quint8(0x5A));
+
+    clock();
+    verifyRead(0x1002, 0xA9);
+
+    clock();
+    verifyRead(0x1003, 0x15);
+
+    clock();
+    verifyRead(0x1004, 0x85);
+
+    clock();
+    verifyRead(0x1005, 0x01);
+
+    clock();
+    verifyNoAccess();
+
+    QCOMPARE(m_memory.readRAM(0x0000), quint8(0xA5));
+    QCOMPARE(m_memory.readRAM(0x0001), quint8(0x5A));
+
+    clock();
+    verifyRead(0x1006, 0xEA);
+}
+
+void MOS6510TestPort::testImmediateLoadPcWrap()
+{
+    setupCpu();
+
+    //
+    // Configure the data direction register so that reading
+    // $0000 returns $2A.
+    //
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x2A);
+
+    m_memory.writeRAM(0x1000, 0x85);    // STA $00
+    m_memory.writeRAM(0x1001, 0x00);
+
+    clock();
+    verifyRead(0x1000, 0x85);
+
+    clock();
+    verifyRead(0x1001, 0x00);
+
+    clock();
+    verifyNoAccess();
+
+    //
+    // Execute LDA #imm at $FFFF.
+    //
+    // The program counter wraps around after fetching the
+    // opcode. Therefore the immediate operand is read from
+    // the internal data direction register at $0000.
+    //
+    m_memory.writeRAM(0xFFFF, 0xA9);    // LDA #imm
+
+    m_cpu.setProgramCounter(0xFFFF);
+
+    clock();                            // C1: Opcode fetch
+    verifyRead(0xFFFF, 0xA9);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x0000));
+
+    clock();                            // C2: Operand from DDR
+    verifyNoAccess();
+
+    QCOMPARE(m_cpu.accumulator(), quint8(0x2A));
+    QCOMPARE(m_cpu.programCounter(), quint16(0x0001));
+}
+
+void MOS6510TestPort::testIndexedIndirectPointerWrap()
+{
+    setupCpu();
+
+    //
+    // Configure DDR $00 = $12.
+    //
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x12);
+
+    m_memory.writeRAM(0x1000, 0x85);    // STA $00
+    m_memory.writeRAM(0x1001, 0x00);
+
+    clock();
+    verifyRead(0x1000, 0x85);
+
+    clock();
+    verifyRead(0x1001, 0x00);
+
+    clock();
+    verifyNoAccess();
+
+    //
+    // LDA ($FE,X), X=$01
+    //
+    // $FE + $01 = $FF
+    //
+    // Pointer low  = [$00FF] = $34
+    // Pointer high = [$0000] = $12
+    //
+    // Effective address = $1234.
+    //
+    m_memory.writeRAM(0x2000, 0xA1);    // LDA ($FE,X)
+    m_memory.writeRAM(0x2001, 0xFE);
+    m_memory.writeRAM(0x2002, 0xEA);
+
+    m_memory.writeRAM(0x00FF, 0x34);
+    m_memory.writeRAM(0x1234, 0x37);
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setXRegister(0x01);
+
+    clock();                            // C1: Opcode fetch
+    verifyRead(0x2000, 0xA1);
+
+    clock();                            // C2: Zero-page operand
+    verifyRead(0x2001, 0xFE);
+
+    clock();                            // C3: Indexed dummy read
+    verifyRead(0x00FE, m_memory.readRAM(0x00FE));
+
+    clock();                            // C4: Pointer low
+    verifyRead(0x00FF, 0x34);
+
+    clock();                            // C5: Pointer high from DDR
+    verifyNoAccess();
+
+    clock();                            // C6: Data
+    verifyRead(0x1234, 0x37);
+
+    QCOMPARE(m_cpu.accumulator(), quint8(0x37));
+
+    clock();                            // Next opcode
+    verifyRead(0x2002, 0xEA);
+}
+
+void MOS6510TestPort::testIndirectIndexedPointerWrap()
+{
+    setupCpu();
+
+    //
+    // Configure DDR $00 = $12.
+    //
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x12);
+
+    m_memory.writeRAM(0x1000, 0x85);    // STA $00
+    m_memory.writeRAM(0x1001, 0x00);
+
+    clock();
+    verifyRead(0x1000, 0x85);
+
+    clock();
+    verifyRead(0x1001, 0x00);
+
+    clock();
+    verifyNoAccess();
+
+    //
+    // LDA ($FF),Y with Y=$00.
+    //
+    // Pointer low  = [$00FF] = $34
+    // Pointer high = [$0000] = $12
+    //
+    // Effective address = $1234.
+    //
+    m_memory.writeRAM(0x2000, 0xB1);    // LDA ($FF),Y
+    m_memory.writeRAM(0x2001, 0xFF);
+    m_memory.writeRAM(0x2002, 0xEA);
+
+    m_memory.writeRAM(0x00FF, 0x34);
+    m_memory.writeRAM(0x1234, 0x37);
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setYRegister(0x00);
+
+    clock();                            // C1: Opcode fetch
+    verifyRead(0x2000, 0xB1);
+
+    clock();                            // C2: Zero-page pointer
+    verifyRead(0x2001, 0xFF);
+
+    clock();                            // C3: Pointer low
+    verifyRead(0x00FF, 0x34);
+
+    clock();                            // C4: Pointer high from DDR
+    verifyNoAccess();
+
+    clock();                            // C5: Data
+    verifyRead(0x1234, 0x37);
+
+    QCOMPARE(m_cpu.accumulator(), quint8(0x37));
+
+    clock();                            // Next opcode
+    verifyRead(0x2002, 0xEA);
+}
+
+/*void MOS6510TestPort::testStoreAccumulatorToDataDirectionRegister()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x11);
+
+    m_memory.writeRAM(0x0000, 0xA5);
+
+    m_memory.writeRAM(0x1000, 0x85);    // STA $00
+    m_memory.writeRAM(0x1001, 0x00);
+    m_memory.writeRAM(0x1002, 0xA5);    // LDA $00
+    m_memory.writeRAM(0x1003, 0x00);
+    m_memory.writeRAM(0x1004, 0xEA);
+
+    clock();                            // STA C1
+    verifyRead(0x1000, 0x85);
+
+    clock();                            // STA C2
+    verifyRead(0x1001, 0x00);
+
+    clock();                            // STA C3
+    verifyNoAccess();
+
+    QCOMPARE(m_memory.readRAM(0x0000), quint8(0xA5));
+
+    clock();                            // LDA C1
+    verifyRead(0x1002, 0xA5);
+
+    clock();                            // LDA C2
+    verifyRead(0x1003, 0x00);
+
+    clock();                            // LDA C3
+    verifyNoAccess();
+
+    QCOMPARE(m_cpu.accumulator(), quint8(0x11));
+
+    clock();
+    verifyRead(0x1004, 0xEA);
+}
+*/
