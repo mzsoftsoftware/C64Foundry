@@ -1901,6 +1901,20 @@ void MOS6510::write(const quint16 address, const quint8 value)
     }
     if (address == 0x0001)
     {
+        //
+        // Writing an unused port bit while it is configured as output
+        // charges its floating-input capacitor.
+        //
+        if (m_portDataDirection & 0x40)
+        {
+            m_portDataSetBit6 = value & 0x40;
+            m_portDataSetCycleBit6 = m_cycles + PortDataFalloffCycles;
+        }
+        if (m_portDataDirection & 0x80)
+        {
+            m_portDataSetBit7 = value & 0x80;
+            m_portDataSetCycleBit7 = m_cycles + PortDataFalloffCycles;
+        }
         m_portData = value;
         m_ptrBus->writeCycle(address);
         return;
