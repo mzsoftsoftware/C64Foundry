@@ -465,7 +465,7 @@ void MOS6510TestArithmetic::testAdcIndexedIndirect_data()
     QTest::newRow("negative and overflow") << quint8(0x40) << quint8(0x20) << quint8(0x04) << quint16(0x2345) << quint8(0x40) << quint8(0x00) << quint8(0x80) << quint8(0xF4);
     QTest::newRow("overflow without carry") << quint8(0x50) << quint8(0x20) << quint8(0x04) << quint16(0x2345) << quint8(0x50) << quint8(0x00) << quint8(0xA0) << quint8(0xF4);
     QTest::newRow("carry zero overflow") << quint8(0x80) << quint8(0x20) << quint8(0x04) << quint16(0x2345) << quint8(0x80) << quint8(0x00) << quint8(0x00) << quint8(0x77);
-    QTest::newRow("zero page pointer wraparound") << quint8(0x10) << quint8(0xFC) << quint8(0x04) << quint16(0x2345) << quint8(0x20) << quint8(0x00) << quint8(0x30) << quint8(0x34);
+    QTest::newRow("zero page pointer wraparound") << quint8(0x10) << quint8(0xFE) << quint8(0x04) << quint16(0x2345) << quint8(0x20) << quint8(0x00) << quint8(0x30) << quint8(0x34);
 }
 void MOS6510TestArithmetic::testAdcIndexedIndirect()
 {
@@ -1158,9 +1158,8 @@ void MOS6510TestArithmetic::testSbcIndexedIndirect_data()
     QTest::newRow("negative") << quint8(0x10) << quint8(0x20) << quint8(0x04) << quint16(0x2345) << quint8(0x20) << quint8(0x01) << quint8(0xF0) << quint8(0xB4);
     QTest::newRow("overflow") << quint8(0x80) << quint8(0x20) << quint8(0x04) << quint16(0x2345) << quint8(0x01) << quint8(0x01) << quint8(0x7F) << quint8(0x75);
     QTest::newRow("overflow negative") << quint8(0x7F) << quint8(0x20) << quint8(0x04) << quint16(0x2345) << quint8(0xFF) << quint8(0x01) << quint8(0x80) << quint8(0xF4);
-    QTest::newRow("zero page pointer wraparound") << quint8(0x30) << quint8(0xFC) << quint8(0x04) << quint16(0x2345) << quint8(0x10) << quint8(0x01) << quint8(0x20) << quint8(0x35);
+    QTest::newRow("zero page pointer wraparound") << quint8(0x30) << quint8(0xFE) << quint8(0x04) << quint16(0x2345) << quint8(0x10) << quint8(0x01) << quint8(0x20) << quint8(0x35);
 }
-
 void MOS6510TestArithmetic::testSbcIndexedIndirect()
 {
     QFETCH(quint8, accumulator);
