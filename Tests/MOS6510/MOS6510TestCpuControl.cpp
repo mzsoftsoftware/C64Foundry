@@ -11,6 +11,22 @@ MOS6510TestCpuControl::~MOS6510TestCpuControl()
 }
 
 
+void MOS6510TestCpuControl::testCycleCounter()
+{
+    setupCpu();
+
+    QCOMPARE(m_cpu.cycles(), quint64(0));
+
+    clock();
+    QCOMPARE(m_cpu.cycles(), quint64(1));
+
+    clock();
+    QCOMPARE(m_cpu.cycles(), quint64(2));
+
+    clock();
+    QCOMPARE(m_cpu.cycles(), quint64(3));
+}
+
 void MOS6510TestCpuControl::testReset()
 {
     setupCpu();

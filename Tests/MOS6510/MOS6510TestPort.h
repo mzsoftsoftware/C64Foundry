@@ -46,4 +46,7 @@ private slots:
     void testDataDirectionRegisterReadInternalValueExternalRamValue();
     void testDataRegisterReadInternalValueExternalRamValue();
 
+    void testDataRegisterBit6FalloffAfterOutputToInput();
+    void testDataRegisterBit7FalloffAfterOutputToInput();
+    void testDataRegisterBits67LowAfterOutputToInput();
 };

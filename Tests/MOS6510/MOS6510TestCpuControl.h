@@ -14,6 +14,8 @@ public:
     virtual ~MOS6510TestCpuControl();
 
 private slots:
+    void testCycleCounter();
+
     void testReset();
     void testResetVector();
     void testResetStackPointer();

@@ -29,6 +29,7 @@ public:
     bool nmiLine() const                                { return m_nmiLine; }
     bool stopped() const                                { return m_state == CpuState::Stopped; }
     bool error() const                                  { return m_state == CpuState::Error; }
+    quint64 cycles() const                              { return m_cycles; }
 
     // Setter
     void setBus(C64Bus* ptrBus);
@@ -76,9 +77,12 @@ private:
 private:
     C64Bus* m_ptrBus = nullptr;
 
+    quint64 m_cycles = 0;
     quint8 m_portDataDirection = 0x00;
     quint8 m_portData = 0x00;
     quint8 m_portInput = 0x3F;
+    quint8 m_portDataSetBit6 = 0x00;
+    quint8 m_portDataSetBit7 = 0x00;
 
     MOS6510InstructionTable m_instructionTable;
     CpuState m_state = CpuState::Fetch;

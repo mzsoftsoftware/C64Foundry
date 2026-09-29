@@ -19,9 +19,13 @@ void MOS6510::setBus(C64Bus* ptrBus)
 
 void MOS6510::initialize()
 {
+    m_cycles = 0;
+
     m_portDataDirection = 0x00;
     m_portData = 0x00;
     m_portInput = 0x3F;
+    m_portDataSetBit6 = 0x00;
+    m_portDataSetBit7 = 0x00;
 
     m_state = CpuState::Fetch;
     m_resetCycle = 0;
@@ -80,6 +84,8 @@ void MOS6510::clock()
 {
     if (m_ptrBus == nullptr)
         return;
+
+    ++m_cycles;
 
     switch (m_state)
     {
@@ -1847,7 +1853,11 @@ quint8 MOS6510::read(const quint16 address)
     {
         const quint8 outputs = m_portData & m_portDataDirection;
         const quint8 inputs = m_portInput & static_cast<quint8>(~m_portDataDirection);
-        const quint8 value = static_cast<quint8>((outputs | inputs) & 0x3F);
+        quint8 value = static_cast<quint8>((outputs | inputs) & 0x3F);
+        if (!(m_portDataDirection & 0x40))
+            value |= m_portDataSetBit6;
+        if (!(m_portDataDirection & 0x80))
+            value |= m_portDataSetBit7;
         m_ptrBus->readCycle(address);
         return value;
     }
@@ -1857,6 +1867,19 @@ void MOS6510::write(const quint16 address, const quint8 value)
 {
     if (address == 0x0000)
     {
+        //
+        // When unused bit 6 changes from output to input, the
+        // floating input retains the previous output state.
+        //
+        if ((m_portDataDirection & 0x40) && !(value & 0x40))
+        {
+            m_portDataSetBit6 = m_portData & 0x40;
+        }
+        if ((m_portDataDirection & 0x80) &&
+            !(value & 0x80))
+        {
+            m_portDataSetBit7 = m_portData & 0x80;
+        }
         m_portDataDirection = value;
         m_ptrBus->writeCycle(address);
         return;

@@ -921,3 +921,170 @@ void MOS6510TestPort::testDataRegisterReadInternalValueExternalRamValue()
     QCOMPARE(m_bus.lastAccessValue(), quint8(0xA6));
     QVERIFY(!m_bus.cpuDrivesDataBus());
 }
+
+void MOS6510TestPort::testDataRegisterBit6FalloffAfterOutputToInput()
+{
+    setupCpu();
+
+    //
+    // Configure bit 6 as output.
+    //
+    setDataDirectionRegister(0x40);
+
+    //
+    // Write 1 to bit 6 of the processor-port data register.
+    //
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x40);
+
+    m_memory.writeRAM(0x1000, 0x85);    // STA $01
+    m_memory.writeRAM(0x1001, 0x01);
+
+    clock();                            // C1: Fetch opcode
+    verifyRead(0x1000, 0x85);
+
+    clock();                            // C2: Fetch zero-page address
+    verifyRead(0x1001, 0x01);
+
+    clock();                            // C3: Write data register
+    verifyWriteCycle(0x0001);
+
+    //
+    // Change bit 6 from output to input.
+    //
+    setDataDirectionRegister(0x00);
+
+    //
+    // Read the processor-port data register immediately.
+    //
+    m_cpu.setProgramCounter(0x1100);
+
+    m_memory.writeRAM(0x1100, 0xA5);    // LDA $01
+    m_memory.writeRAM(0x1101, 0x01);
+
+    clock();                            // C1: Fetch opcode
+    verifyRead(0x1100, 0xA5);
+
+    clock();                            // C2: Fetch zero-page address
+    verifyRead(0x1101, 0x01);
+
+    clock();                            // C3: Read data register
+    verifyReadCycle(0x0001);
+
+    //
+    // Bit 6 retains its previous high state immediately after
+    // changing from output to input.
+    //
+    QCOMPARE(m_cpu.accumulator() & quint8(0x40), quint8(0x40));
+}
+
+void MOS6510TestPort::testDataRegisterBit7FalloffAfterOutputToInput()
+{
+    setupCpu();
+
+    //
+    // Configure bit 7 as output.
+    //
+    setDataDirectionRegister(0x80);
+
+    //
+    // Write 1 to bit 7 of the processor-port data register.
+    //
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x80);
+
+    m_memory.writeRAM(0x1000, 0x85);    // STA $01
+    m_memory.writeRAM(0x1001, 0x01);
+
+    clock();                            // C1: Fetch opcode
+    verifyRead(0x1000, 0x85);
+
+    clock();                            // C2: Fetch zero-page address
+    verifyRead(0x1001, 0x01);
+
+    clock();                            // C3: Write data register
+    verifyWriteCycle(0x0001);
+
+    //
+    // Change bit 7 from output to input.
+    //
+    setDataDirectionRegister(0x00);
+
+    //
+    // Read the processor-port data register immediately.
+    //
+    m_cpu.setProgramCounter(0x1100);
+
+    m_memory.writeRAM(0x1100, 0xA5);    // LDA $01
+    m_memory.writeRAM(0x1101, 0x01);
+
+    clock();                            // C1: Fetch opcode
+    verifyRead(0x1100, 0xA5);
+
+    clock();                            // C2: Fetch zero-page address
+    verifyRead(0x1101, 0x01);
+
+    clock();                            // C3: Read data register
+    verifyReadCycle(0x0001);
+
+    //
+    // Bit 7 retains its previous high state immediately after
+    // changing from output to input.
+    //
+    QCOMPARE(m_cpu.accumulator() & quint8(0x80), quint8(0x80));
+}
+
+void MOS6510TestPort::testDataRegisterBits67LowAfterOutputToInput()
+{
+    setupCpu();
+
+    //
+    // Configure bits 6 and 7 as outputs.
+    //
+    setDataDirectionRegister(0xC0);
+
+    //
+    // Write 0 to bits 6 and 7 of the processor-port data register.
+    //
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x00);
+
+    m_memory.writeRAM(0x1000, 0x85);    // STA $01
+    m_memory.writeRAM(0x1001, 0x01);
+
+    clock();                            // C1: Fetch opcode
+    verifyRead(0x1000, 0x85);
+
+    clock();                            // C2: Fetch zero-page address
+    verifyRead(0x1001, 0x01);
+
+    clock();                            // C3: Write data register
+    verifyWriteCycle(0x0001);
+
+    //
+    // Change bits 6 and 7 from output to input.
+    //
+    setDataDirectionRegister(0x00);
+
+    //
+    // Read the processor-port data register immediately.
+    //
+    m_cpu.setProgramCounter(0x1100);
+
+    m_memory.writeRAM(0x1100, 0xA5);    // LDA $01
+    m_memory.writeRAM(0x1101, 0x01);
+
+    clock();                            // C1: Fetch opcode
+    verifyRead(0x1100, 0xA5);
+
+    clock();                            // C2: Fetch zero-page address
+    verifyRead(0x1101, 0x01);
+
+    clock();                            // C3: Read data register
+    verifyReadCycle(0x0001);
+
+    //
+    // Both floating inputs retain their previous low state.
+    //
+    QCOMPARE(m_cpu.accumulator() & quint8(0xC0), quint8(0x00));
+}
