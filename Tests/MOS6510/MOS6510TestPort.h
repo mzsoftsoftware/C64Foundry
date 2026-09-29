@@ -49,4 +49,6 @@ private slots:
     void testDataRegisterBit6FalloffAfterOutputToInput();
     void testDataRegisterBit7FalloffAfterOutputToInput();
     void testDataRegisterBits67LowAfterOutputToInput();
+    void testDataRegisterBit6HighBeforeFalloff();
+
 };

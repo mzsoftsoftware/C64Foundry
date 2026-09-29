@@ -10,12 +10,13 @@
 
 class C64Bus;
 
-
 class MOS6510
 {
 public:
     explicit MOS6510();
     virtual ~MOS6510();
+
+    static constexpr quint64 PortDataFalloffCycles = 350000;
 
     // Getter
     quint8 accumulator() const                          { return m_accumulator; }
@@ -83,6 +84,8 @@ private:
     quint8 m_portInput = 0x3F;
     quint8 m_portDataSetBit6 = 0x00;
     quint8 m_portDataSetBit7 = 0x00;
+    quint64 m_portDataSetCycleBit6 = 0;
+    quint64 m_portDataSetCycleBit7 = 0;
 
     MOS6510InstructionTable m_instructionTable;
     CpuState m_state = CpuState::Fetch;

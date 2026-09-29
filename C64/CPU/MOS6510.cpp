@@ -26,6 +26,8 @@ void MOS6510::initialize()
     m_portInput = 0x3F;
     m_portDataSetBit6 = 0x00;
     m_portDataSetBit7 = 0x00;
+    m_portDataSetCycleBit6 = 0;
+    m_portDataSetCycleBit7 = 0;
 
     m_state = CpuState::Fetch;
     m_resetCycle = 0;
@@ -1851,6 +1853,18 @@ quint8 MOS6510::read(const quint16 address)
     }
     if (address == 0x0001)
     {
+        //
+        // Discharge the floating unused processor-port inputs
+        // after their falloff time has elapsed.
+        //
+        if (m_portDataSetBit6 && m_cycles > m_portDataSetCycleBit6)
+        {
+            m_portDataSetBit6 = 0x00;
+        }
+        if (m_portDataSetBit7 && m_cycles > m_portDataSetCycleBit7)
+        {
+            m_portDataSetBit7 = 0x00;
+        }
         const quint8 outputs = m_portData & m_portDataDirection;
         const quint8 inputs = m_portInput & static_cast<quint8>(~m_portDataDirection);
         quint8 value = static_cast<quint8>((outputs | inputs) & 0x3F);
@@ -1868,17 +1882,18 @@ void MOS6510::write(const quint16 address, const quint8 value)
     if (address == 0x0000)
     {
         //
-        // When unused bit 6 changes from output to input, the
-        // floating input retains the previous output state.
+        // When unused bits 6 and 7 change from output to input,
+        // the floating inputs retain their previous output state.
         //
         if ((m_portDataDirection & 0x40) && !(value & 0x40))
         {
             m_portDataSetBit6 = m_portData & 0x40;
+            m_portDataSetCycleBit6 = m_cycles + PortDataFalloffCycles;
         }
-        if ((m_portDataDirection & 0x80) &&
-            !(value & 0x80))
+        if ((m_portDataDirection & 0x80) && !(value & 0x80))
         {
             m_portDataSetBit7 = m_portData & 0x80;
+            m_portDataSetCycleBit7 = m_cycles + PortDataFalloffCycles;
         }
         m_portDataDirection = value;
         m_ptrBus->writeCycle(address);

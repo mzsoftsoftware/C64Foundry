@@ -1088,3 +1088,67 @@ void MOS6510TestPort::testDataRegisterBits67LowAfterOutputToInput()
     //
     QCOMPARE(m_cpu.accumulator() & quint8(0xC0), quint8(0x00));
 }
+
+void MOS6510TestPort::testDataRegisterBit6HighBeforeFalloff()
+{
+    setupCpu();
+
+    //
+    // Configure bit 6 as output.
+    //
+    setDataDirectionRegister(0x40);
+
+    //
+    // Write 1 to bit 6.
+    //
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x40);
+
+    m_memory.writeRAM(0x1000, 0x85);    // STA $01
+    m_memory.writeRAM(0x1001, 0x01);
+
+    clock();
+    verifyRead(0x1000, 0x85);
+
+    clock();
+    verifyRead(0x1001, 0x01);
+
+    clock();
+    verifyWriteCycle(0x0001);
+
+    //
+    // Change bit 6 from output to input.
+    //
+    setDataDirectionRegister(0x00);
+
+    const quint64 falloffStartCycle = m_cpu.cycles();
+
+    //
+    // Advance to one cycle before the falloff deadline.
+    //
+    while (m_cpu.cycles() <
+           falloffStartCycle + MOS6510::PortDataFalloffCycles - 3)
+    {
+        clock();
+    }
+
+    //
+    // LDA $01 takes three cycles. The actual port read therefore
+    // happens immediately before the falloff deadline.
+    //
+    m_cpu.setProgramCounter(0x1100);
+
+    m_memory.writeRAM(0x1100, 0xA5);    // LDA $01
+    m_memory.writeRAM(0x1101, 0x01);
+
+    clock();
+    verifyRead(0x1100, 0xA5);
+
+    clock();
+    verifyRead(0x1101, 0x01);
+
+    clock();
+    verifyReadCycle(0x0001);
+
+    QCOMPARE(m_cpu.accumulator() & quint8(0x40), quint8(0x40));
+}
