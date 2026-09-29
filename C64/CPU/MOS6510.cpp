@@ -119,6 +119,11 @@ void MOS6510::clock()
         m_addressingMode = m_ptrInstruction->addressingMode;
         m_microOperationCount = m_ptrInstruction->microOperationCount;
 
+        if (m_operation == MOS6510Operation::KIL)
+        {
+            m_state = CpuState::Stopped;
+            return;
+        }
         if (m_operation == MOS6510Operation::Unknown)
         {
             qDebug() << "MOS6510: unknown opcode"

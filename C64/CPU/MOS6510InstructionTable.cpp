@@ -1895,6 +1895,17 @@ void MOS6510InstructionTable::InitializeUndocumentedInstructions()
     m_instructions[0x8B].microOperations[0] = MOS6510MicroOperation::ReadImmediateXAA;
     m_instructions[0x8B].microOperationCount = 1;
 
-
+    m_instructions[0x02].operation = MOS6510Operation::KIL;
+    m_instructions[0x12].operation = MOS6510Operation::KIL;
+    m_instructions[0x22].operation = MOS6510Operation::KIL;
+    m_instructions[0x32].operation = MOS6510Operation::KIL;
+    m_instructions[0x42].operation = MOS6510Operation::KIL;
+    m_instructions[0x52].operation = MOS6510Operation::KIL;
+    m_instructions[0x62].operation = MOS6510Operation::KIL;
+    m_instructions[0x72].operation = MOS6510Operation::KIL;
+    m_instructions[0x92].operation = MOS6510Operation::KIL;
+    m_instructions[0xB2].operation = MOS6510Operation::KIL;
+    m_instructions[0xD2].operation = MOS6510Operation::KIL;
+    m_instructions[0xF2].operation = MOS6510Operation::KIL;
 
 }

@@ -100,6 +100,7 @@ enum class MOS6510Operation
 
     XAA,
 
+    KIL,
     Unknown
 };
 
