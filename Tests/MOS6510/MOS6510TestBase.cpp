@@ -41,3 +41,16 @@ void MOS6510TestBase::verifyNoAccess()
     QCOMPARE(m_bus.accessCount(), quint8(0));
     QCOMPARE(m_bus.lastAccessType(), C64Bus::AccessType::None);
 }
+
+void MOS6510TestBase::setDataDirectionRegister(const quint8 value)
+{
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setAccumulator(value);
+
+    m_memory.writeRAM(0x2000, 0x85);    // STA $00
+    m_memory.writeRAM(0x2001, 0x00);
+
+    clock();
+    clock();
+    clock();
+}

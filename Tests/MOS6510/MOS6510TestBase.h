@@ -18,6 +18,7 @@ protected:
     void verifyRead(quint16 address, quint8 value);
     void verifyWrite(quint16 address, quint8 value);
     void verifyNoAccess();
+    void setDataDirectionRegister(const quint8 value);
 
 protected:
     C64Memory m_memory;
