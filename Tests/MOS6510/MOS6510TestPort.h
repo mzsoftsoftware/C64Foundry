@@ -42,4 +42,8 @@ private slots:
 
     void testIndexedIndirectStorePointerWrap();
     void testIndirectIndexedStorePointerWrap();
+
+    void testDataDirectionRegisterReadInternalValueExternalRamValue();
+    void testDataRegisterReadInternalValueExternalRamValue();
+
 };

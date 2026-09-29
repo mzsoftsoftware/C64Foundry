@@ -62,6 +62,7 @@ void C64Bus::readCycle(const quint16 address)
     ++m_accessCount;
 
     m_dataBusValue = m_ptrMemory->readRAM(address);
+    m_lastAccessValue = m_dataBusValue;
 }
 void C64Bus::writeCycle(const quint16 address)
 {

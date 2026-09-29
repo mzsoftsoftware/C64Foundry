@@ -819,3 +819,105 @@ void MOS6510TestPort::testIndirectIndexedStorePointerWrap()
     verifyRead(0x2002, 0xEA);
 }
 
+void MOS6510TestPort::testDataDirectionRegisterReadInternalValueExternalRamValue()
+{
+    setupCpu();
+
+    //
+    // Configure the internal DDR with $2A.
+    //
+    setDataDirectionRegister(0x2A);
+
+    //
+    // Physical RAM underneath the processor port contains a different value.
+    //
+    m_memory.writeRAM(0x0000, 0xC3);
+
+    m_cpu.setProgramCounter(0x1000);
+
+    m_memory.writeRAM(0x1000, 0xA5);    // LDA $00
+    m_memory.writeRAM(0x1001, 0x00);
+
+    clock();                            // C1: Fetch opcode
+    verifyRead(0x1000, 0xA5);
+
+    clock();                            // C2: Fetch zero-page address
+    verifyRead(0x1001, 0x00);
+
+    clock();                            // C3: Read DDR
+    verifyReadCycle(0x0000);
+
+    //
+    // The CPU sees the internal DDR value.
+    //
+    QCOMPARE(m_cpu.accumulator(), quint8(0x2A));
+
+    //
+    // The external data bus sees physical RAM underneath $0000.
+    //
+    QCOMPARE(m_bus.dataBusValue(), quint8(0xC3));
+    QCOMPARE(m_bus.lastAccessValue(), quint8(0xC3));
+    QVERIFY(!m_bus.cpuDrivesDataBus());
+}
+
+void MOS6510TestPort::testDataRegisterReadInternalValueExternalRamValue()
+{
+    setupCpu();
+
+    //
+    // Configure P0-P5 as outputs.
+    //
+    setDataDirectionRegister(0x3F);
+
+    //
+    // Write $15 to the internal processor port data register.
+    //
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x15);
+
+    m_memory.writeRAM(0x1000, 0x85);    // STA $01
+    m_memory.writeRAM(0x1001, 0x01);
+
+    clock();                            // C1: Fetch opcode
+    verifyRead(0x1000, 0x85);
+
+    clock();                            // C2: Fetch zero-page address
+    verifyRead(0x1001, 0x01);
+
+    clock();                            // C3: Write data register
+    verifyWriteCycle(0x0001);
+
+    //
+    // Physical RAM underneath the processor port contains a different value.
+    //
+    m_memory.writeRAM(0x0001, 0xA6);
+
+    //
+    // Read $0001.
+    //
+    m_cpu.setProgramCounter(0x1100);
+
+    m_memory.writeRAM(0x1100, 0xA5);    // LDA $01
+    m_memory.writeRAM(0x1101, 0x01);
+
+    clock();                            // C1: Fetch opcode
+    verifyRead(0x1100, 0xA5);
+
+    clock();                            // C2: Fetch zero-page address
+    verifyRead(0x1101, 0x01);
+
+    clock();                            // C3: Read data register
+    verifyReadCycle(0x0001);
+
+    //
+    // The CPU sees the internal processor port value.
+    //
+    QCOMPARE(m_cpu.accumulator(), quint8(0x15));
+
+    //
+    // The external data bus sees physical RAM underneath $0001.
+    //
+    QCOMPARE(m_bus.dataBusValue(), quint8(0xA6));
+    QCOMPARE(m_bus.lastAccessValue(), quint8(0xA6));
+    QVERIFY(!m_bus.cpuDrivesDataBus());
+}
