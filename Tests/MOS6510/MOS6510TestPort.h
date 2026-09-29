@@ -26,6 +26,9 @@ private slots:
     void testDataDirectionRegisterWriteBusCycle();
     void testDataRegisterWriteBusCycle();
 
+    void testDataDirectionRegisterWritePreservesDataBusValue();
+    void testDataRegisterWritePreservesDataBusValue();
+
     void testPortRegistersDoNotModifyRAM();
 
     void testImmediateLoadPcWrap();

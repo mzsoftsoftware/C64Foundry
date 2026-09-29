@@ -28,6 +28,8 @@ void C64Bus::clock()
 quint8 C64Bus::read(const quint16 address)
 {
     const quint8 value = m_ptrMemory->readRAM(address);
+
+    m_dataBusValue = value;
     m_dataBusDriven = true;
 
     m_lastAccessType = AccessType::Read;
@@ -45,12 +47,15 @@ void C64Bus::write(const quint16 address, const quint8 value)
     m_lastAccessValue = value;
     ++m_accessCount;
 
+    m_dataBusValue = value;
     m_dataBusDriven = true;
+
     m_ptrMemory->writeRAM(address, value);
 }
 
 void C64Bus::readCycle(const quint16 address, const quint8 value)
 {
+    m_dataBusValue = value;
     m_dataBusDriven = true;
 
     m_lastAccessType = AccessType::Read;
