@@ -103,6 +103,7 @@ enum class MOS6510MicroOperation
     WriteYRegister,
     WriteSHYAbsoluteX,
     WriteSHXAbsoluteY,
+    WriteAHX,
 
     IncrementXRegister,
     IncrementYRegister,

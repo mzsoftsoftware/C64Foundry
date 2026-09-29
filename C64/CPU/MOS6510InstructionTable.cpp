@@ -1865,5 +1865,25 @@ void MOS6510InstructionTable::InitializeUndocumentedInstructions()
     m_instructions[0x9E].microOperations[3] = MOS6510MicroOperation::WriteSHXAbsoluteY;
     m_instructions[0x9E].microOperationCount = 4;
 
+    m_instructions[0x9F].operation = MOS6510Operation::AHX;
+    m_instructions[0x9F].addressingMode = MOS6510AddressingMode::AbsoluteY;
+    m_instructions[0x9F].microOperations[0] = MOS6510MicroOperation::ReadAbsoluteAddressLow;
+    m_instructions[0x9F].microOperations[1] = MOS6510MicroOperation::ReadAbsoluteYAddress;
+    m_instructions[0x9F].microOperations[2] = MOS6510MicroOperation::ReadAbsoluteIndexedDummy;
+    m_instructions[0x9F].microOperations[3] = MOS6510MicroOperation::WriteAHX;
+    m_instructions[0x9F].microOperationCount = 4;
+
+    m_instructions[0x93].operation = MOS6510Operation::AHX;
+    m_instructions[0x93].addressingMode = MOS6510AddressingMode::IndirectIndexed;
+    m_instructions[0x93].microOperations[0] = MOS6510MicroOperation::ReadZeroPageAddress;
+    m_instructions[0x93].microOperations[1] = MOS6510MicroOperation::ReadIndirectAddressLow;
+    m_instructions[0x93].microOperations[2] = MOS6510MicroOperation::ReadIndirectAddressHighIndexed;
+    m_instructions[0x93].microOperations[3] = MOS6510MicroOperation::ReadAbsoluteIndexedDummy;
+    m_instructions[0x93].microOperations[4] = MOS6510MicroOperation::WriteAHX;
+    m_instructions[0x93].microOperationCount = 5;
+
+
+
+
 
 }
