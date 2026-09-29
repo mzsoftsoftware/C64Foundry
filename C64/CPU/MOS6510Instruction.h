@@ -90,6 +90,7 @@ enum class MOS6510Operation
     STX,
     STY,
 
+    TAS,
     TAX,
     TAY,
     TSX,

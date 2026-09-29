@@ -1055,6 +1055,23 @@ void MOS6510::clock()
             m_ptrBus->write(writeAddress, value);
             break;
         }
+        case MOS6510MicroOperation::WriteTASAbsoluteY:
+        {
+            m_stackPointer = static_cast<quint8>(m_accumulator & m_x);
+            quint8 highByte = static_cast<quint8>(m_address >> 8);
+            if (m_pageCrossed)
+            {
+                --highByte;
+            }
+            const quint8 value = static_cast<quint8>(m_stackPointer & static_cast<quint8>(highByte + 1));
+            quint16 writeAddress = m_address;
+            if (m_pageCrossed)
+            {
+                writeAddress = static_cast<quint16>((static_cast<quint16>(value) << 8) | (m_address & 0x00FF));
+            }
+            m_ptrBus->write(writeAddress, value);
+            break;
+        }
         case MOS6510MicroOperation::IncrementXRegister:
         {
             m_ptrBus->read(m_programCounter);

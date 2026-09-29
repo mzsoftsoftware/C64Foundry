@@ -1882,6 +1882,14 @@ void MOS6510InstructionTable::InitializeUndocumentedInstructions()
     m_instructions[0x93].microOperations[4] = MOS6510MicroOperation::WriteAHX;
     m_instructions[0x93].microOperationCount = 5;
 
+    m_instructions[0x9B].operation = MOS6510Operation::TAS;
+    m_instructions[0x9B].addressingMode = MOS6510AddressingMode::AbsoluteY;
+    m_instructions[0x9B].microOperations[0] = MOS6510MicroOperation::ReadAbsoluteAddressLow;
+    m_instructions[0x9B].microOperations[1] = MOS6510MicroOperation::ReadAbsoluteYAddress;
+    m_instructions[0x9B].microOperations[2] = MOS6510MicroOperation::ReadAbsoluteIndexedDummy;
+    m_instructions[0x9B].microOperations[3] = MOS6510MicroOperation::WriteTASAbsoluteY;
+    m_instructions[0x9B].microOperationCount = 4;
+
 
 
 
