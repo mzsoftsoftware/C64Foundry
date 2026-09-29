@@ -36,6 +36,12 @@ void MOS6510TestBase::verifyWrite(const quint16 address, const quint8 value)
     QCOMPARE(m_bus.lastAccessAddress(), address);
     QCOMPARE(m_bus.lastAccessValue(), value);
 }
+void MOS6510TestBase::verifyWriteCycle(const quint16 address)
+{
+    QCOMPARE(m_bus.accessCount(), quint8(1));
+    QCOMPARE(m_bus.lastAccessType(), C64Bus::AccessType::Write);
+    QCOMPARE(m_bus.lastAccessAddress(), address);
+}
 void MOS6510TestBase::verifyNoAccess()
 {
     QCOMPARE(m_bus.accessCount(), quint8(0));

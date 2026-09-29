@@ -30,7 +30,7 @@ void MOS6510TestPort::testDataDirectionRegisterWrite()
     verifyRead(0x1001, 0x00);
 
     clock();                            // C3: Write DDR
-    verifyNoAccess();
+    verifyWriteCycle(0x0000);
 
     clock();                            // Fetch next opcode
     verifyRead(0x1002, 0xEA);
@@ -99,7 +99,7 @@ void MOS6510TestPort::testDataRegisterWrite()
     verifyRead(0x1001, 0x01);
 
     clock();                            // C3: Write data register
-    verifyNoAccess();
+    verifyWriteCycle(0x0001);
 
     clock();                            // Fetch next opcode
     verifyRead(0x1002, 0xEA);
@@ -175,6 +175,68 @@ void MOS6510TestPort::testDataRegisterReadOutputs()
     verifyRead(0x1008, 0xEA);
 }
 
+void MOS6510TestPort::testDataDirectionRegisterWriteBusCycle()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x2A);
+
+    m_memory.writeRAM(0x1000, 0x85);    // STA $00
+    m_memory.writeRAM(0x1001, 0x00);
+    m_memory.writeRAM(0x1002, 0xEA);
+
+    clock();                            // C1: Fetch opcode
+    verifyRead(0x1000, 0x85);
+
+    clock();                            // C2: Fetch zero-page address
+    verifyRead(0x1001, 0x00);
+
+    //
+    // C3: The internal DDR is written, but the write cycle
+    // is externally visible at address $0000.
+    //
+    clock();
+
+    QCOMPARE(m_bus.accessCount(), quint8(1));
+    QCOMPARE(m_bus.lastAccessType(), C64Bus::AccessType::Write);
+    QCOMPARE(m_bus.lastAccessAddress(), quint16(0x0000));
+
+    clock();                            // Fetch next opcode
+    verifyRead(0x1002, 0xEA);
+}
+
+void MOS6510TestPort::testDataRegisterWriteBusCycle()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x15);
+
+    m_memory.writeRAM(0x1000, 0x85);    // STA $01
+    m_memory.writeRAM(0x1001, 0x01);
+    m_memory.writeRAM(0x1002, 0xEA);
+
+    clock();                            // C1: Fetch opcode
+    verifyRead(0x1000, 0x85);
+
+    clock();                            // C2: Fetch zero-page address
+    verifyRead(0x1001, 0x01);
+
+    //
+    // C3: The internal data register is written, but the
+    // write cycle is externally visible at address $0001.
+    //
+    clock();
+
+    QCOMPARE(m_bus.accessCount(), quint8(1));
+    QCOMPARE(m_bus.lastAccessType(), C64Bus::AccessType::Write);
+    QCOMPARE(m_bus.lastAccessAddress(), quint16(0x0001));
+
+    clock();                            // Fetch next opcode
+    verifyRead(0x1002, 0xEA);
+}
+
 void MOS6510TestPort::testPortRegistersDoNotModifyRAM()
 {
     setupCpu();
@@ -209,7 +271,7 @@ void MOS6510TestPort::testPortRegistersDoNotModifyRAM()
     verifyRead(0x1001, 0x00);
 
     clock();
-    verifyNoAccess();
+    verifyWriteCycle(0x0000);
 
     QCOMPARE(m_memory.readRAM(0x0000), quint8(0xA5));
     QCOMPARE(m_memory.readRAM(0x0001), quint8(0x5A));
@@ -227,7 +289,7 @@ void MOS6510TestPort::testPortRegistersDoNotModifyRAM()
     verifyRead(0x1005, 0x01);
 
     clock();
-    verifyNoAccess();
+    verifyWriteCycle(0x0001);
 
     QCOMPARE(m_memory.readRAM(0x0000), quint8(0xA5));
     QCOMPARE(m_memory.readRAM(0x0001), quint8(0x5A));

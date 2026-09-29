@@ -17,6 +17,7 @@ protected:
     void clock();
     void verifyRead(quint16 address, quint8 value);
     void verifyWrite(quint16 address, quint8 value);
+    void verifyWriteCycle(quint16 address);
     void verifyNoAccess();
     void setDataDirectionRegister(const quint8 value);
 

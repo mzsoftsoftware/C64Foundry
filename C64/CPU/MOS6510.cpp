@@ -1858,11 +1858,21 @@ void MOS6510::write(const quint16 address, const quint8 value)
     if (address == 0x0000)
     {
         m_portDataDirection = static_cast<quint8>(value & 0x3F);
+        //
+        // Access to the internal processor-port DDR still
+        // produces an externally visible write cycle.
+        //
+        m_ptrBus->writeCycle(address, 0x00);
         return;
     }
     if (address == 0x0001)
     {
         m_portData = static_cast<quint8>(value & 0x3F);
+        //
+        // Access to the internal processor-port data register
+        // still produces an externally visible write cycle.
+        //
+        m_ptrBus->writeCycle(address, 0x00);
         return;
     }
     m_ptrBus->write(address, value);
