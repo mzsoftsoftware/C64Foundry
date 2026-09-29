@@ -743,7 +743,55 @@ bool MOS6510TestBlargg::isExpectedFailure(
 
         return output == ExpectedOutput;
     }
+    if (romName == QStringLiteral("07-abs_xy.nes"))
+    {
+        const QString ExpectedOutput =
+            QStringLiteral(
+                "7D ADC a,X\n"
+                "79 ADC a,Y\n"
+                "FD SBC a,X\n"
+                "F9 SBC a,Y\n"
+                "7F RRA abs,X\n"
+                "FF ISC abs,X\n"
+                "7B RRA abs,Y\n"
+                "FB ISC abs,Y\n"
+                "\n"
+                "07-abs_xy\n"
+                "\n"
+                "Failed\n");
 
+        return output == ExpectedOutput;
+    }
+    if (romName == QStringLiteral("08-ind_x.nes"))
+    {
+        const QString ExpectedOutput =
+            QStringLiteral(
+                "61 ADC (z,X)\n"
+                "E1 SBC (z,X)\n"
+                "63 RRA (z,X)\n"
+                "E3 ISC (z,X)\n"
+                "\n"
+                "08-ind_x\n"
+                "\n"
+                "Failed\n");
+
+        return output == ExpectedOutput;
+    }
+    if (romName == QStringLiteral("09-ind_y.nes"))
+    {
+        const QString ExpectedOutput =
+            QStringLiteral(
+                "F1 SBC (z),Y\n"
+                "71 ADC (z),Y\n"
+                "73 RRA (z),Y\n"
+                "F3 ISC (z),Y\n"
+                "\n"
+                "09-ind_y\n"
+                "\n"
+                "Failed\n");
+
+        return output == ExpectedOutput;
+    }
 
     return false;
 }

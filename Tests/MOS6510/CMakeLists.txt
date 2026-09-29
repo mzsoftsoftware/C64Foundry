@@ -32,6 +32,10 @@ add_executable(MOS6510Test
     MOS6510TestUndocumentedSAX.h MOS6510TestUndocumentedSAX.cpp
     MOS6510TestUndocumentedSLO.h MOS6510TestUndocumentedSLO.cpp
     MOS6510TestUndocumentedSRE.h MOS6510TestUndocumentedSRE.cpp
+    MOS6510TestUndocumentedLaxImmediate.h MOS6510TestUndocumentedLaxImmediate.cpp
+    MOS6510TestUndocumentedAXS.h MOS6510TestUndocumentedAXS.cpp
+    MOS6510TestUndocumentedSHY.h MOS6510TestUndocumentedSHY.cpp
+    MOS6510TestUndocumentedSHX.h MOS6510TestUndocumentedSHX.cpp
 
     MOS6510TestDormann.h MOS6510TestDormann.cpp
     DormannTest/MOS6510DormannTest.qrc
@@ -41,10 +45,7 @@ add_executable(MOS6510Test
 
     MOS6510TestBlargg.h MOS6510TestBlargg.cpp
     BlarggTest/MOS6510BlarggTest.qrc
-    MOS6510TestUndocumentedLaxImmediate.h MOS6510TestUndocumentedLaxImmediate.cpp
-    MOS6510TestUndocumentedAXS.h MOS6510TestUndocumentedAXS.cpp
-    MOS6510TestUndocumentedSHY.h MOS6510TestUndocumentedSHY.cpp
-    MOS6510TestUndocumentedSHX.h MOS6510TestUndocumentedSHX.cpp
+    MOS6510TestUndocumentedAHX.h MOS6510TestUndocumentedAHX.cpp
 )
 
 set_target_properties(MOS6510Test PROPERTIES
