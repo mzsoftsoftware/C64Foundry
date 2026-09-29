@@ -64,7 +64,7 @@ void MOS6510TestPort::testDataDirectionRegisterRead()
     verifyRead(0x1001, 0x00);
 
     clock();                            // STA C3
-    verifyNoAccess();
+    verifyWriteCycle(0x0000);
 
     clock();                            // LDA C1
     verifyRead(0x1002, 0xA5);
@@ -141,7 +141,7 @@ void MOS6510TestPort::testDataRegisterReadOutputs()
     verifyRead(0x1001, 0x00);
 
     clock();                            // STA $00 C3
-    verifyNoAccess();
+    verifyWriteCycle(0x0000);
 
     clock();                            // LDA #$15 C1
     verifyRead(0x1002, 0xA9);
@@ -158,7 +158,7 @@ void MOS6510TestPort::testDataRegisterReadOutputs()
     verifyRead(0x1005, 0x01);
 
     clock();                            // STA $01 C3
-    verifyNoAccess();
+    verifyWriteCycle(0x0001);
 
     clock();                            // LDA $01 C1
     verifyRead(0x1006, 0xA5);
@@ -319,7 +319,7 @@ void MOS6510TestPort::testImmediateLoadPcWrap()
     verifyRead(0x1001, 0x00);
 
     clock();
-    verifyNoAccess();
+    verifyWriteCycle(0x0000);
 
     //
     // Execute LDA #imm at $FFFF.
@@ -364,7 +364,7 @@ void MOS6510TestPort::testIndexedIndirectPointerWrap()
     verifyRead(0x1001, 0x00);
 
     clock();
-    verifyNoAccess();
+    verifyWriteCycle(0x0000);
 
     //
     // LDA ($FE,X), X=$01
@@ -430,7 +430,7 @@ void MOS6510TestPort::testIndirectIndexedPointerWrap()
     verifyRead(0x1001, 0x00);
 
     clock();
-    verifyNoAccess();
+    verifyWriteCycle(0x0000);
 
     //
     // LDA ($FF),Y with Y=$00.
@@ -493,7 +493,7 @@ void MOS6510TestPort::testStoreAccumulatorToDataDirectionRegister()
     verifyRead(0x1001, 0x00);
 
     clock();                            // STA C3
-    verifyNoAccess();
+    verifyWriteCycle(0x0000);
 
     QCOMPARE(m_memory.readRAM(0x0000), quint8(0xA5));
 
@@ -534,7 +534,7 @@ void MOS6510TestPort::testStoreXToDataDirectionRegister()
     verifyRead(0x1001, 0x00);
 
     clock();                            // STX C3
-    verifyNoAccess();
+    verifyWriteCycle(0x0000);
 
     QCOMPARE(m_memory.readRAM(0x0000), quint8(0xA5));
 
@@ -575,7 +575,7 @@ void MOS6510TestPort::testStoreYToDataDirectionRegister()
     verifyRead(0x1001, 0x00);
 
     clock();                            // STY C3
-    verifyNoAccess();
+    verifyWriteCycle(0x0000);
 
     QCOMPARE(m_memory.readRAM(0x0000), quint8(0xA5));
 
@@ -614,7 +614,7 @@ void MOS6510TestPort::testIndexedIndirectStorePointerWrap()
     verifyRead(0x1001, 0x00);
 
     clock();
-    verifyNoAccess();
+    verifyWriteCycle(0x0000);
 
     //
     // STA ($FE,X), X=$01
@@ -682,7 +682,7 @@ void MOS6510TestPort::testIndirectIndexedStorePointerWrap()
     verifyRead(0x1001, 0x00);
 
     clock();
-    verifyNoAccess();
+    verifyWriteCycle(0x0000);
 
     //
     // STA ($FF),Y with Y=$01.
