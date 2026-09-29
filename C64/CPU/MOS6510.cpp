@@ -1862,7 +1862,7 @@ void MOS6510::write(const quint16 address, const quint8 value)
         // Access to the internal processor-port DDR still
         // produces an externally visible write cycle.
         //
-        m_ptrBus->writeCycle(address, 0x00);
+        m_ptrBus->writeCycle(address);
         return;
     }
     if (address == 0x0001)
@@ -1872,7 +1872,7 @@ void MOS6510::write(const quint16 address, const quint8 value)
         // Access to the internal processor-port data register
         // still produces an externally visible write cycle.
         //
-        m_ptrBus->writeCycle(address, 0x00);
+        m_ptrBus->writeCycle(address);
         return;
     }
     m_ptrBus->write(address, value);

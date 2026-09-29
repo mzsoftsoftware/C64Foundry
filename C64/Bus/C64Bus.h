@@ -17,6 +17,14 @@ public:
     explicit C64Bus();
     virtual ~C64Bus();
 
+    // Getter
+    bool dataBusDriven() const                  { return m_dataBusDriven; }
+
+    AccessType lastAccessType() const           { return m_lastAccessType; }
+    quint16 lastAccessAddress() const           { return m_lastAccessAddress; }
+    quint8 lastAccessValue() const              { return m_lastAccessValue; }
+    quint8 accessCount() const                  { return m_accessCount; }
+
     // Setter
     void setMemory(C64Memory* ptrMemory);
     //void setVICII(VICII* ptrVicII);
@@ -31,15 +39,13 @@ public:
     void write(quint16 address, quint8 value);
 
     void readCycle(quint16 address, quint8 value);
-    void writeCycle(quint16 address, quint8 value);
+    void writeCycle(quint16 address);
 
-    AccessType lastAccessType() const           { return m_lastAccessType; }
-    quint16 lastAccessAddress() const           { return m_lastAccessAddress; }
-    quint8 lastAccessValue() const              { return m_lastAccessValue; }
-    quint8 accessCount() const                  { return m_accessCount; }
 
 private:
     C64Memory* m_ptrMemory = nullptr;
+
+    bool m_dataBusDriven = false;
 
     AccessType m_lastAccessType = AccessType::None;
     quint16 m_lastAccessAddress = 0x0000;

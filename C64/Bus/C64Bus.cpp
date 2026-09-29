@@ -17,6 +17,8 @@ void C64Bus::setMemory(C64Memory* ptrMemory)
 
 void C64Bus::clock()
 {
+    m_dataBusDriven = false;
+
     m_lastAccessType = AccessType::None;
     m_lastAccessAddress = 0x0000;
     m_lastAccessValue = 0x00;
@@ -26,35 +28,41 @@ void C64Bus::clock()
 quint8 C64Bus::read(const quint16 address)
 {
     const quint8 value = m_ptrMemory->readRAM(address);
+    m_dataBusDriven = true;
+
     m_lastAccessType = AccessType::Read;
     m_lastAccessAddress = address;
     m_lastAccessValue = value;
     ++m_accessCount;
+
     return value;
 }
-void C64Bus::write(const quint16 address,
-                   const quint8 value)
+
+void C64Bus::write(const quint16 address, const quint8 value)
 {
     m_lastAccessType = AccessType::Write;
     m_lastAccessAddress = address;
     m_lastAccessValue = value;
     ++m_accessCount;
+
+    m_dataBusDriven = true;
     m_ptrMemory->writeRAM(address, value);
 }
 
-void C64Bus::readCycle(const quint16 address,
-                        const quint8 value)
+void C64Bus::readCycle(const quint16 address, const quint8 value)
 {
+    m_dataBusDriven = true;
+
     m_lastAccessType = AccessType::Read;
     m_lastAccessAddress = address;
     m_lastAccessValue = value;
     ++m_accessCount;
 }
-void C64Bus::writeCycle(const quint16 address,
-                         const quint8 value)
+void C64Bus::writeCycle(const quint16 address)
 {
     m_lastAccessType = AccessType::Write;
     m_lastAccessAddress = address;
-    m_lastAccessValue = value;
     ++m_accessCount;
+
+    m_dataBusDriven = false;
 }

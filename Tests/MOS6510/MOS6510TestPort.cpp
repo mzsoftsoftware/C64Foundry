@@ -175,6 +175,49 @@ void MOS6510TestPort::testDataRegisterReadOutputs()
     verifyRead(0x1008, 0xEA);
 }
 
+void MOS6510TestPort::testDataDirectionRegisterWriteDataBusNotDriven()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x2A);
+
+    m_memory.writeRAM(0x1000, 0x85);    // STA $00
+    m_memory.writeRAM(0x1001, 0x00);
+
+    clock();
+    verifyRead(0x1000, 0x85);
+
+    clock();
+    verifyRead(0x1001, 0x00);
+
+    clock();
+    verifyWriteCycle(0x0000);
+
+    QVERIFY(!m_bus.dataBusDriven());
+}
+void MOS6510TestPort::testDataRegisterWriteDataBusNotDriven()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x15);
+
+    m_memory.writeRAM(0x1000, 0x85);    // STA $01
+    m_memory.writeRAM(0x1001, 0x01);
+
+    clock();
+    verifyRead(0x1000, 0x85);
+
+    clock();
+    verifyRead(0x1001, 0x01);
+
+    clock();
+    verifyWriteCycle(0x0001);
+
+    QVERIFY(!m_bus.dataBusDriven());
+}
+
 void MOS6510TestPort::testDataDirectionRegisterWriteBusCycle()
 {
     setupCpu();
@@ -192,15 +235,8 @@ void MOS6510TestPort::testDataDirectionRegisterWriteBusCycle()
     clock();                            // C2: Fetch zero-page address
     verifyRead(0x1001, 0x00);
 
-    //
-    // C3: The internal DDR is written, but the write cycle
-    // is externally visible at address $0000.
-    //
-    clock();
-
-    QCOMPARE(m_bus.accessCount(), quint8(1));
-    QCOMPARE(m_bus.lastAccessType(), C64Bus::AccessType::Write);
-    QCOMPARE(m_bus.lastAccessAddress(), quint16(0x0000));
+    clock();                            // C3: Write DDR
+    verifyWriteCycle(0x0000);
 
     clock();                            // Fetch next opcode
     verifyRead(0x1002, 0xEA);
@@ -223,15 +259,8 @@ void MOS6510TestPort::testDataRegisterWriteBusCycle()
     clock();                            // C2: Fetch zero-page address
     verifyRead(0x1001, 0x01);
 
-    //
-    // C3: The internal data register is written, but the
-    // write cycle is externally visible at address $0001.
-    //
-    clock();
-
-    QCOMPARE(m_bus.accessCount(), quint8(1));
-    QCOMPARE(m_bus.lastAccessType(), C64Bus::AccessType::Write);
-    QCOMPARE(m_bus.lastAccessAddress(), quint16(0x0001));
+    clock();                            // C3: Write data register
+    verifyWriteCycle(0x0001);
 
     clock();                            // Fetch next opcode
     verifyRead(0x1002, 0xEA);

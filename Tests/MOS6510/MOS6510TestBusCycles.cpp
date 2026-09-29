@@ -16,6 +16,33 @@ void MOS6510TestBusCycles::init()
     m_cpu.setProgramCounter(0x1000);
 }
 
+void MOS6510TestBusCycles::testWriteDataBusDriven()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x2A);
+
+    m_memory.writeRAM(0x1000, 0x8D);    // STA $1234
+    m_memory.writeRAM(0x1001, 0x34);
+    m_memory.writeRAM(0x1002, 0x12);
+
+    clock();                            // C1: Fetch opcode
+    verifyRead(0x1000, 0x8D);
+
+    clock();                            // C2: Fetch low address
+    verifyRead(0x1001, 0x34);
+
+    clock();                            // C3: Fetch high address
+    verifyRead(0x1002, 0x12);
+
+    clock();                            // C4: Write
+    verifyWrite(0x1234, 0x2A);
+
+    QVERIFY(m_bus.dataBusDriven());
+}
+
+
 void MOS6510TestBusCycles::testAdcImmediate()
 {
     m_memory.writeRAM(0x1000, 0x69);    // ADC #$42
