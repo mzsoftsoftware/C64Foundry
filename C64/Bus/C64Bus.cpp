@@ -48,7 +48,7 @@ void C64Bus::write(const quint16 address, const quint8 value)
     ++m_accessCount;
 
     m_dataBusValue = value;
-    m_cpuDrivesDataBus = true;
+    m_cpuDrivesDataBus = false;
 
     m_ptrMemory->writeRAM(address, value);
 }
