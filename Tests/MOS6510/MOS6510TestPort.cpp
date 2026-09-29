@@ -73,7 +73,7 @@ void MOS6510TestPort::testDataDirectionRegisterRead()
     verifyRead(0x1003, 0x00);
 
     clock();                            // LDA C3
-    verifyNoAccess();
+    verifyRead(0x0000, 0x2A);
 
     QCOMPARE(m_cpu.accumulator(), quint8(0x2A));
 
@@ -167,7 +167,7 @@ void MOS6510TestPort::testDataRegisterReadOutputs()
     verifyRead(0x1007, 0x01);
 
     clock();                            // LDA $01 C3
-    verifyNoAccess();
+    verifyRead(0x0001, 0x15);
 
     QCOMPARE(m_cpu.accumulator(), quint8(0x15));
 
@@ -276,7 +276,7 @@ void MOS6510TestPort::testImmediateLoadPcWrap()
     QCOMPARE(m_cpu.programCounter(), quint16(0x0000));
 
     clock();                            // C2: Operand from DDR
-    verifyNoAccess();
+    verifyRead(0x0000, 0x2A);
 
     QCOMPARE(m_cpu.accumulator(), quint8(0x2A));
     QCOMPARE(m_cpu.programCounter(), quint16(0x0001));
@@ -337,7 +337,7 @@ void MOS6510TestPort::testIndexedIndirectPointerWrap()
     verifyRead(0x00FF, 0x34);
 
     clock();                            // C5: Pointer high from DDR
-    verifyNoAccess();
+    verifyRead(0x0000, 0x12);
 
     clock();                            // C6: Data
     verifyRead(0x1234, 0x37);
@@ -398,7 +398,7 @@ void MOS6510TestPort::testIndirectIndexedPointerWrap()
     verifyRead(0x00FF, 0x34);
 
     clock();                            // C4: Pointer high from DDR
-    verifyNoAccess();
+    verifyRead(0x0000, 0x12);
 
     clock();                            // C5: Data
     verifyRead(0x1234, 0x37);
@@ -442,7 +442,7 @@ void MOS6510TestPort::testStoreAccumulatorToDataDirectionRegister()
     verifyRead(0x1003, 0x00);
 
     clock();                            // LDA C3
-    verifyNoAccess();
+    verifyRead(0x0000, 0x11);
 
     QCOMPARE(m_cpu.accumulator(), quint8(0x11));
 
@@ -483,7 +483,7 @@ void MOS6510TestPort::testStoreXToDataDirectionRegister()
     verifyRead(0x1003, 0x00);
 
     clock();                            // LDA C3
-    verifyNoAccess();
+    verifyRead(0x0000, 0x22);
 
     QCOMPARE(m_cpu.accumulator(), quint8(0x22));
 
@@ -524,7 +524,7 @@ void MOS6510TestPort::testStoreYToDataDirectionRegister()
     verifyRead(0x1003, 0x00);
 
     clock();                            // LDA C3
-    verifyNoAccess();
+    verifyRead(0x0000, 0x33);
 
     QCOMPARE(m_cpu.accumulator(), quint8(0x33));
 
@@ -589,7 +589,7 @@ void MOS6510TestPort::testIndexedIndirectStorePointerWrap()
     verifyRead(0x00FF, 0x34);
 
     clock();                            // C5: Pointer high from DDR
-    verifyNoAccess();
+    verifyRead(0x0000, 0x12);
 
     clock();                            // C6: Store
     verifyWrite(0x1234, 0x11);
@@ -652,7 +652,7 @@ void MOS6510TestPort::testIndirectIndexedStorePointerWrap()
     verifyRead(0x00FF, 0x34);
 
     clock();                            // C4: Pointer high from DDR
-    verifyNoAccess();
+    verifyRead(0x0000, 0x12);
 
     clock();                            // C5: Dummy read
     verifyRead(0x1235, 0x00);
