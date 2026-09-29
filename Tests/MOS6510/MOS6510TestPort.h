@@ -26,10 +26,10 @@ private slots:
     void testIndexedIndirectPointerWrap();
     void testIndirectIndexedPointerWrap();
 
-/*    void testStoreAccumulatorToDataDirectionRegister();
+    void testStoreAccumulatorToDataDirectionRegister();
     void testStoreXToDataDirectionRegister();
     void testStoreYToDataDirectionRegister();
 
     void testIndexedIndirectStorePointerWrap();
-    void testIndirectIndexedStorePointerWrap();*/
+    void testIndirectIndexedStorePointerWrap();
 };
