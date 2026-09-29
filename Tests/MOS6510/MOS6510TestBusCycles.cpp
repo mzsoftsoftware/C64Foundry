@@ -275,12 +275,15 @@ void MOS6510TestBusCycles::testAdcIndexedIndirectWrapAround()
 
     m_memory.writeRAM(0x00FC, 0x11);    // Dummy read
     m_memory.writeRAM(0x00FF, 0x45);    // Pointer low
-    m_memory.writeRAM(0x0000, 0x23);    // Pointer high after ZP wrap
+    setDataDirectionRegister(0x23);    // Pointer high after ZP wrap
     m_memory.writeRAM(0x2345, 0x42);
 
     m_memory.writeRAM(0x1002, 0xEA);
 
     m_cpu.setXRegister(0x03);
+
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x00);
 
     clock();
     verifyRead(0x1000, 0x61);
@@ -376,12 +379,15 @@ void MOS6510TestBusCycles::testAdcIndirectIndexedWrapAround()
     m_memory.writeRAM(0x1001, 0xFF);
 
     m_memory.writeRAM(0x00FF, 0x40);
-    m_memory.writeRAM(0x0000, 0x23);    // Pointer high wraps in ZP
+    setDataDirectionRegister(0x23);    // Pointer high wraps in ZP
     m_memory.writeRAM(0x2345, 0x42);
 
     m_memory.writeRAM(0x1002, 0xEA);
 
     m_cpu.setYRegister(0x05);
+
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x00);
 
     clock();
     verifyRead(0x1000, 0x71);
@@ -665,11 +671,14 @@ void MOS6510TestBusCycles::testAndIndexedIndirectWrapAround()
     m_memory.writeRAM(0x1001, 0xFC);
     m_memory.writeRAM(0x00FC, 0x11);
     m_memory.writeRAM(0x00FF, 0x45);
-    m_memory.writeRAM(0x0000, 0x23);
+    setDataDirectionRegister(0x23);
     m_memory.writeRAM(0x2345, 0x42);
     m_memory.writeRAM(0x1002, 0xEA);
 
     m_cpu.setXRegister(0x03);
+
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x00);
 
     clock();
     verifyRead(0x1000, 0x21);
@@ -762,11 +771,14 @@ void MOS6510TestBusCycles::testAndIndirectIndexedWrapAround()
     m_memory.writeRAM(0x1000, 0x31);
     m_memory.writeRAM(0x1001, 0xFF);
     m_memory.writeRAM(0x00FF, 0x40);
-    m_memory.writeRAM(0x0000, 0x23);
+    setDataDirectionRegister(0x23);
     m_memory.writeRAM(0x2345, 0x42);
     m_memory.writeRAM(0x1002, 0xEA);
 
     m_cpu.setYRegister(0x05);
+
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x00);
 
     clock();
     verifyRead(0x1000, 0x31);
@@ -2000,11 +2012,14 @@ void MOS6510TestBusCycles::testCmpIndexedIndirectWrapAround()
     m_memory.writeRAM(0x1001, 0xFC);
     m_memory.writeRAM(0x00FC, 0x11);
     m_memory.writeRAM(0x00FF, 0x45);
-    m_memory.writeRAM(0x0000, 0x23);
+    setDataDirectionRegister(0x23);
     m_memory.writeRAM(0x2345, 0x42);
     m_memory.writeRAM(0x1002, 0xEA);
 
     m_cpu.setXRegister(0x03);
+
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x00);
 
     clock();
     verifyRead(0x1000, 0xC1);
@@ -2096,11 +2111,14 @@ void MOS6510TestBusCycles::testCmpIndirectIndexedWrapAround()
     m_memory.writeRAM(0x1000, 0xD1);    // CMP ($FF),Y
     m_memory.writeRAM(0x1001, 0xFF);
     m_memory.writeRAM(0x00FF, 0x40);
-    m_memory.writeRAM(0x0000, 0x23);
+    setDataDirectionRegister(0x23);
     m_memory.writeRAM(0x2345, 0x42);
     m_memory.writeRAM(0x1002, 0xEA);
 
     m_cpu.setYRegister(0x05);
+
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x00);
 
     clock();
     verifyRead(0x1000, 0xD1);
@@ -2712,11 +2730,14 @@ void MOS6510TestBusCycles::testEorIndexedIndirectWrapAround()
     m_memory.writeRAM(0x1001, 0xFC);
     m_memory.writeRAM(0x00FC, 0x11);
     m_memory.writeRAM(0x00FF, 0x45);
-    m_memory.writeRAM(0x0000, 0x23);
+    setDataDirectionRegister(0x23);
     m_memory.writeRAM(0x2345, 0x42);
     m_memory.writeRAM(0x1002, 0xEA);
 
     m_cpu.setXRegister(0x03);
+
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x00);
 
     clock();
     verifyRead(0x1000, 0x41);
@@ -2808,11 +2829,14 @@ void MOS6510TestBusCycles::testEorIndirectIndexedWrapAround()
     m_memory.writeRAM(0x1000, 0x51);    // EOR ($FF),Y
     m_memory.writeRAM(0x1001, 0xFF);
     m_memory.writeRAM(0x00FF, 0x40);
-    m_memory.writeRAM(0x0000, 0x23);
+    setDataDirectionRegister(0x23);
     m_memory.writeRAM(0x2345, 0x42);
     m_memory.writeRAM(0x1002, 0xEA);
 
     m_cpu.setYRegister(0x05);
+
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x00);
 
     clock();
     verifyRead(0x1000, 0x51);
@@ -3490,12 +3514,15 @@ void MOS6510TestBusCycles::testLdaIndexedIndirectWrapAround()
 
     m_memory.writeRAM(0x00FC, 0x11);
     m_memory.writeRAM(0x00FF, 0x45);    // Pointer low
-    m_memory.writeRAM(0x0000, 0x23);    // Pointer high wraps in ZP
+    setDataDirectionRegister(0x23);    // Pointer high wraps in ZP
 
     m_memory.writeRAM(0x2345, 0x42);
     m_memory.writeRAM(0x1002, 0xEA);
 
     m_cpu.setXRegister(0x03);
+
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x00);
 
     clock();
     verifyRead(0x1000, 0xA1);
@@ -3596,12 +3623,15 @@ void MOS6510TestBusCycles::testLdaIndirectIndexedWrapAround()
     m_memory.writeRAM(0x1001, 0xFF);
 
     m_memory.writeRAM(0x00FF, 0x40);    // Pointer low
-    m_memory.writeRAM(0x0000, 0x23);    // Pointer high wraps in ZP
+    setDataDirectionRegister(0x23);    // Pointer high wraps in ZP
 
     m_memory.writeRAM(0x2345, 0x42);
     m_memory.writeRAM(0x1002, 0xEA);
 
     m_cpu.setYRegister(0x05);
+
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x00);
 
     clock();
     verifyRead(0x1000, 0xB1);
@@ -4498,12 +4528,15 @@ void MOS6510TestBusCycles::testOraIndexedIndirectWrapAround()
 
     m_memory.writeRAM(0x00FC, 0x11);
     m_memory.writeRAM(0x00FF, 0x45);    // Pointer low
-    m_memory.writeRAM(0x0000, 0x23);    // Pointer high wraps in ZP
+    setDataDirectionRegister(0x23);    // Pointer high wraps in ZP
 
     m_memory.writeRAM(0x2345, 0x42);
     m_memory.writeRAM(0x1002, 0xEA);
 
     m_cpu.setXRegister(0x03);
+
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x00);
 
     clock();
     verifyRead(0x1000, 0x01);
@@ -4604,12 +4637,15 @@ void MOS6510TestBusCycles::testOraIndirectIndexedWrapAround()
     m_memory.writeRAM(0x1001, 0xFF);
 
     m_memory.writeRAM(0x00FF, 0x40);    // Pointer low
-    m_memory.writeRAM(0x0000, 0x23);    // Pointer high wraps in ZP
+    setDataDirectionRegister(0x23);    // Pointer high wraps in ZP
 
     m_memory.writeRAM(0x2345, 0x42);
     m_memory.writeRAM(0x1002, 0xEA);
 
     m_cpu.setYRegister(0x05);
+
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x00);
 
     clock();
     verifyRead(0x1000, 0x11);
@@ -5736,12 +5772,15 @@ void MOS6510TestBusCycles::testSbcIndexedIndirectWrapAround()
 
     m_memory.writeRAM(0x00FC, 0x11);
     m_memory.writeRAM(0x00FF, 0x45);    // Pointer low
-    m_memory.writeRAM(0x0000, 0x23);    // Pointer high wraps in ZP
+    setDataDirectionRegister(0x23);    // Pointer high wraps in ZP
 
     m_memory.writeRAM(0x2345, 0x42);
     m_memory.writeRAM(0x1002, 0xEA);
 
     m_cpu.setXRegister(0x03);
+
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x00);
 
     clock();
     verifyRead(0x1000, 0xE1);
@@ -5842,12 +5881,15 @@ void MOS6510TestBusCycles::testSbcIndirectIndexedWrapAround()
     m_memory.writeRAM(0x1001, 0xFF);
 
     m_memory.writeRAM(0x00FF, 0x40);    // Pointer low
-    m_memory.writeRAM(0x0000, 0x23);    // Pointer high wraps in ZP
+    setDataDirectionRegister(0x23);    // Pointer high wraps in ZP
 
     m_memory.writeRAM(0x2345, 0x42);
     m_memory.writeRAM(0x1002, 0xEA);
 
     m_cpu.setYRegister(0x05);
+
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x00);
 
     clock();
     verifyRead(0x1000, 0xF1);
@@ -6143,12 +6185,14 @@ void MOS6510TestBusCycles::testStaIndexedIndirectWrapAround()
 
     m_memory.writeRAM(0x00FC, 0x11);
     m_memory.writeRAM(0x00FF, 0x45);    // Pointer low
-    m_memory.writeRAM(0x0000, 0x23);    // Pointer high wraps in ZP
+    setDataDirectionRegister(0x23);    // Pointer high wraps in ZP
 
     m_memory.writeRAM(0x1002, 0xEA);
 
     m_cpu.setAccumulator(0x42);
     m_cpu.setXRegister(0x03);
+
+    m_cpu.setProgramCounter(0x1000);
 
     clock();
     verifyRead(0x1000, 0x81);
@@ -6253,13 +6297,15 @@ void MOS6510TestBusCycles::testStaIndirectIndexedWrapAround()
     m_memory.writeRAM(0x1001, 0xFF);
 
     m_memory.writeRAM(0x00FF, 0x40);    // Pointer low
-    m_memory.writeRAM(0x0000, 0x23);    // Pointer high wraps in ZP
+    setDataDirectionRegister(0x23);    // Pointer high wraps in ZP
     m_memory.writeRAM(0x2345, 0x11);    // Dummy-read value
 
     m_memory.writeRAM(0x1002, 0xEA);
 
     m_cpu.setAccumulator(0x42);
     m_cpu.setYRegister(0x05);
+
+    m_cpu.setProgramCounter(0x1000);
 
     clock();
     verifyRead(0x1000, 0x91);
@@ -6994,9 +7040,8 @@ void MOS6510TestBusCycles::testBvsTakenBackwardWithPageCrossing()
 
 void MOS6510TestBusCycles::testLdaImmediateProgramCounterWrapAround()
 {
-    m_memory.writeRAM(0xFFFF, 0xA9);    // LDA #$42
-    m_memory.writeRAM(0x0000, 0x42);
-    m_memory.writeRAM(0x0001, 0xEA);
+    m_memory.writeRAM(0xFFFF, 0xA9);    // LDA #$22
+    setDataDirectionRegister(0x22);
 
     m_cpu.setProgramCounter(0xFFFF);
 
@@ -7004,10 +7049,10 @@ void MOS6510TestBusCycles::testLdaImmediateProgramCounterWrapAround()
     verifyRead(0xFFFF, 0xA9);
 
     clock();                            // C2: Operand after PC wrap
-    verifyRead(0x0000, 0x42);
+    verifyRead(0x0000, 0x22);
 
-    clock();                            // Next opcode
-    verifyRead(0x0001, 0xEA);
+    clock();                            // Next opcode from processor port $0001
+    verifyRead(0x0001, 0x1D);
 }
 
 void MOS6510TestBusCycles::testLdaAbsoluteXAddressSpaceWrapAround()
@@ -7255,9 +7300,11 @@ void MOS6510TestBusCycles::testRtsProgramCounterWrapAround()
     m_memory.writeRAM(0x01FF, 0xFF);    // Return address high
 
     m_memory.writeRAM(0xFFFF, 0x33);    // Final RTS dummy read
-    m_memory.writeRAM(0x0000, 0xEA);    // Next opcode after PC wrap
+    setDataDirectionRegister(0x2A);      // ROL A after PC wrap
 
     m_cpu.setStackPointer(0xFD);
+
+    m_cpu.setProgramCounter(0x1000);
 
     clock();                            // C1: Fetch RTS
     verifyRead(0x1000, 0x60);
@@ -7278,5 +7325,5 @@ void MOS6510TestBusCycles::testRtsProgramCounterWrapAround()
     verifyRead(0xFFFF, 0x33);
 
     clock();                            // Next opcode after RTS increments PC
-    verifyRead(0x0000, 0xEA);
+    verifyRead(0x0000, 0x2A);
 }
