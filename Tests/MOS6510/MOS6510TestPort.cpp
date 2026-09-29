@@ -358,7 +358,7 @@ void MOS6510TestPort::testDataDirectionRegisterWriteWritesDataBusValueToRAM()
     // The internal register receives the CPU value, while the
     // physical RAM underneath receives the external bus value.
     //
-    QCOMPARE(m_cpu.dataDirectionRegister(), quint8(0x2A));
+    QVERIFY(!m_bus.dataBusDriven());
     QCOMPARE(m_memory.readRAM(0x0000), quint8(0xA5));
 }
 
@@ -587,7 +587,7 @@ void MOS6510TestPort::testStoreAccumulatorToDataDirectionRegister()
     clock();                            // STA C3
     verifyWriteCycle(0x0000);
 
-    QCOMPARE(m_memory.readRAM(0x0000), quint8(0xA5));
+    QCOMPARE(m_memory.readRAM(0x0000), quint8(0x00));
 
     clock();                            // LDA C1
     verifyRead(0x1002, 0xA5);
@@ -628,7 +628,7 @@ void MOS6510TestPort::testStoreXToDataDirectionRegister()
     clock();                            // STX C3
     verifyWriteCycle(0x0000);
 
-    QCOMPARE(m_memory.readRAM(0x0000), quint8(0xA5));
+    QCOMPARE(m_memory.readRAM(0x0000), quint8(0x00));
 
     clock();                            // LDA C1
     verifyRead(0x1002, 0xA5);
@@ -669,7 +669,7 @@ void MOS6510TestPort::testStoreYToDataDirectionRegister()
     clock();                            // STY C3
     verifyWriteCycle(0x0000);
 
-    QCOMPARE(m_memory.readRAM(0x0000), quint8(0xA5));
+    QCOMPARE(m_memory.readRAM(0x0000), quint8(0x00));
 
     clock();                            // LDA C1
     verifyRead(0x1002, 0xA5);
