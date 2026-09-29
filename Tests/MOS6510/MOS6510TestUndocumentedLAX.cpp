@@ -718,7 +718,7 @@ void MOS6510TestUndocumentedLAX::testIndirectXZeroPageWrap()
     verifyRead(0x00FF, 0x34);
 
     clock();
-    verifyRead(0x0000, 0x12);
+    verifyReadCycle(0x0000);
 
     clock();
     verifyRead(0x1234, operand);
@@ -962,7 +962,7 @@ void MOS6510TestUndocumentedLAX::testIndirectYZeroPageWrap()
     verifyRead(0x00FF, 0x20);
 
     clock();
-    verifyRead(0x0000, 0x12);
+    verifyReadCycle(0x0000);
 
     clock();
     verifyRead(0x1230, operand);

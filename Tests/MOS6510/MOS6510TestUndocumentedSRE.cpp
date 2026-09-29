@@ -651,7 +651,7 @@ void MOS6510TestUndocumentedSRE::testIndexedIndirectPointerWrap()
     verifyRead(0x00FF, 0x34);
 
     clock();
-    verifyRead(0x0000, 0x12);
+    verifyReadCycle(0x0000);
 
     clock();
     verifyRead(0x1234, 0x03);
@@ -829,7 +829,7 @@ void MOS6510TestUndocumentedSRE::testIndirectIndexedPointerWrap()
     verifyRead(0x00FF, 0x20);
 
     clock();
-    verifyRead(0x0000, 0x12);
+    verifyReadCycle(0x0000);
 
     clock();
     verifyRead(0x1225, 0x43);

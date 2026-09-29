@@ -30,7 +30,7 @@ quint8 C64Bus::read(const quint16 address)
     const quint8 value = m_ptrMemory->readRAM(address);
 
     m_dataBusValue = value;
-    m_cpuDrivesDataBus = true;
+    m_cpuDrivesDataBus = false;
 
     m_lastAccessType = AccessType::Read;
     m_lastAccessAddress = address;
@@ -48,7 +48,7 @@ void C64Bus::write(const quint16 address, const quint8 value)
     ++m_accessCount;
 
     m_dataBusValue = value;
-    m_cpuDrivesDataBus = false;
+    m_cpuDrivesDataBus = true;
 
     m_ptrMemory->writeRAM(address, value);
 }

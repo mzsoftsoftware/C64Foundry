@@ -1060,7 +1060,7 @@ void MOS6510TestUndocumentedRRA::testIndirectXZeroPageWrap()
     verifyRead(0x00FF, 0x34);
 
     clock();
-    verifyRead(0x0000, 0x12);
+    verifyReadCycle(0x0000);
 
     clock();
     verifyRead(0x1234, oldMemory);
@@ -1317,7 +1317,7 @@ void MOS6510TestUndocumentedRRA::testIndirectYZeroPageWrap()
     verifyRead(0x00FF, 0x20);
 
     clock();
-    verifyRead(0x0000, 0x12);
+    verifyReadCycle(0x0000);
 
     clock();
     verifyRead(0x1230, oldMemory);

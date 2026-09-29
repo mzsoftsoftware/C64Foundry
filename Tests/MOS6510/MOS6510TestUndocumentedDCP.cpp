@@ -890,7 +890,7 @@ void MOS6510TestUndocumentedDCP::testIndirectYZeroPageWrap()
     verifyRead(0x00FF, 0x20);
 
     clock();
-    verifyRead(0x0000, 0x12);
+    verifyReadCycle(0x0000);
 
     clock();
     verifyRead(0x1230, initialMemory);

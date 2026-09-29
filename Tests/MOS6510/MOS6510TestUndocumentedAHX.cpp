@@ -576,7 +576,7 @@ void MOS6510TestUndocumentedAHX::testAHXIndirectYZeroPageWrap()
     // Critical zero-page wrap.
     //
     clock();
-    verifyRead(0x0000, 0x12);
+    verifyReadCycle(0x0000);
 
     clock();
     verifyRead(

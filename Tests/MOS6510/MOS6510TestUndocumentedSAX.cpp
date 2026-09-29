@@ -480,7 +480,7 @@ void MOS6510TestUndocumentedSAX::testIndexedIndirectPointerWrap()
     verifyRead(0x00FF, 0x34);
 
     clock();
-    verifyRead(0x0000, 0x12);
+    verifyReadCycle(0x0000);
 
     clock();
     verifyWrite(0x1234, 0x03);

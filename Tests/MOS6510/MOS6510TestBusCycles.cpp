@@ -325,7 +325,7 @@ void MOS6510TestBusCycles::testAdcIndexedIndirectWrapAround()
     verifyRead(0x00FF, 0x45);
 
     clock();
-    verifyRead(0x0000, 0x23);
+    verifyReadCycle(0x0000);
 
     clock();
     verifyRead(0x2345, 0x42);
@@ -426,7 +426,7 @@ void MOS6510TestBusCycles::testAdcIndirectIndexedWrapAround()
     verifyRead(0x00FF, 0x40);
 
     clock();
-    verifyRead(0x0000, 0x23);
+    verifyReadCycle(0x0000);
 
     clock();
     verifyRead(0x2345, 0x42);
@@ -720,7 +720,7 @@ void MOS6510TestBusCycles::testAndIndexedIndirectWrapAround()
     verifyRead(0x00FF, 0x45);
 
     clock();
-    verifyRead(0x0000, 0x23);
+    verifyReadCycle(0x0000);
 
     clock();
     verifyRead(0x2345, 0x42);
@@ -817,7 +817,7 @@ void MOS6510TestBusCycles::testAndIndirectIndexedWrapAround()
     verifyRead(0x00FF, 0x40);
 
     clock();
-    verifyRead(0x0000, 0x23);
+    verifyReadCycle(0x0000);
 
     clock();
     verifyRead(0x2345, 0x42);
@@ -2061,7 +2061,7 @@ void MOS6510TestBusCycles::testCmpIndexedIndirectWrapAround()
     verifyRead(0x00FF, 0x45);
 
     clock();
-    verifyRead(0x0000, 0x23);
+    verifyReadCycle(0x0000);
 
     clock();
     verifyRead(0x2345, 0x42);
@@ -2157,7 +2157,7 @@ void MOS6510TestBusCycles::testCmpIndirectIndexedWrapAround()
     verifyRead(0x00FF, 0x40);
 
     clock();
-    verifyRead(0x0000, 0x23);
+    verifyReadCycle(0x0000);
 
     clock();
     verifyRead(0x2345, 0x42);
@@ -2779,7 +2779,7 @@ void MOS6510TestBusCycles::testEorIndexedIndirectWrapAround()
     verifyRead(0x00FF, 0x45);
 
     clock();
-    verifyRead(0x0000, 0x23);
+    verifyReadCycle(0x0000);
 
     clock();
     verifyRead(0x2345, 0x42);
@@ -2875,7 +2875,7 @@ void MOS6510TestBusCycles::testEorIndirectIndexedWrapAround()
     verifyRead(0x00FF, 0x40);
 
     clock();
-    verifyRead(0x0000, 0x23);
+    verifyReadCycle(0x0000);
 
     clock();
     verifyRead(0x2345, 0x42);
@@ -3564,7 +3564,7 @@ void MOS6510TestBusCycles::testLdaIndexedIndirectWrapAround()
     verifyRead(0x00FF, 0x45);
 
     clock();
-    verifyRead(0x0000, 0x23);
+    verifyReadCycle(0x0000);
 
     clock();
     verifyRead(0x2345, 0x42);
@@ -3670,7 +3670,7 @@ void MOS6510TestBusCycles::testLdaIndirectIndexedWrapAround()
     verifyRead(0x00FF, 0x40);
 
     clock();
-    verifyRead(0x0000, 0x23);
+    verifyReadCycle(0x0000);
 
     clock();
     verifyRead(0x2345, 0x42);
@@ -4578,7 +4578,7 @@ void MOS6510TestBusCycles::testOraIndexedIndirectWrapAround()
     verifyRead(0x00FF, 0x45);
 
     clock();                            // $00FF + 1 wraps inside zero page
-    verifyRead(0x0000, 0x23);
+    verifyReadCycle(0x0000);
 
     clock();
     verifyRead(0x2345, 0x42);
@@ -4684,7 +4684,7 @@ void MOS6510TestBusCycles::testOraIndirectIndexedWrapAround()
     verifyRead(0x00FF, 0x40);
 
     clock();                            // Pointer high wraps to $00
-    verifyRead(0x0000, 0x23);
+    verifyReadCycle(0x0000);
 
     clock();
     verifyRead(0x2345, 0x42);
@@ -5822,7 +5822,7 @@ void MOS6510TestBusCycles::testSbcIndexedIndirectWrapAround()
     verifyRead(0x00FF, 0x45);
 
     clock();                            // Pointer high wraps to $00
-    verifyRead(0x0000, 0x23);
+    verifyReadCycle(0x0000);
 
     clock();
     verifyRead(0x2345, 0x42);
@@ -5928,7 +5928,7 @@ void MOS6510TestBusCycles::testSbcIndirectIndexedWrapAround()
     verifyRead(0x00FF, 0x40);
 
     clock();                            // Pointer high wraps to $00
-    verifyRead(0x0000, 0x23);
+    verifyReadCycle(0x0000);
 
     clock();                            // Read operand
     verifyRead(0x2345, 0x42);
@@ -6234,7 +6234,7 @@ void MOS6510TestBusCycles::testStaIndexedIndirectWrapAround()
     verifyRead(0x00FF, 0x45);
 
     clock();                            // Pointer high wraps to $00
-    verifyRead(0x0000, 0x23);
+    verifyReadCycle(0x0000);
 
     clock();
     verifyWrite(0x2345, 0x42);
@@ -6344,7 +6344,7 @@ void MOS6510TestBusCycles::testStaIndirectIndexedWrapAround()
     verifyRead(0x00FF, 0x40);
 
     clock();                            // Pointer high wraps to $00
-    verifyRead(0x0000, 0x23);
+    verifyReadCycle(0x0000);
 
     clock();                            // Unconditional indexed dummy read
     verifyRead(0x2345, 0x11);
@@ -7076,10 +7076,11 @@ void MOS6510TestBusCycles::testLdaImmediateProgramCounterWrapAround()
     verifyRead(0xFFFF, 0xA9);
 
     clock();                            // C2: Operand after PC wrap
-    verifyRead(0x0000, 0x22);
+    verifyReadCycle(0x0000);
+    QCOMPARE(m_cpu.accumulator(), quint8(0x22));
 
     clock();                            // Next opcode from processor port $0001
-    verifyRead(0x0001, 0x1D);
+    verifyReadCycle(0x0001);
 }
 
 void MOS6510TestBusCycles::testLdaAbsoluteXAddressSpaceWrapAround()
@@ -7352,5 +7353,5 @@ void MOS6510TestBusCycles::testRtsProgramCounterWrapAround()
     verifyRead(0xFFFF, 0x33);
 
     clock();                            // Next opcode after RTS increments PC
-    verifyRead(0x0000, 0x2A);
+    verifyReadCycle(0x0000);
 }
