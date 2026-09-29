@@ -170,9 +170,9 @@ void MOS6510TestLogical::testLogicalZeroPageIndexed_data()
     QTest::newRow("ORA positive") << quint8(0x15) << quint8(0x55) << quint8(0x0A) << quint8(0x02) << quint8(0x5F) << quint8(0x7D) << quint8(0x41) << quint8(0x43);
     QTest::newRow("EOR positive") << quint8(0x55) << quint8(0x55) << quint8(0x0F) << quint8(0x02) << quint8(0x5A) << quint8(0x7D) << quint8(0x41) << quint8(0x43);
 
-    QTest::newRow("AND zero page wrap") << quint8(0x35) << quint8(0xFF) << quint8(0xFF) << quint8(0x01) << quint8(0xFF) << quint8(0x7D) << quint8(0xFF) << quint8(0x00);
-    QTest::newRow("ORA zero page wrap") << quint8(0x15) << quint8(0x00) << quint8(0x80) << quint8(0x01) << quint8(0x80) << quint8(0x7D) << quint8(0xFF) << quint8(0x00);
-    QTest::newRow("EOR zero page wrap") << quint8(0x55) << quint8(0x80) << quint8(0x80) << quint8(0x01) << quint8(0x00) << quint8(0x7D) << quint8(0xFF) << quint8(0x00);
+    QTest::newRow("AND zero page wrap") << quint8(0x35) << quint8(0xFF) << quint8(0xFF) << quint8(0x04) << quint8(0xFF) << quint8(0x7D) << quint8(0xFE) << quint8(0x02);
+    QTest::newRow("ORA zero page wrap") << quint8(0x15) << quint8(0x00) << quint8(0x80) << quint8(0x04) << quint8(0x80) << quint8(0x7D) << quint8(0xFE) << quint8(0x02);
+    QTest::newRow("EOR zero page wrap") << quint8(0x55) << quint8(0x80) << quint8(0x80) << quint8(0x04) << quint8(0x00) << quint8(0x7D) << quint8(0xFE) << quint8(0x02);
 }
 void MOS6510TestLogical::testLogicalZeroPageIndexed()
 {
@@ -669,6 +669,19 @@ void MOS6510TestLogical::testLogicalIndexedIndirectWrapAround()
     setupCpu();
     initializeRegisters();
 
+    //
+    // Configure DDR $00 = $23.
+    //
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setAccumulator(0x23);
+
+    m_memory.writeRAM(0x2000, 0x85);    // STA $00
+    m_memory.writeRAM(0x2001, 0x00);
+
+    m_cpu.clock();                      // C1
+    m_cpu.clock();                      // C2
+    m_cpu.clock();                      // C3
+
     m_cpu.setAccumulator(accumulator);
     m_cpu.setXRegister(0x01);
     m_cpu.setStatus(status);
@@ -681,7 +694,6 @@ void MOS6510TestLogical::testLogicalIndexedIndirectWrapAround()
     // Pointer Low  bei $00FF
     // Pointer High bei $0000 -> Zero-Page-Wrap
     m_memory.writeRAM(0x00FF, 0x42);
-    m_memory.writeRAM(0x0000, 0x23);
 
     m_memory.writeRAM(0x2342, operand);
 
@@ -877,6 +889,19 @@ void MOS6510TestLogical::testLogicalIndirectIndexedWrapAround()
     setupCpu();
     initializeRegisters();
 
+    //
+    // Configure DDR $00 = $23.
+    //
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setAccumulator(0x23);
+
+    m_memory.writeRAM(0x2000, 0x85);    // STA $00
+    m_memory.writeRAM(0x2001, 0x00);
+
+    m_cpu.clock();                      // C1
+    m_cpu.clock();                      // C2
+    m_cpu.clock();                      // C3
+
     m_cpu.setAccumulator(accumulator);
     m_cpu.setYRegister(0x02);
     m_cpu.setStatus(status);
@@ -888,7 +913,6 @@ void MOS6510TestLogical::testLogicalIndirectIndexedWrapAround()
     // Pointer Low bei $FF,
     // Pointer High muss von $00 kommen.
     m_memory.writeRAM(0x00FF, 0x40);
-    m_memory.writeRAM(0x0000, 0x23);
 
     // $2340 + Y($02)
     m_memory.writeRAM(0x2342, operand);

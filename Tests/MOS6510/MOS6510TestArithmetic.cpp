@@ -489,9 +489,41 @@ void MOS6510TestArithmetic::testAdcIndexedIndirect()
     m_memory.writeRAM(0x1000, 0x61);  // ADC (Zero Page,X)
     m_memory.writeRAM(0x1001, pointerAddress);
     m_memory.writeRAM(0x1002, 0xEA);  // NOP
+
     const quint8 effectivePointer = static_cast<quint8>(pointerAddress + x);
-    m_memory.writeRAM(effectivePointer, static_cast<quint8>(targetAddress & 0x00FF));
-    m_memory.writeRAM(static_cast<quint8>(effectivePointer + 1), static_cast<quint8>((targetAddress >> 8) & 0x00FF));
+    const quint8 pointerLow = static_cast<quint8>(targetAddress & 0x00FF);
+    const quint8 pointerHigh = static_cast<quint8>((targetAddress >> 8) & 0x00FF);
+    const quint8 effectivePointerHigh = static_cast<quint8>(effectivePointer + 1);
+
+    m_memory.writeRAM(effectivePointer, pointerLow);
+
+    if (effectivePointerHigh == 0x00)
+    {
+        //
+        // Configure DDR $00 with the pointer high byte.
+        //
+        m_cpu.setProgramCounter(0x2000);
+        m_cpu.setAccumulator(pointerHigh);
+
+        m_memory.writeRAM(0x2000, 0x85);    // STA $00
+        m_memory.writeRAM(0x2001, 0x00);
+
+        m_cpu.clock();
+        m_cpu.clock();
+        m_cpu.clock();
+
+        //
+        // Restore registers used by the actual ADC test.
+        //
+        m_cpu.setAccumulator(accumulator);
+        m_cpu.setXRegister(x);
+        m_cpu.setStatus(initialStatus);
+    }
+    else
+    {
+        m_memory.writeRAM(effectivePointerHigh, pointerHigh);
+    }
+
     m_memory.writeRAM(targetAddress, operand);
     m_cpu.setProgramCounter(0x1000);
 
@@ -587,8 +619,38 @@ void MOS6510TestArithmetic::testAdcIndirectIndexed()
     m_memory.writeRAM(0x1002, 0xEA);  // NOP
     const quint8 pointerLow = static_cast<quint8>(targetAddress & 0x00FF);
     const quint8 pointerHigh = static_cast<quint8>((targetAddress >> 8) & 0x00FF);
+
     m_memory.writeRAM(pointerAddress, pointerLow);
-    m_memory.writeRAM(static_cast<quint8>(pointerAddress + 1), pointerHigh);
+
+    const quint8 pointerAddressHigh = static_cast<quint8>(pointerAddress + 1);
+
+    if (pointerAddressHigh == 0x00)
+    {
+        //
+        // Configure DDR $00 with the pointer high byte.
+        //
+        m_cpu.setProgramCounter(0x2000);
+        m_cpu.setAccumulator(pointerHigh);
+
+        m_memory.writeRAM(0x2000, 0x85);    // STA $00
+        m_memory.writeRAM(0x2001, 0x00);
+
+        m_cpu.clock();
+        m_cpu.clock();
+        m_cpu.clock();
+
+        //
+        // Restore registers used by the actual ADC test.
+        //
+        m_cpu.setAccumulator(accumulator);
+        m_cpu.setYRegister(y);
+        m_cpu.setStatus(initialStatus);
+    }
+    else
+    {
+        m_memory.writeRAM(pointerAddressHigh, pointerHigh);
+    }
+
     const quint16 effectiveAddress = static_cast<quint16>(targetAddress + y);
     m_memory.writeRAM(effectiveAddress, operand);
     m_cpu.setProgramCounter(0x1000);
@@ -1121,9 +1183,35 @@ void MOS6510TestArithmetic::testSbcIndexedIndirect()
     m_memory.writeRAM(0x1000, 0xE1);  // SBC (Zero Page,X)
     m_memory.writeRAM(0x1001, pointerAddress);
     m_memory.writeRAM(0x1002, 0xEA);  // NOP
+
     const quint8 effectivePointer = static_cast<quint8>(pointerAddress + x);
-    m_memory.writeRAM(effectivePointer, static_cast<quint8>(targetAddress & 0x00FF));
-    m_memory.writeRAM(static_cast<quint8>(effectivePointer + 1), static_cast<quint8>((targetAddress >> 8) & 0x00FF));
+    const quint8 pointerLow = static_cast<quint8>(targetAddress & 0x00FF);
+    const quint8 pointerHigh = static_cast<quint8>((targetAddress >> 8) & 0x00FF);
+    const quint8 effectivePointerHigh = static_cast<quint8>(effectivePointer + 1);
+
+    m_memory.writeRAM(effectivePointer, pointerLow);
+
+    if (effectivePointerHigh == 0x00)
+    {
+        m_cpu.setProgramCounter(0x2000);
+        m_cpu.setAccumulator(pointerHigh);
+
+        m_memory.writeRAM(0x2000, 0x85);    // STA $00
+        m_memory.writeRAM(0x2001, 0x00);
+
+        m_cpu.clock();
+        m_cpu.clock();
+        m_cpu.clock();
+
+        m_cpu.setAccumulator(accumulator);
+        m_cpu.setXRegister(x);
+        m_cpu.setStatus(initialStatus);
+    }
+    else
+    {
+        m_memory.writeRAM(effectivePointerHigh, pointerHigh);
+    }
+
     m_memory.writeRAM(targetAddress, operand);
     m_cpu.setProgramCounter(0x1000);
 
@@ -1220,8 +1308,32 @@ void MOS6510TestArithmetic::testSbcIndirectIndexed()
     m_memory.writeRAM(0x1002, 0xEA);  // NOP
     const quint8 pointerLow = static_cast<quint8>(targetAddress & 0x00FF);
     const quint8 pointerHigh = static_cast<quint8>((targetAddress >> 8) & 0x00FF);
+
     m_memory.writeRAM(pointerAddress, pointerLow);
-    m_memory.writeRAM(static_cast<quint8>(pointerAddress + 1), pointerHigh);
+
+    const quint8 pointerAddressHigh = static_cast<quint8>(pointerAddress + 1);
+
+    if (pointerAddressHigh == 0x00)
+    {
+        m_cpu.setProgramCounter(0x2000);
+        m_cpu.setAccumulator(pointerHigh);
+
+        m_memory.writeRAM(0x2000, 0x85);    // STA $00
+        m_memory.writeRAM(0x2001, 0x00);
+
+        m_cpu.clock();
+        m_cpu.clock();
+        m_cpu.clock();
+
+        m_cpu.setAccumulator(accumulator);
+        m_cpu.setYRegister(y);
+        m_cpu.setStatus(initialStatus);
+    }
+    else
+    {
+        m_memory.writeRAM(pointerAddressHigh, pointerHigh);
+    }
+
     const quint16 effectiveAddress = static_cast<quint16>(targetAddress + y);
     m_memory.writeRAM(effectiveAddress, operand);
     m_cpu.setProgramCounter(0x1000);
