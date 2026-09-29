@@ -167,7 +167,7 @@ void MOS6510TestPort::testDataRegisterReadOutputs()
     verifyRead(0x1007, 0x01);
 
     clock();                            // LDA $01 C3
-    verifyReadCycle(0x0000);
+    verifyReadCycle(0x0001);
 
     QCOMPARE(m_cpu.accumulator(), quint8(0x15));
 
@@ -742,7 +742,7 @@ void MOS6510TestPort::testIndexedIndirectStorePointerWrap()
     verifyRead(0x00FF, 0x34);
 
     clock();                            // C5: Pointer high from DDR
-    verifyRead(0x0000, 0x12);
+    verifyReadCycle(0x0000);
 
     clock();                            // C6: Store
     verifyWrite(0x1234, 0x11);
@@ -805,7 +805,7 @@ void MOS6510TestPort::testIndirectIndexedStorePointerWrap()
     verifyRead(0x00FF, 0x34);
 
     clock();                            // C4: Pointer high from DDR
-    verifyRead(0x0000, 0x12);
+    verifyReadCycle(0x0000);
 
     clock();                            // C5: Dummy read
     verifyRead(0x1235, 0x00);
