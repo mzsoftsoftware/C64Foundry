@@ -65,9 +65,11 @@ void C64Bus::readCycle(const quint16 address, const quint8 value)
 }
 void C64Bus::writeCycle(const quint16 address)
 {
+    m_dataBusDriven = false;
+
     m_lastAccessType = AccessType::Write;
     m_lastAccessAddress = address;
     ++m_accessCount;
 
-    m_dataBusDriven = false;
+    m_ptrMemory->writeRAM(address, m_dataBusValue);
 }

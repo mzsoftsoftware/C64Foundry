@@ -324,65 +324,70 @@ void MOS6510TestPort::testDataRegisterWritePreservesDataBusValue()
     QCOMPARE(m_bus.dataBusValue(), quint8(0x5A));
 }
 
-void MOS6510TestPort::testPortRegistersDoNotModifyRAM()
+void MOS6510TestPort::testDataDirectionRegisterWriteWritesDataBusValueToRAM()
 {
     setupCpu();
 
     m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x2A);
 
-    //
-    // RAM physically exists below the two internal 6510
-    // port registers. Accesses by the CPU to $0000/$0001
-    // must not modify that RAM.
-    //
-    m_memory.writeRAM(0x0000, 0xA5);
-    m_memory.writeRAM(0x0001, 0x5A);
-
-    m_cpu.setAccumulator(0x3F);
+    m_memory.writeRAM(0x0000, 0x11);
 
     m_memory.writeRAM(0x1000, 0x85);    // STA $00
     m_memory.writeRAM(0x1001, 0x00);
 
-    m_memory.writeRAM(0x1002, 0xA9);    // LDA #$15
-    m_memory.writeRAM(0x1003, 0x15);
-
-    m_memory.writeRAM(0x1004, 0x85);    // STA $01
-    m_memory.writeRAM(0x1005, 0x01);
-
-    m_memory.writeRAM(0x1006, 0xEA);
-
-    clock();
+    clock();                            // C1: Fetch opcode
     verifyRead(0x1000, 0x85);
 
-    clock();
+    clock();                            // C2: Fetch zero-page address
     verifyRead(0x1001, 0x00);
 
-    clock();
+    //
+    // The 6510 does not drive D0-D7 when writing its internal
+    // processor-port registers. Simulate the value already present
+    // on the external data bus.
+    //
+    m_bus.setDataBusValue(0xA5);
+
+    clock();                            // C3: Write DDR
     verifyWriteCycle(0x0000);
 
+    QVERIFY(!m_bus.dataBusDriven());
+
+    //
+    // The internal register receives the CPU value, while the
+    // physical RAM underneath receives the external bus value.
+    //
+    QCOMPARE(m_cpu.dataDirectionRegister(), quint8(0x2A));
     QCOMPARE(m_memory.readRAM(0x0000), quint8(0xA5));
-    QCOMPARE(m_memory.readRAM(0x0001), quint8(0x5A));
+}
 
-    clock();
-    verifyRead(0x1002, 0xA9);
+void MOS6510TestPort::testDataRegisterWriteWritesDataBusValueToRAM()
+{
+    setupCpu();
 
-    clock();
-    verifyRead(0x1003, 0x15);
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x15);
 
-    clock();
-    verifyRead(0x1004, 0x85);
+    m_memory.writeRAM(0x0001, 0x11);
 
-    clock();
-    verifyRead(0x1005, 0x01);
+    m_memory.writeRAM(0x1000, 0x85);    // STA $01
+    m_memory.writeRAM(0x1001, 0x01);
 
-    clock();
+    clock();                            // C1: Fetch opcode
+    verifyRead(0x1000, 0x85);
+
+    clock();                            // C2: Fetch zero-page address
+    verifyRead(0x1001, 0x01);
+
+    m_bus.setDataBusValue(0x5A);
+
+    clock();                            // C3: Write data register
     verifyWriteCycle(0x0001);
 
-    QCOMPARE(m_memory.readRAM(0x0000), quint8(0xA5));
-    QCOMPARE(m_memory.readRAM(0x0001), quint8(0x5A));
+    QVERIFY(!m_bus.dataBusDriven());
 
-    clock();
-    verifyRead(0x1006, 0xEA);
+    QCOMPARE(m_memory.readRAM(0x0001), quint8(0x5A));
 }
 
 void MOS6510TestPort::testImmediateLoadPcWrap()

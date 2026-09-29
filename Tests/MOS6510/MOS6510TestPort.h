@@ -29,7 +29,8 @@ private slots:
     void testDataDirectionRegisterWritePreservesDataBusValue();
     void testDataRegisterWritePreservesDataBusValue();
 
-    void testPortRegistersDoNotModifyRAM();
+    void testDataDirectionRegisterWriteWritesDataBusValueToRAM();
+    void testDataRegisterWriteWritesDataBusValueToRAM();
 
     void testImmediateLoadPcWrap();
     void testIndexedIndirectPointerWrap();
