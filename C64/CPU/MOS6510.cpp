@@ -127,7 +127,7 @@ void MOS6510::clock()
                      << "at"
                      << static_cast<quint16>(m_programCounter - 1);
 
-            m_state = CpuState::Stopped;
+            m_state = CpuState::Error;
             break;
         }
 
@@ -358,6 +358,14 @@ void MOS6510::clock()
             setStatusFlag(MOS6510StatusFlag::Carry, value >= operand);
             setStatusFlag(MOS6510StatusFlag::Zero, result == 0);
             setStatusFlag(MOS6510StatusFlag::Negative, (result & 0x80) != 0);
+            break;
+        }
+        case MOS6510MicroOperation::ReadImmediateXAA:
+        {
+            const quint8 operand = m_ptrBus->read(m_programCounter);
+            ++m_programCounter;
+            m_accumulator = static_cast<quint8>((m_accumulator | 0xEE) & m_x & operand);
+            updateLoadFlags(m_accumulator);
             break;
         }
         case MOS6510MicroOperation::ReadImmediateLAXUnstable:

@@ -28,6 +28,7 @@ public:
     bool irqLine() const                                { return m_irqLine; }
     bool nmiLine() const                                { return m_nmiLine; }
     bool stopped() const                                { return m_state == CpuState::Stopped; }
+    bool error() const                                  { return m_state == CpuState::Error; }
 
     // Setter
     void setBus(C64Bus* ptrBus);
@@ -54,7 +55,8 @@ private:
         Reset,
         Irq,
         Nmi,
-        Stopped
+        Stopped,
+        Error
     };
 
     void executeResetCycle();

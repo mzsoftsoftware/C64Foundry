@@ -98,6 +98,8 @@ enum class MOS6510Operation
     TXS,
     TYA,
 
+    XAA,
+
     Unknown
 };
 
