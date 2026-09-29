@@ -46,11 +46,26 @@ void MOS6510TestControlFlow::testJmpAbsoluteProgramCounterWrapAround()
 {
     setupCpu();
 
+    //
+    // Configure DDR $00 = $34.
+    //
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x34);
+
+    m_memory.writeRAM(0x1000, 0x85);    // STA $00
+    m_memory.writeRAM(0x1001, 0x00);
+
+    m_cpu.clock();
+    m_cpu.clock();
+    m_cpu.clock();
+
+    //
+    // JMP operand crosses $FFFF -> $0000.
+    //
     m_cpu.setProgramCounter(0xFFFE);
 
-    m_memory.writeRAM(0xFFFE, 0x4C);
+    m_memory.writeRAM(0xFFFE, 0x4C);    // JMP $3456
     m_memory.writeRAM(0xFFFF, 0x56);
-    m_memory.writeRAM(0x0000, 0x34);
     m_memory.writeRAM(0x3456, 0xEA);
 
     m_cpu.clock();
@@ -245,12 +260,27 @@ void MOS6510TestControlFlow::testJsrProgramCounterWrapAround()
 {
     setupCpu();
 
+    //
+    // Configure DDR $00 = $34.
+    //
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x34);
+
+    m_memory.writeRAM(0x1000, 0x85);    // STA $00
+    m_memory.writeRAM(0x1001, 0x00);
+
+    m_cpu.clock();
+    m_cpu.clock();
+    m_cpu.clock();
+
+    //
+    // JSR operand crosses $FFFF -> $0000.
+    //
     m_cpu.setProgramCounter(0xFFFE);
     m_cpu.setStackPointer(0xFF);
 
-    m_memory.writeRAM(0xFFFE, 0x20);
+    m_memory.writeRAM(0xFFFE, 0x20);    // JSR $3456
     m_memory.writeRAM(0xFFFF, 0x56);
-    m_memory.writeRAM(0x0000, 0x34);
 
     m_cpu.clock();
     m_cpu.clock();
