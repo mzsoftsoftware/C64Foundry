@@ -20,4 +20,5 @@ private slots:
     void testCharacterROMAndIOMapping();
 
     void testReadMemoryMapping();
+    void testWriteRAMBelowROM();
 };

@@ -49,7 +49,27 @@ void C64Bus::clock()
 
 quint8 C64Bus::read(const quint16 address)
 {
-    const quint8 value = m_ptrMemory->readRAM(address);
+    quint8 value = 0xFF;
+    switch (memorySource(address))
+    {
+    case MemorySource::RAM:
+        value = m_ptrMemory->readRAM(address);
+        break;
+    case MemorySource::BasicROM:
+        value = m_ptrMemory->readBasicROM(address - 0xA000);
+        break;
+    case MemorySource::KernalROM:
+        value = m_ptrMemory->readKernalROM(address - 0xE000);
+        break;
+    case MemorySource::CharacterROM:
+        value = m_ptrMemory->readCharacterROM(address - 0xD000);
+        break;
+    case MemorySource::IO:
+        //
+        // I/O mapping will be implemented next.
+        //
+        break;
+    }
 
     m_dataBusValue = value;
     m_cpuDrivesDataBus = false;

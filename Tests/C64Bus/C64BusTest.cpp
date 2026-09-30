@@ -171,10 +171,19 @@ void C64BusTest::testReadMemoryMapping()
     basicROM[0x0000] = static_cast<char>(0x11);
     kernalROM[0x0000] = static_cast<char>(0x22);
     characterROM[0x0000] = static_cast<char>(0x33);
-
     QVERIFY(memory.loadBasicROM(basicROM));
     QVERIFY(memory.loadKernalROM(kernalROM));
     QVERIFY(memory.loadCharacterROM(characterROM));
+
+    memory.writeRAM(0x1000, 0x44);
+    memory.writeRAM(0xA000, 0x55);
+    memory.writeRAM(0xD000, 0x66);
+    memory.writeRAM(0xE000, 0x77);
+
+    //
+    // Normal RAM.
+    //
+    QCOMPARE(bus.read(0x1000), static_cast<quint8>(0x44));
 
     //
     // All ROMs visible.
@@ -190,4 +199,41 @@ void C64BusTest::testReadMemoryMapping()
     bus.setCpuPortLines(0x03);
 
     QCOMPARE(bus.read(0xD000), static_cast<quint8>(0x33));
+
+    //
+    // RAM below the ROM areas.
+    //
+    bus.setCpuPortLines(0x00);
+
+    QCOMPARE(bus.read(0xA000), static_cast<quint8>(0x55));
+    QCOMPARE(bus.read(0xD000), static_cast<quint8>(0x66));
+    QCOMPARE(bus.read(0xE000), static_cast<quint8>(0x77));
+}
+
+void C64BusTest::testWriteRAMBelowROM()
+{
+    C64Memory memory;
+    C64Bus bus;
+
+    bus.setMemory(&memory);
+
+    //
+    // Enable BASIC and KERNAL ROM.
+    //
+    bus.setCpuPortLines(0x07);
+
+    //
+    // Writes still go to the RAM below the ROMs.
+    //
+    bus.write(0xA000, 0x11);
+    bus.write(0xE000, 0x22);
+    QCOMPARE(memory.readRAM(0xA000), static_cast<quint8>(0x11));
+    QCOMPARE(memory.readRAM(0xE000), static_cast<quint8>(0x22));
+
+    //
+    // Enable Character ROM.
+    //
+    bus.setCpuPortLines(0x03);
+    bus.write(0xD000, 0x33);
+    QCOMPARE(memory.readRAM(0xD000), static_cast<quint8>(0x33));
 }
