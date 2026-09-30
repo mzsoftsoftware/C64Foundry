@@ -43,4 +43,13 @@ private slots:
     void testDisablePendingRasterIRQ();
 
     void testMemoryPointerRegister();
+
+    void testMemoryRead();
+    void testVideoMatrixBaseAddress();
+    void testCharacterBaseAddress();
+
+    void testCharacterMemoryRead();
+    void testVideoMatrixMemoryRead();
+
+
 };

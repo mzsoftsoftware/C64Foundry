@@ -1,5 +1,7 @@
 #include "VIC-II.h"
 
+#include "C64/Bus/C64Bus.h"
+
 
 VICII::VICII()
 {
@@ -125,6 +127,16 @@ void VICII::writeRegister(const quint8 address, const quint8 value)
         // Unused bit 0 reads back as one.
         //
         m_memoryPointers = 0x01 | (value & 0xFE);
+        //
+        // Bits 4-7 select the Video Matrix base address
+        // within the 16 KiB VIC-II address space.
+        //
+        m_videoMatrixBaseAddress = static_cast<quint16>(value & 0xF0) << 6;
+        //
+        // Bits 1-3 select the Character Generator base address
+        // within the 16 KiB VIC-II address space.
+        //
+        m_characterBaseAddress = static_cast<quint16>(value & 0x0E) << 10;
         return;
     case 0x19:
         //
@@ -132,7 +144,6 @@ void VICII::writeRegister(const quint8 address, const quint8 value)
         //
         m_interruptStatus &= static_cast<quint8>(~value);
         return;
-
     case 0x1A:
         //
         // Bits 0-3 enable the VIC-II interrupt sources.
@@ -174,3 +185,16 @@ void VICII::clock()
     }
 }
 
+quint8 VICII::readMemory(const quint16 address)
+{
+    return m_ptrBus->readVIC(address);
+}
+quint8 VICII::readVideoMatrixMemory(const quint16 position)
+{
+    return readMemory(m_videoMatrixBaseAddress + position);
+}
+quint8 VICII::readCharacterMemory(const quint8 characterCode, const quint8 row)
+{
+    const quint16 address = m_characterBaseAddress + (static_cast<quint16>(characterCode) << 3) + row;
+    return readMemory(address);
+}

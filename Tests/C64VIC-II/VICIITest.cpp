@@ -3,6 +3,8 @@
 #include <QTest>
 
 #include "C64/C64Timing.h"
+#include "C64/Bus/C64Bus.h"
+#include "C64/Memory/C64Memory.h"
 #include "C64/VIC-II/VIC-II.h"
 
 
@@ -565,4 +567,119 @@ void VICIITest::testMemoryPointerRegister()
     //
     vicII.writeRegister(0x18, 0xFE);
     QCOMPARE(vicII.readRegister(0x18), quint8(0xFF));
+}
+
+void VICIITest::testMemoryRead()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+
+    //
+    // The VIC-II accesses memory through the C64 bus.
+    //
+    memory.writeRAM(0x0234, 0x42);
+    QCOMPARE(vicII.readMemory(0x0234), quint8(0x42));
+}
+
+void VICIITest::testVideoMatrixBaseAddress()
+{
+    VICII vicII;
+
+    //
+    // Bits 4-7 of $D018 select the Video Matrix base address
+    // within the 16 KiB VIC-II address space.
+    //
+    vicII.writeRegister(0x18, 0x00);
+    QCOMPARE(vicII.videoMatrixBaseAddress(), quint16(0x0000));
+
+    vicII.writeRegister(0x18, 0x10);
+    QCOMPARE(vicII.videoMatrixBaseAddress(), quint16(0x0400));
+
+    vicII.writeRegister(0x18, 0x40);
+    QCOMPARE(vicII.videoMatrixBaseAddress(), quint16(0x1000));
+
+    vicII.writeRegister(0x18, 0x80);
+    QCOMPARE(vicII.videoMatrixBaseAddress(), quint16(0x2000));
+
+    vicII.writeRegister(0x18, 0xF0);
+    QCOMPARE(vicII.videoMatrixBaseAddress(), quint16(0x3C00));
+}
+
+void VICIITest::testCharacterBaseAddress()
+{
+    VICII vicII;
+
+    //
+    // Bits 1-3 of $D018 select the Character Generator base address
+    // within the 16 KiB VIC-II address space.
+    //
+    vicII.writeRegister(0x18, 0x00);
+    QCOMPARE(vicII.characterBaseAddress(), quint16(0x0000));
+
+    vicII.writeRegister(0x18, 0x02);
+    QCOMPARE(vicII.characterBaseAddress(), quint16(0x0800));
+
+    vicII.writeRegister(0x18, 0x04);
+    QCOMPARE(vicII.characterBaseAddress(), quint16(0x1000));
+
+    vicII.writeRegister(0x18, 0x08);
+    QCOMPARE(vicII.characterBaseAddress(), quint16(0x2000));
+
+    vicII.writeRegister(0x18, 0x0E);
+    QCOMPARE(vicII.characterBaseAddress(), quint16(0x3800));
+}
+
+void VICIITest::testCharacterMemoryRead()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+
+    QByteArray characterROM(4096, 0x00);
+    characterROM[0x0103] = 0x42;
+
+    QVERIFY(memory.loadCharacterROM(characterROM));
+
+    //
+    // Character Generator base address: $1000.
+    //
+    vicII.writeRegister(0x18, 0x04);
+
+    //
+    // Character $20, row 3:
+    //
+    // $1000 + ($20 * 8) + 3 = $1103
+    //
+    QCOMPARE(vicII.readCharacterMemory(0x20, 3), quint8(0x42));
+}
+
+void VICIITest::testVideoMatrixMemoryRead()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+
+    //
+    // Video Matrix base address: $0400.
+    //
+    vicII.writeRegister(0x18, 0x10);
+
+    //
+    // Character position 37:
+    //
+    // $0400 + 37 = $0425
+    //
+    memory.writeRAM(0x0425, 0x42);
+
+    QCOMPARE(vicII.readVideoMatrixMemory(37), quint8(0x42));
 }

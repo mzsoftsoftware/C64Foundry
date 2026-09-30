@@ -17,7 +17,9 @@ C64Machine::C64Machine()
     m_ptrBus->setMemory(m_ptrMemory);
 
     m_ptrVICII = new VICII();
+    m_ptrVICII->setBus(m_ptrBus);
     m_ptrVICII->setTiming(m_timing);
+
     m_ptrBus->setVICII(m_ptrVICII);
 
     m_ptrCpu = new MOS6510();
