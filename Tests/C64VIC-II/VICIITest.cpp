@@ -110,6 +110,19 @@ void VICIITest::testSpriteXMSBRegister()
     vicII.writeRegister(0x10, 0x5A);
     QCOMPARE(vicII.readRegister(0x10), quint8(0x5A));
 }
+void VICIITest::testSpriteEnableRegister()
+{
+    VICII vicII;
+
+    //
+    // Each bit enables one sprite.
+    //
+    vicII.writeRegister(0x15, 0x81);
+    QCOMPARE(vicII.readRegister(0x15), quint8(0x81));
+
+    vicII.writeRegister(0x15, 0x5A);
+    QCOMPARE(vicII.readRegister(0x15), quint8(0x5A));
+}
 
 void VICIITest::testControlRegister1()
 {

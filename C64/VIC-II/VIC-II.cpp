@@ -18,6 +18,8 @@ quint8 VICII::readRegister(const quint8 address) const
         return m_controlRegister1 | static_cast<quint8>((m_rasterLine & 0x0100) >> 1);
     if (address == 0x12)
         return static_cast<quint8>(m_rasterLine);
+    if (address == 0x15)
+        return m_spriteEnable;
     if (address == 0x19)
     {
         const quint8 activeInterrupts = m_interruptStatus & m_interruptMask & 0x0F;
@@ -57,6 +59,11 @@ void VICII::writeRegister(const quint8 address, const quint8 value)
     if (address == 0x12)
     {
         m_rasterCompare = (m_rasterCompare & 0x0100) | value;
+        return;
+    }
+    if (address == 0x15)
+    {
+        m_spriteEnable = value;
         return;
     }
     if (address == 0x19)

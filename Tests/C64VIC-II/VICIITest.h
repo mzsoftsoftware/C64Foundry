@@ -16,6 +16,8 @@ private slots:
 
     void testSprite0PositionRegisters();
     void testSpriteXMSBRegister();
+    void testSpriteEnableRegister();
+
 
     void testControlRegister1();
     void testRasterCounterRegister();

@@ -27,6 +27,7 @@ private:
     quint8 m_spriteXMSB = 0x00;
 
     quint8 m_controlRegister1 = 0x00;
+    quint8 m_spriteEnable = 0x00;
 
     quint8 m_colorRegisters[0x0F] = {
         0xF0, 0xF0, 0xF0, 0xF0,
