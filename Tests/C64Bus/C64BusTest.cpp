@@ -3,6 +3,7 @@
 #include <QTest>
 
 #include "C64/Bus/C64Bus.h"
+#include "C64/Memory/C64Memory.h"
 
 
 C64BusTest::C64BusTest()
@@ -32,19 +33,161 @@ void C64BusTest::testSetCpuPortLines()
     QCOMPARE(bus.cpuPortLines(), quint8(0x07));
 }
 
-void C64BusTest::testBasicRomVisible()
+void C64BusTest::testBasicROMMapping()
+{
+    C64Bus bus;
+
+    //
+    // BASIC ROM is visible if LORAM and HIRAM are both high.
+    //
+    bus.setCpuPortLines(0x03);
+    QCOMPARE(bus.memorySource(0xA000), C64Bus::MemorySource::BasicROM);
+    QCOMPARE(bus.memorySource(0xBFFF), C64Bus::MemorySource::BasicROM);
+
+    //
+    // LORAM low disables BASIC ROM.
+    //
+    bus.setCpuPortLines(0x02);
+    QCOMPARE(bus.memorySource(0xA000), C64Bus::MemorySource::RAM);
+    QCOMPARE(bus.memorySource(0xBFFF), C64Bus::MemorySource::RAM);
+
+    //
+    // HIRAM low disables BASIC ROM.
+    //
+    bus.setCpuPortLines(0x01);
+    QCOMPARE(bus.memorySource(0xA000), C64Bus::MemorySource::RAM);
+
+    //
+    // Both low disable BASIC ROM.
+    //
+    bus.setCpuPortLines(0x00);
+    QCOMPARE(bus.memorySource(0xA000), C64Bus::MemorySource::RAM);
+
+    //
+    // CHAREN does not affect BASIC ROM mapping.
+    //
+    bus.setCpuPortLines(0x07);
+    QCOMPARE(bus.memorySource(0xA000), C64Bus::MemorySource::BasicROM);
+
+    bus.setCpuPortLines(0x03);
+    QCOMPARE(bus.memorySource(0xA000), C64Bus::MemorySource::BasicROM);
+}
+
+void C64BusTest::testKernalROMMapping()
+{
+    C64Bus bus;
+
+    //
+    // KERNAL ROM is visible if HIRAM is high.
+    //
+    bus.setCpuPortLines(0x02);
+    QCOMPARE(bus.memorySource(0xE000), C64Bus::MemorySource::KernalROM);
+    QCOMPARE(bus.memorySource(0xFFFF), C64Bus::MemorySource::KernalROM);
+
+    //
+    // LORAM does not affect KERNAL ROM mapping.
+    //
+    bus.setCpuPortLines(0x03);
+    QCOMPARE(bus.memorySource(0xE000), C64Bus::MemorySource::KernalROM);
+    QCOMPARE(bus.memorySource(0xFFFF), C64Bus::MemorySource::KernalROM);
+
+    //
+    // CHAREN does not affect KERNAL ROM mapping.
+    //
+    bus.setCpuPortLines(0x06);
+    QCOMPARE(bus.memorySource(0xE000), C64Bus::MemorySource::KernalROM);
+    QCOMPARE(bus.memorySource(0xFFFF), C64Bus::MemorySource::KernalROM);
+
+    //
+    // HIRAM low disables KERNAL ROM.
+    //
+    bus.setCpuPortLines(0x05);
+    QCOMPARE(bus.memorySource(0xE000), C64Bus::MemorySource::RAM);
+    QCOMPARE(bus.memorySource(0xFFFF), C64Bus::MemorySource::RAM);
+
+    bus.setCpuPortLines(0x00);
+    QCOMPARE(bus.memorySource(0xE000), C64Bus::MemorySource::RAM);
+}
+
+void C64BusTest::testCharacterROMAndIOMapping()
+{
+    C64Bus bus;
+
+    //
+    // LORAM=0, HIRAM=0: RAM is visible independently of CHAREN.
+    //
+    bus.setCpuPortLines(0x00);
+    QCOMPARE(bus.memorySource(0xD000), C64Bus::MemorySource::RAM);
+    QCOMPARE(bus.memorySource(0xDFFF), C64Bus::MemorySource::RAM);
+
+    bus.setCpuPortLines(0x04);
+    QCOMPARE(bus.memorySource(0xD000), C64Bus::MemorySource::RAM);
+    QCOMPARE(bus.memorySource(0xDFFF), C64Bus::MemorySource::RAM);
+
+    //
+    // At least one of LORAM/HIRAM is high and CHAREN is low:
+    // Character ROM is visible.
+    //
+    bus.setCpuPortLines(0x01);
+    QCOMPARE(bus.memorySource(0xD000), C64Bus::MemorySource::CharacterROM);
+    QCOMPARE(bus.memorySource(0xDFFF), C64Bus::MemorySource::CharacterROM);
+
+    bus.setCpuPortLines(0x02);
+    QCOMPARE(bus.memorySource(0xD000), C64Bus::MemorySource::CharacterROM);
+    QCOMPARE(bus.memorySource(0xDFFF), C64Bus::MemorySource::CharacterROM);
+
+    bus.setCpuPortLines(0x03);
+    QCOMPARE(bus.memorySource(0xD000), C64Bus::MemorySource::CharacterROM);
+    QCOMPARE(bus.memorySource(0xDFFF), C64Bus::MemorySource::CharacterROM);
+
+    //
+    // At least one of LORAM/HIRAM is high and CHAREN is high:
+    // I/O is visible.
+    //
+    bus.setCpuPortLines(0x05);
+    QCOMPARE(bus.memorySource(0xD000), C64Bus::MemorySource::IO);
+    QCOMPARE(bus.memorySource(0xDFFF), C64Bus::MemorySource::IO);
+
+    bus.setCpuPortLines(0x06);
+    QCOMPARE(bus.memorySource(0xD000), C64Bus::MemorySource::IO);
+    QCOMPARE(bus.memorySource(0xDFFF), C64Bus::MemorySource::IO);
+
+    bus.setCpuPortLines(0x07);
+    QCOMPARE(bus.memorySource(0xD000), C64Bus::MemorySource::IO);
+    QCOMPARE(bus.memorySource(0xDFFF), C64Bus::MemorySource::IO);
+}
+
+void C64BusTest::testReadMemoryMapping()
 {
     C64Memory memory;
     C64Bus bus;
 
     bus.setMemory(&memory);
+
+    QByteArray basicROM(8192, 0x00);
+    QByteArray kernalROM(8192, 0x00);
+    QByteArray characterROM(4096, 0x00);
+
+    basicROM[0x0000] = static_cast<char>(0x11);
+    kernalROM[0x0000] = static_cast<char>(0x22);
+    characterROM[0x0000] = static_cast<char>(0x33);
+
+    QVERIFY(memory.loadBasicROM(basicROM));
+    QVERIFY(memory.loadKernalROM(kernalROM));
+    QVERIFY(memory.loadCharacterROM(characterROM));
+
+    //
+    // All ROMs visible.
+    //
     bus.setCpuPortLines(0x07);
 
-    //
-    // Put different values into the physical RAM and BASIC ROM
-    // at the same CPU address.
-    //
-    memory.writeRAM(0xA000, 0x12);
+    QCOMPARE(bus.read(0xA000), static_cast<quint8>(0x11));
+    QCOMPARE(bus.read(0xE000), static_cast<quint8>(0x22));
 
-    // TODO: We need a way to initialize/write the BASIC ROM for testing.
+    //
+    // Character ROM visible.
+    //
+    bus.setCpuPortLines(0x03);
+
+    QCOMPARE(bus.read(0xD000), static_cast<quint8>(0x33));
 }

@@ -13,6 +13,14 @@ public:
         Read,
         Write
     };
+    enum class MemorySource
+    {
+        RAM,
+        BasicROM,
+        KernalROM,
+        CharacterROM,
+        IO
+    };
 
     explicit C64Bus();
     virtual ~C64Bus();
@@ -21,6 +29,7 @@ public:
     bool cpuDrivesDataBus() const               { return m_cpuDrivesDataBus; }
     quint8 dataBusValue() const                 { return m_dataBusValue; }
     quint8 cpuPortLines() const                 { return m_cpuPortLines; }
+    MemorySource memorySource(quint16 address) const;
 
     AccessType lastAccessType() const           { return m_lastAccessType; }
     quint16 lastAccessAddress() const           { return m_lastAccessAddress; }
@@ -54,8 +63,49 @@ private:
     quint8 m_dataBusValue = 0x00;
     quint8 m_cpuPortLines = 0x07;
 
+    MemorySource m_basicSource;
+    MemorySource m_ioSource;
+    MemorySource m_kernalSource;
+
     AccessType m_lastAccessType = AccessType::None;
     quint16 m_lastAccessAddress = 0x0000;
     quint8 m_lastAccessValue = 0x00;
     quint8 m_accessCount = 0;
+
+private:
+    static constexpr MemorySource s_basicMapping[8] =
+    {
+            MemorySource::RAM,       // 000
+            MemorySource::RAM,       // 001
+            MemorySource::RAM,       // 010
+            MemorySource::BasicROM,  // 011
+            MemorySource::RAM,       // 100
+            MemorySource::RAM,       // 101
+            MemorySource::RAM,       // 110
+            MemorySource::BasicROM   // 111
+    };
+
+    static constexpr MemorySource s_ioMapping[8] =
+    {
+            MemorySource::RAM,           // 000
+            MemorySource::CharacterROM,  // 001
+            MemorySource::CharacterROM,  // 010
+            MemorySource::CharacterROM,  // 011
+            MemorySource::RAM,           // 100
+            MemorySource::IO,            // 101
+            MemorySource::IO,            // 110
+            MemorySource::IO             // 111
+    };
+
+    static constexpr MemorySource s_kernalMapping[8] =
+    {
+            MemorySource::RAM,        // 000
+            MemorySource::RAM,        // 001
+            MemorySource::KernalROM,  // 010
+            MemorySource::KernalROM,  // 011
+            MemorySource::RAM,        // 100
+            MemorySource::RAM,        // 101
+            MemorySource::KernalROM,  // 110
+            MemorySource::KernalROM   // 111
+    };
 };

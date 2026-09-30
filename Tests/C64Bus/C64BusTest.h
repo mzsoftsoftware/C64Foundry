@@ -15,5 +15,9 @@ private slots:
     void testInitialCpuPortLines();
     void testSetCpuPortLines();
 
-    void testBasicRomVisible();
+    void testBasicROMMapping();
+    void testKernalROMMapping();
+    void testCharacterROMAndIOMapping();
+
+    void testReadMemoryMapping();
 };

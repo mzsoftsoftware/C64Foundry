@@ -10,9 +10,27 @@ C64Bus::~C64Bus()
 {
 }
 
+C64Bus::MemorySource C64Bus::memorySource(const quint16 address) const
+{
+    if (address >= 0xA000 && address <= 0xBFFF)
+        return m_basicSource;
+
+    if (address >= 0xD000 && address <= 0xDFFF)
+        return m_ioSource;
+
+    if (address >= 0xE000)
+        return m_kernalSource;
+
+    return MemorySource::RAM;
+}
+
 void C64Bus::setCpuPortLines(const quint8 lines)
 {
     m_cpuPortLines = lines & 0x07;
+
+    m_basicSource = s_basicMapping[m_cpuPortLines];
+    m_ioSource = s_ioMapping[m_cpuPortLines];
+    m_kernalSource = s_kernalMapping[m_cpuPortLines];
 }
 void C64Bus::setMemory(C64Memory* ptrMemory)
 {
