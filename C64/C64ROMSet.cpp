@@ -1,33 +1,46 @@
 #include "C64ROMSet.h"
 
-#include <QFileInfo>
-
+#include <QFile>
 
 C64ROMSet::C64ROMSet(const QString& basicROMFileName,
-                     const QString& kernalROMFileName,
-                     const QString& characterROMFileName)
+                   const QString& kernalROMFileName,
+                   const QString& characterROMFileName)
     : basicROMFileName(basicROMFileName)
     , kernalROMFileName(kernalROMFileName)
     , characterROMFileName(characterROMFileName)
 {
+
 }
+
 
 bool C64ROMSet::isBasicROMValid() const
 {
-    const QFileInfo fileInfo(basicROMFileName);
-    return fileInfo.isFile() && fileInfo.size() == 8192;
+    QFile file(basicROMFileName);
+
+    if (!file.open(QIODevice::ReadOnly))
+        return false;
+
+    return file.size() == 8192;
 }
 
 bool C64ROMSet::isKernalROMValid() const
 {
-    const QFileInfo fileInfo(kernalROMFileName);
-    return fileInfo.isFile() && fileInfo.size() == 8192;
+    QFile file(kernalROMFileName);
+
+    if (!file.open(QIODevice::ReadOnly))
+        return false;
+
+    return file.size() == 8192;
 }
 
 bool C64ROMSet::isCharacterROMValid() const
 {
-    const QFileInfo fileInfo(characterROMFileName);
-    return fileInfo.isFile() && fileInfo.size() == 4096;
+    QFile file(characterROMFileName);
+
+    if (!file.open(QIODevice::ReadOnly))
+        return false;
+
+    return file.size() == 4096;
 }
 
 bool C64ROMSet::isValid() const

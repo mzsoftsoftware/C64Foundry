@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/ROMs/OpenROMs">
+        <file alias="basic.rom">ROMs/OpenROMs/basic_generic.rom</file>
+        <file alias="kernal.rom">ROMs/OpenROMs/kernal_generic.rom</file>
+        <file alias="chargen.rom">ROMs/OpenROMs/chargen_openroms.rom</file>
+        <file alias="LICENSE">ROMs/OpenROMs/LICENSE</file>
+    </qresource>
+</RCC>
+

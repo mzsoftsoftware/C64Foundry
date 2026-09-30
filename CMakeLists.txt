@@ -5,6 +5,13 @@ project(C64Foundry
     LANGUAGES CXX
 )
 
+add_compile_options(
+    -Wall
+    -Wextra
+    -Wpedantic
+    -Werror
+)
+
 find_package(Qt6 6.5 REQUIRED COMPONENTS
     Core
     Widgets
@@ -33,11 +40,7 @@ add_library(C64FoundryCore STATIC
     C64/Memory/C64Memory.h C64/Memory/C64Memory.cpp
     C64/Memory/RAM.h C64/Memory/RAM.cpp
     C64/Memory/ROM.h C64/Memory/ROM.cpp
-
-    #C64/Memory/BasicROM.h C64/Memory/BasicROM.cpp
-    #C64/Memory/KernalROM.h C64/Memory/KernalROM.cpp
     #C64/Memory/ColorRAM.h C64/Memory/ColorRAM.cpp
-    #C64/Memory/CharROM.h C64/Memory/CharROM.cpp
 )
 
 target_include_directories(C64FoundryCore
@@ -62,17 +65,27 @@ qt_add_executable(C64Foundry
     App/MainWindow.h
     App/MainWindow.ui
 
+    Configuration/C64Configuration.h
+    Configuration/ConfigurationManager.h Configuration/ConfigurationManager.cpp
+
     Gui/Emulator/EmulatorControlWidget.h Gui/Emulator/EmulatorControlWidget.cpp Gui/Emulator/EmulatorControlWidget.ui
 
     Emulator/EmulatorSpeed.h
     Emulator/EmulatorController.h Emulator/EmulatorController.cpp
     Emulator/EmulatorWorker.h Emulator/EmulatorWorker.cpp
-    Emulator/EmulatorThread.h Emulator/EmulatorThread.cpp    
+    Emulator/EmulatorThread.h Emulator/EmulatorThread.cpp
+    Configuration/ConfigurationStorage.h Configuration/ConfigurationStorage.cpp
+
+    Resources/C64Foundry.qrc
 )
 
 target_include_directories(C64Foundry
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+set_target_properties(C64Foundry PROPERTIES
+    AUTORCC ON
 )
 
 target_link_libraries(C64Foundry

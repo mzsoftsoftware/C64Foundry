@@ -3,6 +3,8 @@ add_executable(C64MachineTest
     main.cpp
     C64MachineTest.h C64MachineTest.cpp
     C64ROMSetTest.h C64ROMSetTest.cpp
+
+    ${CMAKE_SOURCE_DIR}/Resources/C64Foundry.qrc
 )
 
 set_target_properties(C64MachineTest PROPERTIES

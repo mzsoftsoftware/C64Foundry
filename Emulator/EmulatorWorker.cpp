@@ -169,6 +169,10 @@ bool EmulatorWorker::processRequests()
         bool bLoaded = false;
         if (!m_bRunning)
             bLoaded = m_ptrMachine->loadROMSet(romSetRequested);
+        if (bLoaded)
+            qDebug() << "EmulatorWorker: ROM set loaded";
+        else
+            qWarning() << "EmulatorWorker: ROM set could not be loaded";
         emit romSetLoaded(bLoaded);
     }
 

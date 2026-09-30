@@ -1838,6 +1838,7 @@ void MOS6510::clock()
         break;
 
     case CpuState::Stopped:
+    case CpuState::Error:
         break;
     }
 }

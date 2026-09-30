@@ -14,4 +14,6 @@ private slots:
     void testInvalidCharacterROM();
 
     void testROMFileNotFound();
+
+    void testResourceROMSet();
 };

@@ -135,3 +135,17 @@ void C64ROMSetTest::testROMFileNotFound()
     QVERIFY(!romSet.isCharacterROMValid());
     QVERIFY(!romSet.isValid());
 }
+
+void C64ROMSetTest::testResourceROMSet()
+{
+    C64ROMSet romSet(
+        QStringLiteral(":/ROMs/OpenROMs/basic.rom"),
+        QStringLiteral(":/ROMs/OpenROMs/kernal.rom"),
+        QStringLiteral(":/ROMs/OpenROMs/chargen.rom"));
+
+    QVERIFY(romSet.isBasicROMValid());
+    QVERIFY(romSet.isKernalROMValid());
+    QVERIFY(romSet.isCharacterROMValid());
+
+    QVERIFY(romSet.isValid());
+}

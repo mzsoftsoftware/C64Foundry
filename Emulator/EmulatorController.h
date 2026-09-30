@@ -4,10 +4,10 @@
 
 #include "EmulatorSpeed.h"
 
+#include "C64/C64ROMSet.h"
+
 class EmulatorThread;
 class EmulatorWorker;
-
-class C64ROMSet;
 
 
 class EmulatorController : public QObject

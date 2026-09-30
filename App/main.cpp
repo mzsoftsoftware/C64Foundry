@@ -6,18 +6,26 @@
 
 int main(int argc, char *argv[])
 {
-    QApplication a(argc, argv);
+    QApplication application(argc, argv);
+
+    QCoreApplication::setOrganizationName(QStringLiteral("MZSoftwareGmbH"));
+    QCoreApplication::setOrganizationDomain(QStringLiteral("mzsoft.de"));
+    QCoreApplication::setApplicationName(QStringLiteral("C64Foundry"));
 
     QTranslator translator;
     const QStringList uiLanguages = QLocale::system().uiLanguages();
-    for (const QString &locale : uiLanguages) {
+    for (const QString &locale : uiLanguages)
+    {
         const QString baseName = "C64Foundry_" + QLocale(locale).name();
-        if (translator.load(":/i18n/" + baseName)) {
-            a.installTranslator(&translator);
+        if (translator.load(":/i18n/" + baseName))
+        {
+            application.installTranslator(&translator);
             break;
         }
     }
+
     MainWindow w;
     w.show();
+
     return QApplication::exec();
 }
