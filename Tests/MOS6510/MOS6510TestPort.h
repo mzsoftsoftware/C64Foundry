@@ -50,4 +50,6 @@ private slots:
     void testDataRegisterBit7FalloffAfterOutputToInput();
     void testDataRegisterBits67LowAfterOutputToInput();
 
+    void testProcessorPortPins();
+
 };

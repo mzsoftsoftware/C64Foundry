@@ -1089,3 +1089,44 @@ void MOS6510TestPort::testDataRegisterBits67LowAfterOutputToInput()
     QCOMPARE(m_cpu.accumulator() & quint8(0xC0), quint8(0x00));
 }
 
+void MOS6510TestPort::testProcessorPortPins()
+{
+    setupCpu();
+
+    //
+    // All processor-port pins are inputs after initialization.
+    // The external inputs P0-P5 are pulled high.
+    //
+    QCOMPARE(m_cpu.portPins(), quint8(0x3F));
+
+    //
+    // Configure P0-P2 as outputs.
+    // The data latch still contains 0.
+    //
+    setDataDirectionRegister(0x07);
+
+    QCOMPARE(m_cpu.portPins(), quint8(0x38));
+
+    //
+    // Write 0b101 to P0-P2.
+    //
+    m_cpu.setProgramCounter(0x1000);
+    m_cpu.setAccumulator(0x05);
+
+    m_memory.writeRAM(0x1000, 0x85);    // STA $01
+    m_memory.writeRAM(0x1001, 0x01);
+
+    clock();
+    clock();
+    clock();
+
+    QCOMPARE(m_cpu.portPins(), quint8(0x3D));
+
+    //
+    // Configure all six external processor-port pins as outputs.
+    //
+    setDataDirectionRegister(0x3F);
+
+    QCOMPARE(m_cpu.portPins(), quint8(0x05));
+}
+

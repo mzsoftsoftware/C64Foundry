@@ -109,4 +109,7 @@ install(SCRIPT ${deploy_script})
 # -----------------------------------------------------------------------------
 # Tests
 # -----------------------------------------------------------------------------
-add_subdirectory(Tests/MOS6510)
+include(CTest)
+if(BUILD_TESTING)
+    add_subdirectory(Tests EXCLUDE_FROM_ALL)
+endif()

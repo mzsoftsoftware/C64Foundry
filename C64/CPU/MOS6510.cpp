@@ -2186,6 +2186,14 @@ bool MOS6510::statusFlag(const MOS6510StatusFlag flag) const
     return (m_status & mask) != 0;
 }
 
+quint8 MOS6510::portPins() const
+{
+    const quint8 outputs = m_portData & m_portDataDirection;
+    const quint8 inputs = m_portInput & static_cast<quint8>(~m_portDataDirection);
+
+    return static_cast<quint8>((outputs | inputs) & 0x3F);
+}
+
 void MOS6510::updateLoadFlags(const quint8 value)
 {
     setStatusFlag(MOS6510StatusFlag::Zero, value == 0);

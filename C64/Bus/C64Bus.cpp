@@ -10,6 +10,10 @@ C64Bus::~C64Bus()
 {
 }
 
+void C64Bus::setCpuPortLines(const quint8 lines)
+{
+    m_cpuPortLines = lines & 0x07;
+}
 void C64Bus::setMemory(C64Memory* ptrMemory)
 {
     m_ptrMemory = ptrMemory;

@@ -31,6 +31,7 @@ public:
     bool stopped() const                                { return m_state == CpuState::Stopped; }
     bool error() const                                  { return m_state == CpuState::Error; }
     quint64 cycles() const                              { return m_cycles; }
+    quint8 portPins() const;
 
     // Setter
     void setBus(C64Bus* ptrBus);

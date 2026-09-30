@@ -20,6 +20,7 @@ public:
     // Getter
     bool cpuDrivesDataBus() const               { return m_cpuDrivesDataBus; }
     quint8 dataBusValue() const                 { return m_dataBusValue; }
+    quint8 cpuPortLines() const                 { return m_cpuPortLines; }
 
     AccessType lastAccessType() const           { return m_lastAccessType; }
     quint16 lastAccessAddress() const           { return m_lastAccessAddress; }
@@ -28,6 +29,7 @@ public:
 
     // Setter
     void setDataBusValue(quint8 value)          { m_dataBusValue = value; }
+    void setCpuPortLines(const quint8 lines);
 
     void setMemory(C64Memory* ptrMemory);
     //void setVICII(VICII* ptrVicII);
@@ -50,6 +52,7 @@ private:
 
     bool m_cpuDrivesDataBus = false;
     quint8 m_dataBusValue = 0x00;
+    quint8 m_cpuPortLines = 0x07;
 
     AccessType m_lastAccessType = AccessType::None;
     quint16 m_lastAccessAddress = 0x0000;

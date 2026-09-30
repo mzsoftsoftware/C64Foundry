@@ -41,6 +41,8 @@ add_executable(MOS6510Test
     MOS6510TestUndocumentedXAA.h MOS6510TestUndocumentedXAA.cpp
     MOS6510TestUndocumentedKIL.h MOS6510TestUndocumentedKIL.cpp
 
+    MOS6510TestPort.h MOS6510TestPort.cpp
+
     MOS6510TestDormann.h MOS6510TestDormann.cpp
     DormannTest/MOS6510DormannTest.qrc
 
@@ -49,7 +51,6 @@ add_executable(MOS6510Test
 
     MOS6510TestBlargg.h MOS6510TestBlargg.cpp
     BlarggTest/MOS6510BlarggTest.qrc
-    MOS6510TestPort.h MOS6510TestPort.cpp
 )
 
 set_target_properties(MOS6510Test PROPERTIES
@@ -62,3 +63,7 @@ target_link_libraries(MOS6510Test
         Qt6::Test
 )
 
+add_test(
+    NAME MOS6510Test
+    COMMAND MOS6510Test
+)
