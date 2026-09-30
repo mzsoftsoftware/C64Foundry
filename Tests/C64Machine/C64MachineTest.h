@@ -10,4 +10,9 @@ class C64MachineTest : public QObject
 private slots:
     void testLoadROMSet();
     void testLoadInvalidROMSet();
+
+    void testRunCycles();
+
+    void testLoadProgram();
+
 };

@@ -38,25 +38,37 @@ bool C64Machine::loadROMSet(const C64ROMSet& romSet)
     //
     if (!romSet.isValid())
         return false;
-
     if (!m_ptrMemory->loadBasicROM(romSet.basicROMFileName))
         return false;
-
     if (!m_ptrMemory->loadKernalROM(romSet.kernalROMFileName))
         return false;
-
     if (!m_ptrMemory->loadCharacterROM(romSet.characterROMFileName))
         return false;
-
+    return true;
+}
+bool C64Machine::loadProgram(const quint16 address, const QByteArray& data)
+{
+    if (data.size() > (0x10000 - address))
+        return false;
+    for (qsizetype index = 0; index < data.size(); ++index)
+    {
+        m_ptrMemory->writeRAM(static_cast<quint16>(address + index), static_cast<quint8>(data.at(index)));
+    }
     return true;
 }
 
 void C64Machine::powerOn()
 {
+    m_cycles = 0;
+
+    m_ptrCpu->initialize();
+    m_ptrCpu->reset();
 }
 void C64Machine::reset()
 {
     m_cycles = 0;
+
+    m_ptrCpu->reset();
 }
 
 void C64Machine::clock()
@@ -66,6 +78,12 @@ void C64Machine::clock()
     m_ptrBus->clock();
     m_ptrVICII->clock();
     m_ptrCpu->clock();
+}
+
+void C64Machine::runCycles(const quint64 cycles)
+{
+    for (quint64 cycle = 0; cycle < cycles; ++cycle)
+        clock();
 }
 
 void C64Machine::setTiming(const C64::Timing& timing)
