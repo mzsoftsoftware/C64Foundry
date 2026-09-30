@@ -46,7 +46,12 @@ quint8 VICII::readRegister(const quint8 address) const
 
     case 0x1A:
         return m_interruptMask;
-
+    case 0x1B:
+        return m_spriteDataPriority;
+    case 0x1C:
+        return m_spriteMulticolor;
+    case 0x1D:
+        return m_spriteXExpansion;
     default:
         break;
     }
@@ -135,7 +140,15 @@ void VICII::writeRegister(const quint8 address, const quint8 value)
         //
         m_interruptMask = 0xF0 | (value & 0x0F);
         return;
-
+    case 0x1B:
+        m_spriteDataPriority = value;
+        return;
+    case 0x1C:
+        m_spriteMulticolor = value;
+        return;
+    case 0x1D:
+        m_spriteXExpansion = value;
+        return;
     default:
         return;
     }

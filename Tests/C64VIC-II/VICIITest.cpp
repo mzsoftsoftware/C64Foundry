@@ -136,6 +136,47 @@ void VICIITest::testSpriteYExpansionRegister()
     vicII.writeRegister(0x17, 0x5A);
     QCOMPARE(vicII.readRegister(0x17), quint8(0x5A));
 }
+void VICIITest::testSpriteDataPriorityRegister()
+{
+    VICII vicII;
+
+    //
+    // Each bit controls the data priority of one sprite.
+    //
+    vicII.writeRegister(0x1B, 0x81);
+    QCOMPARE(vicII.readRegister(0x1B), quint8(0x81));
+
+    vicII.writeRegister(0x1B, 0x5A);
+    QCOMPARE(vicII.readRegister(0x1B), quint8(0x5A));
+}
+
+void VICIITest::testSpriteMulticolorRegister()
+{
+    VICII vicII;
+
+    //
+    // Each bit enables multicolor mode for one sprite.
+    //
+    vicII.writeRegister(0x1C, 0x81);
+    QCOMPARE(vicII.readRegister(0x1C), quint8(0x81));
+
+    vicII.writeRegister(0x1C, 0x5A);
+    QCOMPARE(vicII.readRegister(0x1C), quint8(0x5A));
+}
+
+void VICIITest::testSpriteXExpansionRegister()
+{
+    VICII vicII;
+
+    //
+    // Each bit enables X expansion for one sprite.
+    //
+    vicII.writeRegister(0x1D, 0x81);
+    QCOMPARE(vicII.readRegister(0x1D), quint8(0x81));
+
+    vicII.writeRegister(0x1D, 0x5A);
+    QCOMPARE(vicII.readRegister(0x1D), quint8(0x5A));
+}
 
 void VICIITest::testControlRegister1()
 {

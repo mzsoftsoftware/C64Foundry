@@ -18,6 +18,9 @@ private slots:
     void testSpriteXMSBRegister();
     void testSpriteEnableRegister();
     void testSpriteYExpansionRegister();
+    void testSpriteDataPriorityRegister();
+    void testSpriteMulticolorRegister();
+    void testSpriteXExpansionRegister();
 
     void testControlRegister1();
     void testControlRegister2();

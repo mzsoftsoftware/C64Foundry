@@ -30,6 +30,9 @@ private:
     quint8 m_controlRegister2 = 0xC0;
     quint8 m_spriteYExpansion = 0x00;
     quint8 m_memoryPointers = 0x01;
+    quint8 m_spriteDataPriority = 0x00;
+    quint8 m_spriteMulticolor = 0x00;
+    quint8 m_spriteXExpansion = 0x00;
 
     quint8 m_colorRegisters[0x0F] = {
         0xF0, 0xF0, 0xF0, 0xF0,
