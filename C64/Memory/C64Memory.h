@@ -3,10 +3,7 @@
 #include <QtGlobal>
 
 class RAM;
-class BasicROM;
-class KernalROM;
-class CharROM;
-class ColorRAM;
+class ROM;
 
 
 class C64Memory
@@ -20,6 +17,13 @@ public:
     void writeRAM(const quint16 address, const quint8 value);
 
     // Operations ROM
+    bool loadBasicROM(const QByteArray& data);
+    bool loadBasicROM(const QString& fileName);
+    bool loadKernalROM(const QByteArray& data);
+    bool loadKernalROM(const QString& fileName);
+    bool loadCharacterROM(const QByteArray& data);
+    bool loadCharacterROM(const QString& fileName);
+
     quint8 readBasicROM(const quint16 address) const;
     quint8 readKernalROM(const quint16 address) const;
     quint8 readCharacterROM(const quint16 address) const;
@@ -30,8 +34,10 @@ public:
 
 private:
     RAM*        m_ptrRAM = nullptr;
-    //BasicROM*   m_ptrBasicROM = nullptr;
-    //KernalROM*  m_ptrKernalROM = nullptr;
-    //CharROM*    m_ptrCharROM = nullptr;
+
+    ROM*        m_ptrBasicROM = nullptr;
+    ROM*        m_ptrKernalROM = nullptr;
+    ROM*        m_ptrCharROM = nullptr;
+
     //ColorRAM*   m_ptrColorRAM = nullptr;
 };
