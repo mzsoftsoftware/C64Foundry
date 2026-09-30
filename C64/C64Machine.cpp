@@ -76,7 +76,13 @@ void C64Machine::clock()
     ++m_cycles;
 
     m_ptrBus->clock();
+
     m_ptrVICII->clock();
+    //
+    // The VIC-II drives the CPU IRQ line.
+    //
+    m_ptrCpu->setIrqLine(m_ptrVICII->irq());
+
     m_ptrCpu->clock();
 }
 
@@ -90,4 +96,8 @@ void C64Machine::setTiming(const C64::Timing& timing)
 {
     m_timing = timing;
     m_ptrVICII->setTiming(timing);
+}
+quint8 C64Machine::readRAM(const quint16 address) const
+{
+    return m_ptrMemory->readRAM(address);
 }

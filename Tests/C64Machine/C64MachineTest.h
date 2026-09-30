@@ -14,5 +14,8 @@ private slots:
     void testRunCycles();
 
     void testLoadProgram();
+    void testExecuteProgram();
+
+    void testVICIIRasterIRQ();
 
 };
