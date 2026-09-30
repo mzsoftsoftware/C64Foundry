@@ -25,5 +25,9 @@ private slots:
     void testColorRAMMapping();
 
     void testVICIIRegisterMapping();
+    void testVICMemoryRead();
+    void testVICMemoryAddressMask();
+    void testVICCharacterROM();
+    void testVICCharacterROMBoundaries();
 
 };

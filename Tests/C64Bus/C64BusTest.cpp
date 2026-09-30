@@ -318,3 +318,91 @@ void C64BusTest::testVICIIRegisterMapping()
     bus.setCpuPortLines(0x07);
     QCOMPARE(bus.read(0xD020), quint8(0xFA));
 }
+
+void C64BusTest::testVICMemoryRead()
+{
+    C64Memory memory;
+    C64Bus bus;
+
+    bus.setMemory(&memory);
+
+    //
+    // The VIC-II reads RAM through its own memory access path.
+    //
+    memory.writeRAM(0x0234, 0x42);
+
+    QCOMPARE(bus.readVIC(0x0234), quint8(0x42));
+}
+void C64BusTest::testVICMemoryAddressMask()
+{
+    C64Memory memory;
+    C64Bus bus;
+
+    bus.setMemory(&memory);
+
+    //
+    // The VIC-II has a 14-bit address bus.
+    // Address bits 14 and 15 must therefore be ignored here.
+    //
+    memory.writeRAM(0x0234, 0x42);
+    memory.writeRAM(0x4234, 0x11);
+    memory.writeRAM(0x8234, 0x22);
+    memory.writeRAM(0xC234, 0x33);
+
+    QCOMPARE(bus.readVIC(0x0234), quint8(0x42));
+    QCOMPARE(bus.readVIC(0x4234), quint8(0x42));
+    QCOMPARE(bus.readVIC(0x8234), quint8(0x42));
+    QCOMPARE(bus.readVIC(0xC234), quint8(0x42));
+}
+void C64BusTest::testVICCharacterROM()
+{
+    C64Memory memory;
+    C64Bus bus;
+
+    bus.setMemory(&memory);
+
+    QByteArray characterROM(4096, 0x00);
+    characterROM[0x0000] = 0x11;
+    characterROM[0x0234] = 0x42;
+    characterROM[0x0FFF] = 0x33;
+
+    QVERIFY(memory.loadCharacterROM(characterROM));
+
+    //
+    // In VIC-II bank 0, $1000-$1FFF is mapped to the
+    // Character ROM instead of the underlying RAM.
+    //
+    memory.writeRAM(0x1000, 0xAA);
+    memory.writeRAM(0x1234, 0xBB);
+    memory.writeRAM(0x1FFF, 0xCC);
+
+    QCOMPARE(bus.readVIC(0x1000), quint8(0x11));
+    QCOMPARE(bus.readVIC(0x1234), quint8(0x42));
+    QCOMPARE(bus.readVIC(0x1FFF), quint8(0x33));
+}
+void C64BusTest::testVICCharacterROMBoundaries()
+{
+    C64Memory memory;
+    C64Bus bus;
+
+    bus.setMemory(&memory);
+
+    QByteArray characterROM(4096, 0x00);
+    characterROM[0x0000] = 0x11;
+    characterROM[0x0FFF] = 0x22;
+
+    QVERIFY(memory.loadCharacterROM(characterROM));
+
+    //
+    // RAM immediately outside the Character ROM area must remain visible.
+    //
+    memory.writeRAM(0x0FFF, 0x33);
+    memory.writeRAM(0x1000, 0x44);
+    memory.writeRAM(0x1FFF, 0x55);
+    memory.writeRAM(0x2000, 0x66);
+
+    QCOMPARE(bus.readVIC(0x0FFF), quint8(0x33));
+    QCOMPARE(bus.readVIC(0x1000), quint8(0x11));
+    QCOMPARE(bus.readVIC(0x1FFF), quint8(0x22));
+    QCOMPARE(bus.readVIC(0x2000), quint8(0x66));
+}

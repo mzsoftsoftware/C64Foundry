@@ -244,3 +244,16 @@ void C64Bus::writeCycle(const quint16 address)
 
     m_ptrMemory->writeRAM(address, m_dataBusValue);
 }
+
+quint8 C64Bus::readVIC(const quint16 address)
+{
+    const quint16 vicAddress = address & 0x3FFF;
+
+    //
+    // In VIC-II bank 0, $1000-$1FFF is mapped to the
+    // Character ROM instead of the underlying RAM.
+    //
+    if ((vicAddress & 0x3000) == 0x1000)
+        return m_ptrMemory->readCharacterROM(vicAddress & 0x0FFF);
+    return m_ptrMemory->readRAM(vicAddress);
+}

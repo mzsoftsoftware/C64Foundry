@@ -56,6 +56,8 @@ public:
     void readCycle(quint16 address);
     void writeCycle(quint16 address);
 
+    quint8 readVIC(quint16 address);
+
 
 private:
     C64Memory* m_ptrMemory = nullptr;
