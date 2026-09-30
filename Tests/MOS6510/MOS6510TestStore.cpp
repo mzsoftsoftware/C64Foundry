@@ -98,6 +98,7 @@ void MOS6510TestStore::testAbsoluteStore()
     QFETCH(MOS6510Operation, operation);
     QFETCH(quint16, address);
     QFETCH(quint8, value);
+    Q_UNUSED(operation);
 
     setupCpu();
     initializeRegisters();

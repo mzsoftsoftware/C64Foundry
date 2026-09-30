@@ -16,7 +16,12 @@ C64BusTest::~C64BusTest()
 void C64BusTest::testInitialCpuPortLines()
 {
     C64Bus bus;
+
     QCOMPARE(bus.cpuPortLines(), quint8(0x07));
+
+    QCOMPARE(bus.memorySource(0xA000), C64Bus::MemorySource::BasicROM);
+    QCOMPARE(bus.memorySource(0xD000), C64Bus::MemorySource::IO);
+    QCOMPARE(bus.memorySource(0xE000), C64Bus::MemorySource::KernalROM);
 }
 
 void C64BusTest::testSetCpuPortLines()

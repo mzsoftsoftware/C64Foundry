@@ -63,9 +63,7 @@ private:
     quint8 m_dataBusValue = 0x00;
     quint8 m_cpuPortLines = 0x07;
 
-    MemorySource m_basicSource;
-    MemorySource m_ioSource;
-    MemorySource m_kernalSource;
+    const MemorySource* m_ptrMemoryMap = nullptr;
 
     AccessType m_lastAccessType = AccessType::None;
     quint16 m_lastAccessAddress = 0x0000;
@@ -73,39 +71,126 @@ private:
     quint8 m_accessCount = 0;
 
 private:
-    static constexpr MemorySource s_basicMapping[8] =
-    {
-            MemorySource::RAM,       // 000
-            MemorySource::RAM,       // 001
-            MemorySource::RAM,       // 010
-            MemorySource::BasicROM,  // 011
-            MemorySource::RAM,       // 100
-            MemorySource::RAM,       // 101
-            MemorySource::RAM,       // 110
-            MemorySource::BasicROM   // 111
-    };
+    static constexpr MemorySource s_memoryMaps[8][16] =
+        {
+            //
+            // 000: LORAM=0, HIRAM=0, CHAREN=0
+            //
+            {
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM,
+                MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM
+            },
 
-    static constexpr MemorySource s_ioMapping[8] =
-    {
-            MemorySource::RAM,           // 000
-            MemorySource::CharacterROM,  // 001
-            MemorySource::CharacterROM,  // 010
-            MemorySource::CharacterROM,  // 011
-            MemorySource::RAM,           // 100
-            MemorySource::IO,            // 101
-            MemorySource::IO,            // 110
-            MemorySource::IO             // 111
-    };
+            //
+            // 001: LORAM=1, HIRAM=0, CHAREN=0
+            //
+            {
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM,
+                MemorySource::CharacterROM,
+                MemorySource::RAM, MemorySource::RAM
+            },
 
-    static constexpr MemorySource s_kernalMapping[8] =
-    {
-            MemorySource::RAM,        // 000
-            MemorySource::RAM,        // 001
-            MemorySource::KernalROM,  // 010
-            MemorySource::KernalROM,  // 011
-            MemorySource::RAM,        // 100
-            MemorySource::RAM,        // 101
-            MemorySource::KernalROM,  // 110
-            MemorySource::KernalROM   // 111
+            //
+            // 010: LORAM=0, HIRAM=1, CHAREN=0
+            //
+            {
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM,
+                MemorySource::CharacterROM,
+                MemorySource::KernalROM, MemorySource::KernalROM
+            },
+
+            //
+            // 011: LORAM=1, HIRAM=1, CHAREN=0
+            //
+            {
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::BasicROM, MemorySource::BasicROM,
+                MemorySource::RAM,
+                MemorySource::CharacterROM,
+                MemorySource::KernalROM, MemorySource::KernalROM
+            },
+
+            //
+            // 100: LORAM=0, HIRAM=0, CHAREN=1
+            //
+            {
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM,
+                MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM
+            },
+
+            //
+            // 101: LORAM=1, HIRAM=0, CHAREN=1
+            //
+            {
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM,
+                MemorySource::IO,
+                MemorySource::RAM, MemorySource::RAM
+            },
+
+            //
+            // 110: LORAM=0, HIRAM=1, CHAREN=1
+            //
+            {
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM,
+                MemorySource::IO,
+                MemorySource::KernalROM, MemorySource::KernalROM
+            },
+
+            //
+            // 111: LORAM=1, HIRAM=1, CHAREN=1
+            //
+            {
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::RAM, MemorySource::RAM,
+                MemorySource::BasicROM, MemorySource::BasicROM,
+                MemorySource::RAM,
+                MemorySource::IO,
+                MemorySource::KernalROM, MemorySource::KernalROM
+            }
     };
 };
