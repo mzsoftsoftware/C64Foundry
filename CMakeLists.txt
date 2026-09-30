@@ -41,6 +41,8 @@ add_library(C64FoundryCore STATIC
     C64/Memory/RAM.h C64/Memory/RAM.cpp
     C64/Memory/ROM.h C64/Memory/ROM.cpp
     C64/Memory/ColorRAM.h C64/Memory/ColorRAM.cpp
+
+    C64/VIC-II/VIC-II.h C64/VIC-II/VIC-II.cpp
 )
 
 target_include_directories(C64FoundryCore
