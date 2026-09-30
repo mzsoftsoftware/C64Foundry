@@ -6,6 +6,7 @@
 #include "Bus/C64Bus.h"
 #include "Memory/C64Memory.h"
 #include "CPU/MOS6510.h"
+#include "VIC-II/VIC-II.h"
 
 
 C64Machine::C64Machine()
@@ -15,12 +16,17 @@ C64Machine::C64Machine()
 
     m_ptrBus->setMemory(m_ptrMemory);
 
+    m_ptrVICII = new VICII();
+    m_ptrVICII->setTiming(m_timing);
+    m_ptrBus->setVICII(m_ptrVICII);
+
     m_ptrCpu = new MOS6510();
     m_ptrCpu->setBus(m_ptrBus);
 }
 C64Machine::~C64Machine()
 {
     delete m_ptrCpu;
+    delete m_ptrVICII;
     delete m_ptrMemory;
     delete m_ptrBus;
 }
@@ -58,5 +64,12 @@ void C64Machine::clock()
     ++m_cycles;
 
     m_ptrBus->clock();
+    m_ptrVICII->clock();
     m_ptrCpu->clock();
+}
+
+void C64Machine::setTiming(const C64::Timing& timing)
+{
+    m_timing = timing;
+    m_ptrVICII->setTiming(timing);
 }

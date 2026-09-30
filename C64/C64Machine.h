@@ -6,6 +6,7 @@ class C64ROMSet;
 class C64Memory;
 class C64Bus;
 class MOS6510;
+class VICII;
 
 #include "C64/C64Timing.h"
 
@@ -26,10 +27,11 @@ public:
     void runCycles(quint64 cycles);
 
     // Setter
-    void setTiming(const C64::Timing& timing)   { m_timing = timing; }
-    const C64::Timing& timing() const           { return m_timing; }
+    void setTiming(const C64::Timing& timing);
 
     // Getter
+    const C64::Timing& timing() const           { return m_timing; }
+
     quint64 cycles() const          { return m_cycles; }
     quint64 cyclesPerFrame() const  { return m_timing.cyclesPerFrame; }
     quint64 cyclesPerLine() const   { return m_timing.cyclesPerLine;  }
@@ -42,7 +44,7 @@ private:
     C64Bus*     m_ptrBus = nullptr;
 
     MOS6510*    m_ptrCpu = nullptr;
-    // VIC-II
+    VICII*      m_ptrVICII = nullptr;
 
     // CIA-I
     // CIA-II
