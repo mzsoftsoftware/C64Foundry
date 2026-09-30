@@ -3,6 +3,15 @@
 #include <QFileInfo>
 
 
+C64ROMSet::C64ROMSet(const QString& basicROMFileName,
+                     const QString& kernalROMFileName,
+                     const QString& characterROMFileName)
+    : basicROMFileName(basicROMFileName)
+    , kernalROMFileName(kernalROMFileName)
+    , characterROMFileName(characterROMFileName)
+{
+}
+
 bool C64ROMSet::isBasicROMValid() const
 {
     const QFileInfo fileInfo(basicROMFileName);

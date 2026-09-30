@@ -14,6 +14,7 @@ EmulatorController::EmulatorController(QObject *parent)
     m_ptrWorker = new EmulatorWorker();
     m_ptrThread = new EmulatorThread(m_ptrWorker, this);
 
+    connect(m_ptrWorker, &EmulatorWorker::romSetLoaded, this, &EmulatorController::romSetLoaded);
     connect(m_ptrWorker, &EmulatorWorker::runningChanged, this, &EmulatorController::runningChanged);
     connect(m_ptrWorker, &EmulatorWorker::statisticsChanged, this, &EmulatorController::statisticsChanged);
 
@@ -28,6 +29,12 @@ EmulatorController::~EmulatorController()
 
     delete m_ptrWorker;
     qDebug() << "EmulatorController: destroyed";
+}
+
+void EmulatorController::loadROMSet(const C64ROMSet& romSet)
+{
+    qDebug() << "EmulatorController: load ROM set";
+    m_ptrWorker->requestROMSet(romSet);
 }
 
 void EmulatorController::start()

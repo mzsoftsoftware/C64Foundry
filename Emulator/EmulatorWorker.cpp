@@ -73,6 +73,15 @@ void EmulatorWorker::run()
     qDebug() << "EmulatorWorker: run() finished";
 }
 
+void EmulatorWorker::requestROMSet(const C64ROMSet& romSet)
+{
+    QMutexLocker locker(&m_mutex);
+    m_romSetRequested = romSet;
+    m_bROMSetRequested = true;
+    qDebug() << "EmulatorWorker: ROM set requested";
+    m_waitCondition.wakeOne();
+}
+
 void EmulatorWorker::requestStart()
 {
     QMutexLocker locker(&m_mutex);
@@ -113,7 +122,8 @@ void EmulatorWorker::requestSpeed(const Emulator::Speed speed)
 bool EmulatorWorker::waitForRequests()
 {
     QMutexLocker locker(&m_mutex);
-    while (!m_bStartRequested && !m_bStopRequested &&
+    while (!m_bROMSetRequested &&
+           !m_bStartRequested && !m_bStopRequested &&
            !m_bResetRequested && !m_bShutdownRequested &&
            !m_bSpeedRequested)
         m_waitCondition.wait(&m_mutex);
@@ -122,6 +132,9 @@ bool EmulatorWorker::waitForRequests()
 
 bool EmulatorWorker::processRequests()
 {
+    bool bROMSetRequested = false;
+    C64ROMSet romSetRequested;
+
     bool bStartRequested = false;
     bool bStopRequested = false;
     bool bResetRequested = false;
@@ -132,11 +145,16 @@ bool EmulatorWorker::processRequests()
     {
         QMutexLocker locker(&m_mutex);
 
+        bROMSetRequested = m_bROMSetRequested;
+        romSetRequested = m_romSetRequested;
+
         bStartRequested = m_bStartRequested;
         bResetRequested = m_bResetRequested;
         bStopRequested = m_bStopRequested;
         bSpeedRequested = m_bSpeedRequested;
         speedRequested = m_speedRequested;
+
+        m_bROMSetRequested = false;
 
         m_bStartRequested = false;
         m_bResetRequested = false;
@@ -145,6 +163,14 @@ bool EmulatorWorker::processRequests()
     }
 
     bool bRequested = false;
+
+    if (bROMSetRequested)
+    {
+        bool bLoaded = false;
+        if (!m_bRunning)
+            bLoaded = m_ptrMachine->loadROMSet(romSetRequested);
+        emit romSetLoaded(bLoaded);
+    }
 
     if(bStartRequested)
     {

@@ -8,6 +8,7 @@
 #include "Emulator/EmulatorSpeed.h"
 
 class C64Machine;
+#include "C64/C64ROMSet.h"
 
 
 class EmulatorWorker : public QObject
@@ -19,6 +20,8 @@ public:
 
     void run();
 
+    void requestROMSet(const C64ROMSet& romSet);
+
     void requestStart();
     void requestStop();
     void requestReset();
@@ -26,6 +29,7 @@ public:
     void requestShutdown();
 
 signals:
+    void romSetLoaded(bool bLoaded);
     void runningChanged(bool bRunning);
     void speedChanged(Emulator::Speed spped);
     void statisticsChanged(quint64 cycles, quint64 cyclesPerSecond);
@@ -49,6 +53,9 @@ private:
     quint64 m_speedStartCycles = 0;
 
     // Request
+    bool m_bROMSetRequested = false;
+    C64ROMSet m_romSetRequested;
+
     bool m_bStartRequested = false;
     bool m_bResetRequested = false;
     bool m_bStopRequested = false;
