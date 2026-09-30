@@ -2,6 +2,7 @@
 
 #include <QDebug>
 
+#include "C64ROMSet.h"
 #include "Bus/C64Bus.h"
 #include "Memory/C64Memory.h"
 #include "CPU/MOS6510.h"
@@ -22,6 +23,26 @@ C64Machine::~C64Machine()
     delete m_ptrCpu;
     delete m_ptrMemory;
     delete m_ptrBus;
+}
+
+bool C64Machine::loadROMSet(const C64ROMSet& romSet)
+{
+    //
+    // Validate the complete ROM set before changing the machine state.
+    //
+    if (!romSet.isValid())
+        return false;
+
+    if (!m_ptrMemory->loadBasicROM(romSet.basicROMFileName))
+        return false;
+
+    if (!m_ptrMemory->loadKernalROM(romSet.kernalROMFileName))
+        return false;
+
+    if (!m_ptrMemory->loadCharacterROM(romSet.characterROMFileName))
+        return false;
+
+    return true;
 }
 
 void C64Machine::powerOn()

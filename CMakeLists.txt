@@ -20,6 +20,7 @@ qt_standard_project_setup()
 add_library(C64FoundryCore STATIC
     C64/C64Machine.h C64/C64Machine.cpp
     C64/C64Timing.h
+    C64/C64ROMSet.h C64/C64ROMSet.cpp
 
     C64/CPU/MOS6510.h C64/CPU/MOS6510.cpp
     C64/CPU/MOS6510Instruction.h
@@ -66,7 +67,7 @@ qt_add_executable(C64Foundry
     Emulator/EmulatorSpeed.h
     Emulator/EmulatorController.h Emulator/EmulatorController.cpp
     Emulator/EmulatorWorker.h Emulator/EmulatorWorker.cpp
-    Emulator/EmulatorThread.h Emulator/EmulatorThread.cpp
+    Emulator/EmulatorThread.h Emulator/EmulatorThread.cpp    
 )
 
 target_include_directories(C64Foundry

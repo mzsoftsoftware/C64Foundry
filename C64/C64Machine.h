@@ -2,6 +2,7 @@
 
 #include <QtGlobal>
 
+class C64ROMSet;
 class C64Memory;
 class C64Bus;
 class MOS6510;
@@ -16,6 +17,8 @@ public:
     virtual ~C64Machine();
 
     // Operations
+    bool loadROMSet(const C64ROMSet& romSet);
+
     void powerOn();
     void reset();
 
