@@ -24,4 +24,6 @@ private slots:
 
     void testColorRAMMapping();
 
+    void testVICIIRegisterMapping();
+
 };

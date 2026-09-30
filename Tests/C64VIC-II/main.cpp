@@ -1,14 +1,14 @@
 #include <QTest>
 
-#include "C64BusTest.h"
+#include "VICIITest.h"
 
 
 int main(int argc, char* argv[])
 {
-    C64BusTest c64Bustest;
+    VICIITest viciitest;
 
     int result = 0;
-    result = QTest::qExec(&c64Bustest, argc, argv);
+    result = QTest::qExec(&viciitest, argc, argv);
     if(result != 0) return result;
 
     return result;

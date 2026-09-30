@@ -2,6 +2,7 @@
 
 add_executable(C64VICIITest
     main.cpp
+    VICIITest.h VICIITest.cpp
 )
 
 set_target_properties(C64BusTest PROPERTIES

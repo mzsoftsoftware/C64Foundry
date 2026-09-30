@@ -4,6 +4,7 @@
 
 #include "C64/Bus/C64Bus.h"
 #include "C64/Memory/C64Memory.h"
+#include "C64/VIC-II/VIC-II.h"
 
 
 C64BusTest::C64BusTest()
@@ -269,4 +270,51 @@ void C64BusTest::testColorRAMMapping()
     bus.write(0xD900, 0xA7);
 
     QCOMPARE(bus.read(0xD900), quint8(0x07));
+}
+
+void C64BusTest::testVICIIRegisterMapping()
+{
+    C64Memory memory;
+    VICII vicII;
+    C64Bus bus;
+
+    bus.setMemory(&memory);
+    bus.setVICII(&vicII);
+
+    //
+    // I/O visible.
+    //
+    bus.setCpuPortLines(0x07);
+
+    //
+    // $D020 maps to VIC-II register $20.
+    //
+    bus.write(0xD020, 0x05);
+    QCOMPARE(bus.read(0xD020), quint8(0xF5));
+
+    //
+    // VIC-II registers are mirrored every $40 bytes
+    // throughout $D000-$D3FF.
+    //
+    QCOMPARE(bus.read(0xD060), quint8(0xF5));
+    QCOMPARE(bus.read(0xD0A0), quint8(0xF5));
+    QCOMPARE(bus.read(0xD3E0), quint8(0xF5));
+
+    //
+    // Writing through a mirror must access the same register.
+    //
+    bus.write(0xD060, 0x0A);
+    QCOMPARE(bus.read(0xD020), quint8(0xFA));
+
+    //
+    // Character ROM visible instead of I/O.
+    //
+    bus.setCpuPortLines(0x03);
+    bus.write(0xD020, 0x07);
+
+    //
+    // Writes below Character ROM go to RAM and must not reach the VIC-II.
+    //
+    bus.setCpuPortLines(0x07);
+    QCOMPARE(bus.read(0xD020), quint8(0xFA));
 }

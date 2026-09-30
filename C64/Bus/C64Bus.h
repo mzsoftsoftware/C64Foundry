@@ -3,6 +3,7 @@
 #include <QtGlobal>
 
 class C64Memory;
+class VICII;
 
 class C64Bus
 {
@@ -41,7 +42,7 @@ public:
     void setCpuPortLines(const quint8 lines);
 
     void setMemory(C64Memory* ptrMemory);
-    //void setVICII(VICII* ptrVicII);
+    void setVICII(VICII* ptrVicII);
     //void setSID(SID* ptrSid);
     //void setCIA1(CIA* ptrCia1);
     //void setCIA2(CIA* ptrCia2);
@@ -58,6 +59,7 @@ public:
 
 private:
     C64Memory* m_ptrMemory = nullptr;
+    VICII* m_ptrVICII = nullptr;
 
     bool m_cpuDrivesDataBus = false;
     quint8 m_dataBusValue = 0x00;

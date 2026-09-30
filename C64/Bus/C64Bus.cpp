@@ -1,6 +1,7 @@
 #include "C64Bus.h"
 
 #include "C64/Memory/C64Memory.h"
+#include "C64/VIC-II/VIC-II.h"
 
 
 C64Bus::C64Bus()
@@ -25,6 +26,10 @@ void C64Bus::setCpuPortLines(const quint8 lines)
 void C64Bus::setMemory(C64Memory* ptrMemory)
 {
     m_ptrMemory = ptrMemory;
+}
+void C64Bus::setVICII(VICII* ptrVicII)
+{
+    m_ptrVICII = ptrVicII;
 }
 
 void C64Bus::clock()
@@ -75,6 +80,7 @@ quint8 C64Bus::read(const quint16 address)
                 //
                 // VIC-II: $D000-$D3FF
                 //
+                value = m_ptrVICII->readRegister(address & 0x003F);
                 break;
 
             case 0x0400:
@@ -170,6 +176,7 @@ void C64Bus::write(const quint16 address, const quint8 value)
         //
         // VIC-II: $D000-$D3FF
         //
+        m_ptrVICII->writeRegister(address & 0x003F, value);
         break;
 
     case 0x0400:
