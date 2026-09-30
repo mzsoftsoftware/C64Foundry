@@ -2,8 +2,7 @@
 
 #include "RAM.h"
 #include "ROM.h"
-
-//#include "ColorRAM.h"
+#include "ColorRAM.h"
 
 
 C64Memory::C64Memory()
@@ -14,7 +13,7 @@ C64Memory::C64Memory()
     m_ptrKernalROM = new ROM(8192);
     m_ptrCharROM = new ROM(4096);
 
-    //m_ptrColorRAM = new ColorRAM();
+    m_ptrColorRAM = new ColorRAM();
 }
 C64Memory::~C64Memory()
 {
@@ -24,7 +23,7 @@ C64Memory::~C64Memory()
     delete m_ptrKernalROM;
     delete m_ptrCharROM;
 
-    //delete m_ptrColorRAM;
+    delete m_ptrColorRAM;
 }
 
 quint8 C64Memory::readRAM(const quint16 address) const
@@ -74,3 +73,11 @@ quint8 C64Memory::readCharacterROM(const quint16 address) const
     return m_ptrCharROM->read(address);
 }
 
+quint8 C64Memory::readColorRAM(const quint16 address) const
+{
+    return m_ptrColorRAM->read(address);
+}
+void C64Memory::writeColorRAM(const quint16 address, const quint8 value)
+{
+    m_ptrColorRAM->write(address, value);
+}

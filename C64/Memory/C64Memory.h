@@ -4,7 +4,7 @@
 
 class RAM;
 class ROM;
-
+class ColorRAM;
 
 class C64Memory
 {
@@ -39,5 +39,5 @@ private:
     ROM*        m_ptrKernalROM = nullptr;
     ROM*        m_ptrCharROM = nullptr;
 
-    //ColorRAM*   m_ptrColorRAM = nullptr;
+    ColorRAM*   m_ptrColorRAM = nullptr;
 };

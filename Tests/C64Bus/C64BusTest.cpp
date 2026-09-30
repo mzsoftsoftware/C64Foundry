@@ -237,3 +237,31 @@ void C64BusTest::testWriteRAMBelowROM()
     bus.write(0xD000, 0x33);
     QCOMPARE(memory.readRAM(0xD000), static_cast<quint8>(0x33));
 }
+
+void C64BusTest::testColorRAMMapping()
+{
+    C64Memory memory;
+    C64Bus bus;
+
+    bus.setMemory(&memory);
+
+    //
+    // I/O visible.
+    //
+    bus.setCpuPortLines(0x07);
+
+    bus.write(0xD800, 0x05);
+    bus.write(0xD923, 0x0A);
+    bus.write(0xDBFF, 0x0F);
+
+    QCOMPARE(bus.read(0xD800), quint8(0x05));
+    QCOMPARE(bus.read(0xD923), quint8(0x0A));
+    QCOMPARE(bus.read(0xDBFF), quint8(0x0F));
+
+    //
+    // Only the lower four bits are stored.
+    //
+    bus.write(0xD900, 0xA7);
+
+    QCOMPARE(bus.read(0xD900), quint8(0x07));
+}

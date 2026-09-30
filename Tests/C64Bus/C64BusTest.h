@@ -21,4 +21,7 @@ private slots:
 
     void testReadMemoryMapping();
     void testWriteRAMBelowROM();
+
+    void testColorRAMMapping();
+
 };

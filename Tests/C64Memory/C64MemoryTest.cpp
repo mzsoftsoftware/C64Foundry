@@ -77,3 +77,23 @@ void C64MemoryTest::testLoadBasicROMFile()
     QCOMPARE(memory.readBasicROM(0x1234), quint8(0x34));
     QCOMPARE(memory.readBasicROM(0x1FFF), quint8(0x56));
 }
+
+void C64MemoryTest::testColorRAM()
+{
+    C64Memory memory;
+
+    memory.writeColorRAM(0x0000, 0x05);
+    memory.writeColorRAM(0x0123, 0x0A);
+    memory.writeColorRAM(0x03FF, 0x0F);
+
+    QCOMPARE(memory.readColorRAM(0x0000), quint8(0x05));
+    QCOMPARE(memory.readColorRAM(0x0123), quint8(0x0A));
+    QCOMPARE(memory.readColorRAM(0x03FF), quint8(0x0F));
+
+    //
+    // Color RAM stores only the lower four bits.
+    //
+    memory.writeColorRAM(0x0100, 0xA7);
+
+    QCOMPARE(memory.readColorRAM(0x0100), quint8(0x07));
+}

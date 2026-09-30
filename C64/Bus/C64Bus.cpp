@@ -65,9 +65,8 @@ quint8 C64Bus::read(const quint16 address)
         value = m_ptrMemory->readCharacterROM(address - 0xD000);
         break;
     case MemorySource::IO:
-        //
-        // I/O mapping will be implemented next.
-        //
+        if (address >= 0xD800 && address <= 0xDBFF)
+            value = m_ptrMemory->readColorRAM(address - 0xD800);
         break;
     }
 
@@ -91,6 +90,14 @@ void C64Bus::write(const quint16 address, const quint8 value)
 
     m_dataBusValue = value;
     m_cpuDrivesDataBus = true;
+
+    if (memorySource(address) == MemorySource::IO)
+    {
+        if (address >= 0xD800 && address <= 0xDBFF)
+            m_ptrMemory->writeColorRAM(address - 0xD800, value);
+
+        return;
+    }
 
     m_ptrMemory->writeRAM(address, value);
 }

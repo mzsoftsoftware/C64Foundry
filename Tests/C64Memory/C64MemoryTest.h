@@ -13,4 +13,6 @@ private slots:
     void testLoadCharacterROM();
 
     void testLoadBasicROMFile();
+
+    void testColorRAM();
 };
