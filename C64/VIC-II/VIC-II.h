@@ -25,9 +25,11 @@ public:
 private:
     quint8 m_spritePositionRegisters[0x10] = {};
     quint8 m_spriteXMSB = 0x00;
-
     quint8 m_controlRegister1 = 0x00;
     quint8 m_spriteEnable = 0x00;
+    quint8 m_controlRegister2 = 0xC0;
+    quint8 m_spriteYExpansion = 0x00;
+    quint8 m_memoryPointers = 0x01;
 
     quint8 m_colorRegisters[0x0F] = {
         0xF0, 0xF0, 0xF0, 0xF0,

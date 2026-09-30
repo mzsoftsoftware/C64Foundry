@@ -17,9 +17,10 @@ private slots:
     void testSprite0PositionRegisters();
     void testSpriteXMSBRegister();
     void testSpriteEnableRegister();
-
+    void testSpriteYExpansionRegister();
 
     void testControlRegister1();
+    void testControlRegister2();
     void testRasterCounterRegister();
 
     void testClockWithinRasterLine();
@@ -38,4 +39,5 @@ private slots:
     void testIRQLine();
     void testDisablePendingRasterIRQ();
 
+    void testMemoryPointerRegister();
 };

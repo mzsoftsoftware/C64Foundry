@@ -123,6 +123,19 @@ void VICIITest::testSpriteEnableRegister()
     vicII.writeRegister(0x15, 0x5A);
     QCOMPARE(vicII.readRegister(0x15), quint8(0x5A));
 }
+void VICIITest::testSpriteYExpansionRegister()
+{
+    VICII vicII;
+
+    //
+    // Each bit enables Y expansion for one sprite.
+    //
+    vicII.writeRegister(0x17, 0x81);
+    QCOMPARE(vicII.readRegister(0x17), quint8(0x81));
+
+    vicII.writeRegister(0x17, 0x5A);
+    QCOMPARE(vicII.readRegister(0x17), quint8(0x5A));
+}
 
 void VICIITest::testControlRegister1()
 {
@@ -140,6 +153,23 @@ void VICIITest::testControlRegister1()
     //
     vicII.writeRegister(0x11, 0xD5);
     QCOMPARE(vicII.readRegister(0x11), quint8(0x55));
+}
+void VICIITest::testControlRegister2()
+{
+    VICII vicII;
+
+    //
+    // Bits 0-5 contain the VIC-II control state.
+    // Unused bits 6-7 read back as one.
+    //
+    vicII.writeRegister(0x16, 0x15);
+    QCOMPARE(vicII.readRegister(0x16), quint8(0xD5));
+
+    //
+    // Only bits 0-5 are writable.
+    //
+    vicII.writeRegister(0x16, 0xEA);
+    QCOMPARE(vicII.readRegister(0x16), quint8(0xEA));
 }
 
 void VICIITest::testRasterCounterRegister()
@@ -476,4 +506,22 @@ void VICIITest::testDisablePendingRasterIRQ()
     vicII.writeRegister(0x1A, 0x00);
     QCOMPARE(vicII.irq(), false);
     QCOMPARE(vicII.readRegister(0x19) & 0x01, quint8(0x01));
+}
+
+void VICIITest::testMemoryPointerRegister()
+{
+    VICII vicII;
+
+    //
+    // Bits 1-7 contain the VIC-II memory pointer configuration.
+    // Unused bit 0 reads back as one.
+    //
+    vicII.writeRegister(0x18, 0x14);
+    QCOMPARE(vicII.readRegister(0x18), quint8(0x15));
+
+    //
+    // Bit 0 is not writable and always reads back as one.
+    //
+    vicII.writeRegister(0x18, 0xFE);
+    QCOMPARE(vicII.readRegister(0x18), quint8(0xFF));
 }
