@@ -14,6 +14,4 @@ public:
 private slots:
     void testInitialCpuPortLines();
     void testSetCpuPortLines();
-
-    void testBasicRomVisible();
 };

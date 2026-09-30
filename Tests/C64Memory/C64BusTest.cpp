@@ -31,20 +31,3 @@ void C64BusTest::testSetCpuPortLines()
     bus.setCpuPortLines(0xFF);
     QCOMPARE(bus.cpuPortLines(), quint8(0x07));
 }
-
-void C64BusTest::testBasicRomVisible()
-{
-    C64Memory memory;
-    C64Bus bus;
-
-    bus.setMemory(&memory);
-    bus.setCpuPortLines(0x07);
-
-    //
-    // Put different values into the physical RAM and BASIC ROM
-    // at the same CPU address.
-    //
-    memory.writeRAM(0xA000, 0x12);
-
-    // TODO: We need a way to initialize/write the BASIC ROM for testing.
-}

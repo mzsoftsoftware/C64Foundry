@@ -30,8 +30,8 @@ public:
 
 private:
     RAM*        m_ptrRAM = nullptr;
-    BasicROM*   m_ptrBasicROM = nullptr;
-    KernalROM*  m_ptrKernalROM = nullptr;
-    CharROM*    m_ptrCharROM = nullptr;
-    ColorRAM*   m_ptrColorRAM = nullptr;
+    //BasicROM*   m_ptrBasicROM = nullptr;
+    //KernalROM*  m_ptrKernalROM = nullptr;
+    //CharROM*    m_ptrCharROM = nullptr;
+    //ColorRAM*   m_ptrColorRAM = nullptr;
 };
