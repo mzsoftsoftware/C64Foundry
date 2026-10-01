@@ -51,6 +51,7 @@ public:
     void initialize();
     void reset();
     void clock();
+    void clockReadyLow();
 
 private:
     enum class CpuState

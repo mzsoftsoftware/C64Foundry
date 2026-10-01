@@ -89,12 +89,6 @@ void MOS6510::clock()
     if (m_ptrBus == nullptr)
         return;
 
-    //
-    // RDY low stalls an opcode-fetch read cycle.
-    //
-    if (!m_readyLine && m_state == CpuState::Fetch)
-        return;
-
     ++m_cycles;
 
     switch (m_state)
@@ -175,12 +169,6 @@ void MOS6510::clock()
     {
         if (m_dummyReadPending)
         {
-            //
-            // A pending page-crossing dummy read is a normal CPU
-            // read cycle and is therefore stalled while RDY is low.
-            //
-            if (!m_readyLine)
-                return;
             const quint16 dummyAddress = static_cast<quint16>(m_address - 0x0100);
             read(dummyAddress);
             m_dummyReadPending = false;
@@ -188,13 +176,6 @@ void MOS6510::clock()
         }
 
         const MOS6510MicroOperation microOperation = m_ptrInstruction->microOperations[m_microOperationIndex];
-        //
-        // RDY low stalls CPU read cycles.
-        // Write cycles continue even while RDY is low.
-        //
-        if (!m_readyLine && !mos6510MicroOperationIsWrite(microOperation))
-            return;
-
         const bool nmiPollMicroOperation = m_microOperationCount > 1 && m_microOperationIndex + 2 == m_microOperationCount;
         const bool finalMicroOperation = m_microOperationIndex + 1 >= m_microOperationCount;
         if (finalMicroOperation)
@@ -1864,7 +1845,27 @@ void MOS6510::clock()
         break;
     }
 }
+void MOS6510::clockReadyLow()
+{
+    //
+    // RDY low stalls an opcode-fetch read cycle.
+    //
+    if (m_state == CpuState::Fetch)
+        return;
 
+    //
+    // RDY low stalls read cycles during instruction execution.
+    // Write cycles continue normally.
+    //
+    if (m_state == CpuState::Execute)
+    {
+        const MOS6510MicroOperation microOperation = m_ptrInstruction->microOperations[m_microOperationIndex];
+        if (!mos6510MicroOperationIsWrite(microOperation))
+            return;
+    }
+
+    clock();
+}
 
 quint8 MOS6510::read(const quint16 address)
 {

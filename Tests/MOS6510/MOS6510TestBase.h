@@ -15,6 +15,8 @@ public:
 
 protected:
     void clock();
+    void clockReadyLow();
+
     void verifyRead(quint16 address, quint8 value);
     void verifyWrite(quint16 address, quint8 value);
     void verifyReadCycle(quint16 address);

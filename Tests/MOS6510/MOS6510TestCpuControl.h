@@ -17,6 +17,10 @@ private slots:
     void testCycleCounter();
 
     void testReadyLine();
+    void testReadyLowStopsOpcodeFetch();
+    void testReadyLowStopsInstructionRead();
+    void testReadyLowDoesNotStopWrite();
+
     void testReadyStopsOpcodeFetch();
     void testReadyStopsInstructionRead();
     void testReadyDoesNotStopWrite();

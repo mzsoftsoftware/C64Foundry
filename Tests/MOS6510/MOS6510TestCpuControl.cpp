@@ -39,6 +39,123 @@ void MOS6510TestCpuControl::testReadyLine()
     m_cpu.setReadyLine(true);
     QVERIFY(m_cpu.readyLine());
 }
+void MOS6510TestCpuControl::testReadyLowStopsOpcodeFetch()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+
+    //
+    // LDA #$42
+    //
+    m_memory.writeRAM(0x2000, 0xA9);
+    m_memory.writeRAM(0x2001, 0x42);
+
+    //
+    // RDY low during the opcode-fetch cycle.
+    //
+    clockReadyLow();
+
+    //
+    // An opcode fetch is a read cycle and must therefore
+    // be stalled while RDY is low.
+    //
+    verifyNoAccess();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2000));
+
+    //
+    // The normal clock retries the pending opcode fetch.
+    //
+    clock();
+
+    verifyRead(0x2000, 0xA9);
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2001));
+}
+void MOS6510TestCpuControl::testReadyLowStopsInstructionRead()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+
+    //
+    // LDA #$42
+    //
+    m_memory.writeRAM(0x2000, 0xA9);
+    m_memory.writeRAM(0x2001, 0x42);
+
+    //
+    // C1: Opcode fetch.
+    //
+    clock();
+
+    verifyRead(0x2000, 0xA9);
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2001));
+
+    //
+    // C2: RDY low must stall the immediate operand read.
+    //
+    clockReadyLow();
+
+    verifyNoAccess();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2001));
+    QCOMPARE(m_cpu.accumulator(), quint8(0x00));
+
+    //
+    // The normal clock retries the pending read cycle.
+    //
+    clock();
+
+    verifyRead(0x2001, 0x42);
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2002));
+    QCOMPARE(m_cpu.accumulator(), quint8(0x42));
+}
+void MOS6510TestCpuControl::testReadyLowDoesNotStopWrite()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setAccumulator(0x42);
+
+    //
+    // STA $1234
+    //
+    m_memory.writeRAM(0x2000, 0x8D);
+    m_memory.writeRAM(0x2001, 0x34);
+    m_memory.writeRAM(0x2002, 0x12);
+    m_memory.writeRAM(0x1234, 0x00);
+
+    //
+    // C1: Opcode fetch.
+    //
+    clock();
+    verifyRead(0x2000, 0x8D);
+
+    //
+    // C2: Address low byte.
+    //
+    clock();
+    verifyRead(0x2001, 0x34);
+
+    //
+    // C3: Address high byte.
+    //
+    clock();
+    verifyRead(0x2002, 0x12);
+
+    //
+    // C4: RDY low must not stop a write cycle.
+    //
+    clockReadyLow();
+
+    verifyWrite(0x1234, 0x42);
+    QCOMPARE(m_memory.readRAM(0x1234), quint8(0x42));
+
+    //
+    // STA must have completed despite RDY being low.
+    //
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2003));
+}
+
 void MOS6510TestCpuControl::testReadyStopsOpcodeFetch()
 {
     setupCpu();

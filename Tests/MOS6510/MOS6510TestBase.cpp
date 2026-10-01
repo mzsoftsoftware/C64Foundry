@@ -24,6 +24,12 @@ void MOS6510TestBase::clock()
     m_bus.clock();
     m_cpu.clock();
 }
+void MOS6510TestBase::clockReadyLow()
+{
+    m_bus.clock();
+    m_cpu.clockReadyLow();
+}
+
 void MOS6510TestBase::verifyRead(const quint16 address, const quint8 value)
 {
     QCOMPARE(m_bus.accessCount(), quint8(1));
