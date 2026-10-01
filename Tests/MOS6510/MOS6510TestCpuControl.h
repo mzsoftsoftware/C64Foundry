@@ -20,6 +20,7 @@ private slots:
     void testReadyStopsOpcodeFetch();
     void testReadyStopsInstructionRead();
     void testReadyDoesNotStopWrite();
+    void testReadyStopsMemoryRead();
 
     void testReset();
     void testResetVector();

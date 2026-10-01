@@ -170,6 +170,65 @@ void MOS6510TestCpuControl::testReadyDoesNotStopWrite()
     //
     QCOMPARE(m_cpu.programCounter(), quint16(0x2003));
 }
+void MOS6510TestCpuControl::testReadyStopsMemoryRead()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+
+    //
+    // LDA $1234
+    //
+    m_memory.writeRAM(0x2000, 0xAD);
+    m_memory.writeRAM(0x2001, 0x34);
+    m_memory.writeRAM(0x2002, 0x12);
+    m_memory.writeRAM(0x1234, 0x42);
+
+    //
+    // C1: Opcode fetch.
+    //
+    clock();
+
+    verifyRead(0x2000, 0xAD);
+
+    //
+    // C2: Address low byte.
+    //
+    clock();
+
+    verifyRead(0x2001, 0x34);
+
+    //
+    // C3: Address high byte.
+    //
+    clock();
+
+    verifyRead(0x2002, 0x12);
+
+    //
+    // RDY goes low immediately before the actual memory read.
+    //
+    m_cpu.setReadyLine(false);
+
+    clock();
+
+    //
+    // The memory read must not happen and the accumulator
+    // must remain unchanged.
+    //
+    verifyNoAccess();
+    QCOMPARE(m_cpu.accumulator(), quint8(0x00));
+
+    //
+    // Releasing RDY allows the pending read cycle to execute.
+    //
+    m_cpu.setReadyLine(true);
+
+    clock();
+
+    verifyRead(0x1234, 0x42);
+    QCOMPARE(m_cpu.accumulator(), quint8(0x42));
+}
 
 void MOS6510TestCpuControl::testReset()
 {

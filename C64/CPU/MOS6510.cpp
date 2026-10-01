@@ -190,6 +190,7 @@ void MOS6510::clock()
             switch (microOperation)
             {
             case MOS6510MicroOperation::ReadImmediateToAccumulator:
+            case MOS6510MicroOperation::ReadAbsoluteToAccumulator:
                 return;
             default:
                 break;
