@@ -1,9 +1,18 @@
 #pragma once
 
-enum class MOS6510MicroOperation
-{
-    NoOperation,
+#include <QtGlobal>
 
+
+enum class MOS6510MicroOperation : quint16
+{
+    //
+    // Read cycles.
+    //
+
+    // Generic.
+    NoOperation = 0x0000,
+
+    // Immediate.
     ReadImmediate,
     ReadImmediateANC,
     ReadImmediateARR,
@@ -23,6 +32,7 @@ enum class MOS6510MicroOperation
     ReadImmediateCompareXRegister,
     ReadImmediateCompareYRegister,
 
+    // Zero page.
     ReadZeroPage,
     ReadZeroPageAddress,
     ReadZeroPageToAccumulator,
@@ -38,6 +48,7 @@ enum class MOS6510MicroOperation
     ReadZeroPageCompareYRegister,
     ReadZeroPageBitTest,
 
+    // Zero page indexed.
     ReadZeroPageIndexed,
     ReadZeroPageIndexedAddress,
     ReadZeroPageIndexedToAccumulator,
@@ -50,11 +61,15 @@ enum class MOS6510MicroOperation
     ReadZeroPageIndexedSubtractFromAccumulator,
     ReadZeroPageIndexedCompareAccumulator,
 
+    // Absolute.
     ReadAbsolute,
     ReadAbsoluteAddressLow,
     ReadAbsoluteAddressHigh,
     ReadAbsoluteXAddress,
     ReadAbsoluteYAddress,
+    ReadAbsoluteBitTest,
+
+    // Absolute indexed.
     ReadAbsoluteIndexedDummy,
     ReadAbsoluteToAccumulator,
     ReadAbsoluteToXRegister,
@@ -67,8 +82,6 @@ enum class MOS6510MicroOperation
     ReadAbsoluteCompareAccumulator,
     ReadAbsoluteCompareXRegister,
     ReadAbsoluteCompareYRegister,
-    ReadAbsoluteBitTest,
-
     ReadAbsoluteIndexed,
     ReadAbsoluteIndexedToAccumulator,
     ReadAbsoluteIndexedToXRegister,
@@ -80,6 +93,7 @@ enum class MOS6510MicroOperation
     ReadAbsoluteIndexedSubtractFromAccumulator,
     ReadAbsoluteIndexedCompareAccumulator,
 
+    // Indirect.
     ReadIndirectAddressLow,
     ReadIndirectAddressHigh,
     ReadIndirectAddressHighIndexed,
@@ -90,7 +104,6 @@ enum class MOS6510MicroOperation
     ReadIndirectAndAccumulator,
     ReadIndirectOrAccumulator,
     ReadIndirectExclusiveOrAccumulator,
-
     ReadIndirectIndexedToAccumulator,
     ReadIndirectIndexedAddToAccumulator,
     ReadIndirectIndexedSubtractFromAccumulator,
@@ -99,43 +112,24 @@ enum class MOS6510MicroOperation
     ReadIndirectIndexedOrAccumulator,
     ReadIndirectIndexedExclusiveOrAccumulator,
 
-    WriteAccumulator,
-    WriteXRegister,
-    WriteYRegister,
-    WriteSHYAbsoluteX,
-    WriteSHXAbsoluteY,
-    WriteAHX,
-    WriteTASAbsoluteY,
+    // Memory.
+    ReadMemoryToData,
+    ReadMemoryToAccumulatorAndXRegister,
+    ReadMemoryToAccumulatorXRegisterAndStackPointer,
 
+    // Register operations.
     IncrementXRegister,
     IncrementYRegister,
     DecrementXRegister,
     DecrementYRegister,
 
-    ReadMemoryToData,
-    ReadMemoryToAccumulatorAndXRegister,
-    ReadMemoryToAccumulatorXRegisterAndStackPointer,
-    WriteDataToMemory,
-    WriteAccumulatorAndXRegisterToMemory,
-    IncrementDataAndWriteToMemory,
-    DecrementDataAndWriteToMemory,
-    DecrementDataCompareAccumulatorAndWriteToMemory,
-    IncrementDataSubtractFromAccumulatorAndWriteToMemory,
-
+    // Accumulator operations.
     ShiftLeftAccumulator,
     ShiftRightAccumulator,
     RotateLeftAccumulator,
     RotateRightAccumulator,
 
-    ShiftLeftDataAndWriteToMemory,
-    ShiftRightDataAndWriteToMemory,
-    RotateLeftDataAndWriteToMemory,
-    RotateRightDataAndWriteToMemory,
-    RotateDataLeftAndAccumulatorAndWriteToMemory,
-    RotateDataRightAndAddToAccumulatorAndWriteToMemory,
-    ShiftDataLeftAndOrAccumulatorAndWriteToMemory,
-    ShiftDataRightAndExclusiveOrAccumulatorAndWriteToMemory,
-
+    // Transfers.
     TransferAccumulatorToXRegister,
     TransferAccumulatorToYRegister,
     TransferXRegisterToAccumulator,
@@ -143,12 +137,12 @@ enum class MOS6510MicroOperation
     TransferStackPointerToXRegister,
     TransferXRegisterToStackPointer,
 
-    WriteAccumulatorToStack,
+    // Stack.
     ReadStackToAccumulator,
-    WriteStatusToStack,
     ReadStackToStatus,
     ReadStackDummy,
 
+    // Flags.
     SetDecimalFlag,
     ClearDecimalFlag,
     SetCarryFlag,
@@ -157,6 +151,7 @@ enum class MOS6510MicroOperation
     ClearInterruptDisableFlag,
     ClearOverflowFlag,
 
+    // Branches.
     ReadRelativeBranchCarryClear,
     ReadRelativeBranchCarrySet,
     ReadRelativeBranchEqual,
@@ -168,32 +163,83 @@ enum class MOS6510MicroOperation
     Branch,
     BranchPageCrossing,
 
+    // JMP.
     ReadAbsoluteAddressHighAndJump,
     ReadIndirectJumpAddressLow,
     ReadIndirectJumpAddressHigh,
 
+    // JSR.
     ReadJsrAddressLow,
     ReadJsrStackDummy,
-    WriteJsrReturnAddressHigh,
-    WriteJsrReturnAddressLow,
     ReadJsrAddressHighAndJump,
 
+    // RTS.
     ReadRtsProgramCounterDummy,
     ReadRtsStackDummy,
     ReadRtsReturnAddressLow,
     ReadRtsReturnAddressHigh,
     RtsIncrementProgramCounter,
 
+    // RTI.
     ReadRtiProgramCounterDummy,
     ReadRtiStackDummy,
     ReadRtiStatus,
     ReadRtiProgramCounterLow,
     ReadRtiProgramCounterHigh,
 
+    // BRK.
     ReadBrkPadding,
+    ReadBrkVectorLow,
+    ReadBrkVectorHigh,
+
+    //
+    // Write cycles.
+    //
+
+    // Stores.
+    WriteAccumulator = 0x0100,
+    WriteXRegister,
+    WriteYRegister,
+    WriteSHYAbsoluteX,
+    WriteSHXAbsoluteY,
+    WriteAHX,
+    WriteTASAbsoluteY,
+
+    // Memory / read-modify-write.
+    WriteDataToMemory,
+    WriteAccumulatorAndXRegisterToMemory,
+    IncrementDataAndWriteToMemory,
+    DecrementDataAndWriteToMemory,
+    DecrementDataCompareAccumulatorAndWriteToMemory,
+    IncrementDataSubtractFromAccumulatorAndWriteToMemory,
+    ShiftLeftDataAndWriteToMemory,
+    ShiftRightDataAndWriteToMemory,
+    RotateLeftDataAndWriteToMemory,
+    RotateRightDataAndWriteToMemory,
+    RotateDataLeftAndAccumulatorAndWriteToMemory,
+    RotateDataRightAndAddToAccumulatorAndWriteToMemory,
+    ShiftDataLeftAndOrAccumulatorAndWriteToMemory,
+    ShiftDataRightAndExclusiveOrAccumulatorAndWriteToMemory,
+
+    // Stack.
+    WriteAccumulatorToStack,
+    WriteStatusToStack,
+
+    // JSR.
+    WriteJsrReturnAddressHigh,
+    WriteJsrReturnAddressLow,
+
+    // BRK.
     WriteBrkProgramCounterHigh,
     WriteBrkProgramCounterLow,
-    WriteBrkStatus,
-    ReadBrkVectorLow,
-    ReadBrkVectorHigh
+    WriteBrkStatus
 };
+
+
+//
+// Returns true if the micro-operation performs a CPU write cycle.
+//
+constexpr bool mos6510MicroOperationIsWrite(const MOS6510MicroOperation operation)
+{
+    return operation >= MOS6510MicroOperation::WriteAccumulator;
+}

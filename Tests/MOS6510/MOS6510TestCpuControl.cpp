@@ -287,6 +287,76 @@ void MOS6510TestCpuControl::testReadyStopsAddressRead()
     verifyRead(0x1234, 0x42);
     QCOMPARE(m_cpu.accumulator(), quint8(0x42));
 }
+void MOS6510TestCpuControl::testReadyStopsPageCrossingDummyRead()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setXRegister(0x01);
+
+    //
+    // LDA $12FF,X
+    //
+    // Effective address: $1300
+    // Dummy read:        $1200
+    //
+    m_memory.writeRAM(0x2000, 0xBD);
+    m_memory.writeRAM(0x2001, 0xFF);
+    m_memory.writeRAM(0x2002, 0x12);
+    m_memory.writeRAM(0x1200, 0x11);
+    m_memory.writeRAM(0x1300, 0x42);
+
+    //
+    // C1: Opcode fetch.
+    //
+    clock();
+    verifyRead(0x2000, 0xBD);
+
+    //
+    // C2: Address low byte.
+    //
+    clock();
+    verifyRead(0x2001, 0xFF);
+
+    //
+    // C3: Address high byte.
+    // The page crossing schedules the additional dummy read.
+    //
+    clock();
+    verifyRead(0x2002, 0x12);
+
+    //
+    // RDY goes low immediately before the page-crossing
+    // dummy read.
+    //
+    m_cpu.setReadyLine(false);
+
+    clock();
+
+    //
+    // The pending dummy read must be stalled.
+    //
+    verifyNoAccess();
+    QCOMPARE(m_cpu.accumulator(), quint8(0x00));
+
+    //
+    // Releasing RDY allows the pending dummy read.
+    //
+    m_cpu.setReadyLine(true);
+
+    clock();
+
+    verifyRead(0x1200, 0x11);
+    QCOMPARE(m_cpu.accumulator(), quint8(0x00));
+
+    //
+    // The actual operand read follows normally.
+    //
+    clock();
+
+    verifyRead(0x1300, 0x42);
+    QCOMPARE(m_cpu.accumulator(), quint8(0x42));
+}
 
 void MOS6510TestCpuControl::testReset()
 {

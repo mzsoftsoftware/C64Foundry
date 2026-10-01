@@ -175,6 +175,12 @@ void MOS6510::clock()
     {
         if (m_dummyReadPending)
         {
+            //
+            // A pending page-crossing dummy read is a normal CPU
+            // read cycle and is therefore stalled while RDY is low.
+            //
+            if (!m_readyLine)
+                return;
             const quint16 dummyAddress = static_cast<quint16>(m_address - 0x0100);
             read(dummyAddress);
             m_dummyReadPending = false;
@@ -184,18 +190,10 @@ void MOS6510::clock()
         const MOS6510MicroOperation microOperation = m_ptrInstruction->microOperations[m_microOperationIndex];
         //
         // RDY low stalls CPU read cycles.
+        // Write cycles continue even while RDY is low.
         //
-        if (!m_readyLine)
-        {
-            switch (microOperation)
-            {
-            case MOS6510MicroOperation::ReadImmediateToAccumulator:
-            case MOS6510MicroOperation::ReadAbsoluteToAccumulator:
-                return;
-            default:
-                break;
-            }
-        }
+        if (!m_readyLine && !mos6510MicroOperationIsWrite(microOperation))
+            return;
 
         const bool nmiPollMicroOperation = m_microOperationCount > 1 && m_microOperationIndex + 2 == m_microOperationCount;
         const bool finalMicroOperation = m_microOperationIndex + 1 >= m_microOperationCount;
