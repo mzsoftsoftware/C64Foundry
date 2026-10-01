@@ -19,6 +19,7 @@ private slots:
     void testReadyLine();
     void testReadyStopsOpcodeFetch();
     void testReadyStopsInstructionRead();
+    void testReadyDoesNotStopWrite();
 
     void testReset();
     void testResetVector();
