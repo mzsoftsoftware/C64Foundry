@@ -229,6 +229,64 @@ void MOS6510TestCpuControl::testReadyStopsMemoryRead()
     verifyRead(0x1234, 0x42);
     QCOMPARE(m_cpu.accumulator(), quint8(0x42));
 }
+void MOS6510TestCpuControl::testReadyStopsAddressRead()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+
+    //
+    // LDA $1234
+    //
+    m_memory.writeRAM(0x2000, 0xAD);
+    m_memory.writeRAM(0x2001, 0x34);
+    m_memory.writeRAM(0x2002, 0x12);
+    m_memory.writeRAM(0x1234, 0x42);
+
+    //
+    // C1: Opcode fetch.
+    //
+    clock();
+
+    verifyRead(0x2000, 0xAD);
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2001));
+
+    //
+    // RDY goes low immediately before the address-low read.
+    //
+    m_cpu.setReadyLine(false);
+
+    //
+    // C2: Address low byte must not be read.
+    //
+    clock();
+
+    verifyNoAccess();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2001));
+    QCOMPARE(m_cpu.accumulator(), quint8(0x00));
+
+    //
+    // Releasing RDY allows the pending address read.
+    //
+    m_cpu.setReadyLine(true);
+
+    clock();
+
+    verifyRead(0x2001, 0x34);
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2002));
+
+    //
+    // The remaining instruction cycles execute normally.
+    //
+    clock();
+
+    verifyRead(0x2002, 0x12);
+
+    clock();
+
+    verifyRead(0x1234, 0x42);
+    QCOMPARE(m_cpu.accumulator(), quint8(0x42));
+}
 
 void MOS6510TestCpuControl::testReset()
 {

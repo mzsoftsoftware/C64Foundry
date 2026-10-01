@@ -21,6 +21,7 @@ private slots:
     void testReadyStopsInstructionRead();
     void testReadyDoesNotStopWrite();
     void testReadyStopsMemoryRead();
+    void testReadyStopsAddressRead();
 
     void testReset();
     void testResetVector();
