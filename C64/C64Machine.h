@@ -37,6 +37,11 @@ public:
     bool viciiBA() const;
     bool viciiAEC() const;
     bool busAEC() const;
+    quint8 busAccessCount() const;
+    bool busLastAccessWasRead() const;
+    bool busLastAccessWasWrite() const;
+    quint16 busLastAccessAddress() const;
+    quint8 busLastAccessValue() const;
 
     quint64 cycles() const          { return m_cycles; }
     quint64 cyclesPerFrame() const  { return m_timing.cyclesPerFrame; }

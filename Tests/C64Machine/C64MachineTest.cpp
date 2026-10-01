@@ -286,6 +286,63 @@ void C64MachineTest::testVICIIAEC()
     QVERIFY(machine.viciiAEC());
     QVERIFY(machine.busAEC());
 }
+void C64MachineTest::testVICIIBAWrite()
+{
+    C64Machine machine;
+
+    //
+    // Enable display and select YSCROLL 0.
+    // Raster line $30 is therefore a badline.
+    //
+    machine.writeVICIIRegister(0x11, 0x10);
+
+    //
+    // Execute a simple program while the VIC-II advances
+    // towards the first badline.
+    //
+    QByteArray program;
+
+    program.append(char(0xEA));     // NOP
+
+    program.append(char(0xA9));     // LDA #$42
+    program.append(char(0x42));
+
+    program.append(char(0x85));     // STA $02
+    program.append(char(0x02));
+
+    program.append(char(0x4C));     // JMP $0803
+    program.append(char(0x03));
+    program.append(char(0x08));
+
+    QVERIFY(machine.loadProgram(0x0800, program));
+
+    machine.powerOn();
+
+    //
+    // Advance to raster line $30, cycle 11.
+    //
+    machine.runCycles(
+        0x30 * C64::PALTiming.cyclesPerLine + 11);
+
+    QVERIFY(machine.viciiBA());
+    QVERIFY(machine.viciiAEC());
+
+    //
+    // At cycle 12, BA goes low while AEC remains high.
+    // The CPU is performing a write cycle, which must
+    // therefore still reach the system bus.
+    //
+    machine.clock();
+
+    QVERIFY(!machine.viciiBA());
+    QVERIFY(machine.viciiAEC());
+
+    QCOMPARE(machine.busAccessCount(), quint8(1));
+    QVERIFY(machine.busLastAccessWasWrite());
+    QCOMPARE(machine.busLastAccessAddress(), quint16(0x01EA));
+    QCOMPARE(machine.busLastAccessValue(), quint8(0x34));
+    QCOMPARE(machine.readRAM(0x01EA), quint8(0x34));
+}
 
 
 void C64MachineTest::testPerformance()

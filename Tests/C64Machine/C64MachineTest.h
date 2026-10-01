@@ -18,6 +18,7 @@ private slots:
 
     void testVICIIRasterIRQ();
     void testVICIIAEC();
+    void testVICIIBAWrite();
 
     void testPerformance();
 

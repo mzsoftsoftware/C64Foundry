@@ -133,3 +133,23 @@ bool C64Machine::busAEC() const
 {
     return m_ptrBus->aec();
 }
+quint8 C64Machine::busAccessCount() const
+{
+    return m_ptrBus->accessCount();
+}
+bool C64Machine::busLastAccessWasRead() const
+{
+    return m_ptrBus->lastAccessType() == C64Bus::AccessType::Read;
+}
+bool C64Machine::busLastAccessWasWrite() const
+{
+    return m_ptrBus->lastAccessType() == C64Bus::AccessType::Write;
+}
+quint16 C64Machine::busLastAccessAddress() const
+{
+    return m_ptrBus->lastAccessAddress();
+}
+quint8 C64Machine::busLastAccessValue() const
+{
+    return m_ptrBus->lastAccessValue();
+}
