@@ -51,5 +51,13 @@ private slots:
     void testCharacterMemoryRead();
     void testVideoMatrixMemoryRead();
 
+    void testBadLineRasterAndYScroll();
+    void testBadLineRasterRange();
+    void testBadLineEnable();
+    void testBadLineEnableWithDEN();
 
+    void testBadLineBA();
+    void testNonBadLineBA();
+    void testBadLineAEC();
+    void testNonBadLineAEC();
 };

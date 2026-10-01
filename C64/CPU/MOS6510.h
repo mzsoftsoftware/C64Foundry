@@ -32,6 +32,7 @@ public:
     bool error() const                                  { return m_state == CpuState::Error; }
     quint64 cycles() const                              { return m_cycles; }
     quint8 portPins() const;
+    bool readyLine() const                              { return m_readyLine; }
 
     // Setter
     void setBus(C64Bus* ptrBus);
@@ -44,6 +45,7 @@ public:
     void setStatusFlag(MOS6510StatusFlag flag, bool value);
     void setIrqLine(bool active)                        { m_irqLine = active; }
     void setNmiLine(bool active);
+    void setReadyLine(bool active)                      { m_readyLine = active; }
 
     // Operations
     void initialize();
@@ -103,6 +105,8 @@ private:
     bool m_nmiVectorFetch = false;
     bool m_nmiHijack = false;
     quint8 m_nmiCycle = 0;
+
+    bool m_readyLine = true;
 
     quint8  m_accumulator = 0;
     quint8  m_x = 0;

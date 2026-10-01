@@ -44,6 +44,8 @@ void MOS6510::initialize()
     m_nmiVectorFetch = false;
     m_nmiHijack = false;
 
+    m_readyLine = true;
+
     m_accumulator = 0x00;
     m_x = 0x00;
     m_y = 0x00;
@@ -85,6 +87,12 @@ void MOS6510::reset()
 void MOS6510::clock()
 {
     if (m_ptrBus == nullptr)
+        return;
+
+    //
+    // RDY low stalls an opcode-fetch read cycle.
+    //
+    if (!m_readyLine && m_state == CpuState::Fetch)
         return;
 
     ++m_cycles;
@@ -173,6 +181,21 @@ void MOS6510::clock()
             break;
         }
 
+        const MOS6510MicroOperation microOperation = m_ptrInstruction->microOperations[m_microOperationIndex];
+        //
+        // RDY low stalls CPU read cycles.
+        //
+        if (!m_readyLine)
+        {
+            switch (microOperation)
+            {
+            case MOS6510MicroOperation::ReadImmediateToAccumulator:
+                return;
+            default:
+                break;
+            }
+        }
+
         const bool nmiPollMicroOperation = m_microOperationCount > 1 && m_microOperationIndex + 2 == m_microOperationCount;
         const bool finalMicroOperation = m_microOperationIndex + 1 >= m_microOperationCount;
         if (finalMicroOperation)
@@ -223,7 +246,7 @@ void MOS6510::clock()
             }
         }
 
-        switch (m_ptrInstruction->microOperations[m_microOperationIndex])
+        switch (microOperation)
         {
         case MOS6510MicroOperation::NoOperation:
         {

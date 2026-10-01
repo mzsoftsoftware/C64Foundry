@@ -683,3 +683,331 @@ void VICIITest::testVideoMatrixMemoryRead()
 
     QCOMPARE(vicII.readVideoMatrixMemory(37), quint8(0x42));
 }
+
+void VICIITest::testBadLineRasterAndYScroll()
+{
+    VICII vicII;
+
+    //
+    // Enable the display and select YSCROLL = 0.
+    //
+    vicII.writeRegister(0x11, 0x10);
+
+    //
+    // Advance to raster line $30.
+    //
+    for (quint32 cycle = 0;
+         cycle < (0x30 * C64::PALTiming.cyclesPerLine);
+         ++cycle)
+    {
+        vicII.clock();
+    }
+
+    //
+    // Raster line $30 is inside the badline range and its
+    // lower three bits match YSCROLL.
+    //
+    QVERIFY(vicII.badLine());
+
+    //
+    // Advance to raster line $31.
+    //
+    for (quint32 cycle = 0;
+         cycle < C64::PALTiming.cyclesPerLine;
+         ++cycle)
+    {
+        vicII.clock();
+    }
+
+    QVERIFY(!vicII.badLine());
+
+    //
+    // Change YSCROLL to 1. The current raster line $31 now
+    // matches YSCROLL and therefore becomes a badline.
+    //
+    vicII.writeRegister(0x11, 0x11);
+
+    QVERIFY(vicII.badLine());
+
+    //
+    // Advance to raster line $32.
+    //
+    for (quint32 cycle = 0;
+         cycle < C64::PALTiming.cyclesPerLine;
+         ++cycle)
+    {
+        vicII.clock();
+    }
+
+    QVERIFY(!vicII.badLine());
+}
+void VICIITest::testBadLineRasterRange()
+{
+    VICII vicII;
+
+    //
+    // Enable the display and select YSCROLL = 0.
+    //
+    vicII.writeRegister(0x11, 0x10);
+
+    //
+    // Advance to raster line $30. This also enables badlines
+    // for the current display frame.
+    //
+    for (quint32 cycle = 0;
+         cycle < (0x30 * C64::PALTiming.cyclesPerLine);
+         ++cycle)
+    {
+        vicII.clock();
+    }
+
+    QVERIFY(vicII.badLine());
+
+    //
+    // Advance to raster line $F0. It is still inside the
+    // badline range and matches YSCROLL = 0.
+    //
+    for (quint32 cycle = 0;
+         cycle < ((0xF0 - 0x30) * C64::PALTiming.cyclesPerLine);
+         ++cycle)
+    {
+        vicII.clock();
+    }
+
+    QVERIFY(vicII.badLine());
+
+    //
+    // Raster line $F8 would match YSCROLL = 0, but lies
+    // outside the badline range $30-$F7.
+    //
+    for (quint32 cycle = 0;
+         cycle < (8 * C64::PALTiming.cyclesPerLine);
+         ++cycle)
+    {
+        vicII.clock();
+    }
+
+    QVERIFY(!vicII.badLine());
+}
+
+void VICIITest::testBadLineEnable()
+{
+    VICII vicII;
+
+    //
+    // DEN is disabled.
+    //
+    vicII.writeRegister(0x11, 0x00);
+
+    //
+    // Advance to raster line $30.
+    //
+    for (quint32 cycle = 0;
+         cycle < (0x30 * C64::PALTiming.cyclesPerLine);
+         ++cycle)
+    {
+        vicII.clock();
+    }
+
+    QVERIFY(!vicII.badLine());
+}
+void VICIITest::testBadLineEnableWithDEN()
+{
+    VICII vicII;
+
+    //
+    // Enable display. YSCROLL remains zero.
+    //
+    vicII.writeRegister(0x11, 0x10);
+
+    //
+    // Advance to raster line $30.
+    //
+    for (quint32 cycle = 0;
+         cycle < (0x30 * C64::PALTiming.cyclesPerLine);
+         ++cycle)
+    {
+        vicII.clock();
+    }
+
+    QVERIFY(vicII.badLine());
+}
+
+void VICIITest::testBadLineBA()
+{
+    VICII vicII;
+
+    //
+    // Enable the display and select YSCROLL = 0.
+    //
+    vicII.writeRegister(0x11, 0x10);
+
+    //
+    // Advance to raster line $30.
+    //
+    for (quint32 cycle = 0;
+         cycle < (0x30 * C64::PALTiming.cyclesPerLine);
+         ++cycle)
+    {
+        vicII.clock();
+    }
+
+    QVERIFY(vicII.badLine());
+
+    //
+    // BA is still high before cycle 12.
+    //
+    while (vicII.rasterCycle() < 11)
+        vicII.clock();
+
+    QVERIFY(vicII.ba());
+
+    //
+    // BA goes low at cycle 12.
+    //
+    vicII.clock();
+    QVERIFY(!vicII.ba());
+
+    //
+    // BA remains low through cycles 13 and 14.
+    //
+    vicII.clock();
+    QVERIFY(!vicII.ba());
+
+    vicII.clock();
+    QVERIFY(!vicII.ba());
+
+    //
+    // Cycle 15 is the first c-access.
+    //
+    vicII.clock();
+    QVERIFY(!vicII.ba());
+
+    //
+    // Advance to cycle 54.
+    //
+    while (vicII.rasterCycle() < 54)
+        vicII.clock();
+
+    QVERIFY(!vicII.ba());
+
+    //
+    // BA returns high at cycle 55.
+    //
+    vicII.clock();
+    QVERIFY(vicII.ba());
+}
+void VICIITest::testNonBadLineBA()
+{
+    VICII vicII;
+
+    //
+    // Enable the display and select YSCROLL = 0.
+    //
+    vicII.writeRegister(0x11, 0x10);
+
+    //
+    // Advance to raster line $31, which is not a badline.
+    //
+    for (quint32 cycle = 0;
+         cycle < (0x31 * C64::PALTiming.cyclesPerLine);
+         ++cycle)
+    {
+        vicII.clock();
+    }
+
+    QVERIFY(!vicII.badLine());
+
+    //
+    // BA remains high throughout the complete raster line.
+    //
+    for (quint8 cycle = 0;
+         cycle < C64::PALTiming.cyclesPerLine;
+         ++cycle)
+    {
+        QVERIFY(vicII.ba());
+        vicII.clock();
+    }
+}
+
+void VICIITest::testBadLineAEC()
+{
+    VICII vicII;
+
+    //
+    // Enable the display and select YSCROLL = 0.
+    //
+    vicII.writeRegister(0x11, 0x10);
+
+    //
+    // Advance to raster line $30.
+    //
+    for (quint32 cycle = 0;
+         cycle < (0x30 * C64::PALTiming.cyclesPerLine);
+         ++cycle)
+    {
+        vicII.clock();
+    }
+
+    QVERIFY(vicII.badLine());
+
+    //
+    // AEC remains high through cycle 14.
+    //
+    while (vicII.rasterCycle() < 14)
+        vicII.clock();
+
+    QVERIFY(vicII.aec());
+
+    //
+    // AEC goes low at cycle 15.
+    //
+    vicII.clock();
+    QVERIFY(!vicII.aec());
+
+    //
+    // AEC remains low through cycle 54.
+    //
+    while (vicII.rasterCycle() < 54)
+        vicII.clock();
+
+    QVERIFY(!vicII.aec());
+
+    //
+    // AEC returns high at cycle 55.
+    //
+    vicII.clock();
+    QVERIFY(vicII.aec());
+}
+void VICIITest::testNonBadLineAEC()
+{
+    VICII vicII;
+
+    //
+    // Enable the display and select YSCROLL = 0.
+    //
+    vicII.writeRegister(0x11, 0x10);
+
+    //
+    // Advance to raster line $31, which is not a badline.
+    //
+    for (quint32 cycle = 0;
+         cycle < (0x31 * C64::PALTiming.cyclesPerLine);
+         ++cycle)
+    {
+        vicII.clock();
+    }
+
+    QVERIFY(!vicII.badLine());
+
+    //
+    // AEC remains high throughout the complete raster line.
+    //
+    for (quint8 cycle = 0;
+         cycle < C64::PALTiming.cyclesPerLine;
+         ++cycle)
+    {
+        QVERIFY(vicII.aec());
+        vicII.clock();
+    }
+}

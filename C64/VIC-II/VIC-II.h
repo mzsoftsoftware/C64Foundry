@@ -17,6 +17,10 @@ public:
     quint8 readRegister(quint8 address) const;
     quint16 videoMatrixBaseAddress() const                  { return m_videoMatrixBaseAddress; }
     quint16 characterBaseAddress() const                    { return m_characterBaseAddress; }
+    quint8 rasterCycle() const                              { return m_rasterCycle; }
+    bool badLine() const;
+    bool ba() const;
+    bool aec() const;
 
     // Setter
     void setBus(C64Bus* ptrBus)                             { m_ptrBus = ptrBus; }
@@ -44,6 +48,9 @@ private:
     quint8 m_spriteDataPriority = 0x00;
     quint8 m_spriteMulticolor = 0x00;
     quint8 m_spriteXExpansion = 0x00;
+
+    bool m_badLinesEnabled = false;
+
 
     quint8 m_colorRegisters[0x0F] = {
         0xF0, 0xF0, 0xF0, 0xF0,

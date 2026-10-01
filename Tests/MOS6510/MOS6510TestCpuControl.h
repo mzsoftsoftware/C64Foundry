@@ -16,6 +16,10 @@ public:
 private slots:
     void testCycleCounter();
 
+    void testReadyLine();
+    void testReadyStopsOpcodeFetch();
+    void testReadyStopsInstructionRead();
+
     void testReset();
     void testResetVector();
     void testResetStackPointer();

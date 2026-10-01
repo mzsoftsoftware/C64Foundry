@@ -27,6 +27,96 @@ void MOS6510TestCpuControl::testCycleCounter()
     QCOMPARE(m_cpu.cycles(), quint64(3));
 }
 
+void MOS6510TestCpuControl::testReadyLine()
+{
+    setupCpu();
+
+    QVERIFY(m_cpu.readyLine());
+
+    m_cpu.setReadyLine(false);
+    QVERIFY(!m_cpu.readyLine());
+
+    m_cpu.setReadyLine(true);
+    QVERIFY(m_cpu.readyLine());
+}
+void MOS6510TestCpuControl::testReadyStopsOpcodeFetch()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+
+    m_memory.writeRAM(0x2000, 0xEA);
+    m_memory.writeRAM(0x2001, 0xEA);
+
+    //
+    // RDY low must prevent the CPU from performing
+    // an opcode-fetch read cycle.
+    //
+    m_cpu.setReadyLine(false);
+
+    clock();
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2000));
+    verifyNoAccess();
+
+    //
+    // Releasing RDY allows the pending opcode fetch
+    // to execute normally.
+    //
+    m_cpu.setReadyLine(true);
+
+    clock();
+
+    verifyRead(0x2000, 0xEA);
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2001));
+}
+void MOS6510TestCpuControl::testReadyStopsInstructionRead()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+
+    //
+    // LDA #$42
+    //
+    m_memory.writeRAM(0x2000, 0xA9);
+    m_memory.writeRAM(0x2001, 0x42);
+
+    //
+    // Fetch the opcode normally.
+    //
+    clock();
+
+    verifyRead(0x2000, 0xA9);
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2001));
+
+    //
+    // RDY goes low before the operand read.
+    //
+    m_cpu.setReadyLine(false);
+
+    clock();
+
+    //
+    // The operand read must not have happened and the
+    // instruction state must not advance.
+    //
+    verifyNoAccess();
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2001));
+    QCOMPARE(m_cpu.accumulator(), quint8(0x00));
+
+    //
+    // Releasing RDY allows the pending read cycle to execute.
+    //
+    m_cpu.setReadyLine(true);
+
+    clock();
+
+    verifyRead(0x2001, 0x42);
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2002));
+    QCOMPARE(m_cpu.accumulator(), quint8(0x42));
+}
+
 void MOS6510TestCpuControl::testReset()
 {
     setupCpu();

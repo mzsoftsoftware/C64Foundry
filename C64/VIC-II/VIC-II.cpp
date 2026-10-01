@@ -165,6 +165,38 @@ void VICII::writeRegister(const quint8 address, const quint8 value)
     }
 }
 
+bool VICII::badLine() const
+{
+    if (!m_badLinesEnabled)
+        return false;
+    if ((m_rasterLine < 0x30) || (m_rasterLine > 0xF7))
+        return false;
+    return (m_rasterLine & 0x07) == (m_controlRegister1 & 0x07);
+}
+bool VICII::ba() const
+{
+    //
+    // On a badline, BA goes low three cycles before the first
+    // c-access and remains low until all 40 c-accesses are done.
+    //
+    if (badLine() && (m_rasterCycle >= 12) && (m_rasterCycle <= 54))
+    {
+        return false;
+    }
+    return true;
+}
+bool VICII::aec() const
+{
+    //
+    // During a badline, the VIC-II takes over the CPU bus
+    // for the 40 c-accesses in cycles 15 through 54.
+    //
+    if (badLine() && (m_rasterCycle >= 15) && (m_rasterCycle <= 54))
+    {
+        return false;
+    }
+    return true;
+}
 
 void VICII::clock()
 {
@@ -176,6 +208,12 @@ void VICII::clock()
         ++m_rasterLine;
         if (m_rasterLine >= m_timing.linesPerFrame)
             m_rasterLine = 0;
+        //
+        // DEN on raster line $30 enables badlines for the
+        // current display frame.
+        //
+        if (m_rasterLine == 0x30)
+            m_badLinesEnabled = (m_controlRegister1 & 0x10) != 0;
         //
         // Set the raster interrupt status when the current raster
         // line matches the raster compare value.

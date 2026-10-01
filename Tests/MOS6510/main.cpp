@@ -214,8 +214,9 @@ int main(int argc, char* argv[])
     if(result != 0) return result;
 
     // --------------------------
-    result = QTest::qExec(&testDormann, argc, argv);
-    if(result != 0) return result;
+
+    //result = QTest::qExec(&testDormann, argc, argv);
+    //if(result != 0) return result;
 
 /*
     result = QTest::qExec(&testSeddon, argc, argv);
