@@ -33,6 +33,7 @@ public:
     // Getter
     const C64::Timing& timing() const           { return m_timing; }
     quint8 readRAM(quint16 address) const;
+    bool viciiBA() const;
 
     quint64 cycles() const          { return m_cycles; }
     quint64 cyclesPerFrame() const  { return m_timing.cyclesPerFrame; }

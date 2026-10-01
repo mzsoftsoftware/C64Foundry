@@ -17,6 +17,7 @@ private slots:
     void testExecuteProgram();
 
     void testVICIIRasterIRQ();
+    //void testVICIIBALowStopsCpuRead();
 
     void testPerformance();
 

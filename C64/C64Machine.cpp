@@ -80,12 +80,21 @@ void C64Machine::clock()
     m_ptrBus->clock();
 
     m_ptrVICII->clock();
+
     //
     // The VIC-II drives the CPU IRQ line.
     //
     m_ptrCpu->setIrqLine(m_ptrVICII->irq());
 
-    m_ptrCpu->clock();
+    //
+    // BA low warns the CPU that the VIC-II needs the bus.
+    // CPU read cycles are stalled while write cycles may
+    // still complete.
+    //
+    if (m_ptrVICII->ba())
+        m_ptrCpu->clock();
+    else
+        m_ptrCpu->clockReadyLow();
 }
 
 void C64Machine::runCycles(const quint64 cycles)
@@ -102,4 +111,8 @@ void C64Machine::setTiming(const C64::Timing& timing)
 quint8 C64Machine::readRAM(const quint16 address) const
 {
     return m_ptrMemory->readRAM(address);
+}
+bool C64Machine::viciiBA() const
+{
+    return m_ptrVICII->ba();
 }
