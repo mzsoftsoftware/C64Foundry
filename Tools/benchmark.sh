@@ -18,7 +18,7 @@ fi
 
 run_benchmark()
 {
-    "$BINARY" 2>&1 \
+    taskset -c 3 "$BINARY" 2>&1 \
         | sed -n \
             's/.*BENCHMARK_RESULT name=\([^ ]*\) Mcycles\/s=\([0-9.]*\).*/\1 \2/p'
 }
