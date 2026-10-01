@@ -173,7 +173,6 @@ void MOS6510::clock()
             break;
         }
 
-        const MOS6510MicroOperation microOperation = m_ptrInstruction->microOperations[m_microOperationIndex];
         const bool nmiPollMicroOperation = m_microOperationCount > 1 && m_microOperationIndex + 2 == m_microOperationCount;
         const bool finalMicroOperation = m_microOperationIndex + 1 >= m_microOperationCount;
         if (finalMicroOperation)
@@ -224,7 +223,7 @@ void MOS6510::clock()
             }
         }
 
-        switch (microOperation)
+        switch (m_ptrInstruction->microOperations[m_microOperationIndex])
         {
         case MOS6510MicroOperation::NoOperation:
         {
