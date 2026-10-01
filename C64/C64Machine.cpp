@@ -82,6 +82,11 @@ void C64Machine::clock()
     m_ptrVICII->clock();
 
     //
+    // The VIC-II controls which chip owns the system bus.
+    //
+    m_ptrBus->setAEC(m_ptrVICII->aec());
+
+    //
     // The VIC-II drives the CPU IRQ line.
     //
     m_ptrCpu->setIrqLine(m_ptrVICII->irq());
@@ -108,6 +113,10 @@ void C64Machine::setTiming(const C64::Timing& timing)
     m_timing = timing;
     m_ptrVICII->setTiming(timing);
 }
+void C64Machine::writeVICIIRegister(const quint8 address, const quint8 value)
+{
+    m_ptrVICII->writeRegister(address, value);
+}
 quint8 C64Machine::readRAM(const quint16 address) const
 {
     return m_ptrMemory->readRAM(address);
@@ -115,4 +124,12 @@ quint8 C64Machine::readRAM(const quint16 address) const
 bool C64Machine::viciiBA() const
 {
     return m_ptrVICII->ba();
+}
+bool C64Machine::viciiAEC() const
+{
+    return m_ptrVICII->aec();
+}
+bool C64Machine::busAEC() const
+{
+    return m_ptrBus->aec();
 }

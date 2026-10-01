@@ -30,4 +30,6 @@ private slots:
     void testVICCharacterROM();
     void testVICCharacterROMBoundaries();
 
+    void testAEC();
+
 };

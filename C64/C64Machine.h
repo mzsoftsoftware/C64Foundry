@@ -29,11 +29,14 @@ public:
 
     // Setter
     void setTiming(const C64::Timing& timing);
+    void writeVICIIRegister(quint8 address, quint8 value);
 
     // Getter
     const C64::Timing& timing() const           { return m_timing; }
     quint8 readRAM(quint16 address) const;
     bool viciiBA() const;
+    bool viciiAEC() const;
+    bool busAEC() const;
 
     quint64 cycles() const          { return m_cycles; }
     quint64 cyclesPerFrame() const  { return m_timing.cyclesPerFrame; }

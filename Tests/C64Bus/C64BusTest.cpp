@@ -406,3 +406,91 @@ void C64BusTest::testVICCharacterROMBoundaries()
     QCOMPARE(bus.readVIC(0x1FFF), quint8(0x22));
     QCOMPARE(bus.readVIC(0x2000), quint8(0x66));
 }
+
+void C64BusTest::testAEC()
+{
+    C64Memory memory;
+    C64Bus bus;
+
+    bus.setMemory(&memory);
+
+    //
+    // AEC is high by default.
+    //
+    QVERIFY(bus.aec());
+
+    //
+    // During a normal CPU write cycle, the CPU drives
+    // the data bus.
+    //
+    bus.write(0x1000, 0x42);
+
+    QVERIFY(bus.cpuDrivesDataBus());
+
+    //
+    // AEC low disconnects the CPU from the system bus.
+    //
+    bus.clock();
+    bus.setAEC(false);
+    bus.write(0x1000, 0x55);
+
+    QVERIFY(!bus.cpuDrivesDataBus());
+
+    //
+    // A CPU write while AEC is low must not reach memory.
+    //
+    memory.writeRAM(0x1000, 0x42);
+
+    bus.clock();
+    bus.setAEC(false);
+    bus.write(0x1000, 0x55);
+
+    QCOMPARE(memory.readRAM(0x1000), quint8(0x42));
+    QVERIFY(!bus.cpuDrivesDataBus());
+
+    //
+    // AEC low disconnects the CPU from the system bus.
+    // A CPU read must therefore not become a system-bus access
+    // and must not change the current data-bus value.
+    //
+    bus.clock();
+    bus.setDataBusValue(0xA5);
+    bus.setAEC(false);
+
+    const quint8 value = bus.read(0x1000);
+
+    QCOMPARE(bus.accessCount(), quint8(0));
+    QCOMPARE(value, quint8(0xA5));
+    QCOMPARE(bus.dataBusValue(), quint8(0xA5));
+    QVERIFY(!bus.cpuDrivesDataBus());
+
+    //
+    // A CPU port write while AEC is low must not
+    // reach the system bus or RAM.
+    //
+    memory.writeRAM(0x0000, 0x42);
+
+    bus.clock();
+    bus.setDataBusValue(0x55);
+    bus.setAEC(false);
+
+    bus.writeCycle(0x0000);
+
+    QCOMPARE(bus.accessCount(), quint8(0));
+    QCOMPARE(memory.readRAM(0x0000), quint8(0x42));
+    QVERIFY(!bus.cpuDrivesDataBus());
+
+    //
+    // A CPU port read while AEC is low must not
+    // become a system-bus access.
+    //
+    bus.clock();
+    bus.setDataBusValue(0xA5);
+    bus.setAEC(false);
+
+    bus.readCycle(0x0000);
+
+    QCOMPARE(bus.accessCount(), quint8(0));
+    QCOMPARE(bus.dataBusValue(), quint8(0xA5));
+    QVERIFY(!bus.cpuDrivesDataBus());
+}

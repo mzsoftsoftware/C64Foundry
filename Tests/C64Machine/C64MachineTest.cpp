@@ -233,6 +233,59 @@ void C64MachineTest::testVICIIRasterIRQ()
 
     QCOMPARE(machine.readRAM(0x0002), quint8(0x42));
 }
+void C64MachineTest::testVICIIAEC()
+{
+    C64Machine machine;
+
+    //
+    // Enable display and select YSCROLL 0.
+    // Raster line $30 is therefore a badline.
+    //
+    machine.writeVICIIRegister(0x11, 0x10);
+
+    //
+    // Advance to raster line $30, cycle 14.
+    //
+    machine.runCycles(
+        0x30 * C64::PALTiming.cyclesPerLine + 14);
+
+    //
+    // At cycle 14, BA has already been low for two cycles,
+    // but AEC is still high.
+    //
+    QVERIFY(!machine.viciiBA());
+    QVERIFY(machine.viciiAEC());
+    QVERIFY(machine.busAEC());
+
+    //
+    // Cycle 15 is the first c-access.
+    // BA remains low and AEC goes low.
+    //
+    machine.clock();
+
+    QVERIFY(!machine.viciiBA());
+    QVERIFY(!machine.viciiAEC());
+    QVERIFY(!machine.busAEC());
+
+    //
+    // AEC remains low through cycle 54.
+    //
+    machine.runCycles(39);
+
+    QVERIFY(!machine.viciiBA());
+    QVERIFY(!machine.viciiAEC());
+    QVERIFY(!machine.busAEC());
+
+    //
+    // AEC returns high at cycle 55.
+    // BA returns high as well.
+    //
+    machine.clock();
+
+    QVERIFY(machine.viciiBA());
+    QVERIFY(machine.viciiAEC());
+    QVERIFY(machine.busAEC());
+}
 
 
 void C64MachineTest::testPerformance()

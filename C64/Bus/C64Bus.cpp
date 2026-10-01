@@ -44,6 +44,16 @@ void C64Bus::clock()
 
 quint8 C64Bus::read(const quint16 address)
 {
+    //
+    // AEC low disconnects the CPU from the system bus.
+    // No CPU read reaches memory or I/O.
+    //
+    if (!m_aec)
+    {
+        m_cpuDrivesDataBus = false;
+        return m_dataBusValue;
+    }
+
     quint8 value = 0x00;
 
     const MemorySource source = m_ptrMemoryMap[address >> 12];
@@ -154,7 +164,14 @@ void C64Bus::write(const quint16 address, const quint8 value)
     ++m_accessCount;
 
     m_dataBusValue = value;
-    m_cpuDrivesDataBus = true;
+    m_cpuDrivesDataBus = m_aec;
+
+    //
+    // AEC low disconnects the CPU from the system bus.
+    // The CPU write must not reach memory or I/O.
+    //
+    if (!m_aec)
+        return;
 
     const MemorySource source = m_ptrMemoryMap[address >> 12];
 
@@ -225,6 +242,16 @@ void C64Bus::write(const quint16 address, const quint8 value)
 
 void C64Bus::readCycle(const quint16 address)
 {
+    //
+    // AEC low disconnects the CPU from the system bus.
+    // No CPU read reaches RAM.
+    //
+    if (!m_aec)
+    {
+        m_cpuDrivesDataBus = false;
+        return;
+    }
+
     m_cpuDrivesDataBus = false;
 
     m_lastAccessType = AccessType::Read;
@@ -236,6 +263,16 @@ void C64Bus::readCycle(const quint16 address)
 }
 void C64Bus::writeCycle(const quint16 address)
 {
+    //
+    // AEC low disconnects the CPU from the system bus.
+    // No CPU write reaches RAM.
+    //
+    if (!m_aec)
+    {
+        m_cpuDrivesDataBus = false;
+        return;
+    }
+
     m_cpuDrivesDataBus = false;
 
     m_lastAccessType = AccessType::Write;

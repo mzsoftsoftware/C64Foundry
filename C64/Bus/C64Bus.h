@@ -27,6 +27,7 @@ public:
     virtual ~C64Bus();
 
     // Getter
+    bool aec() const                            { return m_aec; }
     bool cpuDrivesDataBus() const               { return m_cpuDrivesDataBus; }
     quint8 dataBusValue() const                 { return m_dataBusValue; }
     quint8 cpuPortLines() const                 { return m_cpuPortLines; }
@@ -38,6 +39,7 @@ public:
     quint8 accessCount() const                  { return m_accessCount; }
 
     // Setter
+    void setAEC(bool high)                      { m_aec = high; }
     void setDataBusValue(quint8 value)          { m_dataBusValue = value; }
     void setCpuPortLines(const quint8 lines);
 
@@ -63,6 +65,7 @@ private:
     C64Memory* m_ptrMemory = nullptr;
     VICII* m_ptrVICII = nullptr;
 
+    bool m_aec = true;
     bool m_cpuDrivesDataBus = false;
     quint8 m_dataBusValue = 0x00;
     quint8 m_cpuPortLines = 0x07;
