@@ -23,6 +23,11 @@ private slots:
     void testReadyLowStopsAddressRead();
     void testReadyLowStopsPageCrossingDummyRead();
     void testReadyLowDoesNotStopReadModifyWrite();
+    void testReadyLowStopsResetRead();
+    void testReadyLowStopsIrqRead();
+    void testReadyLowDoesNotStopIrqWrite();
+    void testReadyLowStopsNmiRead();
+    void testReadyLowDoesNotStopNmiWrite();
 
     void testReset();
     void testResetVector();

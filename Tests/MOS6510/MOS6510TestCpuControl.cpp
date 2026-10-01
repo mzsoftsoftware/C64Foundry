@@ -375,6 +375,300 @@ void MOS6510TestCpuControl::testReadyLowDoesNotStopReadModifyWrite()
     //
     QCOMPARE(m_cpu.programCounter(), quint16(0x2003));
 }
+void MOS6510TestCpuControl::testReadyLowStopsResetRead()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x1234);
+
+    //
+    // Start the reset sequence.
+    //
+    m_cpu.reset();
+
+    //
+    // C1: RDY low must stall the first reset read.
+    //
+    clockReadyLow();
+
+    verifyNoAccess();
+
+    //
+    // The normal clock must execute the still-pending
+    // reset read.
+    //
+    clock();
+
+    verifyRead(0x1234, m_memory.readRAM(0x1234));
+}
+void MOS6510TestCpuControl::testReadyLowStopsIrqRead()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setStackPointer(0xFF);
+
+    m_memory.writeRAM(0x2000, 0xEA);
+    m_memory.writeRAM(0x2001, 0xEA);
+    m_memory.writeRAM(0x2002, 0xEA);
+
+    m_memory.writeRAM(0xFFFE, 0x34);
+    m_memory.writeRAM(0xFFFF, 0x12);
+
+    //
+    // Execute the first NOP normally so that the initial
+    // opcode fetch has completed.
+    //
+    clock();
+    verifyRead(0x2000, 0xEA);
+
+    clock();
+    verifyRead(0x2001, 0xEA);
+
+    //
+    // Assert IRQ before the next instruction.
+    //
+    m_cpu.setIrqLine(true);
+
+    //
+    // Execute the next NOP. The IRQ is polled and accepted
+    // during this instruction.
+    //
+    clock();
+    verifyRead(0x2001, 0xEA);
+
+    clock();
+    verifyRead(0x2002, 0xEA);
+
+    //
+    // C1: Suppressed opcode fetch.
+    //
+    clock();
+    verifyRead(0x2002, 0xEA);
+
+    //
+    // C2: Second dummy read.
+    //
+    clock();
+    verifyRead(0x2002, 0xEA);
+
+    //
+    // C3: Push program counter high byte.
+    //
+    clock();
+    verifyWrite(0x01FF, 0x20);
+
+    //
+    // C4: Push program counter low byte.
+    //
+    clock();
+    verifyWrite(0x01FE, 0x02);
+
+    //
+    // C5: Push status.
+    //
+    clock();
+    verifyWriteCycle(0x01FD);
+
+    //
+    // C6: RDY low must stall the IRQ vector-low read.
+    //
+    clockReadyLow();
+
+    verifyNoAccess();
+
+    //
+    // The pending vector read must occur when RDY
+    // is released.
+    //
+    clock();
+
+    verifyRead(0xFFFE, 0x34);
+}
+void MOS6510TestCpuControl::testReadyLowDoesNotStopIrqWrite()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setStackPointer(0xFF);
+
+    m_memory.writeRAM(0x2000, 0xEA);
+    m_memory.writeRAM(0x2001, 0xEA);
+    m_memory.writeRAM(0x2002, 0xEA);
+
+    //
+    // Complete the initial instruction.
+    //
+    clock();
+    verifyRead(0x2000, 0xEA);
+
+    clock();
+    verifyRead(0x2001, 0xEA);
+
+    //
+    // Assert IRQ.
+    //
+    m_cpu.setIrqLine(true);
+
+    //
+    // Execute the instruction during which IRQ is accepted.
+    //
+    clock();
+    verifyRead(0x2001, 0xEA);
+
+    clock();
+    verifyRead(0x2002, 0xEA);
+
+    //
+    // C1 and C2: IRQ dummy reads.
+    //
+    clock();
+    verifyRead(0x2002, 0xEA);
+
+    clock();
+    verifyRead(0x2002, 0xEA);
+
+    //
+    // C3: RDY low must not stop the stack write.
+    //
+    clockReadyLow();
+
+    verifyWrite(0x01FF, 0x20);
+    QCOMPARE(m_cpu.stackPointer(), quint8(0xFE));
+}
+void MOS6510TestCpuControl::testReadyLowStopsNmiRead()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setStackPointer(0xFF);
+
+    m_memory.writeRAM(0x2000, 0xEA);
+    m_memory.writeRAM(0x2001, 0xEA);
+    m_memory.writeRAM(0x2002, 0xEA);
+
+    m_memory.writeRAM(0xFFFA, 0x78);
+    m_memory.writeRAM(0xFFFB, 0x56);
+
+    //
+    // Complete the initial instruction.
+    //
+    clock();
+    verifyRead(0x2000, 0xEA);
+
+    clock();
+    verifyRead(0x2001, 0xEA);
+
+    //
+    // Assert NMI before the next instruction.
+    //
+    m_cpu.setNmiLine(true);
+
+    //
+    // Execute the instruction during which NMI is accepted.
+    //
+    clock();
+    verifyRead(0x2001, 0xEA);
+
+    clock();
+    verifyRead(0x2002, 0xEA);
+
+    //
+    // C1: Suppressed opcode fetch.
+    //
+    clock();
+    verifyRead(0x2002, 0xEA);
+
+    //
+    // C2: Second dummy read.
+    //
+    clock();
+    verifyRead(0x2002, 0xEA);
+
+    //
+    // C3: Push program counter high byte.
+    //
+    clock();
+    verifyWrite(0x01FF, 0x20);
+
+    //
+    // C4: Push program counter low byte.
+    //
+    clock();
+    verifyWrite(0x01FE, 0x02);
+
+    //
+    // C5: Push status.
+    //
+    clock();
+    verifyWriteCycle(0x01FD);
+
+    //
+    // C6: RDY low must stall the NMI vector-low read.
+    //
+    clockReadyLow();
+
+    verifyNoAccess();
+
+    //
+    // The pending vector read must occur when RDY
+    // is released.
+    //
+    clock();
+
+    verifyRead(0xFFFA, 0x78);
+}
+void MOS6510TestCpuControl::testReadyLowDoesNotStopNmiWrite()
+{
+    setupCpu();
+
+    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setStackPointer(0xFF);
+
+    m_memory.writeRAM(0x2000, 0xEA);
+    m_memory.writeRAM(0x2001, 0xEA);
+    m_memory.writeRAM(0x2002, 0xEA);
+
+    //
+    // Complete the initial instruction.
+    //
+    clock();
+    verifyRead(0x2000, 0xEA);
+
+    clock();
+    verifyRead(0x2001, 0xEA);
+
+    //
+    // Assert NMI.
+    //
+    m_cpu.setNmiLine(true);
+
+    //
+    // Execute the instruction during which NMI is accepted.
+    //
+    clock();
+    verifyRead(0x2001, 0xEA);
+
+    clock();
+    verifyRead(0x2002, 0xEA);
+
+    //
+    // C1 and C2: NMI dummy reads.
+    //
+    clock();
+    verifyRead(0x2002, 0xEA);
+
+    clock();
+    verifyRead(0x2002, 0xEA);
+
+    //
+    // C3: RDY low must not stop the stack write.
+    //
+    clockReadyLow();
+
+    verifyWrite(0x01FF, 0x20);
+    QCOMPARE(m_cpu.stackPointer(), quint8(0xFE));
+}
 
 void MOS6510TestCpuControl::testReset()
 {

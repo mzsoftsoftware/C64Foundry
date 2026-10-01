@@ -1861,6 +1861,32 @@ void MOS6510::clockReadyLow()
             return;
     }
 
+    //
+    // All reset cycles are read cycles.
+    //
+    if (m_state == CpuState::Reset)
+        return;
+
+    //
+    // IRQ cycles 2, 3 and 4 are writes.
+    // All other IRQ cycles are reads.
+    //
+    if (m_state == CpuState::Irq)
+    {
+        if (m_irqCycle < 2 || m_irqCycle > 4)
+            return;
+    }
+
+    //
+    // NMI cycles 2, 3 and 4 are writes.
+    // All other NMI cycles are reads.
+    //
+    if (m_state == CpuState::Nmi)
+    {
+        if (m_nmiCycle < 2 || m_nmiCycle > 4)
+            return;
+    }
+
     clock();
 }
 
