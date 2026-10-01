@@ -18,4 +18,6 @@ private slots:
 
     void testVICIIRasterIRQ();
 
+    void testPerformance();
+
 };

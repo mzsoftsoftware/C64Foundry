@@ -6,6 +6,7 @@ class RAM;
 class ROM;
 class ColorRAM;
 
+
 class C64Memory
 {
 public:

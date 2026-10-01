@@ -142,8 +142,8 @@ int main(int argc, char* argv[])
     result = QTest::qExec(&testBusCycles, argc, argv);
     if(result != 0) return result;
 
-    //result = QTest::qExec(&testCpuControl, argc, argv);
-    //if(result != 0) return result;
+    result = QTest::qExec(&testCpuControl, argc, argv);
+    if(result != 0) return result;
 
     // --------------------------
 

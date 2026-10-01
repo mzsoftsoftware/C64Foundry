@@ -6,14 +6,14 @@
 
 int main(int argc, char* argv[])
 {
-    C64MachineTest machineTest;
     C64ROMSetTest romsetTest;
+    C64MachineTest machineTest;
 
     int result = 0;
-    result = QTest::qExec(&machineTest, argc, argv);
+    result = QTest::qExec(&romsetTest, argc, argv);
     if(result != 0) return result;
 
-    result = QTest::qExec(&romsetTest, argc, argv);
+    result = QTest::qExec(&machineTest, argc, argv);
     if(result != 0) return result;
 
     return result;
