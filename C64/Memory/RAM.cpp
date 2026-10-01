@@ -1,9 +1,11 @@
 #include "RAM.h"
 
+#include <cstring>
+
 
 RAM::RAM()
 {
-    m_data = QByteArray(65536,0);
+    memset(m_data, 0, sizeof(m_data));
 }
 RAM::~RAM()
 {
@@ -11,10 +13,10 @@ RAM::~RAM()
 
 quint8 RAM::read(const quint16 address) const
 {
-    return static_cast<quint8>(m_data.at(address));
+    return m_data[address];
 }
 
 void RAM::write(const quint16 address, const quint8 value)
 {
-    m_data[address] = static_cast<char>(value);
+    m_data[address] = value;
 }

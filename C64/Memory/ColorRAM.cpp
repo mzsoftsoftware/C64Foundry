@@ -1,9 +1,11 @@
 #include "ColorRAM.h"
 
+#include <cstring>
+
 
 ColorRAM::ColorRAM()
 {
-    m_data = QByteArray(1024, 0);
+    std::memset(m_data, 0, sizeof(m_data));
 }
 ColorRAM::~ColorRAM()
 {
@@ -11,10 +13,10 @@ ColorRAM::~ColorRAM()
 
 quint8 ColorRAM::read(const quint16 address) const
 {
-    return static_cast<quint8>(m_data.at(address)) & 0x0F;
+    return m_data[address] & 0x0F;
 }
 
 void ColorRAM::write(const quint16 address, const quint8 value)
 {
-    m_data[address] = static_cast<char>(value & 0x0F);
+    m_data[address] = value & 0x0F;
 }

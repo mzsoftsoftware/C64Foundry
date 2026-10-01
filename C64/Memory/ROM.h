@@ -8,7 +8,9 @@
 class ROM
 {
 public:
-    explicit ROM(const qsizetype size);
+    static constexpr quint16 MaximumSize = 8192;
+
+    explicit ROM(const quint16 size);
     virtual ~ROM();
 
     // Operations
@@ -17,6 +19,6 @@ public:
     quint8 read(const quint16 address) const;
 
 private:
-    qsizetype m_size = 0;
-    QByteArray m_data;
+    quint16 m_size = 0;
+    quint8 m_data[MaximumSize];
 };

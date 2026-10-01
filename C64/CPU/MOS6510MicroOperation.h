@@ -3,7 +3,7 @@
 #include <QtGlobal>
 
 
-enum class MOS6510MicroOperation : quint8
+enum class MOS6510MicroOperation
 {
     //
     // Read cycles.

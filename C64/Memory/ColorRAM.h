@@ -13,5 +13,5 @@ public:
     void write(const quint16 address, const quint8 value);
 
 private:
-    QByteArray m_data;
+    quint8 m_data[1024];
 };

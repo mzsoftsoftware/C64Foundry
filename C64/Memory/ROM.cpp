@@ -3,10 +3,10 @@
 #include <QFile>
 
 
-ROM::ROM(const qsizetype size)
+ROM::ROM(const quint16 size)
     : m_size(size)
-    , m_data(size, char(0x00))
 {
+    std::memset(m_data, 0, sizeof(m_data));
 }
 ROM::~ROM()
 {
@@ -17,7 +17,7 @@ bool ROM::load(const QByteArray& data)
     if (data.size() != m_size)
         return false;
 
-    m_data = data;
+    std::memcpy(m_data, data.constData(), m_size);
 
     return true;
 }
@@ -35,5 +35,5 @@ bool ROM::load(const QString& fileName)
 
 quint8 ROM::read(const quint16 address) const
 {
-    return static_cast<quint8>(m_data.at(address));
+    return m_data[address];
 }
