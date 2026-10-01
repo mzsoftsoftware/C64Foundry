@@ -320,7 +320,7 @@ void MOS6510TestDormann::testDormannTestPerformance()
         96'241'367;
 
     constexpr quint64 RunCount =
-        10;
+        1;
 
     constexpr quint64 TotalCycles =
         ExpectedCycles * RunCount;
@@ -490,4 +490,12 @@ void MOS6510TestDormann::testDormannTestPerformance()
                    0,
                    'f',
                    2);
+    qInfo().noquote()
+        << QStringLiteral(
+               "BENCHMARK_RESULT name=MOS6510-Dormann Mcycles/s=%1")
+               .arg(
+                   megaCyclesPerSecond,
+                   0,
+                   'f',
+                   3);
 }

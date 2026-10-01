@@ -34,7 +34,17 @@ public:
         //
         return (m_rasterCycle < 12) || (m_rasterCycle > 54);
     }
-    bool aec() const;
+    bool aec() const
+    {
+        //
+        // During a badline, the VIC-II takes over the CPU bus
+        // for the 40 c-accesses in cycles 15 through 54.
+        //
+        if (m_badLine && (m_rasterCycle >= 15) && (m_rasterCycle <= 54))
+            return false;
+
+        return true;
+    }
 
     // Setter
     void setBus(C64Bus* ptrBus)                             { m_ptrBus = ptrBus; }

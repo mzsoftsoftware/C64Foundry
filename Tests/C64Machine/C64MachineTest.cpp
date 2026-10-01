@@ -384,12 +384,8 @@ void C64MachineTest::testPerformance()
         kernalFile.fileName(),
         characterFile.fileName());
 
-    constexpr quint64 CycleCount =
-        100'000'000;
-
-    constexpr quint64 RunCount =
-        10;
-
+    constexpr quint64 CycleCount = 20000000;
+    constexpr quint64 RunCount = 5;
     constexpr quint64 TotalCycles =
         CycleCount * RunCount;
 
@@ -548,4 +544,12 @@ void C64MachineTest::testPerformance()
                    0,
                    'f',
                    2);
+    qInfo().noquote()
+        << QStringLiteral(
+               "BENCHMARK_RESULT name=C64Machine Mcycles/s=%1")
+               .arg(
+                   megaCyclesPerSecond,
+                   0,
+                   'f',
+                   3);
 }
