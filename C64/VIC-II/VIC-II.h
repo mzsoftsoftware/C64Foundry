@@ -19,7 +19,21 @@ public:
     quint16 characterBaseAddress() const                    { return m_characterBaseAddress; }
     quint8 rasterCycle() const                              { return m_rasterCycle; }
     bool badLine() const;
-    bool ba() const;
+    bool ba() const
+    {
+        //
+        // BA remains high when the current raster line
+        // is not a badline.
+        //
+        if (!m_badLine)
+            return true;
+
+        //
+        // On a badline, BA goes low three cycles before the first
+        // c-access and remains low until all 40 c-accesses are done.
+        //
+        return (m_rasterCycle < 12) || (m_rasterCycle > 54);
+    }
     bool aec() const;
 
     // Setter
@@ -50,7 +64,7 @@ private:
     quint8 m_spriteXExpansion = 0x00;
 
     bool m_badLinesEnabled = false;
-
+    bool m_badLine = false;
 
     quint8 m_colorRegisters[0x0F] = {
         0xF0, 0xF0, 0xF0, 0xF0,

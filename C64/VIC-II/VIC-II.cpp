@@ -103,6 +103,11 @@ void VICII::writeRegister(const quint8 address, const quint8 value)
             (m_rasterCompare & 0x00FF)
             | (static_cast<quint16>(value & 0x80) << 1);
 
+        //
+        // YSCROLL affects the badline state of the current
+        // raster line.
+        //
+        m_badLine = badLine();
         return;
 
     case 0x12:
@@ -173,18 +178,21 @@ bool VICII::badLine() const
         return false;
     return (m_rasterLine & 0x07) == (m_controlRegister1 & 0x07);
 }
-bool VICII::ba() const
+/*bool VICII::ba() const
 {
+    //
+    // BA remains high when the current raster line
+    // is not a badline.
+    //
+    if (!m_badLine)
+        return true;
+
     //
     // On a badline, BA goes low three cycles before the first
     // c-access and remains low until all 40 c-accesses are done.
     //
-    if (badLine() && (m_rasterCycle >= 12) && (m_rasterCycle <= 54))
-    {
-        return false;
-    }
-    return true;
-}
+    return (m_rasterCycle < 12) || (m_rasterCycle > 54);
+}*/
 bool VICII::aec() const
 {
     //
@@ -206,14 +214,22 @@ void VICII::clock()
     {
         m_rasterCycle = 0;
         ++m_rasterLine;
+
         if (m_rasterLine >= m_timing.linesPerFrame)
             m_rasterLine = 0;
+
         //
         // DEN on raster line $30 enables badlines for the
         // current display frame.
         //
         if (m_rasterLine == 0x30)
             m_badLinesEnabled = (m_controlRegister1 & 0x10) != 0;
+
+        //
+        // Cache the badline state for the new raster line.
+        //
+        m_badLine = badLine();
+
         //
         // Set the raster interrupt status when the current raster
         // line matches the raster compare value.
