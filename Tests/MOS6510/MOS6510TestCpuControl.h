@@ -19,14 +19,11 @@ private slots:
     void testReadyLowStopsOpcodeFetch();
     void testReadyLowStopsInstructionRead();
     void testReadyLowDoesNotStopWrite();
-/*
-    void testReadyStopsOpcodeFetch();
-    void testReadyStopsInstructionRead();
-    void testReadyDoesNotStopWrite();
-    void testReadyStopsMemoryRead();
-    void testReadyStopsAddressRead();
-    void testReadyStopsPageCrossingDummyRead();
-*/
+    void testReadyLowStopsMemoryRead();
+    void testReadyLowStopsAddressRead();
+    void testReadyLowStopsPageCrossingDummyRead();
+    void testReadyLowDoesNotStopReadModifyWrite();
+
     void testReset();
     void testResetVector();
     void testResetStackPointer();
