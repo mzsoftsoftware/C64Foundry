@@ -44,8 +44,6 @@ void MOS6510::initialize()
     m_nmiVectorFetch = false;
     m_nmiHijack = false;
 
-    m_readyLine = true;
-
     m_accumulator = 0x00;
     m_x = 0x00;
     m_y = 0x00;

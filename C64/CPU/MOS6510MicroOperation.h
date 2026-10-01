@@ -197,7 +197,7 @@ enum class MOS6510MicroOperation : quint16
     //
 
     // Stores.
-    WriteAccumulator = 0x0100,
+    WriteAccumulator,
     WriteXRegister,
     WriteYRegister,
     WriteSHYAbsoluteX,

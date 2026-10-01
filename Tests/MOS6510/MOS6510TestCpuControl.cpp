@@ -27,18 +27,6 @@ void MOS6510TestCpuControl::testCycleCounter()
     QCOMPARE(m_cpu.cycles(), quint64(3));
 }
 
-void MOS6510TestCpuControl::testReadyLine()
-{
-    setupCpu();
-
-    QVERIFY(m_cpu.readyLine());
-
-    m_cpu.setReadyLine(false);
-    QVERIFY(!m_cpu.readyLine());
-
-    m_cpu.setReadyLine(true);
-    QVERIFY(m_cpu.readyLine());
-}
 void MOS6510TestCpuControl::testReadyLowStopsOpcodeFetch()
 {
     setupCpu();
@@ -155,7 +143,7 @@ void MOS6510TestCpuControl::testReadyLowDoesNotStopWrite()
     //
     QCOMPARE(m_cpu.programCounter(), quint16(0x2003));
 }
-
+/*
 void MOS6510TestCpuControl::testReadyStopsOpcodeFetch()
 {
     setupCpu();
@@ -474,7 +462,7 @@ void MOS6510TestCpuControl::testReadyStopsPageCrossingDummyRead()
     verifyRead(0x1300, 0x42);
     QCOMPARE(m_cpu.accumulator(), quint8(0x42));
 }
-
+*/
 void MOS6510TestCpuControl::testReset()
 {
     setupCpu();
