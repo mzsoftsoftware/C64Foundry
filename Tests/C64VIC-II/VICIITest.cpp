@@ -1951,7 +1951,7 @@ void VICIITest::testStandardTextGraphicsPixel()
     // Bit 7 is set, therefore the foreground color
     // comes from Color RAM.
     //
-    QCOMPARE(vicII.graphicsPixel(), quint8(0x05));
+    QCOMPARE(vicII.graphicsPixel(0), quint8(0x05));
 }
 void VICIITest::testStandardTextGraphicsBackgroundPixel()
 {
@@ -2006,151 +2006,7 @@ void VICIITest::testStandardTextGraphicsBackgroundPixel()
     // Bit 7 is clear, therefore the pixel uses
     // background color register $D021.
     //
-    QCOMPARE(vicII.graphicsPixel(), quint8(0x03));
-}
-void VICIITest::testStandardTextGraphicsPixelShift()
-{
-    C64Memory memory;
-    C64Bus bus;
-    VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
-
-    //
-    // Select video matrix at $0400 and character memory at $0000.
-    //
-    vicII.writeRegister(0x18, 0x10);
-
-    //
-    // Enable display with YSCROLL = 0.
-    //
-    vicII.writeRegister(0x11, 0x10);
-
-    //
-    // Set background color to $03.
-    //
-    vicII.writeRegister(0x21, 0x03);
-
-    //
-    // Character $42 uses foreground color $05.
-    //
-    memory.writeRAM(0x0400, 0x42);
-    memory.writeColorRAM(0x0000, 0x05);
-
-    //
-    // Character $42, row 0:
-    //
-    // Bit 7 = 1
-    // Bit 6 = 0
-    //
-    memory.writeRAM(0x0210, 0x80);
-
-    //
-    // Advance through graphics access #0 at cycle 16.
-    //
-    while ((vicII.rasterLine() != 0x30) ||
-           (vicII.rasterCycle() != 16))
-    {
-        vicII.clock();
-    }
-
-    //
-    // The first pixel is generated from bit 7 and
-    // therefore uses the foreground color.
-    //
-    QCOMPARE(vicII.graphicsPixel(), quint8(0x05));
-
-    //
-    // Advance the graphics pipeline by one pixel.
-    //
-    vicII.clockGraphicsPixel();
-
-    //
-    // The second pixel is generated from bit 6 and
-    // therefore uses the background color.
-    //
-    QCOMPARE(vicII.graphicsPixel(), quint8(0x03));
-}
-void VICIITest::testStandardTextGraphicsPixelSequence()
-{
-    C64Memory memory;
-    C64Bus bus;
-    VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
-
-    //
-    // Select video matrix at $0400 and character memory at $0000.
-    //
-    vicII.writeRegister(0x18, 0x10);
-
-    //
-    // Enable display with YSCROLL = 0.
-    //
-    vicII.writeRegister(0x11, 0x10);
-
-    //
-    // Set background color to $03.
-    //
-    vicII.writeRegister(0x21, 0x03);
-
-    //
-    // Character $42 is the first character in the video matrix
-    // and uses foreground color $05.
-    //
-    memory.writeRAM(0x0400, 0x42);
-    memory.writeColorRAM(0x0000, 0x05);
-
-    //
-    // Character $42, row 0:
-    //
-    //     Bit:   7 6 5 4 3 2 1 0
-    //     Data:  1 0 1 0 0 1 0 1
-    //
-    memory.writeRAM(0x0210, 0xA5);
-
-    //
-    // Advance through graphics access #0 at cycle 16.
-    //
-    while ((vicII.rasterLine() != 0x30) ||
-           (vicII.rasterCycle() != 16))
-    {
-        vicII.clock();
-    }
-
-    QCOMPARE(vicII.graphicsData(), quint8(0xA5));
-    QCOMPARE(vicII.graphicsColor(), quint8(0x05));
-
-    //
-    // Verify all eight pixels generated from the graphics byte.
-    //
-    const quint8 expectedColors[8] =
-        {
-            0x05,
-            0x03,
-            0x05,
-            0x03,
-            0x03,
-            0x05,
-            0x03,
-            0x05
-        };
-
-    for (quint8 pixel = 0; pixel < 8; ++pixel)
-    {
-        QCOMPARE(vicII.graphicsPixel(), expectedColors[pixel]);
-
-        if (pixel < 7)
-            vicII.clockGraphicsPixel();
-    }
-
-    //
-    // Reading the pixels must not modify the graphics data
-    // fetched by the g-access.
-    //
-    QCOMPARE(vicII.graphicsData(), quint8(0xA5));
+    QCOMPARE(vicII.graphicsPixel(0), quint8(0x03));
 }
 
 void VICIITest::testGraphicsPixelPhase()
@@ -2248,4 +2104,95 @@ void VICIITest::testRasterXLineWrap()
     vicII.clockGraphicsPixel();
 
     QCOMPARE(vicII.rasterX(), quint16(0));
+}
+void VICIITest::testClockAdvancesGraphicsPixels()
+{
+    VICII vicII;
+
+    QCOMPARE(vicII.rasterCycle(), quint8(0));
+    QCOMPARE(vicII.rasterX(), quint16(0));
+    QCOMPARE(vicII.graphicsPixelPhase(), quint8(0));
+
+    //
+    // One VIC-II clock cycle consists of eight pixel clocks.
+    //
+    vicII.clock();
+
+    QCOMPARE(vicII.rasterCycle(), quint8(1));
+    QCOMPARE(vicII.rasterX(), quint16(8));
+    QCOMPARE(vicII.graphicsPixelPhase(), quint8(0));
+
+    vicII.clock();
+
+    QCOMPARE(vicII.rasterCycle(), quint8(2));
+    QCOMPARE(vicII.rasterX(), quint16(16));
+    QCOMPARE(vicII.graphicsPixelPhase(), quint8(0));
+}
+
+void VICIITest::testStandardTextGraphicsPixelBuffer()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+
+    //
+    // Select video matrix at $0400 and character memory at $0000.
+    //
+    vicII.writeRegister(0x18, 0x10);
+
+    //
+    // Enable display with YSCROLL = 0.
+    //
+    vicII.writeRegister(0x11, 0x10);
+
+    //
+    // Set background color to $03.
+    //
+    vicII.writeRegister(0x21, 0x03);
+
+    //
+    // Character $42 is the first character in the video matrix
+    // and uses foreground color $05.
+    //
+    memory.writeRAM(0x0400, 0x42);
+    memory.writeColorRAM(0x0000, 0x05);
+
+    //
+    // Character $42, row 0:
+    //
+    //     Bit:   7 6 5 4 3 2 1 0
+    //     Data:  1 0 1 0 0 1 0 1
+    //
+    memory.writeRAM(0x0210, 0xA5);
+
+    //
+    // Advance through graphics access #0 at cycle 16.
+    //
+    while ((vicII.rasterLine() != 0x30) ||
+           (vicII.rasterCycle() != 16))
+    {
+        vicII.clock();
+    }
+
+    //
+    // The graphics byte fetched during this VIC-II cycle
+    // produces eight pixels.
+    //
+    const quint8 expectedColors[8] =
+        {
+            0x05,
+            0x03,
+            0x05,
+            0x03,
+            0x03,
+            0x05,
+            0x03,
+            0x05
+        };
+
+    for (quint8 pixel = 0; pixel < 8; ++pixel)
+        QCOMPARE(vicII.graphicsPixel(pixel), expectedColors[pixel]);
 }

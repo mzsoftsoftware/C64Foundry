@@ -80,10 +80,11 @@ private slots:
     void testFirstGraphicsColor();
     void testStandardTextGraphicsPixel();
     void testStandardTextGraphicsBackgroundPixel();
-    void testStandardTextGraphicsPixelShift();
-    void testStandardTextGraphicsPixelSequence();
     void testGraphicsPixelPhase();
 
     void testRasterXAdvance();
     void testRasterXLineWrap();
+    void testClockAdvancesGraphicsPixels();
+    void testStandardTextGraphicsPixelBuffer();
+
 };

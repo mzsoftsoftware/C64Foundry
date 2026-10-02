@@ -59,7 +59,8 @@ public:
         return true;
     }
 
-    quint8 graphicsPixel() const;
+    quint8 graphicsPixel(quint8 phase) const                { return m_graphicsPixels[phase]; }
+
 
 
     // Setter
@@ -98,6 +99,7 @@ private:
     quint8 m_graphicsPixelPhase = 0;
     quint8 m_colorLine[40] = {};
     quint16 m_rasterX = 0;
+    quint8 m_graphicsPixels[8] = {};
 
     quint16 m_characterBaseAddress = 0x0000;
 

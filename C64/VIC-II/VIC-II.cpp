@@ -295,6 +295,12 @@ void VICII::clock()
         if (m_rasterLine == m_rasterCompare)
             m_interruptStatus |= 0x01;
     }
+
+    //
+    // One VIC-II clock cycle consists of eight pixel clocks.
+    //
+    for (quint8 pixel = 0; pixel < 8; ++pixel)
+        clockGraphicsPixel();
 }
 
 quint8 VICII::readMemory(const quint16 address)
@@ -315,20 +321,19 @@ quint8 VICII::readColorMemory(const quint16 position)
     return m_ptrBus->readVICColor(position);
 }
 
-quint8 VICII::graphicsPixel() const
-{
-    //
-    // In standard text mode, a set graphics bit selects
-    // the character color. A clear bit selects the
-    // background color from $D021.
-    //
-    if (m_graphicsShiftRegister & 0x80)
-        return m_graphicsColor;
-
-    return m_colorRegisters[1] & 0x0F;
-}
 void VICII::clockGraphicsPixel()
 {
+    //
+    // Generate and store the pixel for the current phase.
+    //
+    if (m_graphicsShiftRegister & 0x80)
+        m_graphicsPixels[m_graphicsPixelPhase] = m_graphicsColor;
+    else
+        m_graphicsPixels[m_graphicsPixelPhase] = m_colorRegisters[1] & 0x0F;
+
+    //
+    // Advance the graphics shift register.
+    //
     m_graphicsShiftRegister <<= 1;
     m_graphicsPixelPhase = (m_graphicsPixelPhase + 1) & 0x07;
 
