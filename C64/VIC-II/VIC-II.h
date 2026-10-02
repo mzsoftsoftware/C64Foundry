@@ -25,6 +25,7 @@ public:
     quint8 videoMatrixLineIndex() const                     { return m_videoMatrixLineIndex; }
     bool displayState() const                               { return m_displayState; }
     quint8 graphicsData() const                             { return m_graphicsData; }
+    quint8 graphicsColor() const                            { return m_graphicsColor; }
     quint16 videoCounterBase() const                        { return m_videoCounterBase; }
     quint8 colorLine(quint8 position) const                 { return m_colorLine[position]; }
 
@@ -86,6 +87,7 @@ private:
     bool m_displayState = false;
 
     quint8 m_graphicsData = 0;
+    quint8 m_graphicsColor = 0;
     quint8 m_colorLine[40] = {};
 
     quint16 m_characterBaseAddress = 0x0000;

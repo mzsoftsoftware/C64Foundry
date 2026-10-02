@@ -214,6 +214,11 @@ void VICII::clock()
         m_graphicsData = readCharacterMemory(m_videoMatrixLine[position], m_rowCounter);
 
         //
+        // Latch the color belonging to the current character.
+        //
+        m_graphicsColor = m_colorLine[position];
+
+        //
         // Each graphics access advances VC and VMLI.
         //
         ++m_videoCounter;

@@ -77,4 +77,6 @@ private slots:
     void testCAccessUsesVideoCounter();
     void testCAccessVideoCounterSequence();
 
+    void testFirstGraphicsColor();
+
 };

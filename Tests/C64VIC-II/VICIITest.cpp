@@ -1836,3 +1836,64 @@ void VICIITest::testCAccessVideoCounterSequence()
     QCOMPARE(vicII.videoMatrixLine(39), quint8(0x84));
     QCOMPARE(vicII.colorLine(39), quint8(0x0A));
 }
+
+void VICIITest::testFirstGraphicsColor()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+
+    //
+    // Select video matrix at $0400 and character memory at $0000.
+    //
+    vicII.writeRegister(0x18, 0x10);
+
+    //
+    // Enable display with YSCROLL = 0.
+    //
+    vicII.writeRegister(0x11, 0x10);
+
+    //
+    // Character $42 is the first character in the video matrix.
+    //
+    memory.writeRAM(0x0400, 0x42);
+
+    //
+    // The first character uses color $05.
+    //
+    memory.writeColorRAM(0x0000, 0x05);
+
+    //
+    // Character $42, row 0 is located at $0210.
+    //
+    memory.writeRAM(0x0210, 0xA5);
+
+    //
+    // Advance through the first c-access at cycle 15.
+    //
+    while ((vicII.rasterLine() != 0x30) ||
+           (vicII.rasterCycle() != 15))
+    {
+        vicII.clock();
+    }
+
+    QCOMPARE(vicII.videoMatrixLine(0), quint8(0x42));
+    QCOMPARE(vicII.colorLine(0), quint8(0x05));
+
+    //
+    // Cycle 16 performs graphics access #0.
+    //
+    vicII.clock();
+
+    QCOMPARE(vicII.rasterCycle(), quint16(16));
+    QCOMPARE(vicII.graphicsData(), quint8(0xA5));
+
+    //
+    // The graphics pipeline must also latch the color
+    // belonging to the current character.
+    //
+    QCOMPARE(vicII.graphicsColor(), quint8(0x05));
+}
