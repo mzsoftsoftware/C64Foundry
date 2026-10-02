@@ -25,6 +25,7 @@ public:
     quint8 videoMatrixLineIndex() const                     { return m_videoMatrixLineIndex; }
     bool displayState() const                               { return m_displayState; }
     quint8 graphicsData() const                             { return m_graphicsData; }
+    quint16 videoCounterBase() const                        { return m_videoCounterBase; }
 
     bool badLine() const;
     bool ba() const

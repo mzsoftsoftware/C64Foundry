@@ -203,32 +203,21 @@ void VICII::clock()
     }
 
     //
-    // During display state, cycles 15 through 54 advance
-    // the video counter and video matrix line index.
-    //
-    if (m_displayState &&
-        (m_rasterCycle >= 15) &&
-        (m_rasterCycle <= 54))
-    {
-        ++m_videoCounter;
-        ++m_videoMatrixLineIndex;
-    }
-
-    //
-    // Cycles 16 through 55 perform the 40 graphics accesses.
-    // Each graphics access uses the character code fetched by
-    // the preceding c-access.
+    // During display state, cycles 16 through 55 perform
+    // the 40 graphics accesses.
     //
     if (m_displayState &&
         (m_rasterCycle >= 16) &&
         (m_rasterCycle <= 55))
     {
         const quint8 position = m_rasterCycle - 16;
+        m_graphicsData = readCharacterMemory(m_videoMatrixLine[position], m_rowCounter);
 
-        m_graphicsData =
-            readCharacterMemory(
-                m_videoMatrixLine[position],
-                m_rowCounter);
+        //
+        // Each graphics access advances VC and VMLI.
+        //
+        ++m_videoCounter;
+        ++m_videoMatrixLineIndex;
     }
 
     //
@@ -240,21 +229,25 @@ void VICII::clock()
         (m_rasterCycle <= 54))
     {
         const quint8 position = m_rasterCycle - 15;
-
-        m_videoMatrixLine[position] =
-            readVideoMatrixMemory(position);
+        m_videoMatrixLine[position] = readVideoMatrixMemory(position);
     }
 
     //
     // At cycle 58, RC is incremented while it is below 7.
-    // When RC has reached 7, the VIC-II leaves the display state.
+    // When RC has reached 7, VCBASE is updated and the
+    // VIC-II leaves the display state.
     //
     if (m_rasterCycle == 58)
     {
         if (m_rowCounter == 7)
+        {
+            m_videoCounterBase = m_videoCounter;
             m_displayState = false;
+        }
         else
+        {
             ++m_rowCounter;
+        }
     }
 
     //

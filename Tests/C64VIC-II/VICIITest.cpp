@@ -1258,27 +1258,40 @@ void VICIITest::testFirstGraphicsAccess()
     QCOMPARE(vicII.displayState(), true);
 
     //
-    // Cycle 15 performs the first graphics access.
+    // Cycle 15 performs the first c-access, but no
+    // graphics access yet. VC and VMLI therefore remain
+    // unchanged.
     //
     vicII.clock();
 
     QCOMPARE(vicII.rasterCycle(), quint16(15));
+    QCOMPARE(vicII.videoCounter(), quint16(0));
+    QCOMPARE(vicII.videoMatrixLineIndex(), quint8(0));
 
     //
-    // The first graphics access advances VC and VMLI.
+    // Cycle 16 performs graphics access #0.
     //
+    vicII.clock();
+
+    QCOMPARE(vicII.rasterCycle(), quint16(16));
     QCOMPARE(vicII.videoCounter(), quint16(1));
     QCOMPARE(vicII.videoMatrixLineIndex(), quint8(1));
 
     //
-    // Advance through all 40 graphics accesses.
+    // Advance through graphics access #38 at cycle 54.
     //
     while (vicII.rasterCycle() != 54)
         vicII.clock();
 
+    QCOMPARE(vicII.videoCounter(), quint16(39));
+    QCOMPARE(vicII.videoMatrixLineIndex(), quint8(39));
+
     //
-    // Each graphics access advances VC and VMLI.
+    // Cycle 55 performs the final graphics access #39.
     //
+    vicII.clock();
+
+    QCOMPARE(vicII.rasterCycle(), quint16(55));
     QCOMPARE(vicII.videoCounter(), quint16(40));
     QCOMPARE(vicII.videoMatrixLineIndex(), quint8(40));
 }
@@ -1497,4 +1510,60 @@ void VICIITest::testGraphicsMemoryAccessSequence()
 
     QCOMPARE(vicII.rasterCycle(), quint16(17));
     QCOMPARE(vicII.graphicsData(), quint8(0x5A));
+}
+void VICIITest::testVideoCounterBaseUpdate()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+
+    //
+    // Enable display with YSCROLL = 0.
+    // Raster line $30 is therefore a badline.
+    //
+    vicII.writeRegister(0x11, 0x10);
+
+    //
+    // Advance to cycle 55 of the first badline.
+    //
+    while ((vicII.rasterLine() != 0x30) ||
+           (vicII.rasterCycle() != 55))
+    {
+        vicII.clock();
+    }
+
+    QCOMPARE(vicII.rowCounter(), quint8(0));
+    QCOMPARE(vicII.videoCounter(), quint16(40));
+    QCOMPARE(vicII.videoCounterBase(), quint16(0));
+
+    //
+    // Advance until RC has reached 7.
+    //
+    while (vicII.rowCounter() != 7)
+        vicII.clock();
+
+    QCOMPARE(vicII.displayState(), true);
+
+    //
+    // Advance to cycle 57 of the current raster line.
+    //
+    while (vicII.rasterCycle() != 57)
+        vicII.clock();
+
+    QCOMPARE(vicII.rowCounter(), quint8(7));
+    QCOMPARE(vicII.videoCounter(), quint16(40));
+    QCOMPARE(vicII.videoCounterBase(), quint16(0));
+
+    //
+    // At cycle 58 with RC = 7, VCBASE is updated
+    // from the current video counter.
+    //
+    vicII.clock();
+
+    QCOMPARE(vicII.rasterCycle(), quint16(58));
+    QCOMPARE(vicII.videoCounterBase(), quint16(40));
+    QCOMPARE(vicII.displayState(), false);
 }
