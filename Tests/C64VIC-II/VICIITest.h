@@ -75,4 +75,6 @@ private slots:
 
     void testBadLineColorRAMAccess();
     void testCAccessUsesVideoCounter();
+    void testCAccessVideoCounterSequence();
+
 };

@@ -1763,3 +1763,76 @@ void VICIITest::testCAccessUsesVideoCounter()
     QCOMPARE(vicII.videoMatrixLine(0), quint8(0x84));
     QCOMPARE(vicII.colorLine(0), quint8(0x0A));
 }
+
+void VICIITest::testCAccessVideoCounterSequence()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+
+    //
+    // Select video matrix at $0400.
+    //
+    vicII.writeRegister(0x18, 0x10);
+
+    //
+    // Enable display with YSCROLL = 0.
+    //
+    vicII.writeRegister(0x11, 0x10);
+
+    //
+    // Put different values into the first and last
+    // positions of the second character row.
+    //
+    memory.writeRAM(0x0428, 0x42);
+    memory.writeRAM(0x044F, 0x84);
+
+    //
+    // Put corresponding colors into Color RAM.
+    //
+    memory.writeColorRAM(0x0028, 0x05);
+    memory.writeColorRAM(0x004F, 0x0A);
+
+    //
+    // Advance through the first c-access of the
+    // second character row.
+    //
+    while ((vicII.rasterLine() != 0x38) ||
+           (vicII.rasterCycle() != 15))
+    {
+        vicII.clock();
+    }
+
+    //
+    // The first c-access uses VC = 40 and stores
+    // the result at VMLI = 0.
+    //
+    QCOMPARE(vicII.videoCounter(), quint16(40));
+    QCOMPARE(vicII.videoMatrixLineIndex(), quint8(0));
+    QCOMPARE(vicII.videoMatrixLine(0), quint8(0x42));
+    QCOMPARE(vicII.colorLine(0), quint8(0x05));
+
+    //
+    // Advance through the last c-access of the
+    // second character row.
+    //
+    while (vicII.rasterCycle() != 54)
+        vicII.clock();
+
+    //
+    // At cycle 54, g-access #38 has already advanced
+    // VC and VMLI before c-access #39 is performed.
+    //
+    QCOMPARE(vicII.videoCounter(), quint16(79));
+    QCOMPARE(vicII.videoMatrixLineIndex(), quint8(39));
+
+    //
+    // The last c-access therefore uses VC = 79 and
+    // stores the result at VMLI = 39.
+    //
+    QCOMPARE(vicII.videoMatrixLine(39), quint8(0x84));
+    QCOMPARE(vicII.colorLine(39), quint8(0x0A));
+}
