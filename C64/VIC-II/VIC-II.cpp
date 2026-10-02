@@ -190,21 +190,21 @@ void VICII::clock()
     {
         m_videoCounter = m_videoCounterBase;
         m_videoMatrixLineIndex = 0;
+
+        //
+        // A badline resets the row counter and starts
+        // the display state.
+        //
+        if (m_badLine)
+        {
+            m_rowCounter = 0;
+            m_displayState = true;
+        }
     }
 
     //
-    // Cycle 14 of a badline resets the row counter.
-    //
-    if (m_badLine && (m_rasterCycle == 14))
-    {
-        m_rowCounter = 0;
-        m_displayState = true;
-    }
-
-    //
-    // During display state, cycles 15 through 54 perform
-    // the 40 graphics accesses. Each access advances
-    // VC and VMLI.
+    // During display state, cycles 15 through 54 advance
+    // the video counter and video matrix line index.
     //
     if (m_displayState &&
         (m_rasterCycle >= 15) &&
@@ -212,16 +212,6 @@ void VICII::clock()
     {
         ++m_videoCounter;
         ++m_videoMatrixLineIndex;
-    }
-
-    //
-    // Cycles 15 through 54 of a badline perform the
-    // 40 c-accesses for the current character row.
-    //
-    if (m_badLine && (m_rasterCycle >= 15) && (m_rasterCycle <= 54))
-    {
-        const quint8 position = m_rasterCycle - 15;
-        m_videoMatrixLine[position] = readVideoMatrixMemory(position);
     }
 
     //
@@ -234,7 +224,25 @@ void VICII::clock()
         (m_rasterCycle <= 55))
     {
         const quint8 position = m_rasterCycle - 16;
-        m_graphicsData = readCharacterMemory(m_videoMatrixLine[position], m_rowCounter);
+
+        m_graphicsData =
+            readCharacterMemory(
+                m_videoMatrixLine[position],
+                m_rowCounter);
+    }
+
+    //
+    // Cycles 15 through 54 of a badline perform the
+    // 40 c-accesses for the current character row.
+    //
+    if (m_badLine &&
+        (m_rasterCycle >= 15) &&
+        (m_rasterCycle <= 54))
+    {
+        const quint8 position = m_rasterCycle - 15;
+
+        m_videoMatrixLine[position] =
+            readVideoMatrixMemory(position);
     }
 
     //
@@ -249,6 +257,9 @@ void VICII::clock()
             ++m_rowCounter;
     }
 
+    //
+    // Advance to the next raster line.
+    //
     if (m_rasterCycle >= m_timing.cyclesPerLine)
     {
         m_rasterCycle = 0;
