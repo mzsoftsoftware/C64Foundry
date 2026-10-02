@@ -3057,3 +3057,81 @@ void VICIITest::testIdleStateECMGraphicsAccess()
     //
     QCOMPARE(vicII.graphicsData(), quint8(0x5A));
 }
+void VICIITest::testIdleStateStandardTextForegroundColor()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+
+    //
+    // Enable display with YSCROLL=0 so that raster line $30
+    // enters display state.
+    //
+    vicII.writeRegister(0x11, 0x10);
+
+    //
+    // Give all 40 characters of the first video matrix line
+    // a non-zero color.
+    //
+    for (quint16 position = 0; position < 40; ++position)
+    {
+        memory.writeColorRAM(position, 0x05);
+    }
+
+    //
+    // Wait for the first graphics access in display state.
+    //
+    while ((vicII.rasterLine() != 0x30) ||
+           (vicII.rasterCycle() != 16))
+    {
+        vicII.clock();
+    }
+
+    QVERIFY(vicII.displayState());
+    QCOMPARE(vicII.graphicsColor(), quint8(0x05));
+
+    //
+    // Wait until RC=7 ends the display state in cycle 58
+    // of raster line $37.
+    //
+    while ((vicII.rasterLine() != 0x37) ||
+           (vicII.rasterCycle() != 58))
+    {
+        vicII.clock();
+    }
+
+    QVERIFY(!vicII.displayState());
+
+    //
+    // The last display-state graphics access must have left
+    // the non-zero character color in the graphics color latch.
+    //
+    QCOMPARE(vicII.graphicsColor(), quint8(0x05));
+
+    //
+    // Change YSCROLL so that raster line $38 does not become
+    // the next badline.
+    //
+    vicII.writeRegister(0x11, 0x11);
+
+    //
+    // Wait for the first idle-state graphics access
+    // on raster line $38.
+    //
+    while ((vicII.rasterLine() != 0x38) ||
+           (vicII.rasterCycle() != 16))
+    {
+        vicII.clock();
+    }
+
+    QVERIFY(!vicII.displayState());
+
+    //
+    // In idle state, video matrix data is treated as zero.
+    // Therefore the standard-text foreground color must be zero.
+    //
+    QCOMPARE(vicII.graphicsColor(), quint8(0x00));
+}

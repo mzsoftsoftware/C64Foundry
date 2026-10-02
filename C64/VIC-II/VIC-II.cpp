@@ -265,6 +265,11 @@ void VICII::clock()
                 m_graphicsData = readMemory(0x39FF);
             else
                 m_graphicsData = readMemory(0x3FFF);
+
+            //
+            // Video matrix data is zero in idle state.
+            //
+            m_graphicsColor = 0;
         }
 
         //

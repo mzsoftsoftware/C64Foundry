@@ -111,4 +111,5 @@ private slots:
 
     void testIdleStateGraphicsAccess();
     void testIdleStateECMGraphicsAccess();
+    void testIdleStateStandardTextForegroundColor();
 };
