@@ -330,4 +330,5 @@ quint8 VICII::graphicsPixel() const
 void VICII::clockGraphicsPixel()
 {
     m_graphicsShiftRegister <<= 1;
+    m_graphicsPixelPhase = (m_graphicsPixelPhase + 1) & 0x07;
 }
