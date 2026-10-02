@@ -2370,11 +2370,12 @@ void VICIITest::testVerticalBorderComparisons()
     QVERIFY(vicII.verticalBorder());
 
     //
-    // Advance to the top comparison line and past the
-    // left border comparison.
+    // Advance to cycle 62 of the top comparison line.
+    // DEN remains disabled, so the earlier left comparison
+    // cannot open the vertical border.
     //
     while (vicII.rasterLine() != vicII.borderTop() ||
-           vicII.rasterX() <= vicII.borderLeft())
+           vicII.rasterCycle() != 62)
     {
         vicII.clock();
     }
@@ -2382,47 +2383,18 @@ void VICIITest::testVerticalBorderComparisons()
     QVERIFY(vicII.verticalBorder());
 
     //
-    // Enable the display after the left comparison.
+    // Enable DEN after the left comparison but before cycle 63.
     //
     vicII.writeRegister(0x11, 0x18);
 
-    //
-    // Advance to cycle 62.
-    //
-    while (vicII.rasterCycle() != 62)
-        vicII.clock();
-
     QVERIFY(vicII.verticalBorder());
 
     //
-    // Cycle 63 performs the vertical border comparison.
+    // Cycle 63 opens the vertical border.
     //
     vicII.clock();
 
     QVERIFY(!vicII.verticalBorder());
-
-    //
-    // Advance to the bottom border line.
-    //
-    while (vicII.rasterLine() != vicII.borderBottom())
-        vicII.clock();
-
-    QVERIFY(!vicII.verticalBorder());
-
-    //
-    // Advance to cycle 62 of the bottom border line.
-    //
-    while (vicII.rasterCycle() != 62)
-        vicII.clock();
-
-    QVERIFY(!vicII.verticalBorder());
-
-    //
-    // Cycle 63 closes the vertical border.
-    //
-    vicII.clock();
-
-    QVERIFY(vicII.verticalBorder());
 }
 void VICIITest::testVerticalBorderRequiresDEN()
 {
@@ -2473,20 +2445,25 @@ void VICIITest::testMainBorderOpensAtLeft()
     QVERIFY(vicII.verticalBorder());
 
     //
-    // Advance to cycle 62 of the top comparison line.
+    // Advance to the beginning of the top comparison line.
     //
-    while (vicII.rasterLine() != vicII.borderTop() ||
-           vicII.rasterCycle() != 62)
-    {
+    while (vicII.rasterLine() != vicII.borderTop())
         vicII.clock();
-    }
 
     QVERIFY(vicII.verticalBorder());
 
     //
-    // Cycle 63 opens the vertical border.
+    // Advance to the left border comparison.
     //
-    vicII.clock();
+    while (vicII.rasterX() != vicII.borderLeft())
+        vicII.clockGraphicsPixel();
+
+    QVERIFY(vicII.verticalBorder());
+
+    //
+    // The left comparison opens the vertical border.
+    //
+    vicII.clockGraphicsPixel();
 
     QVERIFY(!vicII.verticalBorder());
 
@@ -2609,4 +2586,56 @@ void VICIITest::testVerticalBorderOpensAtLeftComparison()
     vicII.clockGraphicsPixel();
 
     QVERIFY(!vicII.verticalBorder());
+}
+
+void VICIITest::testVerticalBorderClosesAtLeftComparison()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+
+    //
+    // Enable display and select 25-row / 40-column mode.
+    //
+    vicII.writeRegister(0x11, 0x18);
+    vicII.writeRegister(0x16, 0x08);
+
+    //
+    // Advance normally until the vertical border has opened.
+    //
+    while (vicII.verticalBorder())
+        vicII.clock();
+
+    QVERIFY(!vicII.verticalBorder());
+
+    //
+    // Advance normally to the beginning of the bottom
+    // comparison line.
+    //
+    while (vicII.rasterLine() != vicII.borderBottom())
+        vicII.clock();
+
+    QCOMPARE(vicII.rasterCycle(), quint8(0));
+    QCOMPARE(vicII.rasterX(), quint16(0));
+    QVERIFY(!vicII.verticalBorder());
+
+    //
+    // Advance only the pixel position to the left border
+    // comparison. This deliberately avoids cycle 63.
+    //
+    while (vicII.rasterX() != vicII.borderLeft())
+        vicII.clockGraphicsPixel();
+
+    QVERIFY(!vicII.verticalBorder());
+
+    //
+    // The left comparison on the bottom line closes
+    // the vertical border.
+    //
+    vicII.clockGraphicsPixel();
+
+    QVERIFY(vicII.verticalBorder());
 }

@@ -100,5 +100,5 @@ private slots:
     void testMainBorderStaysClosedAtLeftDuringVerticalBorder();
 
     void testVerticalBorderOpensAtLeftComparison();
-
+    void testVerticalBorderClosesAtLeftComparison();
 };
