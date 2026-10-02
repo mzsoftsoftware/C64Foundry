@@ -32,4 +32,6 @@ private slots:
 
     void testAEC();
 
+    void testVICReadAccess();
+    void testVICCharacterROMReadAccess();
 };

@@ -686,7 +686,12 @@ void VICIITest::testVideoMatrixMemoryRead()
 
 void VICIITest::testBadLineRasterAndYScroll()
 {
+    C64Memory memory;
+    C64Bus bus;
     VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
 
     //
     // Enable the display and select YSCROLL = 0.
@@ -743,7 +748,12 @@ void VICIITest::testBadLineRasterAndYScroll()
 }
 void VICIITest::testBadLineRasterRange()
 {
+    C64Memory memory;
+    C64Bus bus;
     VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
 
     //
     // Enable the display and select YSCROLL = 0.
@@ -792,7 +802,12 @@ void VICIITest::testBadLineRasterRange()
 
 void VICIITest::testBadLineEnable()
 {
+    C64Memory memory;
+    C64Bus bus;
     VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
 
     //
     // DEN is disabled.
@@ -813,7 +828,12 @@ void VICIITest::testBadLineEnable()
 }
 void VICIITest::testBadLineEnableWithDEN()
 {
+    C64Memory memory;
+    C64Bus bus;
     VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
 
     //
     // Enable display. YSCROLL remains zero.
@@ -835,7 +855,12 @@ void VICIITest::testBadLineEnableWithDEN()
 
 void VICIITest::testBadLineBA()
 {
+    C64Memory memory;
+    C64Bus bus;
     VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
 
     //
     // Enable the display and select YSCROLL = 0.
@@ -899,7 +924,12 @@ void VICIITest::testBadLineBA()
 }
 void VICIITest::testNonBadLineBA()
 {
+    C64Memory memory;
+    C64Bus bus;
     VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
 
     //
     // Enable the display and select YSCROLL = 0.
@@ -932,7 +962,12 @@ void VICIITest::testNonBadLineBA()
 
 void VICIITest::testBadLineAEC()
 {
+    C64Memory memory;
+    C64Bus bus;
     VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
 
     //
     // Enable the display and select YSCROLL = 0.
@@ -981,7 +1016,12 @@ void VICIITest::testBadLineAEC()
 }
 void VICIITest::testNonBadLineAEC()
 {
+    C64Memory memory;
+    C64Bus bus;
     VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
 
     //
     // Enable the display and select YSCROLL = 0.
@@ -1010,4 +1050,174 @@ void VICIITest::testNonBadLineAEC()
         QVERIFY(vicII.aec());
         vicII.clock();
     }
+}
+
+void VICIITest::testBadLineFirstCAccess()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+
+    //
+    // Video Matrix base address: $0400.
+    //
+    vicII.writeRegister(0x18, 0x10);
+
+    //
+    // Enable the display and select YSCROLL = 0.
+    //
+    vicII.writeRegister(0x11, 0x10);
+
+    //
+    // First character in the Video Matrix.
+    //
+    memory.writeRAM(0x0400, 0x42);
+
+    //
+    // Advance to raster line $30, cycle 14.
+    //
+    for (quint32 cycle = 0;
+         cycle < (0x30 * C64::PALTiming.cyclesPerLine) + 14;
+         ++cycle)
+    {
+        vicII.clock();
+    }
+
+    QVERIFY(vicII.badLine());
+    QCOMPARE(vicII.rasterCycle(), quint8(14));
+
+    //
+    // No c-access has happened in this bus cycle yet.
+    //
+    bus.clock();
+
+    //
+    // Cycle 15 performs the first c-access.
+    //
+    vicII.clock();
+
+    QCOMPARE(vicII.rasterCycle(), quint8(15));
+    QCOMPARE(bus.accessCount(), quint8(1));
+    QCOMPARE(bus.lastAccessType(), C64Bus::AccessType::Read);
+    QCOMPARE(bus.lastAccessSource(), C64Bus::AccessSource::VICII);
+    QCOMPARE(bus.lastAccessAddress(), quint16(0x0400));
+    QCOMPARE(bus.lastAccessValue(), quint8(0x42));
+
+    //
+    // The fetched character code is stored in the VIC-II line buffer.
+    //
+    QCOMPARE(vicII.videoMatrixLine(0), quint8(0x42));
+
+    //
+    // Last character in the Video Matrix.
+    //
+    memory.writeRAM(0x0427, 0x84);
+
+    //
+    // Advance through c-accesses 1 through 38.
+    //
+    for (quint8 cycle = 16; cycle < 54; ++cycle)
+    {
+        bus.clock();
+        vicII.clock();
+    }
+
+    //
+    // Cycle 54 performs the last c-access.
+    //
+    bus.clock();
+    vicII.clock();
+
+    QCOMPARE(vicII.rasterCycle(), quint8(54));
+    QCOMPARE(bus.accessCount(), quint8(1));
+    QCOMPARE(bus.lastAccessType(), C64Bus::AccessType::Read);
+    QCOMPARE(bus.lastAccessSource(), C64Bus::AccessSource::VICII);
+    QCOMPARE(bus.lastAccessAddress(), quint16(0x0427));
+    QCOMPARE(bus.lastAccessValue(), quint8(0x84));
+
+    //
+    // The last fetched character code is stored in the VIC-II line buffer.
+    //
+    QCOMPARE(vicII.videoMatrixLine(39), quint8(0x84));
+}
+
+void VICIITest::testRowCounterIncrement()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+
+    //
+    // Enable display with YSCROLL = 0.
+    // Raster line $30 is therefore a badline.
+    //
+    vicII.writeRegister(0x11, 0x10);
+
+    //
+    // Advance to cycle 13 of the first badline.
+    //
+    while ((vicII.rasterLine() != 0x30) ||
+           (vicII.rasterCycle() != 13))
+    {
+        vicII.clock();
+    }
+
+    //
+    // Cycle 14 of a badline resets RC.
+    //
+    vicII.clock();
+
+    QCOMPARE(vicII.rasterCycle(), quint16(14));
+    QCOMPARE(vicII.rowCounter(), quint8(0));
+
+    //
+    // Advance to cycle 57.
+    //
+    while (vicII.rasterCycle() != 57)
+        vicII.clock();
+
+    QCOMPARE(vicII.rowCounter(), quint8(0));
+
+    //
+    // Cycle 58 increments RC.
+    //
+    vicII.clock();
+
+    QCOMPARE(vicII.rasterCycle(), quint16(58));
+    QCOMPARE(vicII.rowCounter(), quint8(1));
+
+    //
+    // RC is incremented at cycle 58 of each following
+    // raster line until it reaches 7.
+    //
+    for (quint8 expectedRowCounter = 2; expectedRowCounter <= 7; ++expectedRowCounter)
+    {
+        //
+        // Advance to cycle 58 of the next raster line.
+        //
+        do
+        {
+            vicII.clock();
+        }
+        while (vicII.rasterCycle() != 58);
+
+        QCOMPARE(vicII.rowCounter(), expectedRowCounter);
+    }
+
+    //
+    // RC remains at 7 at cycle 58 of the next raster line.
+    //
+    do
+    {
+        vicII.clock();
+    }
+    while (vicII.rasterCycle() != 58);
+
+    QCOMPARE(vicII.rowCounter(), quint8(7));
 }

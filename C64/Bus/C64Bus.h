@@ -14,6 +14,12 @@ public:
         Read,
         Write
     };
+    enum class AccessSource
+    {
+        None,
+        CPU,
+        VICII
+    };
     enum class MemorySource
     {
         RAM,
@@ -34,6 +40,7 @@ public:
     MemorySource memorySource(quint16 address) const;
 
     AccessType lastAccessType() const           { return m_lastAccessType; }
+    AccessSource lastAccessSource() const       { return m_lastAccessSource; }
     quint16 lastAccessAddress() const           { return m_lastAccessAddress; }
     quint8 lastAccessValue() const              { return m_lastAccessValue; }
     quint8 accessCount() const                  { return m_accessCount; }
@@ -73,6 +80,7 @@ private:
     const MemorySource* m_ptrMemoryMap = nullptr;
 
     AccessType m_lastAccessType = AccessType::None;
+    AccessSource m_lastAccessSource = AccessSource::None;
     quint16 m_lastAccessAddress = 0x0000;
     quint8 m_lastAccessValue = 0x00;
     quint8 m_accessCount = 0;

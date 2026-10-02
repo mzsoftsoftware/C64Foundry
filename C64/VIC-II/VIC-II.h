@@ -16,8 +16,11 @@ public:
     bool irq() const                                        { return (m_interruptStatus & m_interruptMask & 0x0F) != 0; }
     quint8 readRegister(quint8 address) const;
     quint16 videoMatrixBaseAddress() const                  { return m_videoMatrixBaseAddress; }
+    quint8 videoMatrixLine(quint8 position) const           { return m_videoMatrixLine[position]; }
     quint16 characterBaseAddress() const                    { return m_characterBaseAddress; }
+    quint8 rasterLine() const                               { return m_rasterLine; }
     quint8 rasterCycle() const                              { return m_rasterCycle; }
+    quint8 rowCounter() const                               { return m_rowCounter; }
     bool badLine() const;
     bool ba() const
     {
@@ -67,8 +70,12 @@ private:
     quint8 m_controlRegister2 = 0xC0;
     quint8 m_spriteYExpansion = 0x00;
     quint8 m_memoryPointers = 0x01;
+
     quint16 m_videoMatrixBaseAddress = 0x0000;
+    quint8 m_videoMatrixLine[40] = {};
+
     quint16 m_characterBaseAddress = 0x0000;
+
     quint8 m_spriteDataPriority = 0x00;
     quint8 m_spriteMulticolor = 0x00;
     quint8 m_spriteXExpansion = 0x00;
@@ -89,6 +96,9 @@ private:
     quint16 m_rasterLine = 0;
     quint8 m_rasterCycle = 0;
     quint16 m_rasterCompare = 0x0000;
+
+    quint8 m_rowCounter = 0;
+
     quint8 m_interruptStatus = 0x00;
     quint8 m_interruptMask = 0xF0;
 };

@@ -60,4 +60,7 @@ private slots:
     void testNonBadLineBA();
     void testBadLineAEC();
     void testNonBadLineAEC();
+
+    void testBadLineFirstCAccess();
+    void testRowCounterIncrement();
 };

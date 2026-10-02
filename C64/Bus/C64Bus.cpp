@@ -37,6 +37,7 @@ void C64Bus::clock()
     m_cpuDrivesDataBus = false;
 
     m_lastAccessType = AccessType::None;
+    m_lastAccessSource = AccessSource::None;
     m_lastAccessAddress = 0x0000;
     m_lastAccessValue = 0x00;
     m_accessCount = 0;
@@ -149,6 +150,7 @@ quint8 C64Bus::read(const quint16 address)
     m_cpuDrivesDataBus = false;
 
     m_lastAccessType = AccessType::Read;
+    m_lastAccessSource = AccessSource::CPU;
     m_lastAccessAddress = address;
     m_lastAccessValue = value;
     ++m_accessCount;
@@ -159,6 +161,7 @@ quint8 C64Bus::read(const quint16 address)
 void C64Bus::write(const quint16 address, const quint8 value)
 {
     m_lastAccessType = AccessType::Write;
+    m_lastAccessSource = AccessSource::CPU;
     m_lastAccessAddress = address;
     m_lastAccessValue = value;
     ++m_accessCount;
@@ -255,6 +258,7 @@ void C64Bus::readCycle(const quint16 address)
     m_cpuDrivesDataBus = false;
 
     m_lastAccessType = AccessType::Read;
+    m_lastAccessSource = AccessSource::CPU;
     m_lastAccessAddress = address;
     ++m_accessCount;
 
@@ -276,6 +280,7 @@ void C64Bus::writeCycle(const quint16 address)
     m_cpuDrivesDataBus = false;
 
     m_lastAccessType = AccessType::Write;
+    m_lastAccessSource = AccessSource::CPU;
     m_lastAccessAddress = address;
     ++m_accessCount;
 
@@ -285,12 +290,25 @@ void C64Bus::writeCycle(const quint16 address)
 quint8 C64Bus::readVIC(const quint16 address)
 {
     const quint16 vicAddress = address & 0x3FFF;
+    quint8 value;
 
     //
     // In VIC-II bank 0, $1000-$1FFF is mapped to the
     // Character ROM instead of the underlying RAM.
     //
     if ((vicAddress & 0x3000) == 0x1000)
-        return m_ptrMemory->readCharacterROM(vicAddress & 0x0FFF);
-    return m_ptrMemory->readRAM(vicAddress);
+        value = m_ptrMemory->readCharacterROM(vicAddress & 0x0FFF);
+    else
+        value = m_ptrMemory->readRAM(vicAddress);
+
+    //
+    // Record the VIC-II bus access.
+    //
+    m_lastAccessType = AccessType::Read;
+    m_lastAccessSource = AccessSource::VICII;
+    m_lastAccessAddress = vicAddress;
+    m_lastAccessValue = value;
+    ++m_accessCount;
+
+    return value;
 }

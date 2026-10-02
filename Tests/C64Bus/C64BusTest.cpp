@@ -494,3 +494,41 @@ void C64BusTest::testAEC()
     QCOMPARE(bus.dataBusValue(), quint8(0xA5));
     QVERIFY(!bus.cpuDrivesDataBus());
 }
+
+void C64BusTest::testVICReadAccess()
+{
+    C64Memory memory;
+    C64Bus bus;
+
+    bus.setMemory(&memory);
+
+    memory.writeRAM(0x0234, 0x42);
+
+    QCOMPARE(bus.readVIC(0x0234), quint8(0x42));
+
+    QCOMPARE(bus.accessCount(), quint8(1));
+    QCOMPARE(bus.lastAccessType(), C64Bus::AccessType::Read);
+    QCOMPARE(bus.lastAccessSource(), C64Bus::AccessSource::VICII);
+    QCOMPARE(bus.lastAccessAddress(), quint16(0x0234));
+    QCOMPARE(bus.lastAccessValue(), quint8(0x42));
+}
+void C64BusTest::testVICCharacterROMReadAccess()
+{
+    C64Memory memory;
+    C64Bus bus;
+
+    bus.setMemory(&memory);
+
+    QByteArray characterROM(4096, 0x00);
+    characterROM[0x0234] = 0x42;
+
+    QVERIFY(memory.loadCharacterROM(characterROM));
+
+    QCOMPARE(bus.readVIC(0x1234), quint8(0x42));
+
+    QCOMPARE(bus.accessCount(), quint8(1));
+    QCOMPARE(bus.lastAccessType(), C64Bus::AccessType::Read);
+    QCOMPARE(bus.lastAccessSource(), C64Bus::AccessSource::VICII);
+    QCOMPARE(bus.lastAccessAddress(), quint16(0x1234));
+    QCOMPARE(bus.lastAccessValue(), quint8(0x42));
+}

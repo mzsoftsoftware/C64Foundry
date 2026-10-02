@@ -178,36 +178,33 @@ bool VICII::badLine() const
         return false;
     return (m_rasterLine & 0x07) == (m_controlRegister1 & 0x07);
 }
-/*bool VICII::ba() const
-{
-    //
-    // BA remains high when the current raster line
-    // is not a badline.
-    //
-    if (!m_badLine)
-        return true;
-
-    //
-    // On a badline, BA goes low three cycles before the first
-    // c-access and remains low until all 40 c-accesses are done.
-    //
-    return (m_rasterCycle < 12) || (m_rasterCycle > 54);
-}*/
-/*bool VICII::aec() const
-{
-    //
-    // During a badline, the VIC-II takes over the CPU bus
-    // for the 40 c-accesses in cycles 15 through 54.
-    //
-    if (m_badLine && (m_rasterCycle >= 15) && (m_rasterCycle <= 54))
-        return false;
-
-    return true;
-}*/
 
 void VICII::clock()
 {
     ++m_rasterCycle;
+
+    //
+    // Cycle 14 of a badline resets the row counter.
+    //
+    if (m_badLine && (m_rasterCycle == 14))
+        m_rowCounter = 0;
+
+    //
+    // Cycles 15 through 54 of a badline perform the
+    // 40 c-accesses for the current character row.
+    //
+    if (m_badLine && (m_rasterCycle >= 15) && (m_rasterCycle <= 54))
+    {
+        const quint8 position = m_rasterCycle - 15;
+        m_videoMatrixLine[position] = readVideoMatrixMemory(position);
+    }
+
+    //
+    // At cycle 58, the row counter is incremented
+    // while it is below 7.
+    //
+    if ((m_rasterCycle == 58) && (m_rowCounter < 7))
+        ++m_rowCounter;
 
     if (m_rasterCycle >= m_timing.cyclesPerLine)
     {
