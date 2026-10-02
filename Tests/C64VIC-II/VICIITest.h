@@ -102,4 +102,5 @@ private slots:
     void testVerticalBorderOpensAtLeftComparison();
     void testVerticalBorderClosesAtLeftComparison();
     void testVerticalBorderClosesAtCycle63();
+    void testRasterLineAdvancesWithRasterXWrap();
 };

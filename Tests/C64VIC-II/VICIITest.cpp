@@ -2714,3 +2714,25 @@ void VICIITest::testVerticalBorderClosesAtCycle63()
 
     QVERIFY(vicII.verticalBorder());
 }
+void VICIITest::testRasterLineAdvancesWithRasterXWrap()
+{
+    VICII vicII;
+
+    //
+    // Advance to cycle 62 of the first raster line.
+    //
+    while (vicII.rasterCycle() != 62)
+        vicII.clock();
+
+    QCOMPARE(vicII.rasterLine(), quint8(0));
+    QCOMPARE(vicII.rasterX(), quint16(496));
+
+    //
+    // The final VIC cycle completes the raster line.
+    //
+    vicII.clock();
+
+    QCOMPARE(vicII.rasterCycle(), quint8(0));
+    QCOMPARE(vicII.rasterX(), quint16(0));
+    QCOMPARE(vicII.rasterLine(), quint8(1));
+}
