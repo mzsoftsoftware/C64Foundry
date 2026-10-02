@@ -84,4 +84,6 @@ private slots:
     void testStandardTextGraphicsPixelSequence();
     void testGraphicsPixelPhase();
 
+    void testRasterXAdvance();
+    void testRasterXLineWrap();
 };

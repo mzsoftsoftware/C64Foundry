@@ -331,4 +331,8 @@ void VICII::clockGraphicsPixel()
 {
     m_graphicsShiftRegister <<= 1;
     m_graphicsPixelPhase = (m_graphicsPixelPhase + 1) & 0x07;
+
+    ++m_rasterX;
+    if (m_rasterX >= m_timing.cyclesPerLine * 8)
+        m_rasterX = 0;
 }

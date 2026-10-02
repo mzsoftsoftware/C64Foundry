@@ -29,6 +29,7 @@ public:
     quint8 graphicsPixelPhase() const                       { return m_graphicsPixelPhase; }
     quint16 videoCounterBase() const                        { return m_videoCounterBase; }
     quint8 colorLine(quint8 position) const                 { return m_colorLine[position]; }
+    quint16 rasterX() const                                 { return m_rasterX; }
 
     bool badLine() const;
     bool ba() const
@@ -96,6 +97,7 @@ private:
     quint8 m_graphicsColor = 0;
     quint8 m_graphicsPixelPhase = 0;
     quint8 m_colorLine[40] = {};
+    quint16 m_rasterX = 0;
 
     quint16 m_characterBaseAddress = 0x0000;
 

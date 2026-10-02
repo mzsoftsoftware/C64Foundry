@@ -2190,3 +2190,62 @@ void VICIITest::testGraphicsPixelPhase()
     vicII.clockGraphicsPixel();
     QCOMPARE(vicII.graphicsPixelPhase(), quint8(0));
 }
+
+void VICIITest::testRasterXAdvance()
+{
+    VICII vicII;
+
+    //
+    // A raster line starts at horizontal pixel position 0.
+    //
+    QCOMPARE(vicII.rasterX(), quint16(0));
+
+    //
+    // Each graphics pixel clock advances the horizontal
+    // raster position by one pixel.
+    //
+    vicII.clockGraphicsPixel();
+
+    QCOMPARE(vicII.rasterX(), quint16(1));
+
+    vicII.clockGraphicsPixel();
+
+    QCOMPARE(vicII.rasterX(), quint16(2));
+
+    //
+    // One VIC-II clock cycle consists of eight pixels.
+    //
+    for (quint8 pixel = 2; pixel < 8; ++pixel)
+        vicII.clockGraphicsPixel();
+
+    QCOMPARE(vicII.rasterX(), quint16(8));
+    QCOMPARE(vicII.graphicsPixelPhase(), quint8(0));
+}
+void VICIITest::testRasterXLineWrap()
+{
+    VICII vicII;
+
+    //
+    // A PAL raster line consists of 63 VIC-II clock cycles
+    // with eight pixels per cycle.
+    //
+    constexpr quint16 pixelsPerLine = 63 * 8;
+
+    QCOMPARE(vicII.rasterX(), quint16(0));
+
+    //
+    // Advance to the last pixel of the raster line.
+    //
+    for (quint16 pixel = 0; pixel < pixelsPerLine - 1; ++pixel)
+        vicII.clockGraphicsPixel();
+
+    QCOMPARE(vicII.rasterX(), quint16(pixelsPerLine - 1));
+
+    //
+    // The final pixel advances the horizontal raster position
+    // back to the beginning of the next raster line.
+    //
+    vicII.clockGraphicsPixel();
+
+    QCOMPARE(vicII.rasterX(), quint16(0));
+}
