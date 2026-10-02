@@ -2639,3 +2639,78 @@ void VICIITest::testVerticalBorderClosesAtLeftComparison()
 
     QVERIFY(vicII.verticalBorder());
 }
+
+void VICIITest::testVerticalBorderClosesAtCycle63()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+
+    //
+    // Enable display and select 25-row / 40-column mode.
+    //
+    vicII.writeRegister(0x11, 0x18);
+    vicII.writeRegister(0x16, 0x08);
+
+    //
+    // Advance until the vertical border has opened.
+    //
+    while (vicII.verticalBorder())
+        vicII.clock();
+
+    QVERIFY(!vicII.verticalBorder());
+
+    //
+    // Before reaching the 25-row bottom comparison line,
+    // switch to 24-row mode. Its bottom comparison line
+    // (247) will already have passed when we reach line 251.
+    //
+    while (vicII.rasterLine() < 248)
+        vicII.clock();
+
+    vicII.writeRegister(0x11, 0x10);
+
+    QCOMPARE(vicII.borderBottom(), quint16(247));
+    QVERIFY(!vicII.verticalBorder());
+
+    //
+    // Advance to line 251 and past the left comparison.
+    // With RSEL=0, line 251 does not match the current
+    // bottom comparison value.
+    //
+    while (vicII.rasterLine() != 251 ||
+           vicII.rasterX() <= vicII.borderLeft())
+    {
+        vicII.clock();
+    }
+
+    QVERIFY(!vicII.verticalBorder());
+
+    //
+    // Switch back to 25-row mode after the left comparison.
+    // The bottom comparison is now the current raster line.
+    //
+    vicII.writeRegister(0x11, 0x18);
+
+    QCOMPARE(vicII.borderBottom(), quint16(251));
+    QVERIFY(!vicII.verticalBorder());
+
+    //
+    // Advance to cycle 62.
+    //
+    while (vicII.rasterCycle() != 62)
+        vicII.clock();
+
+    QVERIFY(!vicII.verticalBorder());
+
+    //
+    // Cycle 63 performs the bottom comparison and closes
+    // the vertical border.
+    //
+    vicII.clock();
+
+    QVERIFY(vicII.verticalBorder());
+}
