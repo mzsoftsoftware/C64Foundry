@@ -2773,7 +2773,7 @@ void VICIITest::testBorderPixelUsesBorderColor()
     //
     QCOMPARE(vicII.outputPixel(), quint8(0x06));
 }
-void VICIITest::testGraphicsPixelIgnoresBorderColorOutsideBorder()
+void VICIITest::testGraphicsPixelIgnoresBorderColor()
 {
     VICII vicII;
 
@@ -2794,4 +2794,55 @@ void VICIITest::testGraphicsPixelIgnoresBorderColorOutsideBorder()
     // and uses the background color from $D021.
     //
     QCOMPARE(vicII.graphicsPixel(0), quint8(0x03));
+}
+
+void VICIITest::testOutputPixelUsesGraphicsPixelOutsideBorder()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+
+    //
+    // Enable display and select 25-row / 40-column mode.
+    //
+    vicII.writeRegister(0x11, 0x18);
+    vicII.writeRegister(0x16, 0x08);
+
+    //
+    // Set different border and background colors.
+    //
+    vicII.writeRegister(0x20, 0x06);
+    vicII.writeRegister(0x21, 0x03);
+
+    //
+    // Advance to the top comparison line.
+    //
+    while (vicII.rasterLine() != vicII.borderTop())
+        vicII.clock();
+
+    //
+    // Advance to the left border comparison.
+    //
+    while (vicII.rasterX() != vicII.borderLeft())
+        vicII.clockGraphicsPixel();
+
+    //
+    // The left comparison opens the vertical and main borders.
+    //
+    vicII.clockGraphicsPixel();
+
+    QVERIFY(!vicII.verticalBorder());
+    QVERIFY(!vicII.mainBorder());
+
+    //
+    // Generate a graphics pixel while the main border is open.
+    // The graphics shift register is zero, so the pixel uses
+    // the background color from $D021.
+    //
+    vicII.clockGraphicsPixel();
+
+    QCOMPARE(vicII.outputPixel(), quint8(0x03));
 }

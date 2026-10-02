@@ -105,5 +105,6 @@ private slots:
     void testRasterLineAdvancesWithRasterXWrap();
 
     void testBorderPixelUsesBorderColor();
-    void testGraphicsPixelIgnoresBorderColorOutsideBorder();
+    void testGraphicsPixelIgnoresBorderColor();
+    void testOutputPixelUsesGraphicsPixelOutsideBorder();
 };
