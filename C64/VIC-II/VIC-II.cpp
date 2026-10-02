@@ -184,10 +184,32 @@ void VICII::clock()
     ++m_rasterCycle;
 
     //
+    // Cycle 14 initializes the video matrix sequencer.
+    //
+    if (m_rasterCycle == 14)
+    {
+        m_videoCounter = m_videoCounterBase;
+        m_videoMatrixLineIndex = 0;
+    }
+
+    //
     // Cycle 14 of a badline resets the row counter.
     //
     if (m_badLine && (m_rasterCycle == 14))
+    {
         m_rowCounter = 0;
+        m_displayState = true;
+    }
+
+    //
+    // Graphics accesses advance the video counter and
+    // video matrix line index.
+    //
+    if (m_rasterCycle == 15)
+    {
+        ++m_videoCounter;
+        ++m_videoMatrixLineIndex;
+    }
 
     //
     // Cycles 15 through 54 of a badline perform the
@@ -200,11 +222,16 @@ void VICII::clock()
     }
 
     //
-    // At cycle 58, the row counter is incremented
-    // while it is below 7.
+    // At cycle 58, RC is incremented while it is below 7.
+    // When RC has reached 7, the VIC-II leaves the display state.
     //
-    if ((m_rasterCycle == 58) && (m_rowCounter < 7))
-        ++m_rowCounter;
+    if (m_rasterCycle == 58)
+    {
+        if (m_rowCounter == 7)
+            m_displayState = false;
+        else
+            ++m_rowCounter;
+    }
 
     if (m_rasterCycle >= m_timing.cyclesPerLine)
     {

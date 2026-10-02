@@ -1221,3 +1221,141 @@ void VICIITest::testRowCounterIncrement()
 
     QCOMPARE(vicII.rowCounter(), quint8(7));
 }
+
+void VICIITest::testFirstGraphicsAccess()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+
+    //
+    // Enable display with YSCROLL = 0.
+    // Raster line $30 is therefore a badline.
+    //
+    vicII.writeRegister(0x11, 0x10);
+
+    //
+    // Advance to cycle 14 of the first badline.
+    //
+    while ((vicII.rasterLine() != 0x30) ||
+           (vicII.rasterCycle() != 14))
+    {
+        vicII.clock();
+    }
+
+    QCOMPARE(vicII.rasterLine(), quint16(0x30));
+    QCOMPARE(vicII.rasterCycle(), quint16(14));
+
+    //
+    // Cycle 14 initializes the video matrix sequencer.
+    //
+    QCOMPARE(vicII.videoCounter(), quint16(0));
+    QCOMPARE(vicII.videoMatrixLineIndex(), quint8(0));
+
+    //
+    // Cycle 15 performs the first graphics access.
+    //
+    vicII.clock();
+
+    QCOMPARE(vicII.rasterCycle(), quint16(15));
+
+    //
+    // The first graphics access advances VC and VMLI.
+    //
+    QCOMPARE(vicII.videoCounter(), quint16(1));
+    QCOMPARE(vicII.videoMatrixLineIndex(), quint8(1));
+}
+void VICIITest::testBadLineStartsDisplayState()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+
+    //
+    // Enable display with YSCROLL = 0.
+    // Raster line $30 is therefore a badline.
+    //
+    vicII.writeRegister(0x11, 0x10);
+
+    //
+    // Advance to cycle 13 of the first badline.
+    //
+    while ((vicII.rasterLine() != 0x30) ||
+           (vicII.rasterCycle() != 13))
+    {
+        vicII.clock();
+    }
+
+    //
+    // The VIC-II is not yet in display state.
+    //
+    QCOMPARE(vicII.displayState(), false);
+
+    //
+    // Cycle 14 of a badline starts the display state.
+    //
+    vicII.clock();
+
+    QCOMPARE(vicII.rasterCycle(), quint16(14));
+    QCOMPARE(vicII.displayState(), true);
+}
+void VICIITest::testDisplayStateEndsAtRowCounterSeven()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+
+    //
+    // Enable display with YSCROLL = 0.
+    // Raster line $30 is therefore a badline.
+    //
+    vicII.writeRegister(0x11, 0x10);
+
+    //
+    // Advance to cycle 14 of the first badline.
+    //
+    while ((vicII.rasterLine() != 0x30) ||
+           (vicII.rasterCycle() != 14))
+    {
+        vicII.clock();
+    }
+
+    QCOMPARE(vicII.rowCounter(), quint8(0));
+    QCOMPARE(vicII.displayState(), true);
+
+    //
+    // Advance until RC has reached 7.
+    //
+    while (vicII.rowCounter() != 7)
+        vicII.clock();
+
+    QCOMPARE(vicII.displayState(), true);
+
+    //
+    // Advance to cycle 57 of the current raster line.
+    //
+    while (vicII.rasterCycle() != 57)
+        vicII.clock();
+
+    QCOMPARE(vicII.rowCounter(), quint8(7));
+    QCOMPARE(vicII.displayState(), true);
+
+    //
+    // At cycle 58 with RC = 7, the VIC-II leaves
+    // the display state.
+    //
+    vicII.clock();
+
+    QCOMPARE(vicII.rasterCycle(), quint16(58));
+    QCOMPARE(vicII.rowCounter(), quint8(7));
+    QCOMPARE(vicII.displayState(), false);
+}

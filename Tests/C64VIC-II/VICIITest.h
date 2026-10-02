@@ -63,4 +63,9 @@ private slots:
 
     void testBadLineFirstCAccess();
     void testRowCounterIncrement();
+
+    void testFirstGraphicsAccess();
+    void testBadLineStartsDisplayState();
+    void testDisplayStateEndsAtRowCounterSeven();
+
 };

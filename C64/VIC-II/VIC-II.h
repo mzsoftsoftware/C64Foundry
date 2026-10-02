@@ -21,6 +21,9 @@ public:
     quint8 rasterLine() const                               { return m_rasterLine; }
     quint8 rasterCycle() const                              { return m_rasterCycle; }
     quint8 rowCounter() const                               { return m_rowCounter; }
+    quint16 videoCounter() const                            { return m_videoCounter; }
+    quint8 videoMatrixLineIndex() const                     { return m_videoMatrixLineIndex; }
+    bool displayState() const                               { return m_displayState; }
     bool badLine() const;
     bool ba() const
     {
@@ -71,8 +74,12 @@ private:
     quint8 m_spriteYExpansion = 0x00;
     quint8 m_memoryPointers = 0x01;
 
+    quint16 m_videoCounter = 0;
+    quint16 m_videoCounterBase = 0;
     quint16 m_videoMatrixBaseAddress = 0x0000;
     quint8 m_videoMatrixLine[40] = {};
+    quint8 m_videoMatrixLineIndex = 0;
+    bool m_displayState = false;
 
     quint16 m_characterBaseAddress = 0x0000;
 
