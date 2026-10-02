@@ -3018,3 +3018,42 @@ void VICIITest::testIdleStateGraphicsAccess()
     //
     QCOMPARE(vicII.graphicsData(), quint8(0xA5));
 }
+void VICIITest::testIdleStateECMGraphicsAccess()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+
+    //
+    // Store different values at the normal and ECM
+    // idle-state graphics addresses.
+    //
+    memory.writeRAM(0x3FFF, 0xA5);
+    memory.writeRAM(0x39FF, 0x5A);
+
+    //
+    // Enable ECM.
+    //
+    vicII.writeRegister(0x11, 0x40);
+
+    //
+    // The VIC-II starts in idle state.
+    //
+    QVERIFY(!vicII.displayState());
+
+    //
+    // Advance to the first graphics access at cycle 16.
+    //
+    while (vicII.rasterCycle() != 16)
+        vicII.clock();
+
+    QVERIFY(!vicII.displayState());
+
+    //
+    // In ECM, an idle-state graphics access reads from $39FF.
+    //
+    QCOMPARE(vicII.graphicsData(), quint8(0x5A));
+}

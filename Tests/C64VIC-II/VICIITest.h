@@ -110,4 +110,5 @@ private slots:
     void testGraphicsPipelineContinuesDuringBorder();
 
     void testIdleStateGraphicsAccess();
+    void testIdleStateECMGraphicsAccess();
 };

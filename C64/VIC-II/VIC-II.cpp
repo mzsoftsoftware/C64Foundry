@@ -261,7 +261,10 @@ void VICII::clock()
             //
             // In idle state, graphics accesses read from $3FFF.
             //
-            m_graphicsData = readMemory(0x3FFF);
+            if (m_controlRegister1 & 0x40)
+                m_graphicsData = readMemory(0x39FF);
+            else
+                m_graphicsData = readMemory(0x3FFF);
         }
 
         //
