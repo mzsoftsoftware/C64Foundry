@@ -2276,15 +2276,40 @@ void VICIITest::testHorizontalBorderTiming()
 
 void VICIITest::testHorizontalBorderRightComparison()
 {
+    C64Memory memory;
+    C64Bus bus;
     VICII vicII;
 
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+
     //
-    // Select 40-column mode.
-    // PAL right border comparison is raster X = 444.
+    // Enable display and select 25-row / 40-column mode.
     //
+    vicII.writeRegister(0x11, 0x18);
     vicII.writeRegister(0x16, 0x08);
 
     QCOMPARE(vicII.borderRight(), quint16(444));
+    QVERIFY(vicII.mainBorder());
+
+    //
+    // Advance to the top comparison line.
+    //
+    while (vicII.rasterLine() != vicII.borderTop())
+        vicII.clock();
+
+    //
+    // Advance to the left border comparison.
+    //
+    while (vicII.rasterX() != vicII.borderLeft())
+        vicII.clockGraphicsPixel();
+
+    //
+    // The left comparison opens the vertical and main borders.
+    //
+    vicII.clockGraphicsPixel();
+
+    QVERIFY(!vicII.verticalBorder());
     QVERIFY(!vicII.mainBorder());
 
     //
@@ -2507,33 +2532,19 @@ void VICIITest::testMainBorderStaysClosedAtLeftDuringVerticalBorder()
     vicII.writeRegister(0x16, 0x08);
 
     //
-    // The vertical border is initially active.
+    // The vertical and main borders are initially active.
     //
     QVERIFY(vicII.verticalBorder());
-
-    //
-    // Advance to the right border comparison.
-    //
-    while (vicII.rasterX() != vicII.borderRight())
-        vicII.clockGraphicsPixel();
-
-    QVERIFY(!vicII.mainBorder());
-
-    //
-    // The right comparison closes the main border.
-    //
-    vicII.clockGraphicsPixel();
-
     QVERIFY(vicII.mainBorder());
 
     //
-    // Advance through the line wrap to the left border comparison.
+    // Advance to the left border comparison.
     //
     while (vicII.rasterX() != vicII.borderLeft())
         vicII.clockGraphicsPixel();
 
-    QVERIFY(vicII.mainBorder());
     QVERIFY(vicII.verticalBorder());
+    QVERIFY(vicII.mainBorder());
 
     //
     // While the vertical border is active, the left comparison
@@ -2541,6 +2552,7 @@ void VICIITest::testMainBorderStaysClosedAtLeftDuringVerticalBorder()
     //
     vicII.clockGraphicsPixel();
 
+    QVERIFY(vicII.verticalBorder());
     QVERIFY(vicII.mainBorder());
 }
 
@@ -2747,31 +2759,18 @@ void VICIITest::testBorderPixelUsesBorderColor()
     vicII.writeRegister(0x20, 0x06);
 
     //
-    // Advance to the right border comparison.
+    // The main border is initially active.
     //
-    while (vicII.rasterX() != vicII.borderRight())
-        vicII.clockGraphicsPixel();
-
-    QVERIFY(!vicII.mainBorder());
-
-    //
-    // The right comparison closes the main border.
-    //
-    vicII.clockGraphicsPixel();
-
     QVERIFY(vicII.mainBorder());
 
     //
-    // Advance to graphics pixel phase 0.
-    //
-    while (vicII.graphicsPixelPhase() != 0)
-        vicII.clockGraphicsPixel();
-
-    //
-    // Process phase 0 while the main border is active.
+    // Generate one pixel while the main border is active.
     //
     vicII.clockGraphicsPixel();
 
+    //
+    // The final output pixel uses the border color from $D020.
+    //
     QCOMPARE(vicII.outputPixel(), quint8(0x06));
 }
 void VICIITest::testGraphicsPixelIgnoresBorderColorOutsideBorder()
@@ -2784,19 +2783,15 @@ void VICIITest::testGraphicsPixelIgnoresBorderColorOutsideBorder()
     vicII.writeRegister(0x20, 0x06);
     vicII.writeRegister(0x21, 0x03);
 
-    QVERIFY(!vicII.mainBorder());
-
     //
     // The graphics shift register is initially zero,
     // therefore a normal background pixel is generated.
     //
     vicII.clockGraphicsPixel();
 
-    QVERIFY(!vicII.mainBorder());
-
     //
-    // Outside the border, the pixel must use the background
-    // color from $D021, not the border color from $D020.
+    // The graphics pixel is independent of the border
+    // and uses the background color from $D021.
     //
     QCOMPARE(vicII.graphicsPixel(0), quint8(0x03));
 }
