@@ -5,6 +5,7 @@
 
 VICII::VICII()
 {
+    updateTiming();
 }
 VICII::~VICII()
 {
@@ -95,6 +96,7 @@ void VICII::writeRegister(const quint8 address, const quint8 value)
 
     case 0x11:
         m_controlRegister1 = value & 0x7F;
+        updateVerticalBorderTiming();
 
         //
         // Bit 7 contains raster compare bit 8 when written.
@@ -122,6 +124,7 @@ void VICII::writeRegister(const quint8 address, const quint8 value)
         // Unused bits 6-7 read back as one.
         //
         m_controlRegister2 = 0xC0 | (value & 0x3F);
+        updateHorizontalBorderTiming();
         return;
     case 0x17:
         m_spriteYExpansion = value;
@@ -169,6 +172,16 @@ void VICII::writeRegister(const quint8 address, const quint8 value)
         return;
     }
 }
+void VICII::setTiming(const C64::Timing& timing)
+{
+    m_timing = timing;
+    updateTiming();
+}
+void VICII::updateTiming()
+{
+    m_pixelsPerLine = static_cast<quint16>(m_timing.cyclesPerLine * 8);
+    updateHorizontalBorderTiming();
+}
 
 bool VICII::badLine() const
 {
@@ -182,6 +195,21 @@ bool VICII::badLine() const
 void VICII::clock()
 {
     ++m_rasterCycle;
+
+    //
+    // Update the vertical border at cycle 63.
+    //
+    if (m_rasterCycle == 63)
+    {
+        if (m_rasterLine == m_borderBottom)
+            m_verticalBorder = true;
+
+        if (m_rasterLine == m_borderTop &&
+            (m_controlRegister1 & 0x10))
+        {
+            m_verticalBorder = false;
+        }
+    }
 
     //
     // Cycle 14 initializes the video matrix sequencer.
@@ -324,6 +352,35 @@ quint8 VICII::readColorMemory(const quint16 position)
 void VICII::clockGraphicsPixel()
 {
     //
+    // Update the main border flip-flop.
+    //
+    if (m_rasterX == m_borderRight)
+        m_mainBorder = true;
+
+    if (m_rasterX == m_borderLeft)
+    {
+        //
+        // The vertical border is checked again at the
+        // left border comparison.
+        //
+        if (m_rasterLine == m_borderBottom)
+            m_verticalBorder = true;
+
+        if (m_rasterLine == m_borderTop &&
+            (m_controlRegister1 & 0x10))
+        {
+            m_verticalBorder = false;
+        }
+
+        //
+        // Open the main border only if the vertical
+        // border is not active.
+        //
+        if (!m_verticalBorder)
+            m_mainBorder = false;
+    }
+
+    //
     // Generate and store the pixel for the current phase.
     //
     if (m_graphicsShiftRegister & 0x80)
@@ -338,6 +395,38 @@ void VICII::clockGraphicsPixel()
     m_graphicsPixelPhase = (m_graphicsPixelPhase + 1) & 0x07;
 
     ++m_rasterX;
-    if (m_rasterX >= m_timing.cyclesPerLine * 8)
+    if (m_rasterX >= m_pixelsPerLine)
         m_rasterX = 0;
+}
+
+void VICII::updateHorizontalBorderTiming()
+{
+    //
+    // CSEL selects the horizontal display width.
+    // Cache the resulting border positions so the
+    // pixel pipeline does not have to evaluate CSEL.
+    //
+    if (m_controlRegister2 & 0x08)
+    {
+        m_borderLeft = m_timing.borderLeft40;
+        m_borderRight = m_timing.borderRight40;
+    }
+    else
+    {
+        m_borderLeft = m_timing.borderLeft38;
+        m_borderRight = m_timing.borderRight38;
+    }
+}
+void VICII::updateVerticalBorderTiming()
+{
+    if (m_controlRegister1 & 0x08)
+    {
+        m_borderTop = 51;
+        m_borderBottom = 251;
+    }
+    else
+    {
+        m_borderTop = 55;
+        m_borderBottom = 247;
+    }
 }

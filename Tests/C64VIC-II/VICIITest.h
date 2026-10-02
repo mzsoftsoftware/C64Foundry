@@ -87,4 +87,18 @@ private slots:
     void testClockAdvancesGraphicsPixels();
     void testStandardTextGraphicsPixelBuffer();
 
+    void testRasterXTracksRasterCycle();
+    void testHorizontalBorderTiming();
+    void testHorizontalBorderRightComparison();
+
+    void testVerticalBorderTiming();
+    void testVerticalBorderInitialState();
+    void testVerticalBorderComparisons();
+    void testVerticalBorderRequiresDEN();
+
+    void testMainBorderOpensAtLeft();
+    void testMainBorderStaysClosedAtLeftDuringVerticalBorder();
+
+    void testVerticalBorderOpensAtLeftComparison();
+
 };

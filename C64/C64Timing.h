@@ -21,6 +21,10 @@ namespace C64
         quint64 cyclesPerFrame;
 
         quint64 viciiClock;
+        quint16 borderLeft40;
+        quint16 borderRight40;
+        quint16 borderLeft38;
+        quint16 borderRight38;
     };
     constexpr Timing PALTiming
     {
@@ -31,7 +35,11 @@ namespace C64
         312,
         19656,
 
-        7881984
+        7881984,
+        124,
+        444,
+        131,
+        435
     };
     constexpr Timing NTSCTiming
     {
@@ -42,7 +50,11 @@ namespace C64
         263,
         17095,
 
-        8181816
+        8181816,
+        132,
+        452,
+        139,
+        443
     };
     constexpr Timing NTSCOldTiming
     {
@@ -53,6 +65,10 @@ namespace C64
         262,
         16768,
 
-        8181816
+        8181816,
+        124,
+        444,
+        131,
+        435
     };
 }

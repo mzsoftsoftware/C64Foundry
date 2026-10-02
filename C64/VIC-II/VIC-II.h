@@ -60,17 +60,24 @@ public:
     }
 
     quint8 graphicsPixel(quint8 phase) const                { return m_graphicsPixels[phase]; }
-
-
+    quint16 borderLeft() const                              { return m_borderLeft; }
+    quint16 borderRight() const                             { return m_borderRight; }
+    bool mainBorder() const                                 { return m_mainBorder; }
+    quint16 borderTop() const                               { return m_borderTop; }
+    quint16 borderBottom() const                            { return m_borderBottom; }
+    bool verticalBorder() const                             { return m_verticalBorder; }
 
     // Setter
     void setBus(C64Bus* ptrBus)                             { m_ptrBus = ptrBus; }
-    void setTiming(const C64::Timing& timing)               { m_timing = timing; }
+    void setTiming(const C64::Timing& timing);
+    void updateTiming();
     void writeRegister(quint8 address, quint8 value);
 
     // Operations
     void clock();
     void clockGraphicsPixel();
+    void updateHorizontalBorderTiming();
+    void updateVerticalBorderTiming();
 
     quint8 readMemory(quint16 address);
     quint8 readVideoMatrixMemory(quint16 position);
@@ -102,6 +109,14 @@ private:
     quint8 m_graphicsPixels[8] = {};
 
     quint16 m_characterBaseAddress = 0x0000;
+
+    quint16 m_borderLeft = 0;
+    quint16 m_borderRight = 0;
+    bool m_mainBorder = false;
+    quint16 m_pixelsPerLine = 0;
+    quint16 m_borderTop = 55;
+    quint16 m_borderBottom = 247;
+    bool m_verticalBorder = true;
 
     quint8 m_spriteDataPriority = 0x00;
     quint8 m_spriteMulticolor = 0x00;

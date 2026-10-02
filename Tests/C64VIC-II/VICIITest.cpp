@@ -2196,3 +2196,417 @@ void VICIITest::testStandardTextGraphicsPixelBuffer()
     for (quint8 pixel = 0; pixel < 8; ++pixel)
         QCOMPARE(vicII.graphicsPixel(pixel), expectedColors[pixel]);
 }
+
+void VICIITest::testRasterXTracksRasterCycle()
+{
+    VICII vicII;
+
+    QCOMPARE(vicII.rasterCycle(), quint8(0));
+    QCOMPARE(vicII.rasterX(), quint16(0));
+
+    for (quint8 cycle = 1; cycle < 63; ++cycle)
+    {
+        vicII.clock();
+
+        QCOMPARE(vicII.rasterCycle(), cycle);
+        QCOMPARE(vicII.rasterX(),
+                 static_cast<quint16>(cycle * 8));
+    }
+
+    //
+    // The 63rd VIC-II cycle completes the PAL raster line.
+    //
+    vicII.clock();
+
+    QCOMPARE(vicII.rasterCycle(), quint8(0));
+    QCOMPARE(vicII.rasterX(), quint16(0));
+}
+
+void VICIITest::testHorizontalBorderTiming()
+{
+    VICII vicII;
+
+    //
+    // Default is 38-column mode (CSEL = 0).
+    //
+    QCOMPARE(vicII.borderLeft(), quint16(131));
+    QCOMPARE(vicII.borderRight(), quint16(435));
+
+    //
+    // Select 40-column mode.
+    //
+    vicII.writeRegister(0x16, 0x08);
+
+    QCOMPARE(vicII.borderLeft(), quint16(124));
+    QCOMPARE(vicII.borderRight(), quint16(444));
+
+    //
+    // Return to 38-column mode.
+    //
+    vicII.writeRegister(0x16, 0x00);
+
+    QCOMPARE(vicII.borderLeft(), quint16(131));
+    QCOMPARE(vicII.borderRight(), quint16(435));
+
+    //
+    // Switch to NTSC timing while 38-column mode is selected.
+    //
+    vicII.setTiming(C64::NTSCTiming);
+
+    QCOMPARE(vicII.borderLeft(), quint16(139));
+    QCOMPARE(vicII.borderRight(), quint16(443));
+
+    //
+    // Select 40-column mode.
+    //
+    vicII.writeRegister(0x16, 0x08);
+
+    QCOMPARE(vicII.borderLeft(), quint16(132));
+    QCOMPARE(vicII.borderRight(), quint16(452));
+
+    //
+    // Switch back to PAL timing while 40-column mode
+    // remains selected.
+    //
+    vicII.setTiming(C64::PALTiming);
+
+    QCOMPARE(vicII.borderLeft(), quint16(124));
+    QCOMPARE(vicII.borderRight(), quint16(444));
+}
+
+void VICIITest::testHorizontalBorderRightComparison()
+{
+    VICII vicII;
+
+    //
+    // Select 40-column mode.
+    // PAL right border comparison is raster X = 444.
+    //
+    vicII.writeRegister(0x16, 0x08);
+
+    QCOMPARE(vicII.borderRight(), quint16(444));
+    QVERIFY(!vicII.mainBorder());
+
+    //
+    // Advance to the pixel immediately before the
+    // right border comparison.
+    //
+    while (vicII.rasterX() < vicII.borderRight() - 1)
+        vicII.clockGraphicsPixel();
+
+    QCOMPARE(vicII.rasterX(), quint16(443));
+    QVERIFY(!vicII.mainBorder());
+
+    //
+    // Pixel X=443 is processed and raster X advances
+    // to the right border comparison position.
+    //
+    vicII.clockGraphicsPixel();
+
+    QCOMPARE(vicII.rasterX(), quint16(444));
+
+    //
+    // The comparison at X=444 has not been processed yet.
+    //
+    QVERIFY(!vicII.mainBorder());
+
+    //
+    // Process X=444.
+    //
+    vicII.clockGraphicsPixel();
+
+    QVERIFY(vicII.mainBorder());
+}
+
+void VICIITest::testVerticalBorderTiming()
+{
+    VICII vicII;
+
+    //
+    // Default is 24-row mode (RSEL = 0).
+    //
+    QCOMPARE(vicII.borderTop(), quint16(55));
+    QCOMPARE(vicII.borderBottom(), quint16(247));
+
+    //
+    // Select 25-row mode.
+    //
+    vicII.writeRegister(0x11, 0x08);
+
+    QCOMPARE(vicII.borderTop(), quint16(51));
+    QCOMPARE(vicII.borderBottom(), quint16(251));
+
+    //
+    // Return to 24-row mode.
+    //
+    vicII.writeRegister(0x11, 0x00);
+
+    QCOMPARE(vicII.borderTop(), quint16(55));
+    QCOMPARE(vicII.borderBottom(), quint16(247));
+}
+void VICIITest::testVerticalBorderInitialState()
+{
+    VICII vicII;
+
+    //
+    // The vertical border is initially active.
+    //
+    QVERIFY(vicII.verticalBorder());
+}
+void VICIITest::testVerticalBorderComparisons()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+
+    //
+    // Select 25-row mode, but leave DEN disabled.
+    //
+    vicII.writeRegister(0x11, 0x08);
+
+    QVERIFY(vicII.verticalBorder());
+
+    //
+    // Advance to the top comparison line and past the
+    // left border comparison.
+    //
+    while (vicII.rasterLine() != vicII.borderTop() ||
+           vicII.rasterX() <= vicII.borderLeft())
+    {
+        vicII.clock();
+    }
+
+    QVERIFY(vicII.verticalBorder());
+
+    //
+    // Enable the display after the left comparison.
+    //
+    vicII.writeRegister(0x11, 0x18);
+
+    //
+    // Advance to cycle 62.
+    //
+    while (vicII.rasterCycle() != 62)
+        vicII.clock();
+
+    QVERIFY(vicII.verticalBorder());
+
+    //
+    // Cycle 63 performs the vertical border comparison.
+    //
+    vicII.clock();
+
+    QVERIFY(!vicII.verticalBorder());
+
+    //
+    // Advance to the bottom border line.
+    //
+    while (vicII.rasterLine() != vicII.borderBottom())
+        vicII.clock();
+
+    QVERIFY(!vicII.verticalBorder());
+
+    //
+    // Advance to cycle 62 of the bottom border line.
+    //
+    while (vicII.rasterCycle() != 62)
+        vicII.clock();
+
+    QVERIFY(!vicII.verticalBorder());
+
+    //
+    // Cycle 63 closes the vertical border.
+    //
+    vicII.clock();
+
+    QVERIFY(vicII.verticalBorder());
+}
+void VICIITest::testVerticalBorderRequiresDEN()
+{
+    VICII vicII;
+
+    //
+    // Select 25-row mode, but leave DEN disabled.
+    //
+    vicII.writeRegister(0x11, 0x08);
+
+    QVERIFY(vicII.verticalBorder());
+
+    //
+    // Advance to cycle 62 of the top comparison line.
+    //
+    while (vicII.rasterLine() != vicII.borderTop() ||
+           vicII.rasterCycle() != 62)
+    {
+        vicII.clock();
+    }
+
+    QVERIFY(vicII.verticalBorder());
+
+    //
+    // Without DEN, the top comparison must not open
+    // the vertical border.
+    //
+    vicII.clock();
+
+    QVERIFY(vicII.verticalBorder());
+}
+
+void VICIITest::testMainBorderOpensAtLeft()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+
+    //
+    // Enable display and select 25-row / 40-column mode.
+    //
+    vicII.writeRegister(0x11, 0x18);
+    vicII.writeRegister(0x16, 0x08);
+
+    QVERIFY(vicII.verticalBorder());
+
+    //
+    // Advance to cycle 62 of the top comparison line.
+    //
+    while (vicII.rasterLine() != vicII.borderTop() ||
+           vicII.rasterCycle() != 62)
+    {
+        vicII.clock();
+    }
+
+    QVERIFY(vicII.verticalBorder());
+
+    //
+    // Cycle 63 opens the vertical border.
+    //
+    vicII.clock();
+
+    QVERIFY(!vicII.verticalBorder());
+
+    //
+    // Advance to the right border comparison.
+    //
+    while (vicII.rasterX() != vicII.borderRight())
+        vicII.clockGraphicsPixel();
+
+    //
+    // The right comparison closes the main border.
+    //
+    vicII.clockGraphicsPixel();
+
+    QVERIFY(vicII.mainBorder());
+
+    //
+    // Advance through the line wrap to the left border comparison.
+    //
+    while (vicII.rasterX() != vicII.borderLeft())
+        vicII.clockGraphicsPixel();
+
+    QVERIFY(vicII.mainBorder());
+    QVERIFY(!vicII.verticalBorder());
+
+    //
+    // The left comparison opens the main border
+    // while the vertical border is open.
+    //
+    vicII.clockGraphicsPixel();
+
+    QVERIFY(!vicII.mainBorder());
+}
+void VICIITest::testMainBorderStaysClosedAtLeftDuringVerticalBorder()
+{
+    VICII vicII;
+
+    //
+    // Select 40-column mode.
+    //
+    vicII.writeRegister(0x16, 0x08);
+
+    //
+    // The vertical border is initially active.
+    //
+    QVERIFY(vicII.verticalBorder());
+
+    //
+    // Advance to the right border comparison.
+    //
+    while (vicII.rasterX() != vicII.borderRight())
+        vicII.clockGraphicsPixel();
+
+    QVERIFY(!vicII.mainBorder());
+
+    //
+    // The right comparison closes the main border.
+    //
+    vicII.clockGraphicsPixel();
+
+    QVERIFY(vicII.mainBorder());
+
+    //
+    // Advance through the line wrap to the left border comparison.
+    //
+    while (vicII.rasterX() != vicII.borderLeft())
+        vicII.clockGraphicsPixel();
+
+    QVERIFY(vicII.mainBorder());
+    QVERIFY(vicII.verticalBorder());
+
+    //
+    // While the vertical border is active, the left comparison
+    // must not open the main border.
+    //
+    vicII.clockGraphicsPixel();
+
+    QVERIFY(vicII.mainBorder());
+}
+
+void VICIITest::testVerticalBorderOpensAtLeftComparison()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+
+    //
+    // Enable display and select 25-row / 40-column mode.
+    //
+    vicII.writeRegister(0x11, 0x18);
+    vicII.writeRegister(0x16, 0x08);
+
+    //
+    // Advance to the beginning of the top comparison line.
+    //
+    while (vicII.rasterLine() != vicII.borderTop())
+        vicII.clock();
+
+    QCOMPARE(vicII.rasterCycle(), quint8(0));
+    QCOMPARE(vicII.rasterX(), quint16(0));
+    QVERIFY(vicII.verticalBorder());
+
+    //
+    // Advance only the pixel position to the left border comparison.
+    // This deliberately avoids cycle 63.
+    //
+    while (vicII.rasterX() != vicII.borderLeft())
+        vicII.clockGraphicsPixel();
+
+    QVERIFY(vicII.verticalBorder());
+
+    //
+    // The left comparison performs the second vertical-border
+    // comparison. With DEN set on the top line, it opens the
+    // vertical border.
+    //
+    vicII.clockGraphicsPixel();
+
+    QVERIFY(!vicII.verticalBorder());
+}
