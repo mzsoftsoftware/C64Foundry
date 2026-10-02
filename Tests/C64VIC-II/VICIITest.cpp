@@ -2152,3 +2152,41 @@ void VICIITest::testStandardTextGraphicsPixelSequence()
     //
     QCOMPARE(vicII.graphicsData(), quint8(0xA5));
 }
+
+void VICIITest::testGraphicsPixelPhase()
+{
+    VICII vicII;
+
+    //
+    // A VIC-II clock cycle consists of eight pixel phases.
+    //
+    QCOMPARE(vicII.graphicsPixelPhase(), quint8(0));
+
+    vicII.clockGraphicsPixel();
+    QCOMPARE(vicII.graphicsPixelPhase(), quint8(1));
+
+    vicII.clockGraphicsPixel();
+    QCOMPARE(vicII.graphicsPixelPhase(), quint8(2));
+
+    vicII.clockGraphicsPixel();
+    QCOMPARE(vicII.graphicsPixelPhase(), quint8(3));
+
+    vicII.clockGraphicsPixel();
+    QCOMPARE(vicII.graphicsPixelPhase(), quint8(4));
+
+    vicII.clockGraphicsPixel();
+    QCOMPARE(vicII.graphicsPixelPhase(), quint8(5));
+
+    vicII.clockGraphicsPixel();
+    QCOMPARE(vicII.graphicsPixelPhase(), quint8(6));
+
+    vicII.clockGraphicsPixel();
+    QCOMPARE(vicII.graphicsPixelPhase(), quint8(7));
+
+    //
+    // After eight pixels, the next VIC-II clock cycle
+    // starts again at pixel phase 0.
+    //
+    vicII.clockGraphicsPixel();
+    QCOMPARE(vicII.graphicsPixelPhase(), quint8(0));
+}

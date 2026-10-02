@@ -82,5 +82,6 @@ private slots:
     void testStandardTextGraphicsBackgroundPixel();
     void testStandardTextGraphicsPixelShift();
     void testStandardTextGraphicsPixelSequence();
+    void testGraphicsPixelPhase();
 
 };
