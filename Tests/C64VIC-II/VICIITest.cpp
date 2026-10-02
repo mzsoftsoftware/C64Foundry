@@ -2846,3 +2846,62 @@ void VICIITest::testOutputPixelUsesGraphicsPixelOutsideBorder()
 
     QCOMPARE(vicII.outputPixel(), quint8(0x03));
 }
+void VICIITest::testGraphicsPipelineContinuesDuringBorder()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+
+    //
+    // Select video matrix at $0400 and character memory at $0000.
+    //
+    vicII.writeRegister(0x18, 0x10);
+
+    //
+    // Enable display with YSCROLL = 0.
+    //
+    vicII.writeRegister(0x11, 0x10);
+
+    //
+    // Set different border and background colors.
+    //
+    vicII.writeRegister(0x20, 0x06);
+    vicII.writeRegister(0x21, 0x03);
+
+    //
+    // Character $42 uses foreground color $05.
+    //
+    memory.writeRAM(0x0400, 0x42);
+    memory.writeColorRAM(0x0000, 0x05);
+
+    //
+    // Character $42, row 0 has bit 7 set.
+    //
+    memory.writeRAM(0x0210, 0x80);
+
+    //
+    // Advance through graphics access #0 at cycle 16
+    // of the first bad line.
+    //
+    while ((vicII.rasterLine() != 0x30) ||
+           (vicII.rasterCycle() != 16))
+    {
+        vicII.clock();
+    }
+
+    QVERIFY(vicII.mainBorder());
+
+    //
+    // The graphics pipeline continues to generate the
+    // foreground pixel even while the border is active.
+    //
+    QCOMPARE(vicII.graphicsPixel(0), quint8(0x05));
+
+    //
+    // The final output is nevertheless covered by the border.
+    //
+    QCOMPARE(vicII.outputPixel(), quint8(0x06));
+}

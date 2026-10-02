@@ -107,4 +107,6 @@ private slots:
     void testBorderPixelUsesBorderColor();
     void testGraphicsPixelIgnoresBorderColor();
     void testOutputPixelUsesGraphicsPixelOutsideBorder();
+    void testGraphicsPipelineContinuesDuringBorder();
+
 };
