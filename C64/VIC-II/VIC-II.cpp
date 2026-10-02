@@ -231,32 +231,44 @@ void VICII::clock()
     }
 
     //
-    // During display state, cycles 16 through 55 perform
-    // the 40 graphics accesses.
+    // Cycles 16 through 55 perform the 40 graphics accesses.
     //
-    if (m_displayState &&
-        (m_rasterCycle >= 16) &&
+    if ((m_rasterCycle >= 16) &&
         (m_rasterCycle <= 55))
     {
-        const quint8 position = m_rasterCycle - 16;
-        m_graphicsData = readCharacterMemory(m_videoMatrixLine[position], m_rowCounter);
+        if (m_displayState)
+        {
+            const quint8 position = m_rasterCycle - 16;
+
+            m_graphicsData =
+                readCharacterMemory(m_videoMatrixLine[position],
+                                    m_rowCounter);
+
+            //
+            // Latch the color belonging to the current character.
+            //
+            m_graphicsColor = m_colorLine[position];
+
+            //
+            // Each graphics access in display state advances
+            // VC and VMLI.
+            //
+            ++m_videoCounter;
+            ++m_videoMatrixLineIndex;
+        }
+        else
+        {
+            //
+            // In idle state, graphics accesses read from $3FFF.
+            //
+            m_graphicsData = readMemory(0x3FFF);
+        }
 
         //
         // Load the graphics shift register with the graphics data
-        // fetched for the current character.
+        // fetched by the graphics access.
         //
         m_graphicsShiftRegister = m_graphicsData;
-
-        //
-        // Latch the color belonging to the current character.
-        //
-        m_graphicsColor = m_colorLine[position];
-
-        //
-        // Each graphics access advances VC and VMLI.
-        //
-        ++m_videoCounter;
-        ++m_videoMatrixLineIndex;
     }
 
     //

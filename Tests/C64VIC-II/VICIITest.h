@@ -109,4 +109,5 @@ private slots:
     void testOutputPixelUsesGraphicsPixelOutsideBorder();
     void testGraphicsPipelineContinuesDuringBorder();
 
+    void testIdleStateGraphicsAccess();
 };

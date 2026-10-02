@@ -18,7 +18,7 @@ public:
     quint16 videoMatrixBaseAddress() const                  { return m_videoMatrixBaseAddress; }
     quint8 videoMatrixLine(quint8 position) const           { return m_videoMatrixLine[position]; }
     quint16 characterBaseAddress() const                    { return m_characterBaseAddress; }
-    quint8 rasterLine() const                               { return m_rasterLine; }
+    quint16 rasterLine() const                              { return m_rasterLine; }
     quint8 rasterCycle() const                              { return m_rasterCycle; }
     quint8 rowCounter() const                               { return m_rowCounter; }
     quint16 videoCounter() const                            { return m_videoCounter; }

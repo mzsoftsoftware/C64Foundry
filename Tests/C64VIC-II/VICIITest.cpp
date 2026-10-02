@@ -230,7 +230,12 @@ void VICIITest::testRasterCounterRegister()
 
 void VICIITest::testClockWithinRasterLine()
 {
+    C64Memory memory;
+    C64Bus bus;
     VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
 
     //
     // Clocking within the first raster line must not change
@@ -241,7 +246,12 @@ void VICIITest::testClockWithinRasterLine()
 }
 void VICIITest::testRasterLineAdvance()
 {
+    C64Memory memory;
+    C64Bus bus;
     VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
     vicII.setTiming(C64::PALTiming);
 
     //
@@ -261,7 +271,12 @@ void VICIITest::testRasterLineAdvance()
 }
 void VICIITest::testRasterFrameWrap()
 {
+    C64Memory memory;
+    C64Bus bus;
     VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
     vicII.setTiming(C64::PALTiming);
 
     //
@@ -273,7 +288,12 @@ void VICIITest::testRasterFrameWrap()
 }
 void VICIITest::testRasterCounterBit8()
 {
+    C64Memory memory;
+    C64Bus bus;
     VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
     vicII.setTiming(C64::PALTiming);
 
     //
@@ -304,7 +324,12 @@ void VICIITest::testRasterCompareRegister()
 }
 void VICIITest::testRasterIRQStatus()
 {
+    C64Memory memory;
+    C64Bus bus;
     VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
     vicII.setTiming(C64::PALTiming);
 
     //
@@ -327,8 +352,12 @@ void VICIITest::testRasterIRQStatus()
 }
 void VICIITest::testRasterCompareBit8()
 {
+    C64Memory memory;
+    C64Bus bus;
     VICII vicII;
 
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
     vicII.setTiming(C64::PALTiming);
 
     //
@@ -354,7 +383,12 @@ void VICIITest::testRasterCompareBit8()
 }
 void VICIITest::testRasterIRQAcknowledge()
 {
+    C64Memory memory;
+    C64Bus bus;
     VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
     vicII.setTiming(C64::PALTiming);
 
     //
@@ -396,7 +430,12 @@ void VICIITest::testInterruptMaskRegister()
 }
 void VICIITest::testIRQStatusBit()
 {
+    C64Memory memory;
+    C64Bus bus;
     VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
     vicII.setTiming(C64::PALTiming);
 
     //
@@ -427,7 +466,12 @@ void VICIITest::testIRQStatusBit()
 }
 void VICIITest::testMaskedRasterIRQ()
 {
+    C64Memory memory;
+    C64Bus bus;
     VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
     vicII.setTiming(C64::PALTiming);
 
     //
@@ -457,7 +501,12 @@ void VICIITest::testMaskedRasterIRQ()
 }
 void VICIITest::testEnablePendingRasterIRQ()
 {
+    C64Memory memory;
+    C64Bus bus;
     VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
     vicII.setTiming(C64::PALTiming);
 
     //
@@ -492,7 +541,12 @@ void VICIITest::testEnablePendingRasterIRQ()
 }
 void VICIITest::testIRQLine()
 {
+    C64Memory memory;
+    C64Bus bus;
     VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
     vicII.setTiming(C64::PALTiming);
 
     //
@@ -527,7 +581,12 @@ void VICIITest::testIRQLine()
 }
 void VICIITest::testDisablePendingRasterIRQ()
 {
+    C64Memory memory;
+    C64Bus bus;
     VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
     vicII.setTiming(C64::PALTiming);
 
     //
@@ -2107,7 +2166,12 @@ void VICIITest::testRasterXLineWrap()
 }
 void VICIITest::testClockAdvancesGraphicsPixels()
 {
+    C64Memory memory;
+    C64Bus bus;
     VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
 
     QCOMPARE(vicII.rasterCycle(), quint8(0));
     QCOMPARE(vicII.rasterX(), quint16(0));
@@ -2199,7 +2263,12 @@ void VICIITest::testStandardTextGraphicsPixelBuffer()
 
 void VICIITest::testRasterXTracksRasterCycle()
 {
+    C64Memory memory;
+    C64Bus bus;
     VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
 
     QCOMPARE(vicII.rasterCycle(), quint8(0));
     QCOMPARE(vicII.rasterX(), quint16(0));
@@ -2423,7 +2492,12 @@ void VICIITest::testVerticalBorderComparisons()
 }
 void VICIITest::testVerticalBorderRequiresDEN()
 {
+    C64Memory memory;
+    C64Bus bus;
     VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
 
     //
     // Select 25-row mode, but leave DEN disabled.
@@ -2728,7 +2802,12 @@ void VICIITest::testVerticalBorderClosesAtCycle63()
 }
 void VICIITest::testRasterLineAdvancesWithRasterXWrap()
 {
+    C64Memory memory;
+    C64Bus bus;
     VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
 
     //
     // Advance to cycle 62 of the first raster line.
@@ -2904,4 +2983,38 @@ void VICIITest::testGraphicsPipelineContinuesDuringBorder()
     // The final output is nevertheless covered by the border.
     //
     QCOMPARE(vicII.outputPixel(), quint8(0x06));
+}
+
+void VICIITest::testIdleStateGraphicsAccess()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+
+    //
+    // Store a recognizable value at the idle-state
+    // graphics address.
+    //
+    memory.writeRAM(0x3FFF, 0xA5);
+
+    //
+    // The VIC-II starts in idle state.
+    //
+    QVERIFY(!vicII.displayState());
+
+    //
+    // Advance to the first graphics access at cycle 16.
+    //
+    while (vicII.rasterCycle() != 16)
+        vicII.clock();
+
+    QVERIFY(!vicII.displayState());
+
+    //
+    // In idle state, a graphics access reads from $3FFF.
+    //
+    QCOMPARE(vicII.graphicsData(), quint8(0xA5));
 }
