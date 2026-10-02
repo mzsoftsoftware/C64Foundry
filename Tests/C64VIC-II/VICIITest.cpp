@@ -2736,3 +2736,67 @@ void VICIITest::testRasterLineAdvancesWithRasterXWrap()
     QCOMPARE(vicII.rasterX(), quint16(0));
     QCOMPARE(vicII.rasterLine(), quint8(1));
 }
+
+void VICIITest::testBorderPixelUsesBorderColor()
+{
+    VICII vicII;
+
+    //
+    // Set the border color.
+    //
+    vicII.writeRegister(0x20, 0x06);
+
+    //
+    // Advance to the right border comparison.
+    //
+    while (vicII.rasterX() != vicII.borderRight())
+        vicII.clockGraphicsPixel();
+
+    QVERIFY(!vicII.mainBorder());
+
+    //
+    // The right comparison closes the main border.
+    //
+    vicII.clockGraphicsPixel();
+
+    QVERIFY(vicII.mainBorder());
+
+    //
+    // Advance to graphics pixel phase 0.
+    //
+    while (vicII.graphicsPixelPhase() != 0)
+        vicII.clockGraphicsPixel();
+
+    //
+    // Process phase 0 while the main border is active.
+    //
+    vicII.clockGraphicsPixel();
+
+    QCOMPARE(vicII.graphicsPixel(0), quint8(0x06));
+}
+void VICIITest::testGraphicsPixelIgnoresBorderColorOutsideBorder()
+{
+    VICII vicII;
+
+    //
+    // Set different border and background colors.
+    //
+    vicII.writeRegister(0x20, 0x06);
+    vicII.writeRegister(0x21, 0x03);
+
+    QVERIFY(!vicII.mainBorder());
+
+    //
+    // The graphics shift register is initially zero,
+    // therefore a normal background pixel is generated.
+    //
+    vicII.clockGraphicsPixel();
+
+    QVERIFY(!vicII.mainBorder());
+
+    //
+    // Outside the border, the pixel must use the background
+    // color from $D021, not the border color from $D020.
+    //
+    QCOMPARE(vicII.graphicsPixel(0), quint8(0x03));
+}

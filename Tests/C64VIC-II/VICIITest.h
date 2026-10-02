@@ -103,4 +103,7 @@ private slots:
     void testVerticalBorderClosesAtLeftComparison();
     void testVerticalBorderClosesAtCycle63();
     void testRasterLineAdvancesWithRasterXWrap();
+
+    void testBorderPixelUsesBorderColor();
+    void testGraphicsPixelIgnoresBorderColorOutsideBorder();
 };
