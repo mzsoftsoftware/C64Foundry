@@ -66,6 +66,7 @@ public:
     void writeCycle(quint16 address);
 
     quint8 readVIC(quint16 address);
+    quint8 readVICColor(quint16 address);
 
 
 private:

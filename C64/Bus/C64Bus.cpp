@@ -312,3 +312,7 @@ quint8 C64Bus::readVIC(const quint16 address)
 
     return value;
 }
+quint8 C64Bus::readVICColor(const quint16 address)
+{
+    return m_ptrMemory->readColorRAM(address);
+}

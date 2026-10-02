@@ -71,4 +71,8 @@ private slots:
     void testFirstGraphicsMemoryAccess();
     void testGraphicsMemoryAccessSequence();
     void testVideoCounterBaseUpdate();
+    void testVideoCounterReloadFromBase();
+
+    void testBadLineColorRAMAccess();
+    void testCAccessUsesVideoCounter();
 };

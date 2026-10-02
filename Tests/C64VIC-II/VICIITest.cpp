@@ -1567,3 +1567,199 @@ void VICIITest::testVideoCounterBaseUpdate()
     QCOMPARE(vicII.videoCounterBase(), quint16(40));
     QCOMPARE(vicII.displayState(), false);
 }
+void VICIITest::testVideoCounterReloadFromBase()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+
+    //
+    // Enable display with YSCROLL = 0.
+    // Raster line $30 is therefore a badline.
+    //
+    vicII.writeRegister(0x11, 0x10);
+
+    //
+    // Advance to cycle 14 of the first badline.
+    //
+    while ((vicII.rasterLine() != 0x30) ||
+           (vicII.rasterCycle() != 14))
+    {
+        vicII.clock();
+    }
+
+    QCOMPARE(vicII.rowCounter(), quint8(0));
+    QCOMPARE(vicII.videoCounter(), quint16(0));
+    QCOMPARE(vicII.videoCounterBase(), quint16(0));
+    QCOMPARE(vicII.displayState(), true);
+
+    //
+    // Advance through the character row until RC
+    // has reached 7.
+    //
+    while (vicII.rowCounter() != 7)
+        vicII.clock();
+
+    //
+    // Advance to cycle 57 of the current raster line.
+    //
+    while (vicII.rasterCycle() != 57)
+        vicII.clock();
+
+    QCOMPARE(vicII.rowCounter(), quint8(7));
+    QCOMPARE(vicII.videoCounter(), quint16(40));
+    QCOMPARE(vicII.videoCounterBase(), quint16(0));
+
+    //
+    // Cycle 58 copies VC to VCBASE and leaves
+    // the display state.
+    //
+    vicII.clock();
+
+    QCOMPARE(vicII.rasterCycle(), quint16(58));
+    QCOMPARE(vicII.videoCounter(), quint16(40));
+    QCOMPARE(vicII.videoCounterBase(), quint16(40));
+    QCOMPARE(vicII.displayState(), false);
+
+    //
+    // Advance to cycle 13 of the next raster line.
+    //
+    do
+    {
+        vicII.clock();
+    }
+    while (vicII.rasterCycle() != 13);
+
+    QCOMPARE(vicII.videoCounter(), quint16(40));
+
+    //
+    // Cycle 14 reloads VC from VCBASE and resets VMLI.
+    //
+    vicII.clock();
+
+    QCOMPARE(vicII.rasterCycle(), quint16(14));
+    QCOMPARE(vicII.videoCounter(), quint16(40));
+    QCOMPARE(vicII.videoMatrixLineIndex(), quint8(0));
+}
+
+void VICIITest::testBadLineColorRAMAccess()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+
+    //
+    // Select video matrix at $0400.
+    //
+    vicII.writeRegister(0x18, 0x10);
+
+    //
+    // Enable display with YSCROLL = 0.
+    // Raster line $30 is therefore a badline.
+    //
+    vicII.writeRegister(0x11, 0x10);
+
+    //
+    // Put character $42 into the first position
+    // of the video matrix.
+    //
+    memory.writeRAM(0x0400, 0x42);
+
+    //
+    // Put color $05 into the corresponding Color RAM
+    // position.
+    //
+    memory.writeColorRAM(0x0000, 0x05);
+
+    //
+    // Advance through the first c-access at cycle 15.
+    //
+    while ((vicII.rasterLine() != 0x30) ||
+           (vicII.rasterCycle() != 15))
+    {
+        vicII.clock();
+    }
+
+    //
+    // The c-access loads both the character code and
+    // its corresponding color information.
+    //
+    QCOMPARE(vicII.videoMatrixLine(0), quint8(0x42));
+    QCOMPARE(vicII.colorLine(0), quint8(0x05));
+}
+void VICIITest::testCAccessUsesVideoCounter()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+
+    //
+    // Select video matrix at $0400.
+    //
+    vicII.writeRegister(0x18, 0x10);
+
+    //
+    // Enable display with YSCROLL = 0.
+    //
+    vicII.writeRegister(0x11, 0x10);
+
+    //
+    // Put different character codes into the first
+    // positions of the first and second character rows.
+    //
+    memory.writeRAM(0x0400, 0x42);
+    memory.writeRAM(0x0428, 0x84);
+
+    //
+    // Put corresponding colors into Color RAM.
+    //
+    memory.writeColorRAM(0x0000, 0x05);
+    memory.writeColorRAM(0x0028, 0x0A);
+
+    //
+    // Advance through the first c-access of the
+    // first badline.
+    //
+    while ((vicII.rasterLine() != 0x30) ||
+           (vicII.rasterCycle() != 15))
+    {
+        vicII.clock();
+    }
+
+    QCOMPARE(vicII.videoCounter(), quint16(0));
+    QCOMPARE(vicII.videoMatrixLineIndex(), quint8(0));
+    QCOMPARE(vicII.videoMatrixLine(0), quint8(0x42));
+    QCOMPARE(vicII.colorLine(0), quint8(0x05));
+
+    //
+    // Advance through the first c-access of the next
+    // badline. VCBASE has become 40 and cycle 14 has
+    // reloaded VC from VCBASE.
+    //
+    while ((vicII.rasterLine() != 0x38) ||
+           (vicII.rasterCycle() != 15))
+    {
+        vicII.clock();
+    }
+
+    QCOMPARE(vicII.videoCounterBase(), quint16(40));
+    QCOMPARE(vicII.videoCounter(), quint16(40));
+    QCOMPARE(vicII.videoMatrixLineIndex(), quint8(0));
+
+    //
+    // The first c-access of the second character row
+    // must use VC = 40 for the memory addresses while
+    // storing the result at VMLI = 0.
+    //
+    QCOMPARE(vicII.videoMatrixLine(0), quint8(0x84));
+    QCOMPARE(vicII.colorLine(0), quint8(0x0A));
+}

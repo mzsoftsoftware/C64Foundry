@@ -228,8 +228,12 @@ void VICII::clock()
         (m_rasterCycle >= 15) &&
         (m_rasterCycle <= 54))
     {
-        const quint8 position = m_rasterCycle - 15;
-        m_videoMatrixLine[position] = readVideoMatrixMemory(position);
+        //
+        // VC selects the video matrix and Color RAM address.
+        // VMLI selects the position in the internal line buffers.
+        //
+        m_videoMatrixLine[m_videoMatrixLineIndex] = readVideoMatrixMemory(m_videoCounter);
+        m_colorLine[m_videoMatrixLineIndex] = readColorMemory(m_videoCounter);
     }
 
     //
@@ -294,4 +298,8 @@ quint8 VICII::readCharacterMemory(const quint8 characterCode, const quint8 row)
 {
     const quint16 address = m_characterBaseAddress + (static_cast<quint16>(characterCode) << 3) + row;
     return readMemory(address);
+}
+quint8 VICII::readColorMemory(const quint16 position)
+{
+    return m_ptrBus->readVICColor(position);
 }

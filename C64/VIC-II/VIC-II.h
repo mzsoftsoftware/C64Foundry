@@ -26,6 +26,7 @@ public:
     bool displayState() const                               { return m_displayState; }
     quint8 graphicsData() const                             { return m_graphicsData; }
     quint16 videoCounterBase() const                        { return m_videoCounterBase; }
+    quint8 colorLine(quint8 position) const                 { return m_colorLine[position]; }
 
     bool badLine() const;
     bool ba() const
@@ -66,7 +67,7 @@ public:
     quint8 readMemory(quint16 address);
     quint8 readVideoMatrixMemory(quint16 position);
     quint8 readCharacterMemory(quint8 characterCode, quint8 row);
-
+    quint8 readColorMemory(const quint16 position);
 
 private:
     quint8 m_spritePositionRegisters[0x10] = {};
@@ -85,6 +86,7 @@ private:
     bool m_displayState = false;
 
     quint8 m_graphicsData = 0;
+    quint8 m_colorLine[40] = {};
 
     quint16 m_characterBaseAddress = 0x0000;
 
