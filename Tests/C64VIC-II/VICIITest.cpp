@@ -2772,7 +2772,7 @@ void VICIITest::testBorderPixelUsesBorderColor()
     //
     vicII.clockGraphicsPixel();
 
-    QCOMPARE(vicII.graphicsPixel(0), quint8(0x06));
+    QCOMPARE(vicII.outputPixel(), quint8(0x06));
 }
 void VICIITest::testGraphicsPixelIgnoresBorderColorOutsideBorder()
 {

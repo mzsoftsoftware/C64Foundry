@@ -60,6 +60,7 @@ public:
     }
 
     quint8 graphicsPixel(quint8 phase) const                { return m_graphicsPixels[phase]; }
+    quint8 outputPixel() const                              { return m_outputPixel; }
     quint16 borderLeft() const                              { return m_borderLeft; }
     quint16 borderRight() const                             { return m_borderRight; }
     bool mainBorder() const                                 { return m_mainBorder; }
@@ -107,12 +108,13 @@ private:
     quint8 m_colorLine[40] = {};
     quint16 m_rasterX = 0;
     quint8 m_graphicsPixels[8] = {};
+    quint8 m_outputPixel = 0;
 
     quint16 m_characterBaseAddress = 0x0000;
 
     quint16 m_borderLeft = 0;
     quint16 m_borderRight = 0;
-    bool m_mainBorder = false;
+    bool m_mainBorder = true;
     quint16 m_pixelsPerLine = 0;
     quint16 m_borderTop = 55;
     quint16 m_borderBottom = 247;

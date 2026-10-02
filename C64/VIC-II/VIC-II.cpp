@@ -381,19 +381,28 @@ void VICII::clockGraphicsPixel()
     }
 
     //
-    // Generate and store the pixel for the current phase.
+    // Generate and store the graphics pixel for the current phase.
     //
-    if (m_mainBorder)
-    {
-        m_graphicsPixels[m_graphicsPixelPhase] = m_colorRegisters[0] & 0x0F;
-    }
-    else if (m_graphicsShiftRegister & 0x80)
+    if (m_graphicsShiftRegister & 0x80)
     {
         m_graphicsPixels[m_graphicsPixelPhase] = m_graphicsColor;
     }
     else
     {
-        m_graphicsPixels[m_graphicsPixelPhase] = m_colorRegisters[1] & 0x0F;
+        m_graphicsPixels[m_graphicsPixelPhase] =
+            m_colorRegisters[1] & 0x0F;
+    }
+
+    //
+    // Select the final output pixel.
+    //
+    if (m_mainBorder)
+    {
+        m_outputPixel = m_colorRegisters[0] & 0x0F;
+    }
+    else
+    {
+        m_outputPixel = m_graphicsPixels[m_graphicsPixelPhase];
     }
 
     //
