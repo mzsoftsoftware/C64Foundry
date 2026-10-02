@@ -68,4 +68,6 @@ private slots:
     void testBadLineStartsDisplayState();
     void testDisplayStateEndsAtRowCounterSeven();
 
+    void testFirstGraphicsMemoryAccess();
+    void testGraphicsMemoryAccessSequence();
 };

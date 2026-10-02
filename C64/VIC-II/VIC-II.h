@@ -24,6 +24,8 @@ public:
     quint16 videoCounter() const                            { return m_videoCounter; }
     quint8 videoMatrixLineIndex() const                     { return m_videoMatrixLineIndex; }
     bool displayState() const                               { return m_displayState; }
+    quint8 graphicsData() const                             { return m_graphicsData; }
+
     bool badLine() const;
     bool ba() const
     {
@@ -80,6 +82,8 @@ private:
     quint8 m_videoMatrixLine[40] = {};
     quint8 m_videoMatrixLineIndex = 0;
     bool m_displayState = false;
+
+    quint8 m_graphicsData = 0;
 
     quint16 m_characterBaseAddress = 0x0000;
 

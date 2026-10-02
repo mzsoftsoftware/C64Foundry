@@ -202,10 +202,13 @@ void VICII::clock()
     }
 
     //
-    // Graphics accesses advance the video counter and
-    // video matrix line index.
+    // During display state, cycles 15 through 54 perform
+    // the 40 graphics accesses. Each access advances
+    // VC and VMLI.
     //
-    if (m_rasterCycle == 15)
+    if (m_displayState &&
+        (m_rasterCycle >= 15) &&
+        (m_rasterCycle <= 54))
     {
         ++m_videoCounter;
         ++m_videoMatrixLineIndex;
@@ -219,6 +222,19 @@ void VICII::clock()
     {
         const quint8 position = m_rasterCycle - 15;
         m_videoMatrixLine[position] = readVideoMatrixMemory(position);
+    }
+
+    //
+    // Cycles 16 through 55 perform the 40 graphics accesses.
+    // Each graphics access uses the character code fetched by
+    // the preceding c-access.
+    //
+    if (m_displayState &&
+        (m_rasterCycle >= 16) &&
+        (m_rasterCycle <= 55))
+    {
+        const quint8 position = m_rasterCycle - 16;
+        m_graphicsData = readCharacterMemory(m_videoMatrixLine[position], m_rowCounter);
     }
 
     //

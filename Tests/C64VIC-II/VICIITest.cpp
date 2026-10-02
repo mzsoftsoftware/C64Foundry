@@ -1132,7 +1132,7 @@ void VICIITest::testBadLineFirstCAccess()
     vicII.clock();
 
     QCOMPARE(vicII.rasterCycle(), quint8(54));
-    QCOMPARE(bus.accessCount(), quint8(1));
+    QCOMPARE(bus.accessCount(), quint8(2));
     QCOMPARE(bus.lastAccessType(), C64Bus::AccessType::Read);
     QCOMPARE(bus.lastAccessSource(), C64Bus::AccessSource::VICII);
     QCOMPARE(bus.lastAccessAddress(), quint16(0x0427));
@@ -1250,10 +1250,12 @@ void VICIITest::testFirstGraphicsAccess()
     QCOMPARE(vicII.rasterCycle(), quint16(14));
 
     //
-    // Cycle 14 initializes the video matrix sequencer.
+    // Cycle 14 initializes the video matrix sequencer
+    // and starts the display state.
     //
     QCOMPARE(vicII.videoCounter(), quint16(0));
     QCOMPARE(vicII.videoMatrixLineIndex(), quint8(0));
+    QCOMPARE(vicII.displayState(), true);
 
     //
     // Cycle 15 performs the first graphics access.
@@ -1267,6 +1269,18 @@ void VICIITest::testFirstGraphicsAccess()
     //
     QCOMPARE(vicII.videoCounter(), quint16(1));
     QCOMPARE(vicII.videoMatrixLineIndex(), quint8(1));
+
+    //
+    // Advance through all 40 graphics accesses.
+    //
+    while (vicII.rasterCycle() != 54)
+        vicII.clock();
+
+    //
+    // Each graphics access advances VC and VMLI.
+    //
+    QCOMPARE(vicII.videoCounter(), quint16(40));
+    QCOMPARE(vicII.videoMatrixLineIndex(), quint8(40));
 }
 void VICIITest::testBadLineStartsDisplayState()
 {
@@ -1358,4 +1372,129 @@ void VICIITest::testDisplayStateEndsAtRowCounterSeven()
     QCOMPARE(vicII.rasterCycle(), quint16(58));
     QCOMPARE(vicII.rowCounter(), quint8(7));
     QCOMPARE(vicII.displayState(), false);
+}
+
+void VICIITest::testFirstGraphicsMemoryAccess()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+
+    //
+    // Select video matrix at $0400 and character memory at $0000.
+    //
+    vicII.writeRegister(0x18, 0x10);
+
+    //
+    // Enable display with YSCROLL = 0.
+    // Raster line $30 is therefore a badline.
+    //
+    vicII.writeRegister(0x11, 0x10);
+
+    //
+    // Character $42 is the first character in the video matrix.
+    //
+    memory.writeRAM(0x0400, 0x42);
+
+    //
+    // Character $42, row 0 is located at $0210.
+    //
+    memory.writeRAM(0x0210, 0xA5);
+
+    //
+    // Advance through the first c-access at cycle 15.
+    // This loads character $42 into video matrix line position 0.
+    //
+    while ((vicII.rasterLine() != 0x30) ||
+           (vicII.rasterCycle() != 15))
+    {
+        vicII.clock();
+    }
+
+    QCOMPARE(vicII.videoMatrixLine(0), quint8(0x42));
+
+    //
+    // The graphics data has not been fetched yet.
+    //
+    QCOMPARE(vicII.graphicsData(), quint8(0x00));
+
+    //
+    // Cycle 16 performs the first graphics access.
+    //
+    vicII.clock();
+
+    QCOMPARE(vicII.rasterCycle(), quint16(16));
+
+    //
+    // Character $42 with RC = 0 addresses $0210.
+    //
+    QCOMPARE(vicII.graphicsData(), quint8(0xA5));
+}
+void VICIITest::testGraphicsMemoryAccessSequence()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+
+    //
+    // Select video matrix at $0400 and character memory at $0000.
+    //
+    vicII.writeRegister(0x18, 0x10);
+
+    //
+    // Enable display with YSCROLL = 0.
+    // Raster line $30 is therefore a badline.
+    //
+    vicII.writeRegister(0x11, 0x10);
+
+    //
+    // Put two different characters into the first two
+    // positions of the video matrix.
+    //
+    memory.writeRAM(0x0400, 0x42);
+    memory.writeRAM(0x0401, 0x43);
+
+    //
+    // Character $42, row 0 is located at $0210.
+    // Character $43, row 0 is located at $0218.
+    //
+    memory.writeRAM(0x0210, 0xA5);
+    memory.writeRAM(0x0218, 0x5A);
+
+    //
+    // Advance through the first c-access at cycle 15.
+    //
+    while ((vicII.rasterLine() != 0x30) ||
+           (vicII.rasterCycle() != 15))
+    {
+        vicII.clock();
+    }
+
+    //
+    // The first c-access has loaded character $42.
+    //
+    QCOMPARE(vicII.videoMatrixLine(0), quint8(0x42));
+
+    //
+    // Cycle 16 performs g-access #0 and c-access #1.
+    //
+    vicII.clock();
+
+    QCOMPARE(vicII.rasterCycle(), quint16(16));
+    QCOMPARE(vicII.graphicsData(), quint8(0xA5));
+    QCOMPARE(vicII.videoMatrixLine(1), quint8(0x43));
+
+    //
+    // Cycle 17 performs g-access #1.
+    //
+    vicII.clock();
+
+    QCOMPARE(vicII.rasterCycle(), quint16(17));
+    QCOMPARE(vicII.graphicsData(), quint8(0x5A));
 }
