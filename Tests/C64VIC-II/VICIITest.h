@@ -78,5 +78,9 @@ private slots:
     void testCAccessVideoCounterSequence();
 
     void testFirstGraphicsColor();
+    void testStandardTextGraphicsPixel();
+    void testStandardTextGraphicsBackgroundPixel();
+    void testStandardTextGraphicsPixelShift();
+    void testStandardTextGraphicsPixelSequence();
 
 };

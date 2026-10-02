@@ -57,6 +57,9 @@ public:
         return true;
     }
 
+    quint8 graphicsPixel() const;
+
+
     // Setter
     void setBus(C64Bus* ptrBus)                             { m_ptrBus = ptrBus; }
     void setTiming(const C64::Timing& timing)               { m_timing = timing; }
@@ -64,6 +67,7 @@ public:
 
     // Operations
     void clock();
+    void clockGraphicsPixel();
 
     quint8 readMemory(quint16 address);
     quint8 readVideoMatrixMemory(quint16 position);
@@ -87,6 +91,7 @@ private:
     bool m_displayState = false;
 
     quint8 m_graphicsData = 0;
+    quint8 m_graphicsShiftRegister = 0;
     quint8 m_graphicsColor = 0;
     quint8 m_colorLine[40] = {};
 

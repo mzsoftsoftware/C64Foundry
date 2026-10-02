@@ -214,6 +214,12 @@ void VICII::clock()
         m_graphicsData = readCharacterMemory(m_videoMatrixLine[position], m_rowCounter);
 
         //
+        // Load the graphics shift register with the graphics data
+        // fetched for the current character.
+        //
+        m_graphicsShiftRegister = m_graphicsData;
+
+        //
         // Latch the color belonging to the current character.
         //
         m_graphicsColor = m_colorLine[position];
@@ -307,4 +313,21 @@ quint8 VICII::readCharacterMemory(const quint8 characterCode, const quint8 row)
 quint8 VICII::readColorMemory(const quint16 position)
 {
     return m_ptrBus->readVICColor(position);
+}
+
+quint8 VICII::graphicsPixel() const
+{
+    //
+    // In standard text mode, a set graphics bit selects
+    // the character color. A clear bit selects the
+    // background color from $D021.
+    //
+    if (m_graphicsShiftRegister & 0x80)
+        return m_graphicsColor;
+
+    return m_colorRegisters[1] & 0x0F;
+}
+void VICII::clockGraphicsPixel()
+{
+    m_graphicsShiftRegister <<= 1;
 }
