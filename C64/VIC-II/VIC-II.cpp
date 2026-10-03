@@ -10,6 +10,8 @@ VICII::VICII()
 VICII::~VICII()
 {
     delete[] m_ptrFrameBuffer;
+    delete[] m_ptrReadyFrameBuffer;
+    delete[] m_ptrReadFrameBuffer;
 }
 
 quint8 VICII::readRegister(const quint8 address) const
@@ -187,7 +189,11 @@ void VICII::updateTiming()
     if (frameBufferSize != m_frameBufferSize)
     {
         delete[] m_ptrFrameBuffer;
+        delete[] m_ptrReadyFrameBuffer;
+        delete[] m_ptrReadFrameBuffer;
         m_ptrFrameBuffer = new quint8[frameBufferSize];
+        m_ptrReadyFrameBuffer = new quint8[frameBufferSize];
+        m_ptrReadFrameBuffer = new quint8[frameBufferSize];
         m_frameBufferSize = frameBufferSize;
     }
     m_frameBufferIndex = 0;
@@ -364,7 +370,13 @@ void VICII::clock()
     // Wrap the frame buffer after the last pixel of the frame.
     //
     if (m_frameBufferIndex >= m_frameBufferSize)
+    {
+        quint8* ptrFrameBuffer = m_ptrFrameBuffer;
+        m_ptrFrameBuffer = m_ptrReadyFrameBuffer;
+        m_ptrReadyFrameBuffer = ptrFrameBuffer;
+
         m_frameBufferIndex = 0;
+    }
 }
 
 quint8 VICII::readMemory(const quint16 address)
@@ -487,4 +499,14 @@ void VICII::updateVerticalBorderTiming()
         m_borderTop = 55;
         m_borderBottom = 247;
     }
+}
+
+quint8* VICII::acquireReadyFrame()
+{
+    quint8* ptrFrameBuffer = m_ptrReadFrameBuffer;
+
+    m_ptrReadFrameBuffer = m_ptrReadyFrameBuffer;
+    m_ptrReadyFrameBuffer = ptrFrameBuffer;
+
+    return m_ptrReadFrameBuffer;
 }

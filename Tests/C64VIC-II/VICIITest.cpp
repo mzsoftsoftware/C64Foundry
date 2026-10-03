@@ -3211,7 +3211,7 @@ void VICIITest::testFrameBufferStoresOutputPixel()
     vicII.setTiming(C64::PALTiming);
 
     //
-    // Set the border color to a recognizable value.
+    // Set the border color for the first frame.
     //
     vicII.writeRegister(0x20, 0x06);
 
@@ -3219,7 +3219,7 @@ void VICIITest::testFrameBufferStoresOutputPixel()
     QCOMPARE(vicII.rasterLine(), quint16(0));
 
     //
-    // Generate the first eight pixels of the frame.
+    // Generate the first VIC-II cycle of the frame.
     //
     vicII.clock();
 
@@ -3229,7 +3229,7 @@ void VICIITest::testFrameBufferStoresOutputPixel()
     QCOMPARE(vicII.framePixel(0, 0), quint8(0x06));
 
     //
-    // Complete the current PAL frame.
+    // Complete the first PAL frame.
     //
     for (quint64 cycle = 1;
          cycle < C64::PALTiming.cyclesPerFrame;
@@ -3242,4 +3242,42 @@ void VICIITest::testFrameBufferStoresOutputPixel()
     // The frame buffer index must wrap at the end of the frame.
     //
     QCOMPARE(vicII.frameBufferIndex(), quint32(0));
+
+    //
+    // The completed frame must be available as the ready frame.
+    //
+    QCOMPARE(vicII.readyFramePixel(0, 0), quint8(0x06));
+
+    //
+    // Acquire the completed frame for the video consumer.
+    //
+    quint8* ptrReadFrame = vicII.acquireReadyFrame();
+
+    QVERIFY(ptrReadFrame != nullptr);
+    QCOMPARE(ptrReadFrame[0], quint8(0x06));
+
+    //
+    // Use a different border color for the second frame.
+    //
+    vicII.writeRegister(0x20, 0x0E);
+
+    //
+    // Generate the complete second frame.
+    //
+    for (quint64 cycle = 0;
+         cycle < C64::PALTiming.cyclesPerFrame;
+         ++cycle)
+    {
+        vicII.clock();
+    }
+
+    //
+    // The video consumer must still see the first frame.
+    //
+    QCOMPARE(ptrReadFrame[0], quint8(0x06));
+
+    //
+    // The newly completed frame must be available separately.
+    //
+    QCOMPARE(vicII.readyFramePixel(0, 0), quint8(0x0E));
 }
