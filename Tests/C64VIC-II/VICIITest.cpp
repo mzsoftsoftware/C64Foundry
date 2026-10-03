@@ -3135,3 +3135,111 @@ void VICIITest::testIdleStateStandardTextForegroundColor()
     //
     QCOMPARE(vicII.graphicsColor(), quint8(0x00));
 }
+
+void VICIITest::testStandardTextGraphicsSequence()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+
+    //
+    // Select video matrix at $0400 and character memory at $0000.
+    //
+    vicII.writeRegister(0x18, 0x10);
+
+    //
+    // Enable display with YSCROLL=0.
+    //
+    vicII.writeRegister(0x11, 0x10);
+
+    //
+    // Set the background color.
+    //
+    vicII.writeRegister(0x21, 0x03);
+
+    //
+    // Character $42 uses foreground color $05.
+    //
+    memory.writeRAM(0x0400, 0x42);
+    memory.writeColorRAM(0x0000, 0x05);
+
+    //
+    // Character $42, row 0 contains the bit pattern
+    // 10100101.
+    //
+    memory.writeRAM(0x0210, 0xA5);
+
+    //
+    // Advance through graphics access #0 at cycle 16
+    // of the first bad line.
+    //
+    while ((vicII.rasterLine() != 0x30) ||
+           (vicII.rasterCycle() != 16))
+    {
+        vicII.clock();
+    }
+
+    QVERIFY(vicII.displayState());
+    QCOMPARE(vicII.graphicsData(), quint8(0xA5));
+
+    //
+    // Standard text mode shifts the graphics data from
+    // bit 7 to bit 0. Set bits use the character color,
+    // clear bits use the background color.
+    //
+    QCOMPARE(vicII.graphicsPixel(0), quint8(0x05));
+    QCOMPARE(vicII.graphicsPixel(1), quint8(0x03));
+    QCOMPARE(vicII.graphicsPixel(2), quint8(0x05));
+    QCOMPARE(vicII.graphicsPixel(3), quint8(0x03));
+    QCOMPARE(vicII.graphicsPixel(4), quint8(0x03));
+    QCOMPARE(vicII.graphicsPixel(5), quint8(0x05));
+    QCOMPARE(vicII.graphicsPixel(6), quint8(0x03));
+    QCOMPARE(vicII.graphicsPixel(7), quint8(0x05));
+}
+
+void VICIITest::testFrameBufferStoresOutputPixel()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+    vicII.setTiming(C64::PALTiming);
+
+    //
+    // Set the border color to a recognizable value.
+    //
+    vicII.writeRegister(0x20, 0x06);
+
+    QCOMPARE(vicII.rasterX(), quint16(0));
+    QCOMPARE(vicII.rasterLine(), quint16(0));
+
+    //
+    // Generate the first eight pixels of the frame.
+    //
+    vicII.clock();
+
+    //
+    // Pixel (0, 0) must contain the final VIC-II output pixel.
+    //
+    QCOMPARE(vicII.framePixel(0, 0), quint8(0x06));
+
+    //
+    // Complete the current PAL frame.
+    //
+    for (quint64 cycle = 1;
+         cycle < C64::PALTiming.cyclesPerFrame;
+         ++cycle)
+    {
+        vicII.clock();
+    }
+
+    //
+    // The frame buffer index must wrap at the end of the frame.
+    //
+    QCOMPARE(vicII.frameBufferIndex(), quint32(0));
+}

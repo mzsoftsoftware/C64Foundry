@@ -9,6 +9,7 @@ VICII::VICII()
 }
 VICII::~VICII()
 {
+    delete[] m_ptrFrameBuffer;
 }
 
 quint8 VICII::readRegister(const quint8 address) const
@@ -181,6 +182,15 @@ void VICII::updateTiming()
 {
     m_pixelsPerLine = static_cast<quint16>(m_timing.cyclesPerLine * 8);
     updateHorizontalBorderTiming();
+
+    const quint32 frameBufferSize = static_cast<quint32>(m_timing.cyclesPerLine * 8) * m_timing.linesPerFrame;
+    if (frameBufferSize != m_frameBufferSize)
+    {
+        delete[] m_ptrFrameBuffer;
+        m_ptrFrameBuffer = new quint8[frameBufferSize];
+        m_frameBufferSize = frameBufferSize;
+    }
+    m_frameBufferIndex = 0;
 }
 
 bool VICII::badLine() const
@@ -349,6 +359,12 @@ void VICII::clock()
     //
     for (quint8 pixel = 0; pixel < 8; ++pixel)
         clockGraphicsPixel();
+
+    //
+    // Wrap the frame buffer after the last pixel of the frame.
+    //
+    if (m_frameBufferIndex >= m_frameBufferSize)
+        m_frameBufferIndex = 0;
 }
 
 quint8 VICII::readMemory(const quint16 address)
@@ -424,6 +440,11 @@ void VICII::clockGraphicsPixel()
     {
         m_outputPixel = m_graphicsPixels[m_graphicsPixelPhase];
     }
+
+    //
+    // Store the final output pixel in the frame buffer.
+    //
+    m_ptrFrameBuffer[m_frameBufferIndex++] = m_outputPixel;
 
     //
     // Advance the graphics shift register.

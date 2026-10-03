@@ -112,4 +112,7 @@ private slots:
     void testIdleStateGraphicsAccess();
     void testIdleStateECMGraphicsAccess();
     void testIdleStateStandardTextForegroundColor();
+
+    void testStandardTextGraphicsSequence();
+    void testFrameBufferStoresOutputPixel();
 };

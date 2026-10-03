@@ -68,6 +68,9 @@ public:
     quint16 borderBottom() const                            { return m_borderBottom; }
     bool verticalBorder() const                             { return m_verticalBorder; }
 
+    quint8 framePixel(quint16 x, quint16 y) const           { return m_ptrFrameBuffer[static_cast<quint32>(y) * m_pixelsPerLine + x]; }
+    quint32 frameBufferIndex() const                        { return m_frameBufferIndex; }
+
     // Setter
     void setBus(C64Bus* ptrBus)                             { m_ptrBus = ptrBus; }
     void setTiming(const C64::Timing& timing);
@@ -145,4 +148,8 @@ private:
 
     quint8 m_interruptStatus = 0x00;
     quint8 m_interruptMask = 0xF0;
+
+    quint8* m_ptrFrameBuffer = nullptr;
+    quint32 m_frameBufferSize = 0;
+    quint32 m_frameBufferIndex = 0;
 };
