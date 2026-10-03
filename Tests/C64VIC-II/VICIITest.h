@@ -117,4 +117,8 @@ private slots:
     void testFrameBufferStoresOutputPixel();
     void testFrameBufferAcquireWithoutReadyFrame();
     void testFrameBufferKeepsLatestReadyFrame();
+    void testFrameBufferPreservesAcquiredFrame();
+
+    void testFrameBufferAcquireWhileProducing();
+    void testFrameBufferAcquireOnlyOnce();
 };

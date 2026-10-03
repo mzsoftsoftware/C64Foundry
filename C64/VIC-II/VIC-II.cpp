@@ -9,9 +9,8 @@ VICII::VICII()
 }
 VICII::~VICII()
 {
-    delete[] m_ptrFrameBuffer;
-    delete[] m_ptrReadyFrameBuffer;
-    delete[] m_ptrReadFrameBuffer;
+    for (quint8 index = 0; index < 3; ++index)
+        delete[] m_ptrFrameBuffers[index];
 }
 
 quint8 VICII::readRegister(const quint8 address) const
@@ -188,13 +187,20 @@ void VICII::updateTiming()
     const quint32 frameBufferSize = static_cast<quint32>(m_timing.cyclesPerLine * 8) * m_timing.linesPerFrame;
     if (frameBufferSize != m_frameBufferSize)
     {
-        delete[] m_ptrFrameBuffer;
-        delete[] m_ptrReadyFrameBuffer;
-        delete[] m_ptrReadFrameBuffer;
-        m_ptrFrameBuffer = new quint8[frameBufferSize];
-        m_ptrReadyFrameBuffer = new quint8[frameBufferSize];
-        m_ptrReadFrameBuffer = new quint8[frameBufferSize];
+        for (quint8 index = 0; index < 3; ++index)
+        {
+            delete[] m_ptrFrameBuffers[index];
+            m_ptrFrameBuffers[index] = new quint8[frameBufferSize];
+        }
+
         m_frameBufferSize = frameBufferSize;
+        m_frameBufferIndex = 0;
+        m_writeFrameBufferIndex = 0;
+        m_readFrameBufferIndex = 2;
+        m_writeFrameGeneration = 0;
+        m_readFrameGeneration = 0;
+        m_readyFrameState.store(frameBufferState(1, 0), std::memory_order_relaxed);
+        m_ptrWriteFrameBuffer = m_ptrFrameBuffers[m_writeFrameBufferIndex];
     }
     m_frameBufferIndex = 0;
 }
@@ -371,12 +377,11 @@ void VICII::clock()
     //
     if (m_frameBufferIndex >= m_frameBufferSize)
     {
-        quint8* ptrFrameBuffer = m_ptrFrameBuffer;
-        m_ptrFrameBuffer = m_ptrReadyFrameBuffer;
-        m_ptrReadyFrameBuffer = ptrFrameBuffer;
-
+        ++m_writeFrameGeneration;
+        const quint32 oldState = m_readyFrameState.exchange(frameBufferState(m_writeFrameBufferIndex, m_writeFrameGeneration), std::memory_order_acq_rel);
+        m_writeFrameBufferIndex = frameBufferIndex(oldState);
+        m_ptrWriteFrameBuffer = m_ptrFrameBuffers[m_writeFrameBufferIndex];
         m_frameBufferIndex = 0;
-        m_frameReady = true;
     }
 }
 
@@ -457,7 +462,7 @@ void VICII::clockGraphicsPixel()
     //
     // Store the final output pixel in the frame buffer.
     //
-    m_ptrFrameBuffer[m_frameBufferIndex++] = m_outputPixel;
+    m_ptrWriteFrameBuffer[m_frameBufferIndex++] = m_outputPixel;
 
     //
     // Advance the graphics shift register.
@@ -502,17 +507,30 @@ void VICII::updateVerticalBorderTiming()
     }
 }
 
+quint8 VICII::readyFramePixel(quint16 x, quint16 y) const
+{
+    const quint32 state = m_readyFrameState.load(std::memory_order_acquire);
+    return m_ptrFrameBuffers[frameBufferIndex(state)][static_cast<quint32>(y) * m_pixelsPerLine + x];
+}
+
 quint8* VICII::acquireReadyFrame()
 {
-    if (!m_frameReady)
-        return nullptr;
+    quint32 readyState = m_readyFrameState.load(std::memory_order_acquire);
+    while (frameBufferGeneration(readyState) != m_readFrameGeneration)
+    {
+        const quint32 desiredState = frameBufferState(m_readFrameBufferIndex, frameBufferGeneration(readyState));
+        if (m_readyFrameState.compare_exchange_weak(readyState, desiredState, std::memory_order_acq_rel, std::memory_order_acquire))
+        {
+            m_readFrameBufferIndex = frameBufferIndex(readyState);
+            m_readFrameGeneration = frameBufferGeneration(readyState);
+            return m_ptrFrameBuffers[m_readFrameBufferIndex];
+        }
 
-    quint8* ptrFrameBuffer = m_ptrReadFrameBuffer;
+        //
+        // compare_exchange_weak() has updated readyState.
+        // Retry with the newest published frame.
+        //
+    }
 
-    m_ptrReadFrameBuffer = m_ptrReadyFrameBuffer;
-    m_ptrReadyFrameBuffer = ptrFrameBuffer;
-
-    m_frameReady = false;
-
-    return m_ptrReadFrameBuffer;
+    return nullptr;
 }

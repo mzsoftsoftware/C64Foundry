@@ -1,6 +1,8 @@
 #include "VICIITest.h"
 
 #include <QTest>
+#include <atomic>
+#include <thread>
 
 #include "C64/C64Timing.h"
 #include "C64/Bus/C64Bus.h"
@@ -3336,4 +3338,192 @@ void VICIITest::testFrameBufferKeepsLatestReadyFrame()
 
     QVERIFY(ptrReadFrame != nullptr);
     QCOMPARE(ptrReadFrame[0], quint8(0x0E));
+}
+void VICIITest::testFrameBufferPreservesAcquiredFrame()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+    vicII.setTiming(C64::PALTiming);
+
+    //
+    // Generate the first frame.
+    //
+    vicII.writeRegister(0x20, 0x06);
+
+    for (quint64 cycle = 0;
+         cycle < C64::PALTiming.cyclesPerFrame;
+         ++cycle)
+    {
+        vicII.clock();
+    }
+
+    //
+    // Acquire the first frame for the video consumer.
+    //
+    quint8* ptrReadFrame = vicII.acquireReadyFrame();
+
+    QVERIFY(ptrReadFrame != nullptr);
+    QCOMPARE(ptrReadFrame[0], quint8(0x06));
+
+    //
+    // Generate a second frame without acquiring it.
+    //
+    vicII.writeRegister(0x20, 0x0E);
+
+    for (quint64 cycle = 0;
+         cycle < C64::PALTiming.cyclesPerFrame;
+         ++cycle)
+    {
+        vicII.clock();
+    }
+
+    //
+    // The acquired frame must remain unchanged.
+    //
+    QCOMPARE(ptrReadFrame[0], quint8(0x06));
+
+    //
+    // Generate a third frame without acquiring the second frame.
+    //
+    vicII.writeRegister(0x20, 0x02);
+
+    for (quint64 cycle = 0;
+         cycle < C64::PALTiming.cyclesPerFrame;
+         ++cycle)
+    {
+        vicII.clock();
+    }
+
+    //
+    // The frame currently owned by the video consumer must
+    // still remain unchanged.
+    //
+    QCOMPARE(ptrReadFrame[0], quint8(0x06));
+
+    //
+    // Acquiring now must return the most recently completed frame.
+    //
+    quint8* ptrLatestFrame = vicII.acquireReadyFrame();
+
+    QVERIFY(ptrLatestFrame != nullptr);
+    QCOMPARE(ptrLatestFrame[0], quint8(0x02));
+}
+
+void VICIITest::testFrameBufferAcquireWhileProducing()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+    vicII.setTiming(C64::PALTiming);
+
+    std::atomic_bool firstFrameReady = false;
+    std::atomic_bool consumerFinished = false;
+
+    quint8* ptrReadFrame = nullptr;
+
+    //
+    // The producer generates two frames.
+    //
+    std::thread producer(
+        [&vicII, &firstFrameReady, &consumerFinished]()
+        {
+            //
+            // Generate the first frame.
+            //
+            vicII.writeRegister(0x20, 0x06);
+
+            for (quint64 cycle = 0;
+                 cycle < C64::PALTiming.cyclesPerFrame;
+                 ++cycle)
+            {
+                vicII.clock();
+            }
+
+            //
+            // Allow the consumer to acquire the first frame.
+            //
+            firstFrameReady.store(true);
+
+            //
+            // Continue producing while the consumer is active.
+            //
+            vicII.writeRegister(0x20, 0x0E);
+
+            while (!consumerFinished.load())
+            {
+                vicII.clock();
+            }
+        });
+
+    //
+    // The consumer waits until the producer has completed
+    // the first frame and then acquires it while the producer
+    // continues running.
+    //
+    std::thread consumer(
+        [&vicII,
+         &firstFrameReady,
+         &consumerFinished,
+         &ptrReadFrame]()
+        {
+            while (!firstFrameReady.load())
+            {
+            }
+
+            ptrReadFrame = vicII.acquireReadyFrame();
+
+            consumerFinished.store(true);
+        });
+
+    producer.join();
+    consumer.join();
+
+    //
+    // The consumer must have acquired the completed first frame.
+    //
+    QVERIFY(ptrReadFrame != nullptr);
+    QCOMPARE(ptrReadFrame[0], quint8(0x06));
+}
+void VICIITest::testFrameBufferAcquireOnlyOnce()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+    vicII.setTiming(C64::PALTiming);
+
+    //
+    // Generate one complete frame.
+    //
+    vicII.writeRegister(0x20, 0x06);
+
+    for (quint64 cycle = 0;
+         cycle < C64::PALTiming.cyclesPerFrame;
+         ++cycle)
+    {
+        vicII.clock();
+    }
+
+    //
+    // The completed frame must be available once.
+    //
+    quint8* ptrReadFrame = vicII.acquireReadyFrame();
+
+    QVERIFY(ptrReadFrame != nullptr);
+    QCOMPARE(ptrReadFrame[0], quint8(0x06));
+
+    //
+    // No new frame has been generated.
+    // The same frame must not be acquired a second time.
+    //
+    QCOMPARE(vicII.acquireReadyFrame(), nullptr);
 }

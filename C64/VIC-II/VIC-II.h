@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QtGlobal>
+#include <atomic>
 
 #include "C64/C64Timing.h"
 
@@ -68,8 +69,8 @@ public:
     quint16 borderBottom() const                            { return m_borderBottom; }
     bool verticalBorder() const                             { return m_verticalBorder; }
 
-    quint8 framePixel(quint16 x, quint16 y) const           { return m_ptrFrameBuffer[static_cast<quint32>(y) * m_pixelsPerLine + x]; }
-    quint8 readyFramePixel(quint16 x, quint16 y) const      { return m_ptrReadyFrameBuffer[static_cast<quint32>(y) * m_pixelsPerLine + x]; }
+    quint8 framePixel(quint16 x, quint16 y) const           { return m_ptrWriteFrameBuffer[static_cast<quint32>(y) * m_pixelsPerLine + x]; }
+    quint8 readyFramePixel(quint16 x, quint16 y) const;
     quint32 frameBufferIndex() const                        { return m_frameBufferIndex; }
     quint8* acquireReadyFrame();
 
@@ -151,10 +152,27 @@ private:
     quint8 m_interruptStatus = 0x00;
     quint8 m_interruptMask = 0xF0;
 
-    quint8* m_ptrFrameBuffer = nullptr;
-    quint8* m_ptrReadyFrameBuffer = nullptr;
-    quint8* m_ptrReadFrameBuffer = nullptr;
+    quint8* m_ptrFrameBuffers[3] = {};
+    quint8* m_ptrWriteFrameBuffer = nullptr;
     quint32 m_frameBufferSize = 0;
     quint32 m_frameBufferIndex = 0;
-    bool m_frameReady = false;
+    quint8 m_writeFrameBufferIndex = 0;
+    quint8 m_readFrameBufferIndex = 2;
+    quint32 m_writeFrameGeneration = 0;
+    quint32 m_readFrameGeneration = 0;
+    std::atomic<quint32> m_readyFrameState = 1;
+
+    static constexpr quint32 FrameBufferIndexMask = 0x03;
+    static constexpr quint32 frameBufferState(quint8 index, quint32 generation)
+    {
+        return (generation << 2) | index;
+    }
+    static constexpr quint8 frameBufferIndex(quint32 state)
+    {
+        return static_cast<quint8>(state & FrameBufferIndexMask);
+    }
+    static constexpr quint32 frameBufferGeneration(quint32 state)
+    {
+        return state >> 2;
+    }
 };
