@@ -3281,3 +3281,59 @@ void VICIITest::testFrameBufferStoresOutputPixel()
     //
     QCOMPARE(vicII.readyFramePixel(0, 0), quint8(0x0E));
 }
+
+void VICIITest::testFrameBufferAcquireWithoutReadyFrame()
+{
+    VICII vicII;
+
+    //
+    // No complete frame has been generated yet.
+    //
+    QCOMPARE(vicII.acquireReadyFrame(), nullptr);
+}
+void VICIITest::testFrameBufferKeepsLatestReadyFrame()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+    vicII.setTiming(C64::PALTiming);
+
+    //
+    // Generate the first frame using border color $06.
+    //
+    vicII.writeRegister(0x20, 0x06);
+
+    for (quint64 cycle = 0;
+         cycle < C64::PALTiming.cyclesPerFrame;
+         ++cycle)
+    {
+        vicII.clock();
+    }
+
+    //
+    // Do not acquire the completed frame.
+    //
+
+    //
+    // Generate a second frame using border color $0E.
+    //
+    vicII.writeRegister(0x20, 0x0E);
+
+    for (quint64 cycle = 0;
+         cycle < C64::PALTiming.cyclesPerFrame;
+         ++cycle)
+    {
+        vicII.clock();
+    }
+
+    //
+    // Acquiring now must return the most recently completed frame.
+    //
+    quint8* ptrReadFrame = vicII.acquireReadyFrame();
+
+    QVERIFY(ptrReadFrame != nullptr);
+    QCOMPARE(ptrReadFrame[0], quint8(0x0E));
+}

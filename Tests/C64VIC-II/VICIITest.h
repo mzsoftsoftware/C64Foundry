@@ -115,4 +115,6 @@ private slots:
 
     void testStandardTextGraphicsSequence();
     void testFrameBufferStoresOutputPixel();
+    void testFrameBufferAcquireWithoutReadyFrame();
+    void testFrameBufferKeepsLatestReadyFrame();
 };

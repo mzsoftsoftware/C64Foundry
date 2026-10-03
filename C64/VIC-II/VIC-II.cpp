@@ -376,6 +376,7 @@ void VICII::clock()
         m_ptrReadyFrameBuffer = ptrFrameBuffer;
 
         m_frameBufferIndex = 0;
+        m_frameReady = true;
     }
 }
 
@@ -503,10 +504,15 @@ void VICII::updateVerticalBorderTiming()
 
 quint8* VICII::acquireReadyFrame()
 {
+    if (!m_frameReady)
+        return nullptr;
+
     quint8* ptrFrameBuffer = m_ptrReadFrameBuffer;
 
     m_ptrReadFrameBuffer = m_ptrReadyFrameBuffer;
     m_ptrReadyFrameBuffer = ptrFrameBuffer;
+
+    m_frameReady = false;
 
     return m_ptrReadFrameBuffer;
 }

@@ -156,4 +156,5 @@ private:
     quint8* m_ptrReadFrameBuffer = nullptr;
     quint32 m_frameBufferSize = 0;
     quint32 m_frameBufferIndex = 0;
+    bool m_frameReady = false;
 };
