@@ -513,7 +513,7 @@ quint8 VICII::readyFramePixel(quint16 x, quint16 y) const
     return m_ptrFrameBuffers[frameBufferIndex(state)][static_cast<quint32>(y) * m_pixelsPerLine + x];
 }
 
-quint8* VICII::acquireReadyFrame()
+const quint8* VICII::acquireReadyFrame()
 {
     quint32 readyState = m_readyFrameState.load(std::memory_order_acquire);
     while (frameBufferGeneration(readyState) != m_readFrameGeneration)

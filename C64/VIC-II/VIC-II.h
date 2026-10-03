@@ -72,7 +72,9 @@ public:
     quint8 framePixel(quint16 x, quint16 y) const           { return m_ptrWriteFrameBuffer[static_cast<quint32>(y) * m_pixelsPerLine + x]; }
     quint8 readyFramePixel(quint16 x, quint16 y) const;
     quint32 frameBufferIndex() const                        { return m_frameBufferIndex; }
-    quint8* acquireReadyFrame();
+    const quint8* acquireReadyFrame();
+    quint16 frameWidth() const                              { return m_pixelsPerLine; }
+    quint16 frameHeight() const                             { return m_timing.linesPerFrame; }
 
     // Setter
     void setBus(C64Bus* ptrBus)                             { m_ptrBus = ptrBus; }

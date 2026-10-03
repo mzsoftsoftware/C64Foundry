@@ -153,3 +153,16 @@ quint8 C64Machine::busLastAccessValue() const
 {
     return m_ptrBus->lastAccessValue();
 }
+
+const quint8* C64Machine::acquireVideoFrame()
+{
+    return m_ptrVICII->acquireReadyFrame();
+}
+quint16 C64Machine::videoFrameWidth() const
+{
+    return m_ptrVICII->frameWidth();
+}
+quint16 C64Machine::videoFrameHeight() const
+{
+    return m_ptrVICII->frameHeight();
+}

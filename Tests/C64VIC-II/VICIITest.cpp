@@ -3527,3 +3527,102 @@ void VICIITest::testFrameBufferAcquireOnlyOnce()
     //
     QCOMPARE(vicII.acquireReadyFrame(), nullptr);
 }
+void VICIITest::testFrameBufferConcurrentStress()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+
+    bus.setMemory(&memory);
+    vicII.setBus(&bus);
+    vicII.setTiming(C64::PALTiming);
+
+    constexpr quint32 FrameCount = 100;
+
+    std::atomic_bool producerFinished = false;
+    std::atomic_bool frameCorrupted = false;
+    std::atomic<quint32> acquiredFrames = 0;
+
+    //
+    // Produce frames continuously using a different border color
+    // for each frame.
+    //
+    std::thread producer(
+        [&vicII, &producerFinished]()
+        {
+            for (quint32 frame = 0;
+                 frame < FrameCount;
+                 ++frame)
+            {
+                const quint8 color =
+                    static_cast<quint8>((frame % 15) + 1);
+
+                vicII.writeRegister(0x20, color);
+
+                for (quint64 cycle = 0;
+                     cycle < C64::PALTiming.cyclesPerFrame;
+                     ++cycle)
+                {
+                    vicII.clock();
+                }
+            }
+
+            producerFinished.store(true);
+        });
+
+    //
+    // Acquire frames while the producer continues generating them.
+    //
+    std::thread consumer(
+        [&vicII,
+         &producerFinished,
+         &frameCorrupted,
+         &acquiredFrames]()
+        {
+            while (!producerFinished.load())
+            {
+                quint8* ptrFrame = vicII.acquireReadyFrame();
+
+                if (ptrFrame == nullptr)
+                    continue;
+
+                ++acquiredFrames;
+
+                //
+                // Remember data from the acquired frame.
+                //
+                const quint8 firstPixel = ptrFrame[0];
+
+                //
+                // Keep ownership of the frame for a while while
+                // the producer continues generating pixels.
+                //
+                for (quint32 iteration = 0;
+                     iteration < 10000;
+                     ++iteration)
+                {
+                    if (ptrFrame[0] != firstPixel)
+                    {
+                        frameCorrupted.store(true);
+                        return;
+                    }
+
+                    std::this_thread::yield();
+                }
+            }
+        });
+
+    producer.join();
+    consumer.join();
+
+    //
+    // The consumer must have acquired at least one frame.
+    //
+    QVERIFY(acquiredFrames.load() > 0);
+
+    //
+    // A frame owned by the consumer must never be modified
+    // by the producer.
+    //
+    QVERIFY(!frameCorrupted.load());
+}

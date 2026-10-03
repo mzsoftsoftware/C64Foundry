@@ -47,6 +47,10 @@ public:
     quint64 cyclesPerFrame() const  { return m_timing.cyclesPerFrame; }
     quint64 cyclesPerLine() const   { return m_timing.cyclesPerLine;  }
 
+    const quint8* acquireVideoFrame();
+    quint16 videoFrameWidth() const;
+    quint16 videoFrameHeight() const;
+
 private:
     C64::Timing m_timing = C64::PALTiming;
     quint64 m_cycles = 0;
