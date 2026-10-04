@@ -534,3 +534,9 @@ const quint8* VICII::acquireReadyFrame()
 
     return nullptr;
 }
+
+const quint8* VICII::peekReadyFrame() const
+{
+    const quint32 readyState = m_readyFrameState.load(std::memory_order_acquire);
+    return m_ptrFrameBuffers[frameBufferIndex(readyState)];
+}

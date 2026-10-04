@@ -48,6 +48,7 @@ public:
     quint64 cyclesPerLine() const   { return m_timing.cyclesPerLine;  }
 
     const quint8* acquireVideoFrame();
+    const quint8* peekVideoFrame() const;
     quint16 videoFrameWidth() const;
     quint16 videoFrameHeight() const;
 

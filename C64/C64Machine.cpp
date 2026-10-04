@@ -158,6 +158,10 @@ const quint8* C64Machine::acquireVideoFrame()
 {
     return m_ptrVICII->acquireReadyFrame();
 }
+const quint8* C64Machine::peekVideoFrame() const
+{
+    return m_ptrVICII->peekReadyFrame();
+}
 quint16 C64Machine::videoFrameWidth() const
 {
     return m_ptrVICII->frameWidth();

@@ -73,6 +73,7 @@ public:
     quint8 readyFramePixel(quint16 x, quint16 y) const;
     quint32 frameBufferIndex() const                        { return m_frameBufferIndex; }
     const quint8* acquireReadyFrame();
+    const quint8* peekReadyFrame() const;
     quint16 frameWidth() const                              { return m_pixelsPerLine; }
     quint16 frameHeight() const                             { return m_timing.linesPerFrame; }
 

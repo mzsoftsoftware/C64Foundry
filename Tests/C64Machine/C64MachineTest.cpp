@@ -347,42 +347,10 @@ void C64MachineTest::testVICIIBAWrite()
 
 void C64MachineTest::testPerformance()
 {
-    QTemporaryFile basicFile;
-    QTemporaryFile kernalFile;
-    QTemporaryFile characterFile;
-
-    QVERIFY(basicFile.open());
-    QVERIFY(kernalFile.open());
-    QVERIFY(characterFile.open());
-
-    QByteArray kernalROM(8192, char(0x00));
-
-    //
-    // Reset vector $FFFC/$FFFD -> $0800.
-    //
-    kernalROM[0x1FFC] = char(0x00);
-    kernalROM[0x1FFD] = char(0x08);
-
-    QCOMPARE(
-        basicFile.write(QByteArray(8192, char(0x00))),
-        qsizetype(8192));
-
-    QCOMPARE(
-        kernalFile.write(kernalROM),
-        qsizetype(8192));
-
-    QCOMPARE(
-        characterFile.write(QByteArray(4096, char(0x00))),
-        qsizetype(4096));
-
-    basicFile.close();
-    kernalFile.close();
-    characterFile.close();
-
     C64ROMSet romSet(
-        basicFile.fileName(),
-        kernalFile.fileName(),
-        characterFile.fileName());
+        QStringLiteral(":/ROMs/OpenROMs/basic.rom"),
+        QStringLiteral(":/ROMs/OpenROMs/kernal.rom"),
+        QStringLiteral(":/ROMs/OpenROMs/chargen.rom"));
 
     constexpr quint64 CycleCount = 20000000;
     constexpr quint64 RunCount = 5;
@@ -404,26 +372,6 @@ void C64MachineTest::testPerformance()
         C64Machine machine;
 
         QVERIFY(machine.loadROMSet(romSet));
-
-        QByteArray program;
-
-        //
-        // Simple endless loop:
-        //
-        // $0800: NOP
-        // $0801: NOP
-        // $0802: NOP
-        // $0803: JMP $0800
-        //
-        program.append(char(0xEA));
-        program.append(char(0xEA));
-        program.append(char(0xEA));
-
-        program.append(char(0x4C));
-        program.append(char(0x00));
-        program.append(char(0x08));
-
-        QVERIFY(machine.loadProgram(0x0800, program));
 
         machine.powerOn();
 
@@ -544,6 +492,7 @@ void C64MachineTest::testPerformance()
                    0,
                    'f',
                    2);
+
     qInfo().noquote()
         << QStringLiteral(
                "BENCHMARK_RESULT name=C64Machine Mcycles/s=%1")

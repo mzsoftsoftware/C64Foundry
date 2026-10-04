@@ -71,6 +71,7 @@ qt_add_executable(C64Foundry
     Configuration/ConfigurationManager.h Configuration/ConfigurationManager.cpp
 
     Gui/Emulator/EmulatorControlWidget.h Gui/Emulator/EmulatorControlWidget.cpp Gui/Emulator/EmulatorControlWidget.ui
+    Gui/Video/VideoWindowWidget.h Gui/Video/VideoWindowWidget.cpp
 
     Emulator/EmulatorSpeed.h
     Emulator/EmulatorController.h Emulator/EmulatorController.cpp
