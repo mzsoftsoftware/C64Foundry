@@ -4,6 +4,7 @@
 
 #include "Output/Video/VideoThread.h"
 #include "Output/Video/VideoWorker.h"
+#include "Gui/Video/VideoWindowWidget.h"
 
 
 VideoController::VideoController(C64Machine* ptrMachine, QObject* parent)
@@ -19,12 +20,18 @@ VideoController::VideoController(C64Machine* ptrMachine, QObject* parent)
 
 VideoController::~VideoController()
 {
-    qDebug() << "EmulatorController: shutting down";
+    qDebug() << "VideoController: shutting down";
 
     m_ptrWorker->requestShutdown();
     m_ptrThread->wait();
 
     delete m_ptrWorker;
 
-    qDebug() << "EmulatorController: destroyed";
+    qDebug() << "VideoController: destroyed";
+}
+
+void VideoController::setVideoWidget(VideoWindowWidget* ptrVideoWidget)
+{
+    connect(m_ptrWorker, &VideoWorker::frameReady, ptrVideoWidget, &VideoWindowWidget::setFrame, Qt::QueuedConnection);
+    connect(ptrVideoWidget, &VideoWindowWidget::frameTaken, m_ptrWorker, &VideoWorker::frameTaken, Qt::DirectConnection);
 }

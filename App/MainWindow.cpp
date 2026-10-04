@@ -5,7 +5,7 @@
 #include "Configuration/C64Configuration.h"
 #include "Emulator/EmulatorController.h"
 #include "Output/Video/VideoController.h"
-
+#include "Gui/Video/VideoWindowWidget.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -23,6 +23,11 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_ptrEmulatorController, &EmulatorController::romSetLoaded, this, &MainWindow::romSetLoaded);
 
     m_ptrVideoController = new VideoController(m_ptrEmulatorController->machine(), this);
+
+    m_ptrVideoWindowWidget = new VideoWindowWidget();
+    m_ptrVideoWindowWidget->setWindowTitle(QStringLiteral("C64Foundry"));
+    m_ptrVideoController->setVideoWidget(m_ptrVideoWindowWidget);
+    m_ptrVideoWindowWidget->show();
 
     m_ptrEmulatorController->loadROMSet(m_ptrConfigurationManager->activeConfiguration()->romSet);
 

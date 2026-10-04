@@ -11,6 +11,7 @@ QT_END_NAMESPACE
 class ConfigurationManager;
 class EmulatorController;
 class VideoController;
+class VideoWindowWidget;
 
 
 class MainWindow : public QMainWindow
@@ -29,5 +30,7 @@ private:
 
     ConfigurationManager* m_ptrConfigurationManager = nullptr;
     EmulatorController* m_ptrEmulatorController = nullptr;
-    VideoController* m_ptrVideoController = nullptr;
+
+    VideoController* m_ptrVideoController = nullptr;    
+    VideoWindowWidget* m_ptrVideoWindowWidget = nullptr;
 };

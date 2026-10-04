@@ -14,8 +14,8 @@ VideoWindowWidget::~VideoWindowWidget()
 void VideoWindowWidget::setFrame(const QImage& image)
 {
     m_image = image;
+    m_bFramePending = true;
     update();
-    emit frameTaken();
 }
 
 void VideoWindowWidget::paintEvent(QPaintEvent* ptrEvent)
@@ -25,4 +25,9 @@ void VideoWindowWidget::paintEvent(QPaintEvent* ptrEvent)
     if (m_image.isNull())
         return;
     painter.drawImage(rect(), m_image);
+    if (m_bFramePending)
+    {
+        m_bFramePending = false;
+        emit frameTaken();
+    }
 }

@@ -4,6 +4,7 @@
 
 class VideoThread;
 class VideoWorker;
+class VideoWindowWidget;
 class C64Machine;
 
 
@@ -13,6 +14,9 @@ class VideoController : public QObject
 public:
     explicit VideoController(C64Machine* ptrMachine, QObject* parent);
     virtual ~VideoController();
+
+    // Operations
+    void setVideoWidget(VideoWindowWidget* ptrVideoWidget);
 
 private:
     VideoWorker* m_ptrWorker = nullptr;

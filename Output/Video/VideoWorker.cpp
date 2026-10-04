@@ -44,8 +44,25 @@ void VideoWorker::run()
     // The video format remains constant for the
     // lifetime of the emulated machine.
     //
-    m_frameWidth = m_ptrMachine->videoFrameWidth();
-    m_frameHeight = m_ptrMachine->videoFrameHeight();
+    m_timing = m_ptrMachine->timing();
+    m_frameWidth =
+        static_cast<quint16>(
+            m_timing.cyclesPerLine * 8);
+
+    m_frameHeight =
+        static_cast<quint16>(
+            m_timing.linesPerFrame);
+
+    m_firstPartWidth =
+        qMin(
+            m_timing.visibleWidth,
+            static_cast<quint16>(
+                m_frameWidth -
+                m_timing.visibleFirstPixel));
+
+    m_secondPartWidth =
+        m_timing.visibleWidth -
+        m_firstPartWidth;
 
     while (true)
     {
@@ -99,14 +116,63 @@ void VideoWorker::requestShutdown()
 
 QImage VideoWorker::convertFrame(const quint8* ptrFrame) const
 {
-    QImage image(m_frameWidth, m_frameHeight, QImage::Format_RGB32);
-    for (quint16 y = 0; y < m_frameHeight; ++y)
+    QImage image(
+        m_timing.visibleWidth,
+        m_timing.visibleHeight,
+        QImage::Format_RGB32);
+
+    for (quint16 y = 0;
+         y < m_timing.visibleHeight;
+         ++y)
     {
-        QRgb* ptrTarget = reinterpret_cast<QRgb*>(image.scanLine(y));
-        const quint8* ptrSource = ptrFrame + static_cast<quint32>(y) * m_frameWidth;
-        for (quint16 x = 0; x < m_frameWidth; ++x)
+        quint16 sourceY =
+            m_timing.visibleFirstLine + y;
+
+        //
+        // The visible area may wrap around to the
+        // beginning of the raster frame.
+        //
+        if (sourceY >= m_frameHeight)
+            sourceY -= m_frameHeight;
+
+        const quint8* ptrSource =
+            ptrFrame +
+            static_cast<quint32>(sourceY) *
+                m_frameWidth;
+
+        QRgb* ptrTarget =
+            reinterpret_cast<QRgb*>(
+                image.scanLine(y));
+
+        //
+        // First part of the visible raster line.
+        //
+        const quint8* ptrSourceFirst =
+            ptrSource +
+            m_timing.visibleFirstPixel;
+
+        for (quint16 x = 0;
+             x < m_firstPartWidth;
+             ++x)
         {
-            ptrTarget[x] = C64Palette[ptrSource[x] & 0x0F];
+            ptrTarget[x] =
+                C64Palette[
+                    ptrSourceFirst[x] & 0x0F
+            ];
+        }
+
+        //
+        // The visible area may wrap around to the
+        // beginning of the raster line.
+        //
+        for (quint16 x = 0;
+             x < m_secondPartWidth;
+             ++x)
+        {
+            ptrTarget[m_firstPartWidth + x] =
+                C64Palette[
+                    ptrSource[x] & 0x0F
+            ];
         }
     }
 

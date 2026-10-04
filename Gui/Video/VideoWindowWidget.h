@@ -22,4 +22,5 @@ protected:
 
 private:
     QImage m_image;
+    bool m_bFramePending = false;
 };
