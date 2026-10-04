@@ -28,7 +28,13 @@ EmulatorController::~EmulatorController()
     m_ptrThread->wait();
 
     delete m_ptrWorker;
+
     qDebug() << "EmulatorController: destroyed";
+}
+
+C64Machine* EmulatorController::machine() const
+{
+    return m_ptrWorker->machine();
 }
 
 void EmulatorController::loadROMSet(const C64ROMSet& romSet)

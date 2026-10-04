@@ -8,6 +8,7 @@
 
 class EmulatorThread;
 class EmulatorWorker;
+class C64Machine;
 
 
 class EmulatorController : public QObject
@@ -16,6 +17,9 @@ class EmulatorController : public QObject
 public:
     explicit EmulatorController(QObject *parent);
     virtual ~EmulatorController();
+
+    // Getter
+    C64Machine* machine() const;
 
 public slots:
     void loadROMSet(const C64ROMSet& romSet);
@@ -30,7 +34,7 @@ signals:
 
     void runningChanged(bool bRunning);
     void speedChanged(Emulator::Speed speed);
-    void statisticsChanged(quint64 cycles, quint64 cyclesPerSecond);
+    void statisticsChanged(quint64 cycles, quint64 currentCyclesPerSecond, quint64 averageCyclesPerSecond);
 
 private:
     EmulatorThread* m_ptrThread = nullptr;

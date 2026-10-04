@@ -18,6 +18,10 @@ public:
     explicit EmulatorWorker(QObject *parent = nullptr);
     virtual ~EmulatorWorker();
 
+    // Getter
+    C64Machine* machine() const                             { return m_ptrMachine; }
+
+    // Operations
     void run();
 
     void requestROMSet(const C64ROMSet& romSet);
@@ -28,11 +32,12 @@ public:
     void requestSpeed(Emulator::Speed speed);
     void requestShutdown();
 
+
 signals:
     void romSetLoaded(bool bLoaded);
     void runningChanged(bool bRunning);
     void speedChanged(Emulator::Speed spped);
-    void statisticsChanged(quint64 cycles, quint64 cyclesPerSecond);
+    void statisticsChanged(quint64 cycles, quint64 currentCyclesPerSecond, quint64 averageCyclesPerSecond);
 
 private:
     bool waitForRequests();

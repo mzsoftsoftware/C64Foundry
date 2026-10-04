@@ -77,8 +77,9 @@ void EmulatorControlWidget::on_comboBox_Speed_currentIndexChanged(int index)
     m_ptrController->setSpeed(speed);
 }
 
-void EmulatorControlWidget::onStatisticsChanged(const quint64 cycles, const quint64 cyclesPerSecond)
+void EmulatorControlWidget::onStatisticsChanged(const quint64 cycles, quint64 currentCyclesPerSecond, quint64 averageCyclesPerSecond)
 {
+    Q_UNUSED(currentCyclesPerSecond);
     ui->label_Cycles->setText(QString::number(cycles));
-    ui->label_CycleRate->setText(QString::number(cyclesPerSecond));
+    ui->label_CycleRate->setText(QString::number(averageCyclesPerSecond));
 }

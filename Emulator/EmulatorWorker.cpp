@@ -62,9 +62,33 @@ void EmulatorWorker::run()
 
         if (statisticsTimer.elapsed() >= 100)
         {
-            const quint64 elapsed = statisticsTimer.elapsed();
-            const quint64 cyclesPerSecond = (m_measuredCycles * 1000) / elapsed;
-            emit statisticsChanged(m_totalCycles, cyclesPerSecond);
+            const quint64 elapsed =
+                statisticsTimer.elapsed();
+
+            const quint64 currentCyclesPerSecond =
+                (m_measuredCycles * 1000) / elapsed;
+
+            const quint64 speedElapsedNanoseconds =
+                static_cast<quint64>(
+                    m_speedTimer.nsecsElapsed());
+
+            const quint64 speedElapsedCycles =
+                m_totalCycles - m_speedStartCycles;
+
+            quint64 averageCyclesPerSecond = 0;
+
+            if (speedElapsedNanoseconds > 0)
+            {
+                averageCyclesPerSecond =
+                    (speedElapsedCycles * 1000000000ULL) /
+                    speedElapsedNanoseconds;
+            }
+
+            emit statisticsChanged(
+                m_totalCycles,
+                currentCyclesPerSecond,
+                averageCyclesPerSecond);
+
             m_measuredCycles = 0;
             statisticsTimer.restart();
         }
@@ -200,7 +224,10 @@ bool EmulatorWorker::processRequests()
         if (m_bRunning)
             m_speedTimer.restart();
 
-        emit statisticsChanged(m_totalCycles, m_measuredCycles);
+        emit statisticsChanged(
+            m_totalCycles,
+            0,
+            0);
     }
     if(bStopRequested)
     {

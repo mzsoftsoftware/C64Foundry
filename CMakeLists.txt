@@ -76,6 +76,11 @@ qt_add_executable(C64Foundry
     Emulator/EmulatorController.h Emulator/EmulatorController.cpp
     Emulator/EmulatorWorker.h Emulator/EmulatorWorker.cpp
     Emulator/EmulatorThread.h Emulator/EmulatorThread.cpp
+
+    Output/Video/VideoController.h Output/Video/VideoController.cpp
+    Output/Video/VideoWorker.h Output/Video/VideoWorker.cpp
+    Output/Video/VideoThread.h Output/Video/VideoThread.cpp
+
     Configuration/ConfigurationStorage.h Configuration/ConfigurationStorage.cpp
 
     Resources/C64Foundry.qrc

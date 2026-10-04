@@ -29,7 +29,7 @@ private slots:
     void on_comboBox_Speed_currentIndexChanged(int index);
 
     void setRunning(bool bRunning);
-    void onStatisticsChanged(quint64 cycles, quint64 cyclesPerSecond);
+    void onStatisticsChanged(quint64 cycles, quint64 currentCyclesPerSecond, quint64 averageCyclesPerSecond);
 
 private:
     void setupSpeedComboBox();

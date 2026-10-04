@@ -4,6 +4,7 @@
 #include "Configuration/ConfigurationManager.h"
 #include "Configuration/C64Configuration.h"
 #include "Emulator/EmulatorController.h"
+#include "Output/Video/VideoController.h"
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -20,6 +21,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     m_ptrEmulatorController = new EmulatorController(this);
     connect(m_ptrEmulatorController, &EmulatorController::romSetLoaded, this, &MainWindow::romSetLoaded);
+
+    m_ptrVideoController = new VideoController(m_ptrEmulatorController->machine(), this);
 
     m_ptrEmulatorController->loadROMSet(m_ptrConfigurationManager->activeConfiguration()->romSet);
 
