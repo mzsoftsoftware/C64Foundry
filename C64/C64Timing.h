@@ -46,9 +46,9 @@ namespace C64
             131,
             435,
 
-            403,
-            284,
-            76,
+            384,
+            272,
+            92,
             16
         };
     constexpr Timing NTSCTiming

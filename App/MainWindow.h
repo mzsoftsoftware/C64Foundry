@@ -25,6 +25,9 @@ public:
 private slots:
     void romSetLoaded(bool bLoaded);
 
+protected:
+    void closeEvent(QCloseEvent* ptrEvent) override;
+
 private:
     Ui::MainWindow* ui;
 

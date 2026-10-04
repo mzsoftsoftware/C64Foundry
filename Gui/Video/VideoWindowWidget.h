@@ -19,6 +19,7 @@ signals:
 
 protected:
     void paintEvent(QPaintEvent* ptrEvent) override;
+    void closeEvent(QCloseEvent* ptrEvent) override;
 
 private:
     QImage m_image;

@@ -44,3 +44,9 @@ void MainWindow::romSetLoaded(const bool bLoaded)
     if (!bLoaded)
         qWarning() << "MainWindow: ROM set could not be loaded";
 }
+
+void MainWindow::closeEvent(QCloseEvent* ptrEvent)
+{
+    QApplication::quit();
+    QMainWindow::closeEvent(ptrEvent);
+}
