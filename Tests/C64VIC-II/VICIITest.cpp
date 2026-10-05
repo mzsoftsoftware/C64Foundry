@@ -3660,3 +3660,91 @@ void VICIITest::testStandardTextCharacterROMSequence()
     QCOMPARE(vicII.graphicsPixel(6), quint8(0x03));
     QCOMPARE(vicII.graphicsPixel(7), quint8(0x05));
 }
+void VICIITest::testStandardTextCharacterROMRows()
+{
+    C64Memory memory;
+    C64Bus bus;
+    MOS6526 cia2;
+    VICII vicII;
+
+    connectVICBus(bus, memory, cia2, vicII);
+
+    //
+    // VIC-II bank 0: $0000-$3FFF.
+    //
+    cia2.writeRegister(0x02, 0x03);
+    cia2.writeRegister(0x00, 0x03);
+
+    //
+    // Select video matrix at $0400 and Character ROM at $1000.
+    //
+    vicII.writeRegister(0x18, 0x14);
+
+    //
+    // Enable display with YSCROLL=0.
+    //
+    vicII.writeRegister(0x11, 0x10);
+
+    //
+    // Screen position 0 contains character $20
+    // with foreground color $05.
+    //
+    memory.writeRAM(0x0400, 0x20);
+    memory.writeColorRAM(0x0000, 0x05);
+
+    //
+    // Character $20 occupies Character ROM offsets
+    // $0100-$0107. Give every character row a unique
+    // bit pattern so that RC=0..7 can be verified.
+    //
+    QByteArray characterROM(4096, 0x00);
+
+    characterROM[0x0100] = static_cast<char>(0x80);
+    characterROM[0x0101] = static_cast<char>(0x40);
+    characterROM[0x0102] = static_cast<char>(0x20);
+    characterROM[0x0103] = static_cast<char>(0x10);
+    characterROM[0x0104] = static_cast<char>(0x08);
+    characterROM[0x0105] = static_cast<char>(0x04);
+    characterROM[0x0106] = static_cast<char>(0x02);
+    characterROM[0x0107] = static_cast<char>(0x01);
+
+    QVERIFY(memory.loadCharacterROM(characterROM));
+
+    const quint8 expectedRows[8] =
+        {
+            0x80,
+            0x40,
+            0x20,
+            0x10,
+            0x08,
+            0x04,
+            0x02,
+            0x01
+        };
+
+    //
+    // Raster lines $30-$37 must fetch character rows
+    // RC=0 through RC=7 respectively.
+    //
+    for (quint8 row = 0; row < 8; ++row)
+    {
+        const quint16 expectedRasterLine =
+            static_cast<quint16>(0x30 + row);
+
+        while ((vicII.rasterLine() != expectedRasterLine) ||
+               (vicII.rasterCycle() != 16))
+        {
+            vicII.clock();
+        }
+
+        QVERIFY(vicII.displayState());
+
+        QCOMPARE(
+            vicII.graphicsData(),
+            expectedRows[row]);
+
+        QCOMPARE(
+            vicII.graphicsColor(),
+            quint8(0x05));
+    }
+}
