@@ -10,6 +10,20 @@
 #include "C64/VIC-II/VIC-II.h"
 #include "C64/CIA/MOS6526.h"
 
+namespace
+{
+
+void connectVICBus(C64Bus& bus,
+                   C64Memory& memory,
+                   MOS6526& cia2,
+                   VICII& vicII)
+{
+    bus.setMemory(&memory);
+    bus.setCIA2(&cia2);
+    vicII.setBus(&bus);
+}
+
+}
 
 void VICIITest::testInitialRegisters()
 {
@@ -235,10 +249,9 @@ void VICIITest::testClockWithinRasterLine()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Clocking within the first raster line must not change
@@ -253,10 +266,7 @@ void VICIITest::testRasterLineAdvance()
     C64Bus bus;
     MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    bus.setCIA2(&cia2);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
     vicII.setTiming(C64::PALTiming);
 
     //
@@ -278,10 +288,9 @@ void VICIITest::testRasterFrameWrap()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
     vicII.setTiming(C64::PALTiming);
 
     //
@@ -295,10 +304,9 @@ void VICIITest::testRasterCounterBit8()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
     vicII.setTiming(C64::PALTiming);
 
     //
@@ -331,10 +339,9 @@ void VICIITest::testRasterIRQStatus()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
     vicII.setTiming(C64::PALTiming);
 
     //
@@ -359,10 +366,9 @@ void VICIITest::testRasterCompareBit8()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
     vicII.setTiming(C64::PALTiming);
 
     //
@@ -390,10 +396,9 @@ void VICIITest::testRasterIRQAcknowledge()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
     vicII.setTiming(C64::PALTiming);
 
     //
@@ -437,10 +442,9 @@ void VICIITest::testIRQStatusBit()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
     vicII.setTiming(C64::PALTiming);
 
     //
@@ -473,10 +477,9 @@ void VICIITest::testMaskedRasterIRQ()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
     vicII.setTiming(C64::PALTiming);
 
     //
@@ -508,10 +511,9 @@ void VICIITest::testEnablePendingRasterIRQ()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
     vicII.setTiming(C64::PALTiming);
 
     //
@@ -548,10 +550,9 @@ void VICIITest::testIRQLine()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
     vicII.setTiming(C64::PALTiming);
 
     //
@@ -588,10 +589,9 @@ void VICIITest::testDisablePendingRasterIRQ()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
     vicII.setTiming(C64::PALTiming);
 
     //
@@ -637,10 +637,9 @@ void VICIITest::testMemoryRead()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // The VIC-II accesses memory through the C64 bus.
@@ -701,10 +700,9 @@ void VICIITest::testCharacterMemoryRead()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     QByteArray characterROM(4096, 0x00);
     characterROM[0x0103] = 0x42;
@@ -728,10 +726,9 @@ void VICIITest::testVideoMatrixMemoryRead()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Video Matrix base address: $0400.
@@ -752,10 +749,9 @@ void VICIITest::testBadLineRasterAndYScroll()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Enable the display and select YSCROLL = 0.
@@ -814,10 +810,9 @@ void VICIITest::testBadLineRasterRange()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Enable the display and select YSCROLL = 0.
@@ -868,10 +863,9 @@ void VICIITest::testBadLineEnable()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // DEN is disabled.
@@ -894,10 +888,9 @@ void VICIITest::testBadLineEnableWithDEN()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Enable display. YSCROLL remains zero.
@@ -921,10 +914,9 @@ void VICIITest::testBadLineBA()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Enable the display and select YSCROLL = 0.
@@ -990,10 +982,9 @@ void VICIITest::testNonBadLineBA()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Enable the display and select YSCROLL = 0.
@@ -1028,10 +1019,9 @@ void VICIITest::testBadLineAEC()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Enable the display and select YSCROLL = 0.
@@ -1082,10 +1072,9 @@ void VICIITest::testNonBadLineAEC()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Enable the display and select YSCROLL = 0.
@@ -1120,10 +1109,9 @@ void VICIITest::testBadLineFirstCAccess()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Video Matrix base address: $0400.
@@ -1212,10 +1200,9 @@ void VICIITest::testRowCounterIncrement()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Enable display with YSCROLL = 0.
@@ -1290,10 +1277,9 @@ void VICIITest::testFirstGraphicsAccess()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Enable display with YSCROLL = 0.
@@ -1363,10 +1349,9 @@ void VICIITest::testBadLineStartsDisplayState()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Enable display with YSCROLL = 0.
@@ -1400,10 +1385,9 @@ void VICIITest::testDisplayStateEndsAtRowCounterSeven()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Enable display with YSCROLL = 0.
@@ -1455,10 +1439,9 @@ void VICIITest::testFirstGraphicsMemoryAccess()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Select video matrix at $0400 and character memory at $0000.
@@ -1514,10 +1497,9 @@ void VICIITest::testGraphicsMemoryAccessSequence()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Select video matrix at $0400 and character memory at $0000.
@@ -1579,10 +1561,9 @@ void VICIITest::testVideoCounterBaseUpdate()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Enable display with YSCROLL = 0.
@@ -1635,10 +1616,9 @@ void VICIITest::testVideoCounterReloadFromBase()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Enable display with YSCROLL = 0.
@@ -1713,10 +1693,9 @@ void VICIITest::testBadLineColorRAMAccess()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Select video matrix at $0400.
@@ -1761,10 +1740,9 @@ void VICIITest::testCAccessUsesVideoCounter()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Select video matrix at $0400.
@@ -1832,10 +1810,9 @@ void VICIITest::testCAccessVideoCounterSequence()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Select video matrix at $0400.
@@ -1905,10 +1882,9 @@ void VICIITest::testFirstGraphicsColor()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Select video matrix at $0400 and character memory at $0000.
@@ -1966,10 +1942,9 @@ void VICIITest::testStandardTextGraphicsPixel()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Select video matrix at $0400 and character memory at $0000.
@@ -2021,10 +1996,9 @@ void VICIITest::testStandardTextGraphicsBackgroundPixel()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Select video matrix at $0400 and character memory at $0000.
@@ -2173,10 +2147,9 @@ void VICIITest::testClockAdvancesGraphicsPixels()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     QCOMPARE(vicII.rasterCycle(), quint8(0));
     QCOMPARE(vicII.rasterX(), quint16(0));
@@ -2202,10 +2175,9 @@ void VICIITest::testStandardTextGraphicsPixelBuffer()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Select video matrix at $0400 and character memory at $0000.
@@ -2270,10 +2242,9 @@ void VICIITest::testRasterXTracksRasterCycle()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     QCOMPARE(vicII.rasterCycle(), quint8(0));
     QCOMPARE(vicII.rasterX(), quint16(0));
@@ -2352,10 +2323,9 @@ void VICIITest::testHorizontalBorderRightComparison()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Enable display and select 25-row / 40-column mode.
@@ -2456,10 +2426,9 @@ void VICIITest::testVerticalBorderComparisons()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Select 25-row mode, but leave DEN disabled.
@@ -2499,10 +2468,9 @@ void VICIITest::testVerticalBorderRequiresDEN()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Select 25-row mode, but leave DEN disabled.
@@ -2535,10 +2503,9 @@ void VICIITest::testMainBorderOpensAtLeft()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Enable display and select 25-row / 40-column mode.
@@ -2639,10 +2606,9 @@ void VICIITest::testVerticalBorderOpensAtLeftComparison()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Enable display and select 25-row / 40-column mode.
@@ -2683,10 +2649,9 @@ void VICIITest::testVerticalBorderClosesAtLeftComparison()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Enable display and select 25-row / 40-column mode.
@@ -2735,10 +2700,9 @@ void VICIITest::testVerticalBorderClosesAtCycle63()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Enable display and select 25-row / 40-column mode.
@@ -2809,10 +2773,9 @@ void VICIITest::testRasterLineAdvancesWithRasterXWrap()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Advance to cycle 62 of the first raster line.
@@ -2884,10 +2847,9 @@ void VICIITest::testOutputPixelUsesGraphicsPixelOutsideBorder()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Enable display and select 25-row / 40-column mode.
@@ -2934,10 +2896,9 @@ void VICIITest::testGraphicsPipelineContinuesDuringBorder()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Select video matrix at $0400 and character memory at $0000.
@@ -2994,10 +2955,9 @@ void VICIITest::testIdleStateGraphicsAccess()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Store a recognizable value at the idle-state
@@ -3027,10 +2987,9 @@ void VICIITest::testIdleStateECMGraphicsAccess()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Store different values at the normal and ECM
@@ -3066,10 +3025,9 @@ void VICIITest::testIdleStateStandardTextForegroundColor()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Enable display with YSCROLL=0 so that raster line $30
@@ -3145,10 +3103,9 @@ void VICIITest::testStandardTextGraphicsSequence()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // Select video matrix at $0400 and character memory at $0000.
@@ -3209,10 +3166,9 @@ void VICIITest::testFrameBufferStoresOutputPixel()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
     vicII.setTiming(C64::PALTiming);
 
     //
@@ -3300,10 +3256,9 @@ void VICIITest::testFrameBufferKeepsLatestReadyFrame()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
     vicII.setTiming(C64::PALTiming);
 
     //
@@ -3346,10 +3301,9 @@ void VICIITest::testFrameBufferPreservesAcquiredFrame()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
     vicII.setTiming(C64::PALTiming);
 
     //
@@ -3420,10 +3374,9 @@ void VICIITest::testFrameBufferAcquireWhileProducing()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
     vicII.setTiming(C64::PALTiming);
 
     std::atomic_bool firstFrameReady = false;
@@ -3498,10 +3451,9 @@ void VICIITest::testFrameBufferAcquireOnlyOnce()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
     vicII.setTiming(C64::PALTiming);
 
     //
@@ -3534,10 +3486,9 @@ void VICIITest::testFrameBufferConcurrentStress()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
-
-    bus.setMemory(&memory);
-    vicII.setBus(&bus);
+    connectVICBus(bus, memory, cia2, vicII);
     vicII.setTiming(C64::PALTiming);
 
     constexpr quint32 FrameCount = 100;
@@ -3634,12 +3585,9 @@ void VICIITest::testStandardTextCharacterROMSequence()
 {
     C64Memory memory;
     C64Bus bus;
-    VICII vicII;
     MOS6526 cia2;
-
-    bus.setMemory(&memory);
-    bus.setCIA2(&cia2);
-    vicII.setBus(&bus);
+    VICII vicII;
+    connectVICBus(bus, memory, cia2, vicII);
 
     //
     // VIC-II bank 0: $0000-$3FFF.
