@@ -7,20 +7,25 @@
 #include "Memory/C64Memory.h"
 #include "CPU/MOS6510.h"
 #include "VIC-II/VIC-II.h"
+#include "CIA/MOS6526.h"
 
 
 C64Machine::C64Machine()
 {
     m_ptrBus = new C64Bus();
     m_ptrMemory = new C64Memory();
-
     m_ptrBus->setMemory(m_ptrMemory);
 
     m_ptrVICII = new VICII();
     m_ptrVICII->setBus(m_ptrBus);
     m_ptrVICII->setTiming(m_timing);
-
     m_ptrBus->setVICII(m_ptrVICII);
+
+    m_ptrCIA1 = new MOS6526();
+    m_ptrBus->setCIA1(m_ptrCIA1);
+
+    m_ptrCIA2 = new MOS6526();
+    m_ptrBus->setCIA2(m_ptrCIA2);
 
     m_ptrCpu = new MOS6510();
     m_ptrCpu->setBus(m_ptrBus);
@@ -28,6 +33,8 @@ C64Machine::C64Machine()
 C64Machine::~C64Machine()
 {
     delete m_ptrCpu;
+    delete m_ptrCIA2;
+    delete m_ptrCIA1;
     delete m_ptrVICII;
     delete m_ptrMemory;
     delete m_ptrBus;
@@ -117,6 +124,16 @@ void C64Machine::writeVICIIRegister(const quint8 address, const quint8 value)
 {
     m_ptrVICII->writeRegister(address, value);
 }
+void C64Machine::writeCIA1Register(const quint8 address, const quint8 value)
+{
+    m_ptrCIA1->writeRegister(address, value);
+}
+
+void C64Machine::writeCIA2Register(const quint8 address, const quint8 value)
+{
+    m_ptrCIA2->writeRegister(address, value);
+}
+
 quint8 C64Machine::readRAM(const quint16 address) const
 {
     return m_ptrMemory->readRAM(address);
@@ -128,6 +145,14 @@ bool C64Machine::viciiBA() const
 bool C64Machine::viciiAEC() const
 {
     return m_ptrVICII->aec();
+}
+quint8 C64Machine::readCIA1Register(const quint8 address) const
+{
+    return m_ptrCIA1->readRegister(address);
+}
+quint8 C64Machine::readCIA2Register(const quint8 address) const
+{
+    return m_ptrCIA2->readRegister(address);
 }
 bool C64Machine::busAEC() const
 {

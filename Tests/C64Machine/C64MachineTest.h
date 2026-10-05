@@ -20,6 +20,8 @@ private slots:
     void testVICIIAEC();
     void testVICIIBAWrite();
 
+    void testCIARegisterAccess();
+
     void testPerformance();
 
 };

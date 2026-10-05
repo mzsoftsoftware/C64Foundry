@@ -344,6 +344,25 @@ void C64MachineTest::testVICIIBAWrite()
     QCOMPARE(machine.readRAM(0x01EA), quint8(0x34));
 }
 
+void C64MachineTest::testCIARegisterAccess()
+{
+    C64Machine machine;
+
+    //
+    // Configure Port A of both CIAs as outputs.
+    //
+    machine.writeCIA1Register(0x02, 0xFF);
+    machine.writeCIA2Register(0x02, 0xFF);
+
+    //
+    // Write different values to verify that CIA 1 and
+    // CIA 2 are independent devices.
+    //
+    machine.writeCIA1Register(0x00, 0x5A);
+    machine.writeCIA2Register(0x00, 0xA5);
+    QCOMPARE(machine.readCIA1Register(0x00), quint8(0x5A));
+    QCOMPARE(machine.readCIA2Register(0x00), quint8(0xA5));
+}
 
 void C64MachineTest::testPerformance()
 {

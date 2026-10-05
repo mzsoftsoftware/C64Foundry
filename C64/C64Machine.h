@@ -7,6 +7,7 @@ class C64Memory;
 class C64Bus;
 class MOS6510;
 class VICII;
+class MOS6526;
 
 #include "C64/C64Timing.h"
 
@@ -30,12 +31,19 @@ public:
     // Setter
     void setTiming(const C64::Timing& timing);
     void writeVICIIRegister(quint8 address, quint8 value);
+    void writeCIA1Register(quint8 address, quint8 value);
+    void writeCIA2Register(quint8 address, quint8 value);
 
     // Getter
     const C64::Timing& timing() const           { return m_timing; }
     quint8 readRAM(quint16 address) const;
+
     bool viciiBA() const;
     bool viciiAEC() const;
+
+    quint8 readCIA1Register(quint8 address) const;
+    quint8 readCIA2Register(quint8 address) const;
+
     bool busAEC() const;
     quint8 busAccessCount() const;
     bool busLastAccessWasRead() const;
@@ -62,8 +70,8 @@ private:
     MOS6510*    m_ptrCpu = nullptr;
     VICII*      m_ptrVICII = nullptr;
 
-    // CIA-I
-    // CIA-II
+    MOS6526*    m_ptrCIA1 = nullptr;
+    MOS6526*    m_ptrCIA2 = nullptr;
 
     // SID
 };
