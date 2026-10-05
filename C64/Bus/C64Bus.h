@@ -86,11 +86,16 @@ private:
     quint8 m_lastAccessValue = 0x00;
     quint8 m_accessCount = 0;
 
-    bool m_sidAccessReported = false;
-    bool m_cia1AccessReported = false;
-    bool m_cia2AccessReported = false;
-    bool m_io1AccessReported = false;
-    bool m_io2AccessReported = false;
+    bool m_sidReadReported = false;
+    bool m_sidWriteReported = false;
+    bool m_cia1ReadReported = false;
+    bool m_cia1WriteReported = false;
+    bool m_cia2ReadReported = false;
+    bool m_cia2WriteReported = false;
+    bool m_io1ReadReported = false;
+    bool m_io1WriteReported = false;
+    bool m_io2ReadReported = false;
+    bool m_io2WriteReported = false;
 
 private:
     static constexpr MemorySource s_memoryMaps[8][16] =
