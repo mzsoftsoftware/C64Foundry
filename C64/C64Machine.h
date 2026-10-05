@@ -41,6 +41,14 @@ public:
 
     bool viciiBA() const;
     bool viciiAEC() const;
+    bool viciiBadLine() const;
+    quint16 viciiVideoMatrixBaseAddress() const;
+    quint16 viciiVideoCounter() const;
+    quint16 viciiVideoCounterBase() const;
+    quint16 viciiRasterLine() const;
+    quint8 viciiRasterCycle() const;
+    quint8 viciiVideoMatrixLine(quint8 position) const;
+    quint8 viciiColorLine(quint8 position) const;
 
     quint8 readCIA1Register(quint8 address) const;
     quint8 readCIA2Register(quint8 address) const;

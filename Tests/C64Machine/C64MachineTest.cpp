@@ -813,6 +813,126 @@ void C64MachineTest::testROMBootCursorBlink()
     QVERIFY(sawNormal);
     QVERIFY(sawReverse);
 }
+void C64MachineTest::testROMBootVICIICAccess()
+{
+    C64ROMSet romSet(
+        QStringLiteral(":/ROMs/OpenROMs/basic.rom"),
+        QStringLiteral(":/ROMs/OpenROMs/kernal.rom"),
+        QStringLiteral(":/ROMs/OpenROMs/chargen.rom"));
+
+    C64Machine machine;
+
+    QVERIFY(machine.loadROMSet(romSet));
+
+    machine.powerOn();
+
+    //
+    // Give the ROM enough time to complete its initialization.
+    //
+    machine.runCycles(
+        C64::PALTiming.cyclesPerFrame * 10);
+
+    //
+    // Wait for the beginning of a new VIC-II frame.
+    //
+    do
+    {
+        machine.clock();
+    }
+    while (machine.viciiRasterLine() != 0 ||
+           machine.viciiRasterCycle() != 0);
+
+    //
+    // The first text row starts with the badline at raster $33
+    // for the normal KERNAL YSCROLL setting of 3.
+    //
+    constexpr quint16 RasterLine = 0x33;
+
+    //
+    // Stop immediately before the first c-access.
+    //
+    while (machine.viciiRasterLine() != RasterLine ||
+           machine.viciiRasterCycle() != 14)
+    {
+        machine.clock();
+    }
+
+    QVERIFY(machine.viciiBadLine());
+
+    //
+    // The normal KERNAL text screen starts at $0400.
+    //
+    QCOMPARE(
+        machine.viciiVideoMatrixBaseAddress(),
+        quint16(0x0400));
+
+    //
+    // At the first text row of a new frame VCBASE must
+    // point to the first character of the video matrix.
+    //
+    QCOMPARE(
+        machine.viciiVideoCounterBase(),
+        quint16(0x0000));
+
+    //
+    // Cycle 14 copies VCBASE into VC.
+    //
+    QCOMPARE(
+        machine.viciiVideoCounter(),
+        quint16(0x0000));
+
+    //
+    // Cycle 15 performs the first c-access.
+    //
+    machine.clock();
+
+    QCOMPARE(
+        machine.viciiRasterLine(),
+        RasterLine);
+
+    QCOMPARE(
+        machine.viciiRasterCycle(),
+        quint8(15));
+
+    //
+    // The VIC-II must be the only bus master during
+    // the c-access.
+    //
+    QCOMPARE(
+        machine.busAccessCount(),
+        quint8(1));
+
+    QVERIFY(
+        machine.busLastAccessWasRead());
+
+    QVERIFY(
+        machine.busLastAccessWasVICII());
+
+    //
+    // The first c-access must read the first character
+    // of the screen matrix at $0400.
+    //
+    QCOMPARE(
+        machine.busLastAccessAddress(),
+        quint16(0x0400));
+
+    QCOMPARE(
+        machine.busLastAccessValue(),
+        machine.readRAM(0x0400));
+
+    //
+    // The fetched character and color must have been
+    // stored in the first entries of the VIC-II line buffers.
+    //
+    QCOMPARE(
+        machine.viciiVideoMatrixLine(0),
+        machine.readRAM(0x0400));
+
+    QCOMPARE(
+        machine.viciiColorLine(0),
+        machine.readColorRAM(0x0000));
+}
+
 
 
 

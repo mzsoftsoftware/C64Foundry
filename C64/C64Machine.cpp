@@ -152,6 +152,38 @@ bool C64Machine::viciiAEC() const
 {
     return m_ptrVICII->aec();
 }
+bool C64Machine::viciiBadLine() const
+{
+    return m_ptrVICII->badLine();
+}
+quint16 C64Machine::viciiVideoMatrixBaseAddress() const
+{
+    return m_ptrVICII->videoMatrixBaseAddress();
+}
+quint16 C64Machine::viciiVideoCounter() const
+{
+    return m_ptrVICII->videoCounter();
+}
+quint16 C64Machine::viciiVideoCounterBase() const
+{
+    return m_ptrVICII->videoCounterBase();
+}
+quint16 C64Machine::viciiRasterLine() const
+{
+    return m_ptrVICII->rasterLine();
+}
+quint8 C64Machine::viciiRasterCycle() const
+{
+    return m_ptrVICII->rasterCycle();
+}
+quint8 C64Machine::viciiVideoMatrixLine(const quint8 position) const
+{
+    return m_ptrVICII->videoMatrixLine(position);
+}
+quint8 C64Machine::viciiColorLine(const quint8 position) const
+{
+    return m_ptrVICII->colorLine(position);
+}
 quint8 C64Machine::readCIA1Register(const quint8 address) const
 {
     return m_ptrCIA1->readRegister(address);

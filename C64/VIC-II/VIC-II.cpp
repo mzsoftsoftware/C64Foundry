@@ -348,6 +348,13 @@ void VICII::clock()
             m_rasterLine = 0;
 
         //
+        // Outside the badline range, VCBASE is reset before
+        // the next display area starts.
+        //
+        if (m_rasterLine == 0)
+            m_videoCounterBase = 0;
+
+        //
         // DEN on raster line $30 enables badlines for the
         // current display frame.
         //

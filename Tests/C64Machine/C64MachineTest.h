@@ -29,6 +29,7 @@ private slots:
     void testROMBootScreenRAMStable();
     void testROMBootColorRAMStable();
     void testROMBootCursorBlink();
+    void testROMBootVICIICAccess();
 
     void testPerformance();
 

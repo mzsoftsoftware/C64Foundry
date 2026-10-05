@@ -125,4 +125,6 @@ private slots:
 
     void testStandardTextCharacterROMSequence();
     void testStandardTextCharacterROMRows();
+
+    void testVideoCounterBaseReset();
 };

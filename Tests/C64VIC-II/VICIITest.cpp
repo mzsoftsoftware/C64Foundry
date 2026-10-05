@@ -3666,7 +3666,6 @@ void VICIITest::testStandardTextCharacterROMRows()
     C64Bus bus;
     MOS6526 cia2;
     VICII vicII;
-
     connectVICBus(bus, memory, cia2, vicII);
 
     //
@@ -3747,4 +3746,36 @@ void VICIITest::testStandardTextCharacterROMRows()
             vicII.graphicsColor(),
             quint8(0x05));
     }
+}
+
+void VICIITest::testVideoCounterBaseReset()
+{
+    C64Memory memory;
+    C64Bus bus;
+    MOS6526 cia2;
+    VICII vicII;
+    connectVICBus(bus, memory, cia2, vicII);
+
+    //
+    // Enable the display with YSCROLL 0.
+    //
+    vicII.writeRegister(0x11, 0x10);
+
+    //
+    // Run through one complete display frame.
+    //
+    for (quint32 cycle = 0;
+         cycle < C64::PALTiming.cyclesPerFrame;
+         ++cycle)
+    {
+        vicII.clock();
+    }
+
+    //
+    // VCBASE must be reset outside the badline range
+    // before the next display area starts.
+    //
+    QCOMPARE(
+        vicII.videoCounterBase(),
+        quint16(0x0000));
 }
