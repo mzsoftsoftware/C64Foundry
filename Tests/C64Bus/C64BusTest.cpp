@@ -5,6 +5,7 @@
 #include "C64/Bus/C64Bus.h"
 #include "C64/Memory/C64Memory.h"
 #include "C64/VIC-II/VIC-II.h"
+#include "C64/CIA/MOS6526.h"
 
 
 C64BusTest::C64BusTest()
@@ -531,4 +532,71 @@ void C64BusTest::testVICCharacterROMReadAccess()
     QCOMPARE(bus.lastAccessSource(), C64Bus::AccessSource::VICII);
     QCOMPARE(bus.lastAccessAddress(), quint16(0x1234));
     QCOMPARE(bus.lastAccessValue(), quint8(0x42));
+}
+
+void C64BusTest::testCIA1RegisterMapping()
+{
+    C64Memory memory;
+    MOS6526 cia1;
+    C64Bus bus;
+
+    bus.setMemory(&memory);
+    bus.setCIA1(&cia1);
+
+    //
+    // I/O visible.
+    //
+    bus.setCpuPortLines(0x07);
+
+    //
+    // Configure all Port A pins as outputs.
+    //
+    bus.write(0xDC02, 0xFF);
+
+    //
+    // $DC00 maps to CIA 1 register $00.
+    //
+    bus.write(0xDC00, 0x5A);
+    QCOMPARE(bus.read(0xDC00), quint8(0x5A));
+
+    //
+    // CIA registers are mirrored every $10 bytes
+    // throughout $DC00-$DCFF.
+    //
+    QCOMPARE(bus.read(0xDC10), quint8(0x5A));
+    QCOMPARE(bus.read(0xDC80), quint8(0x5A));
+    QCOMPARE(bus.read(0xDCF0), quint8(0x5A));
+}
+void C64BusTest::testCIA2RegisterMapping()
+{
+    C64Memory memory;
+    MOS6526 cia2;
+    C64Bus bus;
+
+    bus.setMemory(&memory);
+    bus.setCIA2(&cia2);
+
+    //
+    // I/O visible.
+    //
+    bus.setCpuPortLines(0x07);
+
+    //
+    // Configure all Port A pins as outputs.
+    //
+    bus.write(0xDD02, 0xFF);
+
+    //
+    // $DD00 maps to CIA 2 register $00.
+    //
+    bus.write(0xDD00, 0x5A);
+    QCOMPARE(bus.read(0xDD00), quint8(0x5A));
+
+    //
+    // CIA registers are mirrored every $10 bytes
+    // throughout $DD00-$DDFF.
+    //
+    QCOMPARE(bus.read(0xDD10), quint8(0x5A));
+    QCOMPARE(bus.read(0xDD80), quint8(0x5A));
+    QCOMPARE(bus.read(0xDDF0), quint8(0x5A));
 }

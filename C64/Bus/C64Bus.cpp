@@ -4,6 +4,7 @@
 
 #include "C64/Memory/C64Memory.h"
 #include "C64/VIC-II/VIC-II.h"
+#include "C64/CIA/MOS6526.h"
 
 
 C64Bus::C64Bus()
@@ -33,6 +34,15 @@ void C64Bus::setVICII(VICII* ptrVicII)
 {
     m_ptrVICII = ptrVicII;
 }
+void C64Bus::setCIA1(MOS6526* ptrCIA1)
+{
+    m_ptrCIA1 = ptrCIA1;
+}
+void C64Bus::setCIA2(MOS6526* ptrCIA2)
+{
+    m_ptrCIA2 = ptrCIA2;
+}
+
 
 void C64Bus::clock()
 {
@@ -125,30 +135,14 @@ quint8 C64Bus::read(const quint16 address)
                     //
                     // CIA 1: $DC00-$DCFF
                     //
-                    if (!m_cia1ReadReported)
-                    {
-                        qDebug().nospace()
-                        << "C64Bus: read access to unimplemented CIA 1 at $"
-                        << Qt::hex << address
-                        << " -> $FF";
-
-                        m_cia1ReadReported = true;
-                    }
+                    value = m_ptrCIA1->readRegister(address);
                     break;
 
                 case 0x0100:
                     //
                     // CIA 2: $DD00-$DDFF
                     //
-                    if (!m_cia2ReadReported)
-                    {
-                        qDebug().nospace()
-                        << "C64Bus: read access to unimplemented CIA 2 at $"
-                        << Qt::hex << address
-                        << " -> $FF";
-
-                        m_cia2ReadReported = true;
-                    }
+                    value = m_ptrCIA2->readRegister(address);
                     break;
 
                 case 0x0200:
@@ -275,30 +269,14 @@ void C64Bus::write(const quint16 address, const quint8 value)
             //
             // CIA 1: $DC00-$DCFF
             //
-            if (!m_cia1WriteReported)
-            {
-                qDebug().nospace()
-                << "C64Bus: write access to unimplemented CIA 1 at $"
-                << Qt::hex << address
-                << " <- $" << value;
-
-                m_cia1WriteReported = true;
-            }
+            m_ptrCIA1->writeRegister(address, value);
             break;
 
         case 0x0100:
             //
             // CIA 2: $DD00-$DDFF
             //
-            if (!m_cia2WriteReported)
-            {
-                qDebug().nospace()
-                << "C64Bus: write access to unimplemented CIA 2 at $"
-                << Qt::hex << address
-                << " <- $" << value;
-
-                m_cia2WriteReported = true;
-            }
+            m_ptrCIA2->writeRegister(address, value);
             break;
 
         case 0x0200:

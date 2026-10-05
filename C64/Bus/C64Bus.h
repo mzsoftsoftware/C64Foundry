@@ -4,6 +4,8 @@
 
 class C64Memory;
 class VICII;
+class MOS6526;
+
 
 class C64Bus
 {
@@ -53,8 +55,8 @@ public:
     void setMemory(C64Memory* ptrMemory);
     void setVICII(VICII* ptrVicII);
     //void setSID(SID* ptrSid);
-    //void setCIA1(CIA* ptrCia1);
-    //void setCIA2(CIA* ptrCia2);
+    void setCIA1(MOS6526* ptrCIA1);
+    void setCIA2(MOS6526* ptrCIA1);
 
     // Operations
     void clock();
@@ -72,6 +74,8 @@ public:
 private:
     C64Memory* m_ptrMemory = nullptr;
     VICII* m_ptrVICII = nullptr;
+    MOS6526* m_ptrCIA1 = nullptr;
+    MOS6526* m_ptrCIA2 = nullptr;
 
     bool m_aec = true;
     bool m_cpuDrivesDataBus = false;
@@ -88,10 +92,6 @@ private:
 
     bool m_sidReadReported = false;
     bool m_sidWriteReported = false;
-    bool m_cia1ReadReported = false;
-    bool m_cia1WriteReported = false;
-    bool m_cia2ReadReported = false;
-    bool m_cia2WriteReported = false;
     bool m_io1ReadReported = false;
     bool m_io1WriteReported = false;
     bool m_io2ReadReported = false;

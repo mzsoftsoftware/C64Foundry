@@ -34,4 +34,7 @@ private slots:
 
     void testVICReadAccess();
     void testVICCharacterROMReadAccess();
+
+    void testCIA1RegisterMapping();
+    void testCIA2RegisterMapping();
 };

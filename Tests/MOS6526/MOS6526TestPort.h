@@ -21,4 +21,6 @@ private slots:
     void testDataDirectionRegisterBWrite();
     void testPortBInputs();
     void testPortBMixedInputsOutputs();
+
+    void testRegisterMirroring();
 };

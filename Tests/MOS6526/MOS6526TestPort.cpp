@@ -131,3 +131,18 @@ void MOS6526TestPort::testPortBMixedInputsOutputs()
     //
     QCOMPARE(cia.readRegister(0x01), quint8(0xAC));
 }
+
+void MOS6526TestPort::testRegisterMirroring()
+{
+    MOS6526 cia;
+
+    //
+    // The MOS6526 has 16 registers.
+    // Registers are mirrored every $10 bytes.
+    //
+    cia.writeRegister(0x12, 0xA5);
+    QCOMPARE(cia.readRegister(0x02), quint8(0xA5));
+    QCOMPARE(cia.readRegister(0x12), quint8(0xA5));
+    QCOMPARE(cia.readRegister(0x22), quint8(0xA5));
+    QCOMPARE(cia.readRegister(0xF2), quint8(0xA5));
+}
