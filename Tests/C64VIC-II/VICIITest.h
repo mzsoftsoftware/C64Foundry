@@ -127,4 +127,7 @@ private slots:
     void testStandardTextCharacterROMRows();
 
     void testVideoCounterBaseReset();
+    void testStandardTextFirstCharacterGraphicsData();
+    void testStandardTextFirstCharacterPixelPosition();
+
 };

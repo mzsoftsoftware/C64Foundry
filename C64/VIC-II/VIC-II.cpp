@@ -458,13 +458,16 @@ void VICII::clockGraphicsPixel()
     //
     // Select the final output pixel.
     //
+    // The graphics pipeline is delayed by four pixel clocks
+    // relative to the VIC-II memory access cycle.
+    //
     if (m_mainBorder)
     {
         m_outputPixel = m_colorRegisters[0] & 0x0F;
     }
     else
     {
-        m_outputPixel = m_graphicsPixels[m_graphicsPixelPhase];
+        m_outputPixel = m_graphicsPixels[(m_graphicsPixelPhase + 4) & 0x07];
     }
 
     //

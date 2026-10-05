@@ -3779,3 +3779,246 @@ void VICIITest::testVideoCounterBaseReset()
         vicII.videoCounterBase(),
         quint16(0x0000));
 }
+
+void VICIITest::testStandardTextFirstCharacterGraphicsData()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+    MOS6526 cia2;
+
+    bus.setMemory(&memory);
+    bus.setCIA2(&cia2);
+    vicII.setBus(&bus);
+
+    //
+    // Select VIC bank 0.
+    //
+    cia2.writeRegister(0x02, 0x03);
+    cia2.writeRegister(0x00, 0x03);
+
+    //
+    // Screen matrix at $0400 and character generator at $1000.
+    //
+    vicII.writeRegister(0x18, 0x14);
+
+    //
+    // Enable display with YSCROLL 0.
+    //
+    vicII.writeRegister(0x11, 0x10);
+
+    //
+    // Select 40-column mode.
+    //
+    vicII.writeRegister(0x16, 0x08);
+
+    //
+    // Foreground color 5, background color 3.
+    //
+    vicII.writeRegister(0x21, 0x03);
+
+    memory.writeRAM(0x0400, 0x20);
+    memory.writeColorRAM(0x0000, 0x05);
+
+    //
+    // Character $20, row 0:
+    //
+    //     10101010
+    //
+    QByteArray characterROM(4096, 0x00);
+
+    characterROM[0x0100] =
+        static_cast<char>(0xAA);
+
+    QVERIFY(
+        memory.loadCharacterROM(characterROM));
+
+    //
+    // Stop immediately before the first g-access
+    // of raster line $30.
+    //
+    while (vicII.rasterLine() != 0x30 ||
+           vicII.rasterCycle() != 15)
+    {
+        vicII.clock();
+    }
+
+    QVERIFY(vicII.badLine());
+    QVERIFY(vicII.displayState());
+
+    //
+    // At the beginning of cycle 16, raster X is 120.
+    //
+    QCOMPARE(
+        vicII.rasterX(),
+        quint16(15 * 8));
+
+    //
+    // Cycle 16 performs the first g-access.
+    //
+    vicII.clock();
+
+    QCOMPARE(
+        vicII.rasterCycle(),
+        quint8(16));
+
+    //
+    // One VIC-II cycle has generated eight pixels.
+    //
+    QCOMPARE(
+        vicII.rasterX(),
+        quint16(16 * 8));
+
+    //
+    // The first c-access must have fetched character $20
+    // and its color.
+    //
+    QCOMPARE(
+        vicII.videoMatrixLine(0),
+        quint8(0x20));
+
+    QCOMPARE(
+        vicII.colorLine(0),
+        quint8(0x05));
+
+    //
+    // The first g-access must fetch row 0 of character $20.
+    //
+    QCOMPARE(
+        vicII.graphicsData(),
+        quint8(0xAA));
+
+    QCOMPARE(
+        vicII.graphicsColor(),
+        quint8(0x05));
+
+    //
+    // The 40-column border opens at X = 124.
+    //
+    QCOMPARE(
+        vicII.borderLeft(),
+        quint16(124));
+}
+
+void VICIITest::testStandardTextFirstCharacterPixelPosition()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+    MOS6526 cia2;
+
+    bus.setMemory(&memory);
+    bus.setCIA2(&cia2);
+    vicII.setBus(&bus);
+
+    //
+    // Select VIC bank 0.
+    //
+    cia2.writeRegister(0x02, 0x03);
+    cia2.writeRegister(0x00, 0x03);
+
+    //
+    // Screen matrix at $0400 and character generator at $1000.
+    //
+    vicII.writeRegister(0x18, 0x14);
+
+    //
+    // Enable display, select 25 rows and YSCROLL 3.
+    //
+    // Raster line $33 is the first badline and also the
+    // first line at which the vertical border opens.
+    //
+    vicII.writeRegister(0x11, 0x1B);
+
+    //
+    // Select 40-column mode.
+    //
+    vicII.writeRegister(0x16, 0x08);
+
+    //
+    // Border color 0, background color 3.
+    //
+    vicII.writeRegister(0x20, 0x00);
+    vicII.writeRegister(0x21, 0x03);
+
+    //
+    // First two screen characters, both using color 5.
+    //
+    memory.writeRAM(0x0400, 0x20);
+    memory.writeRAM(0x0401, 0x21);
+
+    memory.writeColorRAM(0x0000, 0x05);
+    memory.writeColorRAM(0x0001, 0x05);
+
+    //
+    // Character $20, row 0:
+    //
+    //     10101010
+    //
+    // Character $21, row 0:
+    //
+    //     11001100
+    //
+    QByteArray characterROM(4096, 0x00);
+
+    characterROM[0x0100] =
+        static_cast<char>(0xAA);
+
+    characterROM[0x0108] =
+        static_cast<char>(0xCC);
+
+    QVERIFY(
+        memory.loadCharacterROM(characterROM));
+
+    //
+    // Advance to the beginning of raster line $33.
+    //
+    while (vicII.rasterLine() != 0x33 ||
+           vicII.rasterCycle() != 0)
+    {
+        vicII.clock();
+    }
+
+    //
+    // Render the complete raster line.
+    //
+    while (vicII.rasterLine() == 0x33)
+    {
+        vicII.clock();
+    }
+
+    constexpr quint16 x = 124;
+    constexpr quint16 y = 0x33;
+
+    QCOMPARE(
+        vicII.borderLeft(),
+        x);
+
+    //
+    // First visible character:
+    //
+    // $AA = 10101010
+    //
+    QCOMPARE(vicII.framePixel(x + 0, y), quint8(0x05));
+    QCOMPARE(vicII.framePixel(x + 1, y), quint8(0x03));
+    QCOMPARE(vicII.framePixel(x + 2, y), quint8(0x05));
+    QCOMPARE(vicII.framePixel(x + 3, y), quint8(0x03));
+    QCOMPARE(vicII.framePixel(x + 4, y), quint8(0x05));
+    QCOMPARE(vicII.framePixel(x + 5, y), quint8(0x03));
+    QCOMPARE(vicII.framePixel(x + 6, y), quint8(0x05));
+    QCOMPARE(vicII.framePixel(x + 7, y), quint8(0x03));
+
+    //
+    // Second visible character:
+    //
+    // $CC = 11001100
+    //
+    QCOMPARE(vicII.framePixel(x + 8,  y), quint8(0x05));
+    QCOMPARE(vicII.framePixel(x + 9,  y), quint8(0x05));
+    QCOMPARE(vicII.framePixel(x + 10, y), quint8(0x03));
+    QCOMPARE(vicII.framePixel(x + 11, y), quint8(0x03));
+    QCOMPARE(vicII.framePixel(x + 12, y), quint8(0x05));
+    QCOMPARE(vicII.framePixel(x + 13, y), quint8(0x05));
+    QCOMPARE(vicII.framePixel(x + 14, y), quint8(0x03));
+    QCOMPARE(vicII.framePixel(x + 15, y), quint8(0x03));
+}
