@@ -13,11 +13,15 @@ public:
     quint8 readRegister(quint8 address);
     quint8 portAPins() const                                { return (m_portA & m_dataDirectionA) | (m_portAInputs & ~m_dataDirectionA); }
     quint8 portBPins() const                                { return (m_portB & m_dataDirectionB) | (m_portBInputs & ~m_dataDirectionB); }
+    bool irq() const                                        { return (m_interruptStatus & m_interruptMask) != 0x00; }
 
     // Setter
     void writeRegister(quint8 address, quint8 value);
     void setPortAInputs(quint8 value)                       { m_portAInputs = value; }
     void setPortBInputs(quint8 value)                       { m_portBInputs = value; }
+
+    // Operations
+    void clock();
 
 private:
     quint8 m_portA = 0x00;
@@ -27,6 +31,13 @@ private:
     quint8 m_portB = 0x00;
     quint8 m_dataDirectionB = 0x00;
     quint8 m_portBInputs = 0xFF;
+
+    quint16 m_timerALatch = 0x0000;
+    quint16 m_timerACounter = 0x0000;
+    quint8 m_controlRegisterA = 0x00;
+
+    quint8 m_interruptStatus = 0x00;
+    quint8 m_interruptMask = 0x00;
 
     quint16 m_unimplementedReadReported = 0x0000;
     quint16 m_unimplementedWriteReported = 0x0000;
