@@ -22,6 +22,7 @@ C64Machine::C64Machine()
     m_ptrBus->setVICII(m_ptrVICII);
 
     m_ptrCIA1 = new MOS6526();
+    m_ptrCIA1->setPort(&m_cia1Port);
     m_ptrBus->setCIA1(m_ptrCIA1);
 
     m_ptrCIA2 = new MOS6526();
@@ -124,37 +125,23 @@ void C64Machine::runCycles(const quint64 cycles)
 
 void C64Machine::keyPress(C64Key key)
 {
-    qDebug()
-    << "C64Machine: key press"
-    << static_cast<int>(key);
-
     if (key == C64Key::Restore)
     {
         m_restorePressed = true;
         m_ptrCpu->setNmiLine(m_restorePressed || m_ptrCIA2->irq());
         return;
     }
-
     m_keyboard.press(key);
-    m_ptrCIA1->setPortAInputs(m_keyboard.portAInputs(m_ptrCIA1->portBOutput()));
-    m_ptrCIA1->setPortBInputs(m_keyboard.portBInputs(m_ptrCIA1->portAOutput()));
 }
 void C64Machine::keyRelease(C64Key key)
 {
-    qDebug()
-    << "C64Machine: key release"
-    << static_cast<int>(key);
-
     if (key == C64Key::Restore)
     {
         m_restorePressed = false;
         m_ptrCpu->setNmiLine(m_restorePressed || m_ptrCIA2->irq());
         return;
     }
-
     m_keyboard.release(key);
-    m_ptrCIA1->setPortAInputs(m_keyboard.portAInputs(m_ptrCIA1->portBOutput()));
-    m_ptrCIA1->setPortBInputs(m_keyboard.portBInputs(m_ptrCIA1->portAOutput()));
 }
 
 
@@ -170,15 +157,6 @@ void C64Machine::writeVICIIRegister(const quint8 address, const quint8 value)
 void C64Machine::writeCIA1Register(const quint8 address, const quint8 value)
 {
     m_ptrCIA1->writeRegister(address, value);
-    const quint8 ciaAddress = address & 0x0F;
-    if ((ciaAddress == 0x00) || (ciaAddress == 0x02))
-    {
-        m_ptrCIA1->setPortBInputs(m_keyboard.portBInputs(m_ptrCIA1->portAOutput()));
-    }
-    if ((ciaAddress == 0x01) || (ciaAddress == 0x03))
-    {
-        m_ptrCIA1->setPortAInputs(m_keyboard.portAInputs(m_ptrCIA1->portBOutput()));
-    }
 }
 
 void C64Machine::writeCIA2Register(const quint8 address, const quint8 value)

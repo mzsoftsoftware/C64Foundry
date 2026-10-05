@@ -11,6 +11,7 @@ class MOS6526;
 
 #include "C64/C64Timing.h"
 #include "Input/C64Keyboard.h"
+#include "Input/C64CIA1Port.h"
 
 
 class C64Machine
@@ -94,5 +95,6 @@ private:
     // SID
 
     C64Keyboard m_keyboard;
+    C64CIA1Port m_cia1Port { &m_keyboard };
     bool m_restorePressed = false;
 };

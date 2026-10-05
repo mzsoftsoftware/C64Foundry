@@ -26,8 +26,8 @@ void C64Keyboard::press(const C64Key key)
         return;
     const quint8 row = matrixCode >> 3;
     const quint8 column = matrixCode & 0x07;
-    m_matrixToPortB[row] |= static_cast<quint8>(1U << column);
-    m_matrixToPortA[column] |= static_cast<quint8>(1U << row);
+    m_matrixToPortA[row] |= static_cast<quint8>(1U << column);
+    m_matrixToPortB[column] |= static_cast<quint8>(1U << row);
 }
 
 void C64Keyboard::release(const C64Key key)
@@ -53,8 +53,8 @@ void C64Keyboard::release(const C64Key key)
         return;
     const quint8 row = matrixCode >> 3;
     const quint8 column = matrixCode & 0x07;
-    m_matrixToPortB[row] &= static_cast<quint8>(~(1U << column));
-    m_matrixToPortA[column] &= static_cast<quint8>(~(1U << row));
+    m_matrixToPortA[row] &= static_cast<quint8>(~(1U << column));
+    m_matrixToPortB[column] &= static_cast<quint8>(~(1U << row));
 }
 
 quint8 C64Keyboard::portAInputs(const quint8 portBPins) const

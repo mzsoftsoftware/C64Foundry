@@ -2,6 +2,8 @@
 
 #include <QtGlobal>
 
+class MOS6526Port;
+
 
 class MOS6526
 {
@@ -18,6 +20,7 @@ public:
     quint8 portBOutput() const                              { return m_portB | static_cast<quint8>(~m_dataDirectionB); }
 
     // Setter
+    void setPort(MOS6526Port* ptrPort)                      { m_ptrPort = ptrPort; }
     void writeRegister(quint8 address, quint8 value);
     void setPortAInputs(quint8 value)                       { m_portAInputs = value; }
     void setPortBInputs(quint8 value)                       { m_portBInputs = value; }
@@ -26,6 +29,8 @@ public:
     void clock();
 
 private:
+    MOS6526Port* m_ptrPort = nullptr;
+
     quint8 m_portA = 0x00;
     quint8 m_dataDirectionA = 0x00;
     quint8 m_portAInputs = 0xFF;

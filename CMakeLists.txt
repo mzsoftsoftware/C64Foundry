@@ -35,6 +35,7 @@ add_library(C64FoundryCore STATIC
     C64/CPU/MOS6510MicroOperation.h
     C64/CPU/MOS6510StatusRegister.h
 
+    C64/CIA/MOS6526Port.h
     C64/CIA/MOS6526.h C64/CIA/MOS6526.cpp
 
     C64/Bus/C64Bus.h C64/Bus/C64Bus.cpp
@@ -47,6 +48,7 @@ add_library(C64FoundryCore STATIC
     C64/VIC-II/VIC-II.h C64/VIC-II/VIC-II.cpp
 
     C64/Input/C64Keyboard.h C64/Input/C64Keyboard.cpp
+    C64/Input/C64CIA1Port.h C64/Input/C64CIA1Port.cpp
 )
 
 target_include_directories(C64FoundryCore
@@ -86,12 +88,12 @@ qt_add_executable(C64Foundry
     Output/Video/VideoWorker.h Output/Video/VideoWorker.cpp
     Output/Video/VideoThread.h Output/Video/VideoThread.cpp
 
+    Input/InputEvent.h
     Input/Keyboard/KeyboardController.h Input/Keyboard/KeyboardController.cpp
 
     Configuration/ConfigurationStorage.h Configuration/ConfigurationStorage.cpp
 
     Resources/C64Foundry.qrc
-    Input/InputEvent.h
 )
 
 target_include_directories(C64Foundry

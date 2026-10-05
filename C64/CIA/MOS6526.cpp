@@ -2,6 +2,8 @@
 
 #include <QDebug>
 
+#include "MOS6526Port.h"
+
 
 MOS6526::MOS6526()
 {
@@ -16,9 +18,16 @@ quint8 MOS6526::readRegister(const quint8 address)
     switch (address & 0x0F)
     {
     case 0x00:
-        return (m_portA & m_dataDirectionA) | (m_portAInputs & ~m_dataDirectionA);
+    {
+        const quint8 inputs = m_ptrPort ? m_ptrPort->portAInputs(portBOutput()) : m_portAInputs;
+        return (m_portA & m_dataDirectionA) | (inputs & ~m_dataDirectionA);
+    }
+
     case 0x01:
-        return (m_portB & m_dataDirectionB) | (m_portBInputs & ~m_dataDirectionB);
+    {
+        const quint8 inputs = m_ptrPort ? m_ptrPort->portBInputs(portAOutput()) : m_portBInputs;
+        return (m_portB & m_dataDirectionB) | (inputs & ~m_dataDirectionB);
+    }
     case 0x02:
         return m_dataDirectionA;
     case 0x03:

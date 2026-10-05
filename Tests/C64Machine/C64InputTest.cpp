@@ -1,7 +1,10 @@
 #include "C64InputTest.h"
 
 #include <QTest>
+#include <QTemporaryFile>
+#include <QByteArray>
 
+#include "C64/C64ROMSet.h"
 #include "C64/C64Machine.h"
 #include "C64/Input/C64Keyboard.h"
 
@@ -32,16 +35,16 @@ void C64InputTest::testCIA1Keyboard()
     machine.keyPress(C64Key::KeyA);
 
     //
-    // Select column 2 by pulling PA2 low.
+    // Select the matrix line for A by pulling PA1 low.
     //
-    machine.writeCIA1Register(0x00, 0xFB);
+    machine.writeCIA1Register(0x00, 0xFD);
 
     //
-    // The pressed A key must pull PB1 low.
+    // The pressed A key must pull PB2 low.
     //
     QCOMPARE(
         machine.readCIA1Register(0x01),
-        quint8(0xFD));
+        quint8(0xFB));
 
     //
     // Releasing the key must release the
@@ -79,16 +82,16 @@ void C64InputTest::testCIA1KeyboardReverse()
     machine.keyPress(C64Key::KeyA);
 
     //
-    // Select row 1 by pulling PB1 low.
+    // Select the matrix line for A by pulling PB2 low.
     //
-    machine.writeCIA1Register(0x01, 0xFD);
+    machine.writeCIA1Register(0x01, 0xFB);
 
     //
-    // The pressed A key must pull PA2 low.
+    // The pressed A key must pull PA1 low.
     //
     QCOMPARE(
         machine.readCIA1Register(0x00),
-        quint8(0xFB));
+        quint8(0xFD));
 
     //
     // Releasing the key must release the
@@ -116,7 +119,7 @@ void C64InputTest::testCIA1KeyboardShiftLock()
     // Left Shift is located at matrix position
     // row 1, column 7.
     //
-    machine.writeCIA1Register(0x00, 0x7F);
+    machine.writeCIA1Register(0x00, 0xFD);
 
     //
     // Initially the Shift matrix contact must
@@ -134,7 +137,7 @@ void C64InputTest::testCIA1KeyboardShiftLock()
 
     QCOMPARE(
         machine.readCIA1Register(0x01),
-        quint8(0xFD));
+        quint8(0x7F));
 
     //
     // Pressing Left Shift while Shift Lock is
@@ -144,7 +147,7 @@ void C64InputTest::testCIA1KeyboardShiftLock()
 
     QCOMPARE(
         machine.readCIA1Register(0x01),
-        quint8(0xFD));
+        quint8(0x7F));
 
     //
     // Releasing Left Shift must not release the
@@ -154,7 +157,7 @@ void C64InputTest::testCIA1KeyboardShiftLock()
 
     QCOMPARE(
         machine.readCIA1Register(0x01),
-        quint8(0xFD));
+        quint8(0x7F));
 
     //
     // Releasing Shift Lock now releases the
@@ -174,7 +177,7 @@ void C64InputTest::testCIA1KeyboardShiftLock()
 
     QCOMPARE(
         machine.readCIA1Register(0x01),
-        quint8(0xFD));
+        quint8(0x7F));
 
     //
     // Shift Lock is then pressed while
@@ -184,7 +187,7 @@ void C64InputTest::testCIA1KeyboardShiftLock()
 
     QCOMPARE(
         machine.readCIA1Register(0x01),
-        quint8(0xFD));
+        quint8(0x7F));
 
     //
     // Releasing Shift Lock must not release the
@@ -194,7 +197,7 @@ void C64InputTest::testCIA1KeyboardShiftLock()
 
     QCOMPARE(
         machine.readCIA1Register(0x01),
-        quint8(0xFD));
+        quint8(0x7F));
 
     //
     // Only releasing Left Shift opens the
@@ -298,4 +301,113 @@ void C64InputTest::testRestoreAndCIA2NMI()
     // be inactive again.
     //
     QVERIFY(!machine.cpuNmiLine());
+}
+
+void C64InputTest::testCIA1KeyboardBusScan()
+{
+    QTemporaryFile basicFile;
+    QTemporaryFile kernalFile;
+    QTemporaryFile characterFile;
+
+    QVERIFY(basicFile.open());
+    QVERIFY(kernalFile.open());
+    QVERIFY(characterFile.open());
+
+    QByteArray kernalROM(8192, char(0x00));
+
+    //
+    // Reset vector $FFFC/$FFFD -> $0800.
+    //
+    kernalROM[0x1FFC] = char(0x00);
+    kernalROM[0x1FFD] = char(0x08);
+
+    QCOMPARE(
+        basicFile.write(QByteArray(8192, char(0x00))),
+        qsizetype(8192));
+
+    QCOMPARE(
+        kernalFile.write(kernalROM),
+        qsizetype(8192));
+
+    QCOMPARE(
+        characterFile.write(QByteArray(4096, char(0x00))),
+        qsizetype(4096));
+
+    basicFile.close();
+    kernalFile.close();
+    characterFile.close();
+
+    C64ROMSet romSet(
+        basicFile.fileName(),
+        kernalFile.fileName(),
+        characterFile.fileName());
+
+    C64Machine machine;
+
+    QVERIFY(machine.loadROMSet(romSet));
+
+    //
+    // The A key is located at matrix position
+    // row 1, column 2.
+    //
+    machine.keyPress(C64Key::KeyA);
+
+    QByteArray program;
+
+    //
+    // Configure CIA1 Port A as output.
+    //
+    program.append(char(0xA9));     // LDA #$FF
+    program.append(char(0xFF));
+    program.append(char(0x8D));     // STA $DC02
+    program.append(char(0x02));
+    program.append(char(0xDC));
+
+    //
+    // Configure CIA1 Port B as input.
+    //
+    program.append(char(0xA9));     // LDA #$00
+    program.append(char(0x00));
+    program.append(char(0x8D));     // STA $DC03
+    program.append(char(0x03));
+    program.append(char(0xDC));
+
+    //
+    // Select the matrix line for A by pulling PA1 low.
+    //
+    program.append(char(0xA9));     // LDA #$FD
+    program.append(char(0xFD));
+    program.append(char(0x8D));     // STA $DC00
+    program.append(char(0x00));
+    program.append(char(0xDC));
+
+    //
+    // Read CIA1 Port B.
+    //
+    program.append(char(0xAD));     // LDA $DC01
+    program.append(char(0x01));
+    program.append(char(0xDC));
+
+    //
+    // Store the result in RAM.
+    //
+    program.append(char(0x85));     // STA $02
+    program.append(char(0x02));
+
+    //
+    // Stop execution.
+    //
+    program.append(char(0x02));     // KIL
+
+    QVERIFY(machine.loadProgram(0x0800, program));
+
+    machine.powerOn();
+    machine.runCycles(100);
+
+    //
+    // The pressed A key must pull PB2 low.
+    //
+    QCOMPARE(
+        machine.readRAM(0x0002),
+        quint8(0xFB));
 }
