@@ -37,6 +37,7 @@ public:
     // Getter
     const C64::Timing& timing() const           { return m_timing; }
     quint8 readRAM(quint16 address) const;
+    quint8 readColorRAM(quint16 address) const;
 
     bool viciiBA() const;
     bool viciiAEC() const;

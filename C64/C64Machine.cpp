@@ -140,6 +140,10 @@ quint8 C64Machine::readRAM(const quint16 address) const
 {
     return m_ptrMemory->readRAM(address);
 }
+quint8 C64Machine::readColorRAM(const quint16 address) const
+{
+    return m_ptrMemory->readColorRAM(address);
+}
 bool C64Machine::viciiBA() const
 {
     return m_ptrVICII->ba();

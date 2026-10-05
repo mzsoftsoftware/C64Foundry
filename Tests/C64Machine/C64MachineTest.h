@@ -26,6 +26,10 @@ private slots:
     void testCIAClock();
     void testCIA1IRQ();
 
+    void testROMBootScreenRAMStable();
+    void testROMBootColorRAMStable();
+    void testROMBootCursorBlink();
+
     void testPerformance();
 
 };

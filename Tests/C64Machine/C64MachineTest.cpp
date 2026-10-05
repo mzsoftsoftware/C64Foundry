@@ -590,6 +590,232 @@ void C64MachineTest::testCIA1IRQ()
     QCOMPARE(machine.readRAM(0x0002), quint8(0x42));
 }
 
+void C64MachineTest::testROMBootScreenRAMStable()
+{
+    C64ROMSet romSet(
+        QStringLiteral(":/ROMs/OpenROMs/basic.rom"),
+        QStringLiteral(":/ROMs/OpenROMs/kernal.rom"),
+        QStringLiteral(":/ROMs/OpenROMs/chargen.rom"));
+
+    C64Machine machine;
+
+    QVERIFY(machine.loadROMSet(romSet));
+
+    machine.powerOn();
+
+    //
+    // Give the ROM enough time to complete its initialization.
+    //
+    machine.runCycles(
+        C64::PALTiming.cyclesPerFrame * 10);
+
+    QByteArray firstSnapshot;
+    firstSnapshot.reserve(1000);
+
+    for (quint16 address = 0x0400;
+         address <= 0x07E7;
+         ++address)
+    {
+        firstSnapshot.append(
+            static_cast<char>(
+                machine.readRAM(address)));
+    }
+
+    //
+    // Let the initialized machine run for a longer period.
+    //
+    machine.runCycles(
+        C64::PALTiming.cyclesPerFrame * 100);
+
+    QByteArray secondSnapshot;
+    secondSnapshot.reserve(1000);
+
+    for (quint16 address = 0x0400;
+         address <= 0x07E7;
+         ++address)
+    {
+        secondSnapshot.append(
+            static_cast<char>(
+                machine.readRAM(address)));
+    }
+
+    //
+    // The screen contents must remain stable.
+    //
+    // The cursor position is the only exception:
+    // the KERNAL toggles bit 7 of the space character
+    // to display the blinking reverse-space cursor.
+    //
+    constexpr quint16 CursorAddress = 0x05B8;
+
+    for (qsizetype index = 0;
+         index < firstSnapshot.size();
+         ++index)
+    {
+        const quint16 address =
+            static_cast<quint16>(
+                0x0400 + index);
+
+        const quint8 first =
+            static_cast<quint8>(
+                firstSnapshot.at(index));
+
+        const quint8 second =
+            static_cast<quint8>(
+                secondSnapshot.at(index));
+
+        if (address == CursorAddress)
+        {
+            //
+            // The character itself must remain unchanged.
+            // Only the reverse bit may differ.
+            //
+            QCOMPARE(
+                first & 0x7F,
+                second & 0x7F);
+
+            QCOMPARE(
+                first & 0x7F,
+                quint8(0x20));
+
+            QVERIFY(
+                second == 0x20 ||
+                second == 0xA0);
+        }
+        else
+        {
+            QCOMPARE(second, first);
+        }
+    }
+}
+void C64MachineTest::testROMBootColorRAMStable()
+{
+    C64ROMSet romSet(
+        QStringLiteral(":/ROMs/OpenROMs/basic.rom"),
+        QStringLiteral(":/ROMs/OpenROMs/kernal.rom"),
+        QStringLiteral(":/ROMs/OpenROMs/chargen.rom"));
+
+    C64Machine machine;
+
+    QVERIFY(machine.loadROMSet(romSet));
+
+    machine.powerOn();
+
+    //
+    // Give the ROM enough time to complete its initialization.
+    //
+    machine.runCycles(
+        C64::PALTiming.cyclesPerFrame * 10);
+
+    QByteArray firstSnapshot;
+    firstSnapshot.reserve(1000);
+
+    for (quint16 address = 0;
+         address < 1000;
+         ++address)
+    {
+        firstSnapshot.append(
+            static_cast<char>(
+                machine.readColorRAM(address)));
+    }
+
+    //
+    // Let the initialized machine run for several more frames.
+    //
+    machine.runCycles(
+        C64::PALTiming.cyclesPerFrame * 100);
+
+    QByteArray secondSnapshot;
+    secondSnapshot.reserve(1000);
+
+    for (quint16 address = 0;
+         address < 1000;
+         ++address)
+    {
+        secondSnapshot.append(
+            static_cast<char>(
+                machine.readColorRAM(address)));
+    }
+
+    QCOMPARE(secondSnapshot, firstSnapshot);
+}
+void C64MachineTest::testROMBootCursorBlink()
+{
+    C64ROMSet romSet(
+        QStringLiteral(":/ROMs/OpenROMs/basic.rom"),
+        QStringLiteral(":/ROMs/OpenROMs/kernal.rom"),
+        QStringLiteral(":/ROMs/OpenROMs/chargen.rom"));
+
+    C64Machine machine;
+
+    QVERIFY(machine.loadROMSet(romSet));
+
+    machine.powerOn();
+
+    //
+    // Give the ROM enough time to complete its initialization.
+    //
+    machine.runCycles(
+        C64::PALTiming.cyclesPerFrame * 10);
+
+    constexpr quint16 CursorAddress = 0x05B8;
+
+    //
+    // The cursor is located on a space character.
+    // Bit 7 is used to display the blinking reverse-space cursor.
+    //
+    const quint8 initialValue =
+        machine.readRAM(CursorAddress);
+
+    QCOMPARE(
+        initialValue & 0x7F,
+        quint8(0x20));
+
+    bool sawNormal = (initialValue == 0x20);
+    bool sawReverse = (initialValue == 0xA0);
+
+    //
+    // Observe the cursor for several seconds.
+    //
+    for (quint16 frame = 0;
+         frame < 200;
+         ++frame)
+    {
+        machine.runCycles(
+            C64::PALTiming.cyclesPerFrame);
+
+        const quint8 value =
+            machine.readRAM(CursorAddress);
+
+        //
+        // The character itself must remain a space.
+        // Only the reverse bit may change.
+        //
+        QCOMPARE(
+            value & 0x7F,
+            quint8(0x20));
+
+        QVERIFY(
+            value == 0x20 ||
+            value == 0xA0);
+
+        if (value == 0x20)
+            sawNormal = true;
+
+        if (value == 0xA0)
+            sawReverse = true;
+    }
+
+    //
+    // During the observation period the cursor must have
+    // appeared in both states.
+    //
+    QVERIFY(sawNormal);
+    QVERIFY(sawReverse);
+}
+
+
+
 void C64MachineTest::testPerformance()
 {
     C64ROMSet romSet(
