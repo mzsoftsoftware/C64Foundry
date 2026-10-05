@@ -70,6 +70,32 @@ void MOS6526TestPort::testPortAMixedInputsOutputs()
     //
     QCOMPARE(cia.readRegister(0x00), quint8(0xAC));
 }
+void MOS6526TestPort::testPortAPins()
+{
+    MOS6526 cia;
+
+    //
+    // Upper nibble: outputs
+    // Lower nibble: inputs
+    //
+    cia.writeRegister(0x02, 0xF0);
+
+    //
+    // Output latch.
+    //
+    cia.writeRegister(0x00, 0xA5);
+
+    //
+    // External input pins.
+    //
+    cia.setPortAInputs(0x3C);
+
+    //
+    // Upper nibble comes from PRA:     $A0
+    // Lower nibble comes from inputs:  $0C
+    //
+    QCOMPARE(cia.portAPins(), quint8(0xAC));
+}
 
 void MOS6526TestPort::testPortBRegisterWrite()
 {
@@ -130,6 +156,32 @@ void MOS6526TestPort::testPortBMixedInputsOutputs()
     // Lower nibble comes from inputs:  $0C
     //
     QCOMPARE(cia.readRegister(0x01), quint8(0xAC));
+}
+void MOS6526TestPort::testPortBPins()
+{
+    MOS6526 cia;
+
+    //
+    // Upper nibble: outputs
+    // Lower nibble: inputs
+    //
+    cia.writeRegister(0x03, 0xF0);
+
+    //
+    // Output latch.
+    //
+    cia.writeRegister(0x01, 0xA5);
+
+    //
+    // External input pins.
+    //
+    cia.setPortBInputs(0x3C);
+
+    //
+    // Upper nibble comes from PRB:     $A0
+    // Lower nibble comes from inputs:  $0C
+    //
+    QCOMPARE(cia.portBPins(), quint8(0xAC));
 }
 
 void MOS6526TestPort::testRegisterMirroring()

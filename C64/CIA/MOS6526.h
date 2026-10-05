@@ -10,7 +10,9 @@ public:
     virtual ~MOS6526();
 
     // Getter
-    quint8 readRegister(quint8 address) const;
+    quint8 readRegister(quint8 address);
+    quint8 portAPins() const                                { return (m_portA & m_dataDirectionA) | (m_portAInputs & ~m_dataDirectionA); }
+    quint8 portBPins() const                                { return (m_portB & m_dataDirectionB) | (m_portBInputs & ~m_dataDirectionB); }
 
     // Setter
     void writeRegister(quint8 address, quint8 value);
@@ -25,4 +27,7 @@ private:
     quint8 m_portB = 0x00;
     quint8 m_dataDirectionB = 0x00;
     quint8 m_portBInputs = 0xFF;
+
+    quint16 m_unimplementedReadReported = 0x0000;
+    quint16 m_unimplementedWriteReported = 0x0000;
 };
