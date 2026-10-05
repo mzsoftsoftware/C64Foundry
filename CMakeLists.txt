@@ -86,9 +86,12 @@ qt_add_executable(C64Foundry
     Output/Video/VideoWorker.h Output/Video/VideoWorker.cpp
     Output/Video/VideoThread.h Output/Video/VideoThread.cpp
 
+    Input/Keyboard/KeyboardController.h Input/Keyboard/KeyboardController.cpp
+
     Configuration/ConfigurationStorage.h Configuration/ConfigurationStorage.cpp
 
     Resources/C64Foundry.qrc
+    Input/InputEvent.h
 )
 
 target_include_directories(C64Foundry

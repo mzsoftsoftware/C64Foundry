@@ -42,6 +42,10 @@ void EmulatorController::loadROMSet(const C64ROMSet& romSet)
     qDebug() << "EmulatorController: load ROM set";
     m_ptrWorker->requestROMSet(romSet);
 }
+void EmulatorController::input(const InputEvent& event)
+{
+    m_ptrWorker->requestInput(event);
+}
 
 void EmulatorController::start()
 {

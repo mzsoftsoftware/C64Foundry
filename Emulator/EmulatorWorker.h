@@ -4,8 +4,11 @@
 #include <QMutex>
 #include <QWaitCondition>
 #include <QElapsedTimer>
+#include <QQueue>
+
 
 #include "Emulator/EmulatorSpeed.h"
+#include "Input/InputEvent.h"
 
 class C64Machine;
 #include "C64/C64ROMSet.h"
@@ -25,6 +28,7 @@ public:
     void run();
 
     void requestROMSet(const C64ROMSet& romSet);
+    void requestInput(const InputEvent& event);
 
     void requestStart();
     void requestStop();
@@ -60,6 +64,7 @@ private:
     // Request
     bool m_bROMSetRequested = false;
     C64ROMSet m_romSetRequested;
+    QQueue<InputEvent> m_inputEvents;
 
     bool m_bStartRequested = false;
     bool m_bResetRequested = false;

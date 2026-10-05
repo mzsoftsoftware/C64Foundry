@@ -5,6 +5,7 @@
 #include "EmulatorSpeed.h"
 
 #include "C64/C64ROMSet.h"
+#include "Input/InputEvent.h"
 
 class EmulatorThread;
 class EmulatorWorker;
@@ -23,6 +24,7 @@ public:
 
 public slots:
     void loadROMSet(const C64ROMSet& romSet);
+    void input(const InputEvent& event);
 
     void start();
     void stop();

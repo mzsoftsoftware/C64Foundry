@@ -3,6 +3,8 @@
 #include <QPainter>
 #include <QApplication>
 #include <QCloseEvent>
+#include <QKeyEvent>
+#include <QFocusEvent>
 
 
 VideoWindowWidget::VideoWindowWidget(QWidget *parent)
@@ -57,4 +59,22 @@ void VideoWindowWidget::closeEvent(QCloseEvent* ptrEvent)
 {
     QApplication::quit();
     QWidget::closeEvent(ptrEvent);
+}
+
+void VideoWindowWidget::keyPressEvent(QKeyEvent* ptrEvent)
+{
+    emit keyPressed(ptrEvent->key(), ptrEvent->nativeScanCode(), ptrEvent->modifiers(), ptrEvent->isAutoRepeat());
+}
+void VideoWindowWidget::keyReleaseEvent(QKeyEvent* ptrEvent)
+{
+    emit keyReleased(ptrEvent->key(), ptrEvent->nativeScanCode(), ptrEvent->modifiers(), ptrEvent->isAutoRepeat());
+}
+
+void VideoWindowWidget::changeEvent(QEvent* ptrEvent)
+{
+    if (ptrEvent->type() == QEvent::ActivationChange && !isActiveWindow())
+    {
+        emit inputDeactivated();
+    }
+    QWidget::changeEvent(ptrEvent);
 }

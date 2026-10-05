@@ -124,6 +124,10 @@ void C64Machine::runCycles(const quint64 cycles)
 
 void C64Machine::keyPress(C64Key key)
 {
+    qDebug()
+    << "C64Machine: key press"
+    << static_cast<int>(key);
+
     if (key == C64Key::Restore)
     {
         m_restorePressed = true;
@@ -137,6 +141,10 @@ void C64Machine::keyPress(C64Key key)
 }
 void C64Machine::keyRelease(C64Key key)
 {
+    qDebug()
+    << "C64Machine: key release"
+    << static_cast<int>(key);
+
     if (key == C64Key::Restore)
     {
         m_restorePressed = false;

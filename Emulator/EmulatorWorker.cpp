@@ -105,6 +105,12 @@ void EmulatorWorker::requestROMSet(const C64ROMSet& romSet)
     qDebug() << "EmulatorWorker: ROM set requested";
     m_waitCondition.wakeOne();
 }
+void EmulatorWorker::requestInput(const InputEvent& event)
+{
+    QMutexLocker locker(&m_mutex);
+    m_inputEvents.enqueue(event);
+    m_waitCondition.wakeOne();
+}
 
 void EmulatorWorker::requestStart()
 {
@@ -146,11 +152,13 @@ void EmulatorWorker::requestSpeed(const Emulator::Speed speed)
 bool EmulatorWorker::waitForRequests()
 {
     QMutexLocker locker(&m_mutex);
-    while (!m_bROMSetRequested &&
+    while (!m_bROMSetRequested && m_inputEvents.isEmpty() &&
            !m_bStartRequested && !m_bStopRequested &&
            !m_bResetRequested && !m_bShutdownRequested &&
            !m_bSpeedRequested)
+    {
         m_waitCondition.wait(&m_mutex);
+    }
     return !m_bShutdownRequested;
 }
 
@@ -158,12 +166,13 @@ bool EmulatorWorker::processRequests()
 {
     bool bROMSetRequested = false;
     C64ROMSet romSetRequested;
+    QQueue<InputEvent> inputEvents;
 
     bool bStartRequested = false;
     bool bStopRequested = false;
     bool bResetRequested = false;
-    bool bSpeedRequested = false;
 
+    bool bSpeedRequested = false;    
     Emulator::Speed speedRequested = Emulator::Speed::Normal;
 
     {
@@ -171,6 +180,7 @@ bool EmulatorWorker::processRequests()
 
         bROMSetRequested = m_bROMSetRequested;
         romSetRequested = m_romSetRequested;
+        inputEvents.swap(m_inputEvents);
 
         bStartRequested = m_bStartRequested;
         bResetRequested = m_bResetRequested;
@@ -198,6 +208,20 @@ bool EmulatorWorker::processRequests()
         else
             qWarning() << "EmulatorWorker: ROM set could not be loaded";
         emit romSetLoaded(bLoaded);
+    }
+
+    while (!inputEvents.isEmpty())
+    {
+        const InputEvent event = inputEvents.dequeue();
+        switch (event.type)
+        {
+        case InputEventType::KeyPress:
+            m_ptrMachine->keyPress(event.key);
+            break;
+        case InputEventType::KeyRelease:
+            m_ptrMachine->keyRelease(event.key);
+            break;
+        }
     }
 
     if(bStartRequested)
