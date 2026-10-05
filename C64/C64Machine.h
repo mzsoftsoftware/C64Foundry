@@ -44,6 +44,9 @@ public:
     quint8 readCIA1Register(quint8 address) const;
     quint8 readCIA2Register(quint8 address) const;
 
+    quint16 cpuProgramCounter() const;
+    quint64 cpuCycles() const;
+
     bool busAEC() const;
     quint8 busAccessCount() const;
     bool busLastAccessWasRead() const;

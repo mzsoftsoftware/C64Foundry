@@ -382,6 +382,55 @@ void C64MachineTest::testVICIIAECStopsCPUAccess()
     QVERIFY(machine.busLastAccessWasRead());
     QVERIFY(machine.busLastAccessWasVICII());
 }
+void C64MachineTest::testVICIIBadLineCPUStall()
+{
+    C64Machine machine;
+
+    //
+    // Enable display and select YSCROLL 0.
+    // Raster line $30 is therefore a badline.
+    //
+    machine.writeVICIIRegister(0x11, 0x10);
+
+    //
+    // Advance to raster line $30, cycle 14.
+    // BA is already low, AEC is still high.
+    //
+    machine.runCycles(
+        0x30 * C64::PALTiming.cyclesPerLine + 14);
+
+    QVERIFY(!machine.viciiBA());
+    QVERIFY(machine.viciiAEC());
+
+    const quint64 cpuCyclesBefore =
+        machine.cpuCycles();
+
+    const quint16 programCounterBefore =
+        machine.cpuProgramCounter();
+
+    //
+    // Cycles 15 through 54 belong to the VIC-II.
+    // The CPU is stalled on its current read cycle.
+    //
+    machine.runCycles(40);
+
+    QCOMPARE(machine.cpuCycles(), cpuCyclesBefore);
+    QCOMPARE(machine.cpuProgramCounter(), programCounterBefore);
+
+    QVERIFY(!machine.viciiBA());
+    QVERIFY(!machine.viciiAEC());
+
+    //
+    // Cycle 55 releases the bus.
+    // The stalled CPU cycle must now continue.
+    //
+    machine.clock();
+
+    QVERIFY(machine.viciiBA());
+    QVERIFY(machine.viciiAEC());
+
+    QCOMPARE(machine.cpuCycles(), cpuCyclesBefore + 1);
+}
 
 void C64MachineTest::testCIARegisterAccess()
 {

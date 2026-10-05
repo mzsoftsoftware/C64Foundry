@@ -156,6 +156,14 @@ quint8 C64Machine::readCIA2Register(const quint8 address) const
 {
     return m_ptrCIA2->readRegister(address);
 }
+quint16 C64Machine::cpuProgramCounter() const
+{
+    return m_ptrCpu->programCounter();
+}
+quint64 C64Machine::cpuCycles() const
+{
+    return m_ptrCpu->cycles();
+}
 bool C64Machine::busAEC() const
 {
     return m_ptrBus->aec();
