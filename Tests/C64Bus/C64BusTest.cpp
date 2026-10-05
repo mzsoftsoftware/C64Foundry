@@ -323,9 +323,11 @@ void C64BusTest::testVICIIRegisterMapping()
 void C64BusTest::testVICMemoryRead()
 {
     C64Memory memory;
+    MOS6526 cia2;
     C64Bus bus;
 
     bus.setMemory(&memory);
+    bus.setCIA2(&cia2);
 
     //
     // The VIC-II reads RAM through its own memory access path.
@@ -337,9 +339,11 @@ void C64BusTest::testVICMemoryRead()
 void C64BusTest::testVICMemoryAddressMask()
 {
     C64Memory memory;
+    MOS6526 cia2;
     C64Bus bus;
 
     bus.setMemory(&memory);
+    bus.setCIA2(&cia2);
 
     //
     // The VIC-II has a 14-bit address bus.
@@ -358,9 +362,11 @@ void C64BusTest::testVICMemoryAddressMask()
 void C64BusTest::testVICCharacterROM()
 {
     C64Memory memory;
+    MOS6526 cia2;
     C64Bus bus;
 
     bus.setMemory(&memory);
+    bus.setCIA2(&cia2);
 
     QByteArray characterROM(4096, 0x00);
     characterROM[0x0000] = 0x11;
@@ -384,9 +390,11 @@ void C64BusTest::testVICCharacterROM()
 void C64BusTest::testVICCharacterROMBoundaries()
 {
     C64Memory memory;
+    MOS6526 cia2;
     C64Bus bus;
 
     bus.setMemory(&memory);
+    bus.setCIA2(&cia2);
 
     QByteArray characterROM(4096, 0x00);
     characterROM[0x0000] = 0x11;
@@ -499,9 +507,11 @@ void C64BusTest::testAEC()
 void C64BusTest::testVICReadAccess()
 {
     C64Memory memory;
+    MOS6526 cia2;
     C64Bus bus;
 
     bus.setMemory(&memory);
+    bus.setCIA2(&cia2);
 
     memory.writeRAM(0x0234, 0x42);
 
@@ -516,9 +526,11 @@ void C64BusTest::testVICReadAccess()
 void C64BusTest::testVICCharacterROMReadAccess()
 {
     C64Memory memory;
+    MOS6526 cia2;
     C64Bus bus;
 
     bus.setMemory(&memory);
+    bus.setCIA2(&cia2);
 
     QByteArray characterROM(4096, 0x00);
     characterROM[0x0234] = 0x42;
@@ -599,4 +611,103 @@ void C64BusTest::testCIA2RegisterMapping()
     QCOMPARE(bus.read(0xDD10), quint8(0x5A));
     QCOMPARE(bus.read(0xDD80), quint8(0x5A));
     QCOMPARE(bus.read(0xDDF0), quint8(0x5A));
+}
+void C64BusTest::testVICMemoryBanks()
+{
+    C64Memory memory;
+    MOS6526 cia2;
+    C64Bus bus;
+
+    bus.setMemory(&memory);
+    bus.setCIA2(&cia2);
+
+    //
+    // Put a different value at the same VIC-II address
+    // in each 16 KiB memory bank.
+    //
+    memory.writeRAM(0x0234, 0x11);
+    memory.writeRAM(0x4234, 0x22);
+    memory.writeRAM(0x8234, 0x33);
+    memory.writeRAM(0xC234, 0x44);
+
+    //
+    // CIA 2 Port A bits 0 and 1 select the VIC-II bank.
+    //
+    cia2.writeRegister(0x02, 0x03);
+
+    //
+    // PA1=1, PA0=1 -> bank 0: $0000-$3FFF.
+    //
+    cia2.writeRegister(0x00, 0x03);
+    QCOMPARE(bus.readVIC(0x0234), quint8(0x11));
+
+    //
+    // PA1=1, PA0=0 -> bank 1: $4000-$7FFF.
+    //
+    cia2.writeRegister(0x00, 0x02);
+    QCOMPARE(bus.readVIC(0x0234), quint8(0x22));
+
+    //
+    // PA1=0, PA0=1 -> bank 2: $8000-$BFFF.
+    //
+    cia2.writeRegister(0x00, 0x01);
+    QCOMPARE(bus.readVIC(0x0234), quint8(0x33));
+
+    //
+    // PA1=0, PA0=0 -> bank 3: $C000-$FFFF.
+    //
+    cia2.writeRegister(0x00, 0x00);
+    QCOMPARE(bus.readVIC(0x0234), quint8(0x44));
+}
+void C64BusTest::testVICCharacterROMBanks()
+{
+    C64Memory memory;
+    MOS6526 cia2;
+    C64Bus bus;
+
+    bus.setMemory(&memory);
+    bus.setCIA2(&cia2);
+
+    QByteArray characterROM(4096, 0x00);
+    characterROM[0x0234] = 0x42;
+
+    QVERIFY(memory.loadCharacterROM(characterROM));
+
+    //
+    // Put different values into RAM at the same VIC-II
+    // address in all four 16 KiB banks.
+    //
+    memory.writeRAM(0x1234, 0x11);
+    memory.writeRAM(0x5234, 0x22);
+    memory.writeRAM(0x9234, 0x33);
+    memory.writeRAM(0xD234, 0x44);
+
+    //
+    // CIA 2 Port A bits 0 and 1 select the VIC-II bank.
+    //
+    cia2.writeRegister(0x02, 0x03);
+
+    //
+    // Bank 0: Character ROM is visible at $1000-$1FFF.
+    //
+    cia2.writeRegister(0x00, 0x03);
+    QCOMPARE(bus.readVIC(0x1234), quint8(0x42));
+
+    //
+    // Bank 1: RAM is visible at $5000-$5FFF.
+    //
+    cia2.writeRegister(0x00, 0x02);
+    QCOMPARE(bus.readVIC(0x1234), quint8(0x22));
+
+    //
+    // Bank 2: Character ROM is visible at $9000-$9FFF.
+    //
+    cia2.writeRegister(0x00, 0x01);
+    QCOMPARE(bus.readVIC(0x1234), quint8(0x42));
+
+    //
+    // Bank 3: RAM is visible at $D000-$DFFF.
+    //
+    cia2.writeRegister(0x00, 0x00);
+    QCOMPARE(bus.readVIC(0x1234), quint8(0x44));
 }

@@ -360,16 +360,24 @@ void C64Bus::writeCycle(const quint16 address)
 quint8 C64Bus::readVIC(const quint16 address)
 {
     const quint16 vicAddress = address & 0x3FFF;
+
+    //
+    // CIA 2 Port A bits 0 and 1 select the inverted
+    // 16 KiB VIC-II memory bank.
+    //
+    const quint16 vicBank = static_cast<quint16>((~m_ptrCIA2->portAPins()) & 0x03) << 14;
+    const quint16 memoryAddress = vicBank | vicAddress;
+
     quint8 value;
 
     //
     // In VIC-II bank 0, $1000-$1FFF is mapped to the
     // Character ROM instead of the underlying RAM.
     //
-    if ((vicAddress & 0x3000) == 0x1000)
+    if ((memoryAddress & 0x7000) == 0x1000)
         value = m_ptrMemory->readCharacterROM(vicAddress & 0x0FFF);
     else
-        value = m_ptrMemory->readRAM(vicAddress);
+        value = m_ptrMemory->readRAM(memoryAddress);
 
     //
     // Record the VIC-II bus access.

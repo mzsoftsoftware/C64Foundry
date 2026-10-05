@@ -37,4 +37,6 @@ private slots:
 
     void testCIA1RegisterMapping();
     void testCIA2RegisterMapping();
+    void testVICMemoryBanks();
+    void testVICCharacterROMBanks();
 };
