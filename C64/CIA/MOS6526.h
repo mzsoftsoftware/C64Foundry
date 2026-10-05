@@ -14,6 +14,8 @@ public:
     quint8 portAPins() const                                { return (m_portA & m_dataDirectionA) | (m_portAInputs & ~m_dataDirectionA); }
     quint8 portBPins() const                                { return (m_portB & m_dataDirectionB) | (m_portBInputs & ~m_dataDirectionB); }
     bool irq() const                                        { return (m_interruptStatus & m_interruptMask) != 0x00; }
+    quint8 portAOutput() const                              { return m_portA | static_cast<quint8>(~m_dataDirectionA); }
+    quint8 portBOutput() const                              { return m_portB | static_cast<quint8>(~m_dataDirectionB); }
 
     // Setter
     void writeRegister(quint8 address, quint8 value);

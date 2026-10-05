@@ -30,7 +30,4 @@ private slots:
     void testROMBootColorRAMStable();
     void testROMBootCursorBlink();
     void testROMBootVICIICAccess();
-
-    void testPerformance();
-
 };

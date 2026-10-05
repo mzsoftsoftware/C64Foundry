@@ -10,6 +10,7 @@ class VICII;
 class MOS6526;
 
 #include "C64/C64Timing.h"
+#include "Input/C64Keyboard.h"
 
 
 class C64Machine
@@ -27,6 +28,9 @@ public:
 
     void clock();
     void runCycles(quint64 cycles);
+
+    void keyPress(C64Key key);
+    void keyRelease(C64Key key);
 
     // Setter
     void setTiming(const C64::Timing& timing);
@@ -55,6 +59,7 @@ public:
 
     quint16 cpuProgramCounter() const;
     quint64 cpuCycles() const;
+    bool cpuNmiLine() const;
 
     bool busAEC() const;
     quint8 busAccessCount() const;
@@ -87,4 +92,6 @@ private:
     MOS6526*    m_ptrCIA2 = nullptr;
 
     // SID
+
+    C64Keyboard m_keyboard;
 };

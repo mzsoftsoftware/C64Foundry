@@ -45,6 +45,8 @@ add_library(C64FoundryCore STATIC
     C64/Memory/ColorRAM.h C64/Memory/ColorRAM.cpp
 
     C64/VIC-II/VIC-II.h C64/VIC-II/VIC-II.cpp
+
+    C64/Input/C64Keyboard.h C64/Input/C64Keyboard.cpp
 )
 
 target_include_directories(C64FoundryCore
