@@ -8,6 +8,7 @@
 #include "C64/Bus/C64Bus.h"
 #include "C64/Memory/C64Memory.h"
 #include "C64/VIC-II/VIC-II.h"
+#include "C64/CIA/MOS6526.h"
 
 
 void VICIITest::testInitialRegisters()
@@ -250,9 +251,11 @@ void VICIITest::testRasterLineAdvance()
 {
     C64Memory memory;
     C64Bus bus;
+    MOS6526 cia2;
     VICII vicII;
 
     bus.setMemory(&memory);
+    bus.setCIA2(&cia2);
     vicII.setBus(&bus);
     vicII.setTiming(C64::PALTiming);
 
@@ -3253,7 +3256,7 @@ void VICIITest::testFrameBufferStoresOutputPixel()
     //
     // Acquire the completed frame for the video consumer.
     //
-    quint8* ptrReadFrame = vicII.acquireReadyFrame();
+    const quint8* ptrReadFrame = vicII.acquireReadyFrame();
 
     QVERIFY(ptrReadFrame != nullptr);
     QCOMPARE(ptrReadFrame[0], quint8(0x06));
@@ -3334,7 +3337,7 @@ void VICIITest::testFrameBufferKeepsLatestReadyFrame()
     //
     // Acquiring now must return the most recently completed frame.
     //
-    quint8* ptrReadFrame = vicII.acquireReadyFrame();
+    const quint8* ptrReadFrame = vicII.acquireReadyFrame();
 
     QVERIFY(ptrReadFrame != nullptr);
     QCOMPARE(ptrReadFrame[0], quint8(0x0E));
@@ -3364,7 +3367,7 @@ void VICIITest::testFrameBufferPreservesAcquiredFrame()
     //
     // Acquire the first frame for the video consumer.
     //
-    quint8* ptrReadFrame = vicII.acquireReadyFrame();
+    const quint8* ptrReadFrame = vicII.acquireReadyFrame();
 
     QVERIFY(ptrReadFrame != nullptr);
     QCOMPARE(ptrReadFrame[0], quint8(0x06));
@@ -3407,7 +3410,7 @@ void VICIITest::testFrameBufferPreservesAcquiredFrame()
     //
     // Acquiring now must return the most recently completed frame.
     //
-    quint8* ptrLatestFrame = vicII.acquireReadyFrame();
+    const quint8* ptrLatestFrame = vicII.acquireReadyFrame();
 
     QVERIFY(ptrLatestFrame != nullptr);
     QCOMPARE(ptrLatestFrame[0], quint8(0x02));
@@ -3426,7 +3429,7 @@ void VICIITest::testFrameBufferAcquireWhileProducing()
     std::atomic_bool firstFrameReady = false;
     std::atomic_bool consumerFinished = false;
 
-    quint8* ptrReadFrame = nullptr;
+    const quint8* ptrReadFrame = nullptr;
 
     //
     // The producer generates two frames.
@@ -3516,7 +3519,7 @@ void VICIITest::testFrameBufferAcquireOnlyOnce()
     //
     // The completed frame must be available once.
     //
-    quint8* ptrReadFrame = vicII.acquireReadyFrame();
+    const quint8* ptrReadFrame = vicII.acquireReadyFrame();
 
     QVERIFY(ptrReadFrame != nullptr);
     QCOMPARE(ptrReadFrame[0], quint8(0x06));
@@ -3581,7 +3584,7 @@ void VICIITest::testFrameBufferConcurrentStress()
         {
             while (!producerFinished.load())
             {
-                quint8* ptrFrame = vicII.acquireReadyFrame();
+                const quint8* ptrFrame = vicII.acquireReadyFrame();
 
                 if (ptrFrame == nullptr)
                     continue;
@@ -3625,4 +3628,87 @@ void VICIITest::testFrameBufferConcurrentStress()
     // by the producer.
     //
     QVERIFY(!frameCorrupted.load());
+}
+
+void VICIITest::testStandardTextCharacterROMSequence()
+{
+    C64Memory memory;
+    C64Bus bus;
+    VICII vicII;
+    MOS6526 cia2;
+
+    bus.setMemory(&memory);
+    bus.setCIA2(&cia2);
+    vicII.setBus(&bus);
+
+    //
+    // VIC-II bank 0: $0000-$3FFF.
+    //
+    cia2.writeRegister(0x02, 0x03);
+    cia2.writeRegister(0x00, 0x03);
+
+    //
+    // Select video matrix at $0400 and Character ROM at $1000.
+    //
+    vicII.writeRegister(0x18, 0x14);
+
+    //
+    // Enable display with YSCROLL=0.
+    //
+    vicII.writeRegister(0x11, 0x10);
+
+    //
+    // Set the background color.
+    //
+    vicII.writeRegister(0x21, 0x03);
+
+    //
+    // Screen position 0 contains character $20
+    // with foreground color $05.
+    //
+    memory.writeRAM(0x0400, 0x20);
+    memory.writeColorRAM(0x0000, 0x05);
+
+    //
+    // Character $20, row 0 in the Character ROM:
+    //
+    // $1000 + ($20 * 8) = $1100
+    //
+    // Character ROM offset is therefore $0100.
+    //
+    QByteArray characterROM(4096, 0x00);
+    characterROM[0x0100] = static_cast<char>(0xA5);
+
+    QVERIFY(memory.loadCharacterROM(characterROM));
+
+    //
+    // Advance through graphics access #0 at cycle 16
+    // of the first bad line.
+    //
+    while ((vicII.rasterLine() != 0x30) ||
+           (vicII.rasterCycle() != 16))
+    {
+        vicII.clock();
+    }
+
+    QVERIFY(vicII.displayState());
+
+    //
+    // The VIC-II must have fetched character $20 from $0400
+    // and row 0 from Character ROM at $1100.
+    //
+    QCOMPARE(vicII.graphicsData(), quint8(0xA5));
+    QCOMPARE(vicII.graphicsColor(), quint8(0x05));
+
+    //
+    // 10100101 -> foreground/background pixels.
+    //
+    QCOMPARE(vicII.graphicsPixel(0), quint8(0x05));
+    QCOMPARE(vicII.graphicsPixel(1), quint8(0x03));
+    QCOMPARE(vicII.graphicsPixel(2), quint8(0x05));
+    QCOMPARE(vicII.graphicsPixel(3), quint8(0x03));
+    QCOMPARE(vicII.graphicsPixel(4), quint8(0x03));
+    QCOMPARE(vicII.graphicsPixel(5), quint8(0x05));
+    QCOMPARE(vicII.graphicsPixel(6), quint8(0x03));
+    QCOMPARE(vicII.graphicsPixel(7), quint8(0x05));
 }

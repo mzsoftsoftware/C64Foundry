@@ -1,5 +1,7 @@
 #include "VIC-II.h"
 
+#include <QDebug>
+
 #include "C64/Bus/C64Bus.h"
 
 
@@ -316,7 +318,6 @@ void VICII::clock()
         m_videoMatrixLine[m_videoMatrixLineIndex] = readVideoMatrixMemory(m_videoCounter);
         m_colorLine[m_videoMatrixLineIndex] = readColorMemory(m_videoCounter);
     }
-
     //
     // At cycle 58, RC is incremented while it is below 7.
     // When RC has reached 7, VCBASE is updated and the

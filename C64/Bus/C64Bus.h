@@ -89,6 +89,7 @@ private:
     quint16 m_lastAccessAddress = 0x0000;
     quint8 m_lastAccessValue = 0x00;
     quint8 m_accessCount = 0;
+    quint16 m_lastVICBank = 0xFFFF;
 
     bool m_sidReadReported = false;
     bool m_sidWriteReported = false;

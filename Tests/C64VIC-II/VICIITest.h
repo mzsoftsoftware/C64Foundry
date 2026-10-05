@@ -122,4 +122,6 @@ private slots:
     void testFrameBufferAcquireWhileProducing();
     void testFrameBufferAcquireOnlyOnce();
     void testFrameBufferConcurrentStress();
+
+    void testStandardTextCharacterROMSequence();
 };
