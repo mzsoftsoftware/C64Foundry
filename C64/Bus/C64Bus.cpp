@@ -1,5 +1,7 @@
 #include "C64Bus.h"
 
+#include <QDebug>
+
 #include "C64/Memory/C64Memory.h"
 #include "C64/VIC-II/VIC-II.h"
 
@@ -98,6 +100,11 @@ quint8 C64Bus::read(const quint16 address)
                 //
                 // SID: $D400-$D7FF
                 //
+                if (!m_sidAccessReported)
+                {
+                    qDebug() << "C64Bus: read access to unimplemented SID";
+                    m_sidAccessReported = true;
+                }
                 break;
 
             case 0x0800:
@@ -114,24 +121,44 @@ quint8 C64Bus::read(const quint16 address)
                     //
                     // CIA 1: $DC00-$DCFF
                     //
+                    if (!m_cia1AccessReported)
+                    {
+                        qDebug() << "C64Bus: read access to unimplemented CIA 1";
+                        m_cia1AccessReported = true;
+                    }
                     break;
 
                 case 0x0100:
                     //
                     // CIA 2: $DD00-$DDFF
                     //
+                    if (!m_cia2AccessReported)
+                    {
+                        qDebug() << "C64Bus: read access to unimplemented CIA 2";
+                        m_cia2AccessReported = true;
+                    }
                     break;
 
                 case 0x0200:
                     //
                     // IO1 / Expansion: $DE00-$DEFF
                     //
+                    if (!m_io1AccessReported)
+                    {
+                        qDebug() << "C64Bus: read access to unimplemented IO1 / Expansion";
+                        m_io1AccessReported = true;
+                    }
                     break;
 
                 case 0x0300:
                     //
                     // IO2 / Expansion: $DF00-$DFFF
                     //
+                    if (!m_io2AccessReported)
+                    {
+                        qDebug() << "C64Bus: read access to unimplemented IO2 / Expansion";
+                        m_io2AccessReported = true;
+                    }
                     break;
                 }
                 break;
@@ -203,6 +230,11 @@ void C64Bus::write(const quint16 address, const quint8 value)
         //
         // SID: $D400-$D7FF
         //
+        if (!m_sidAccessReported)
+        {
+            qDebug() << "C64Bus: write access to unimplemented SID";
+            m_sidAccessReported = true;
+        }
         break;
 
     case 0x0800:
@@ -219,24 +251,44 @@ void C64Bus::write(const quint16 address, const quint8 value)
             //
             // CIA 1: $DC00-$DCFF
             //
+            if (!m_cia1AccessReported)
+            {
+                qDebug() << "C64Bus: write access to unimplemented CIA 1";
+                m_cia1AccessReported = true;
+            }
             break;
 
         case 0x0100:
             //
             // CIA 2: $DD00-$DDFF
             //
+            if (!m_cia2AccessReported)
+            {
+                qDebug() << "C64Bus: write access to unimplemented CIA 2";
+                m_cia2AccessReported = true;
+            }
             break;
 
         case 0x0200:
             //
             // IO1 / Expansion: $DE00-$DEFF
             //
+            if (!m_io1AccessReported)
+            {
+                qDebug() << "C64Bus: write access to unimplemented IO1 / Expansion";
+                m_io1AccessReported = true;
+            }
             break;
 
         case 0x0300:
             //
             // IO2 / Expansion: $DF00-$DFFF
             //
+            if (!m_io2AccessReported)
+            {
+                qDebug() << "C64Bus: write access to unimplemented IO2 / Expansion";
+                m_io2AccessReported = true;
+            }
             break;
         }
         break;

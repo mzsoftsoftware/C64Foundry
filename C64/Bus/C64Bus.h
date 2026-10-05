@@ -86,6 +86,12 @@ private:
     quint8 m_lastAccessValue = 0x00;
     quint8 m_accessCount = 0;
 
+    bool m_sidAccessReported = false;
+    bool m_cia1AccessReported = false;
+    bool m_cia2AccessReported = false;
+    bool m_io1AccessReported = false;
+    bool m_io2AccessReported = false;
+
 private:
     static constexpr MemorySource s_memoryMaps[8][16] =
         {
