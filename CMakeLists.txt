@@ -35,6 +35,8 @@ add_library(C64FoundryCore STATIC
     C64/CPU/MOS6510MicroOperation.h
     C64/CPU/MOS6510StatusRegister.h
 
+    C64/CIA/MOS6526.h C64/CIA/MOS6526.cpp
+
     C64/Bus/C64Bus.h C64/Bus/C64Bus.cpp
 
     C64/Memory/C64Memory.h C64/Memory/C64Memory.cpp
