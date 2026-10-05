@@ -343,6 +343,45 @@ void C64MachineTest::testVICIIBAWrite()
     QCOMPARE(machine.busLastAccessValue(), quint8(0x34));
     QCOMPARE(machine.readRAM(0x01EA), quint8(0x34));
 }
+void C64MachineTest::testVICIIAECStopsCPUAccess()
+{
+    C64Machine machine;
+
+    //
+    // Enable display and select YSCROLL 0.
+    // Raster line $30 is therefore a badline.
+    //
+    machine.writeVICIIRegister(0x11, 0x10);
+
+    //
+    // Advance to raster line $30, cycle 14.
+    //
+    machine.runCycles(
+        0x30 * C64::PALTiming.cyclesPerLine + 14);
+
+    QVERIFY(!machine.viciiBA());
+    QVERIFY(machine.viciiAEC());
+    QVERIFY(machine.busAEC());
+
+    //
+    // Cycle 15 is the first c-access.
+    // AEC goes low and disconnects the CPU from the bus.
+    //
+    machine.clock();
+
+    QVERIFY(!machine.viciiBA());
+    QVERIFY(!machine.viciiAEC());
+    QVERIFY(!machine.busAEC());
+
+    //
+    // The VIC-II performs the c-access in this cycle.
+    // Therefore exactly one bus access must be visible,
+    // and it must not be a CPU access.
+    //
+    QCOMPARE(machine.busAccessCount(), quint8(1));
+    QVERIFY(machine.busLastAccessWasRead());
+    QVERIFY(machine.busLastAccessWasVICII());
+}
 
 void C64MachineTest::testCIARegisterAccess()
 {

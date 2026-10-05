@@ -172,6 +172,10 @@ bool C64Machine::busLastAccessWasWrite() const
 {
     return m_ptrBus->lastAccessType() == C64Bus::AccessType::Write;
 }
+bool C64Machine::busLastAccessWasVICII() const
+{
+    return m_ptrBus->lastAccessSource() == C64Bus::AccessSource::VICII;
+}
 quint16 C64Machine::busLastAccessAddress() const
 {
     return m_ptrBus->lastAccessAddress();

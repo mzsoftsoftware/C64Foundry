@@ -48,6 +48,7 @@ public:
     quint8 busAccessCount() const;
     bool busLastAccessWasRead() const;
     bool busLastAccessWasWrite() const;
+    bool busLastAccessWasVICII() const;
     quint16 busLastAccessAddress() const;
     quint8 busLastAccessValue() const;
 

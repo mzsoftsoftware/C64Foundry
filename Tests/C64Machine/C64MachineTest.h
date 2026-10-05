@@ -19,6 +19,7 @@ private slots:
     void testVICIIRasterIRQ();
     void testVICIIAEC();
     void testVICIIBAWrite();
+    void testVICIIAECStopsCPUAccess();
 
     void testCIARegisterAccess();
     void testCIAClock();
