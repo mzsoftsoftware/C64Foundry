@@ -94,4 +94,5 @@ private:
     // SID
 
     C64Keyboard m_keyboard;
+    bool m_restorePressed = false;
 };

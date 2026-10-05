@@ -275,4 +275,27 @@ void C64InputTest::testRestoreAndCIA2NMI()
     machine.keyRelease(C64Key::Restore);
 
     QVERIFY(machine.cpuNmiLine());
+
+    //
+    // Reading the CIA2 interrupt control register
+    // clears the pending interrupt status.
+    //
+    const quint8 interruptStatus =
+        machine.readCIA2Register(0x0D);
+
+    QVERIFY(interruptStatus & 0x01);
+    QVERIFY(interruptStatus & 0x80);
+
+    //
+    // Advance one machine cycle so the cleared CIA2
+    // interrupt state is propagated to the CPU NMI line.
+    //
+    machine.clock();
+
+    //
+    // RESTORE is released and CIA2 no longer requests
+    // an interrupt. The CPU NMI line must therefore
+    // be inactive again.
+    //
+    QVERIFY(!machine.cpuNmiLine());
 }

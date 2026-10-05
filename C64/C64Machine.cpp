@@ -101,6 +101,11 @@ void C64Machine::clock()
     m_ptrCpu->setIrqLine(m_ptrVICII->irq() || m_ptrCIA1->irq());
 
     //
+    // RESTORE and CIA2 drive the CPU NMI line.
+    //
+    m_ptrCpu->setNmiLine(m_restorePressed || m_ptrCIA2->irq());
+
+    //
     // BA low warns the CPU that the VIC-II needs the bus.
     // CPU read cycles are stalled while write cycles may
     // still complete.
@@ -121,7 +126,8 @@ void C64Machine::keyPress(C64Key key)
 {
     if (key == C64Key::Restore)
     {
-        m_ptrCpu->setNmiLine(true);
+        m_restorePressed = true;
+        m_ptrCpu->setNmiLine(m_restorePressed || m_ptrCIA2->irq());
         return;
     }
 
@@ -133,7 +139,8 @@ void C64Machine::keyRelease(C64Key key)
 {
     if (key == C64Key::Restore)
     {
-        m_ptrCpu->setNmiLine(false);
+        m_restorePressed = false;
+        m_ptrCpu->setNmiLine(m_restorePressed || m_ptrCIA2->irq());
         return;
     }
 
