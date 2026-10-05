@@ -363,6 +363,144 @@ void C64MachineTest::testCIARegisterAccess()
     QCOMPARE(machine.readCIA1Register(0x00), quint8(0x5A));
     QCOMPARE(machine.readCIA2Register(0x00), quint8(0xA5));
 }
+void C64MachineTest::testCIAClock()
+{
+    C64Machine machine;
+
+    //
+    // Load different values into Timer A of both CIAs.
+    //
+    machine.writeCIA1Register(0x04, 0x02);
+    machine.writeCIA1Register(0x05, 0x00);
+
+    machine.writeCIA2Register(0x04, 0x03);
+    machine.writeCIA2Register(0x05, 0x00);
+
+    //
+    // Start Timer A of both CIAs.
+    //
+    machine.writeCIA1Register(0x0E, 0x01);
+    machine.writeCIA2Register(0x0E, 0x01);
+
+    QCOMPARE(machine.readCIA1Register(0x04), quint8(0x02));
+    QCOMPARE(machine.readCIA2Register(0x04), quint8(0x03));
+
+    //
+    // One C64 machine cycle must clock both CIAs once.
+    //
+    machine.clock();
+
+    QCOMPARE(machine.readCIA1Register(0x04), quint8(0x01));
+    QCOMPARE(machine.readCIA2Register(0x04), quint8(0x02));
+}
+void C64MachineTest::testCIA1IRQ()
+{
+    QTemporaryFile basicFile;
+    QTemporaryFile kernalFile;
+    QTemporaryFile characterFile;
+
+    QVERIFY(basicFile.open());
+    QVERIFY(kernalFile.open());
+    QVERIFY(characterFile.open());
+
+    QByteArray kernalROM(8192, char(0x00));
+
+    //
+    // Reset vector $FFFC/$FFFD -> $0800.
+    //
+    kernalROM[0x1FFC] = char(0x00);
+    kernalROM[0x1FFD] = char(0x08);
+
+    //
+    // IRQ vector $FFFE/$FFFF -> $0900.
+    //
+    kernalROM[0x1FFE] = char(0x00);
+    kernalROM[0x1FFF] = char(0x09);
+
+    QCOMPARE(
+        basicFile.write(QByteArray(8192, char(0x00))),
+        qsizetype(8192));
+
+    QCOMPARE(
+        kernalFile.write(kernalROM),
+        qsizetype(8192));
+
+    QCOMPARE(
+        characterFile.write(QByteArray(4096, char(0x00))),
+        qsizetype(4096));
+
+    basicFile.close();
+    kernalFile.close();
+    characterFile.close();
+
+    C64ROMSet romSet(
+        basicFile.fileName(),
+        kernalFile.fileName(),
+        characterFile.fileName());
+
+    C64Machine machine;
+
+    QVERIFY(machine.loadROMSet(romSet));
+
+    QByteArray program;
+
+    //
+    // Allow maskable interrupts.
+    //
+    program.append(char(0x58));     // CLI
+
+    //
+    // Wait forever for the CIA1 IRQ.
+    //
+    program.append(char(0x4C));     // JMP $0801
+    program.append(char(0x01));
+    program.append(char(0x08));
+
+    QVERIFY(machine.loadProgram(0x0800, program));
+
+    QByteArray irqHandler;
+
+    //
+    // IRQ handler writes $42 to RAM.
+    //
+    irqHandler.append(char(0xA9));  // LDA #$42
+    irqHandler.append(char(0x42));
+    irqHandler.append(char(0x85));  // STA $02
+    irqHandler.append(char(0x02));
+
+    //
+    // Stop execution once the IRQ handler has run.
+    //
+    irqHandler.append(char(0x02));  // KIL
+
+    QVERIFY(machine.loadProgram(0x0900, irqHandler));
+
+    //
+    // Enable Timer A interrupts in CIA1.
+    //
+    machine.writeCIA1Register(0x0D, 0x81);
+
+    //
+    // Load Timer A with a short interval.
+    //
+    machine.writeCIA1Register(0x04, 0x10);
+    machine.writeCIA1Register(0x05, 0x00);
+
+    //
+    // Force load and start Timer A.
+    //
+    machine.writeCIA1Register(0x0E, 0x11);
+
+    machine.powerOn();
+
+    //
+    // Enough time for Timer A to underflow and
+    // the CPU to execute the IRQ handler.
+    //
+    machine.runCycles(100);
+
+    QCOMPARE(machine.readRAM(0x0002), quint8(0x42));
+}
 
 void C64MachineTest::testPerformance()
 {

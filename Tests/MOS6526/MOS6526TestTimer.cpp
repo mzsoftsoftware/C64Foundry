@@ -469,3 +469,19 @@ void MOS6526TestTimer::testTimerAOneShot()
     QCOMPARE(cia.readRegister(0x04), quint8(0x01));
     QCOMPARE(cia.readRegister(0x05), quint8(0x00));
 }
+
+void MOS6526TestTimer::testControlRegisterB()
+{
+    MOS6526 cia;
+
+    //
+    // Control Register B is cleared after reset.
+    //
+    QCOMPARE(cia.readRegister(0x0F), quint8(0x00));
+
+    //
+    // Store Timer B control bits.
+    //
+    cia.writeRegister(0x0F, 0x08);
+    QCOMPARE(cia.readRegister(0x0F), quint8(0x08));
+}

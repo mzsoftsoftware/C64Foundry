@@ -48,6 +48,8 @@ quint8 MOS6526::readRegister(const quint8 address)
     }
     case 0x0E:
         return m_controlRegisterA;
+    case 0x0F:
+        return m_controlRegisterB;
     default:
         const quint8 reg = address & 0x0F;
         const quint16 mask = quint16(1) << reg;
@@ -116,6 +118,9 @@ void MOS6526::writeRegister(const quint8 address, const quint8 value)
         // Force Load is a strobe and is not stored.
         //
         m_controlRegisterA = value & ~0x10;
+        break;
+    case 0x0F:
+        m_controlRegisterB = value & ~0x10;
         break;
     default:
         const quint8 reg = address & 0x0F;

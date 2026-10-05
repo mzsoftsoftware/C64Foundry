@@ -21,6 +21,8 @@ private slots:
     void testVICIIBAWrite();
 
     void testCIARegisterAccess();
+    void testCIAClock();
+    void testCIA1IRQ();
 
     void testPerformance();
 

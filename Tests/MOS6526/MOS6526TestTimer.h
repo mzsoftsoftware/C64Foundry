@@ -24,4 +24,6 @@ private slots:
     void testInterruptMaskClear();
     void testTimerALatchWriteWhileRunning();
     void testTimerAOneShot();
+    void testControlRegisterB();
+
 };

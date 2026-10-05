@@ -87,6 +87,8 @@ void C64Machine::clock()
     m_ptrBus->clock();
 
     m_ptrVICII->clock();
+    m_ptrCIA1->clock();
+    m_ptrCIA2->clock();
 
     //
     // The VIC-II controls which chip owns the system bus.
@@ -94,9 +96,9 @@ void C64Machine::clock()
     m_ptrBus->setAEC(m_ptrVICII->aec());
 
     //
-    // The VIC-II drives the CPU IRQ line.
+    // The VIC-II and CIA1 drives the CPU IRQ line.
     //
-    m_ptrCpu->setIrqLine(m_ptrVICII->irq());
+    m_ptrCpu->setIrqLine(m_ptrVICII->irq() || m_ptrCIA1->irq());
 
     //
     // BA low warns the CPU that the VIC-II needs the bus.

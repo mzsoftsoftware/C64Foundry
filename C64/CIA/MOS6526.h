@@ -35,6 +35,7 @@ private:
     quint16 m_timerALatch = 0x0000;
     quint16 m_timerACounter = 0x0000;
     quint8 m_controlRegisterA = 0x00;
+    quint8 m_controlRegisterB = 0x00;
 
     quint8 m_interruptStatus = 0x00;
     quint8 m_interruptMask = 0x00;
