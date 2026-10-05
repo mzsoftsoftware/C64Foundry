@@ -13,4 +13,12 @@ public:
 
 private slots:
     void testPortARegisterWrite();
+    void testDataDirectionRegisterAWrite();
+    void testPortAInputs();
+    void testPortAMixedInputsOutputs();
+
+    void testPortBRegisterWrite();
+    void testDataDirectionRegisterBWrite();
+    void testPortBInputs();
+    void testPortBMixedInputsOutputs();
 };
