@@ -106,6 +106,13 @@ bool KeyboardController::eventFilter(QObject* ptrObject, QEvent* ptrEvent)
 
         if (ptrEvent->type() == QEvent::KeyPress)
         {
+            qDebug()
+            << "Key press:"
+            << "key =" << ptrKeyEvent->key()
+            << "scan =" << ptrKeyEvent->nativeScanCode()
+            << "nativeVirtualKey =" << ptrKeyEvent->nativeVirtualKey()
+            << "nativeModifiers =" << ptrKeyEvent->nativeModifiers();
+
             keyPressed(
                 ptrKeyEvent->key(),
                 ptrKeyEvent->nativeScanCode(),

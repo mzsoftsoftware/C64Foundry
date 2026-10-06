@@ -46,7 +46,17 @@ QList<C64KeyboardMapping> C64KeyboardDefaults::mappings(const HostPlatform::Type
                 { 117, { C64Key::Restore } },
 
                 { 9, { C64Key::RunStop } },
-                { 66, { C64Key::ShiftLock }, C64KeyboardMappingMode::Toggle }
+                { 66, { C64Key::ShiftLock }, C64KeyboardMappingMode::Toggle },
+                { 38, { C64Key::KeyA } },
+                { 39, { C64Key::KeyS } },
+                { 40, { C64Key::KeyD } },
+                { 41, { C64Key::KeyF } },
+                { 42, { C64Key::KeyG } },
+                { 43, { C64Key::KeyH } },
+                { 44, { C64Key::KeyJ } },
+                { 45, { C64Key::KeyK } },
+                { 46, { C64Key::KeyL } }
+
             };
         break;
 
