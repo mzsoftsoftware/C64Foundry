@@ -2,6 +2,7 @@
 
 #include "C64Configuration.h"
 #include "ConfigurationStorage.h"
+#include "ROMSetDetector.h"
 
 
 ConfigurationManager::ConfigurationManager(QObject* parent)
@@ -45,6 +46,22 @@ bool ConfigurationManager::initialize()
 
         configurations.insert(ptrConfiguration->name, ptrConfiguration);
         activeConfigurationName = ptrConfiguration->name;
+
+        //
+        // Detect an installed VICE C64 ROM set.
+        //
+        ROMSetDetector romSetDetector;
+        const C64ROMSet viceROMSet = romSetDetector.detectVICE();
+        if (!viceROMSet.basicROMFileName.isEmpty())
+        {
+            C64Configuration* ptrVICEConfiguration = new C64Configuration();
+            ptrVICEConfiguration->name = QStringLiteral("VICE C64");
+            ptrVICEConfiguration->romSet = viceROMSet;
+
+            configurations.insert(
+                ptrVICEConfiguration->name,
+                ptrVICEConfiguration);
+        }
 
         if (!storage.save(configurations, activeConfigurationName))
         {
