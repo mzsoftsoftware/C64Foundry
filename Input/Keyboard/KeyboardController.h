@@ -2,7 +2,7 @@
 
 #include <QObject>
 
-#include "C64/Input/C64Keyboard.h"
+#include "Configuration/C64KeyboardConfiguration.h"
 #include "Input/InputEvent.h"
 
 
@@ -12,6 +12,9 @@ class KeyboardController : public QObject
 public:
     explicit KeyboardController(QObject* parent = nullptr);
     virtual ~KeyboardController();
+
+    // Setter
+    void setConfiguration(const C64KeyboardConfiguration& configuration);
 
 public slots:
     void keyPressed(int key, const quint32 nativeScanCode, Qt::KeyboardModifiers modifiers, bool autoRepeat);
@@ -24,5 +27,8 @@ protected:
     bool eventFilter(QObject* ptrObject, QEvent* ptrEvent) override;
 
 private:
-    bool mapKey(int key, quint32 nativeScanCode, C64Key& c64Key) const;
+    const C64KeyboardMapping* mapping(quint32 nativeScanCode) const;
+
+private:
+    C64KeyboardConfiguration m_configuration;
 };
