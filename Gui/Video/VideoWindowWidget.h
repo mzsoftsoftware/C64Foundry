@@ -3,9 +3,6 @@
 #include <QWidget>
 #include <QImage>
 
-class QKeyEvent;
-class QEvent;
-
 
 class VideoWindowWidget : public QWidget
 {
@@ -19,17 +16,10 @@ public slots:
 
 signals:
     void frameTaken();
-    void keyPressed(int key, quint32 nativeScanCode, Qt::KeyboardModifiers modifiers, bool autoRepeat);
-    void keyReleased(int key, quint32 nativeScanCode, Qt::KeyboardModifiers modifiers, bool autoRepeat);
-    void inputDeactivated();
 
 protected:
-    bool event(QEvent* ptrEvent) override;
     void paintEvent(QPaintEvent* ptrEvent) override;
     void closeEvent(QCloseEvent* ptrEvent) override;
-    void keyPressEvent(QKeyEvent* ptrEvent) override;
-    void keyReleaseEvent(QKeyEvent* ptrEvent) override;
-    void changeEvent(QEvent* ptrEvent) override;
 
 private:
     QImage m_image;

@@ -16,7 +16,6 @@ public:
 public slots:
     void keyPressed(int key, const quint32 nativeScanCode, Qt::KeyboardModifiers modifiers, bool autoRepeat);
     void keyReleased(int key, const quint32 nativeScanCode, Qt::KeyboardModifiers modifiers, bool autoRepeat);
-    void inputDeactivated();
 
 signals:
     void input(const InputEvent& event);
