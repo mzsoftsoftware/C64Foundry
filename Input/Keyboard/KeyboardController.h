@@ -2,19 +2,18 @@
 
 #include <QObject>
 
-#include "Configuration/C64KeyboardConfiguration.h"
-#include "Input/InputEvent.h"
+//#include "Input/InputEvent.h"
+class InputEvent;
+class ConfigurationManager;
+class C64KeyboardConfiguration;
 
 
 class KeyboardController : public QObject
 {
     Q_OBJECT
 public:
-    explicit KeyboardController(QObject* parent = nullptr);
+    explicit KeyboardController(ConfigurationManager* ptrConfigurationManager, QObject* parent);
     virtual ~KeyboardController();
-
-    // Setter
-    void setConfiguration(const C64KeyboardConfiguration& configuration);
 
 public slots:
     void keyPressed(int key, const quint32 nativeScanCode, Qt::KeyboardModifiers modifiers, bool autoRepeat);
@@ -27,8 +26,10 @@ protected:
     bool eventFilter(QObject* ptrObject, QEvent* ptrEvent) override;
 
 private:
-    const C64KeyboardMapping* mapping(quint32 nativeScanCode) const;
+    //void updateConfiguration();
+    //void setConfiguration(const C64KeyboardConfiguration& configuration);
+    //const C64KeyboardMapping* mapping(quint32 nativeScanCode) const;
 
 private:
-    C64KeyboardConfiguration m_configuration;
+    ConfigurationManager* m_ptrConfigurationManager = nullptr;
 };

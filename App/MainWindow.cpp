@@ -28,8 +28,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_ptrVideoWindowWidget = new VideoWindowWidget();
     m_ptrVideoWindowWidget->setWindowTitle(QStringLiteral("C64Foundry"));
 
-    m_ptrKeyboardController = new KeyboardController(this);
-    qApp->installEventFilter(m_ptrKeyboardController);
+    m_ptrKeyboardController = new KeyboardController(m_ptrConfigurationManager, this);
     connect(m_ptrKeyboardController, &KeyboardController::input, m_ptrEmulatorController, &EmulatorController::input);
 
     m_ptrVideoController->setVideoWidget(m_ptrVideoWindowWidget);

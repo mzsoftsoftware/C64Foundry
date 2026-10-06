@@ -24,6 +24,9 @@ public:
     const C64Configuration* configuration(const QString& qstrName) const    { return m_qmapConfigurations.value(qstrName, nullptr); }
     const C64Configuration* activeConfiguration() const                     { return m_ptrActiveConfiguration; }
 
+signals:
+    void configurationChanged();
+
 private:
     QMap<QString, C64Configuration*> m_qmapConfigurations;
     C64Configuration* m_ptrActiveConfiguration = nullptr;
