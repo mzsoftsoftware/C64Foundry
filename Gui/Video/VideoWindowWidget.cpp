@@ -63,6 +63,13 @@ void VideoWindowWidget::closeEvent(QCloseEvent* ptrEvent)
 
 void VideoWindowWidget::keyPressEvent(QKeyEvent* ptrEvent)
 {
+    qDebug()
+    << "key =" << ptrEvent->key()
+    << "text =" << ptrEvent->text()
+    << "scan =" << ptrEvent->nativeScanCode()
+    << "virtual =" << ptrEvent->nativeVirtualKey()
+    << "modifiers =" << ptrEvent->modifiers();
+
     emit keyPressed(ptrEvent->key(), ptrEvent->nativeScanCode(), ptrEvent->modifiers(), ptrEvent->isAutoRepeat());
 }
 void VideoWindowWidget::keyReleaseEvent(QKeyEvent* ptrEvent)
@@ -77,4 +84,33 @@ void VideoWindowWidget::changeEvent(QEvent* ptrEvent)
         emit inputDeactivated();
     }
     QWidget::changeEvent(ptrEvent);
+}
+
+
+bool VideoWindowWidget::event(QEvent* ptrEvent)
+{
+    switch (ptrEvent->type())
+    {
+    case QEvent::WindowActivate:
+        qDebug() << "VideoWindowWidget: WindowActivate";
+        break;
+    case QEvent::WindowDeactivate:
+        qDebug() << "VideoWindowWidget: WindowDeactivate";
+        break;
+    case QEvent::FocusIn:
+        qDebug() << "VideoWindowWidget: FocusIn";
+        break;
+    case QEvent::FocusOut:
+        qDebug() << "VideoWindowWidget: FocusOut";
+        break;
+    case QEvent::KeyPress:
+        qDebug() << "VideoWindowWidget: KeyPress";
+        break;
+    case QEvent::KeyRelease:
+        qDebug() << "VideoWindowWidget: KeyRelease";
+        break;
+    default:
+        break;
+    }
+    return QWidget::event(ptrEvent);
 }

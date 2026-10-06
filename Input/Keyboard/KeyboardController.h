@@ -21,6 +21,9 @@ public slots:
 signals:
     void input(const InputEvent& event);
 
+protected:
+    bool eventFilter(QObject* ptrObject, QEvent* ptrEvent) override;
+
 private:
     bool mapKey(int key, quint32 nativeScanCode, C64Key& c64Key) const;
 };

@@ -17,6 +17,7 @@ bool ConfigurationStorage::load(QMap<QString, C64Configuration*>& configurations
         settings.beginGroup(configurationName);
         C64Configuration* ptrConfiguration = new C64Configuration();
         ptrConfiguration->name = configurationName;
+        ptrConfiguration->platform.setName(settings.value(QStringLiteral("Platform")).toString());
 
         settings.beginGroup(QStringLiteral("ROMSet"));
         ptrConfiguration->romSet.basicROMFileName = settings.value(QStringLiteral("Basic")).toString();
@@ -42,6 +43,7 @@ bool ConfigurationStorage::save(const QMap<QString, C64Configuration*>& configur
     for (C64Configuration* ptrConfiguration : configurations)
     {
         settings.beginGroup(ptrConfiguration->name);
+        settings.setValue(QStringLiteral("Platform"), ptrConfiguration->platform.name());
 
         settings.beginGroup(QStringLiteral("ROMSet"));
         settings.setValue(QStringLiteral("Basic"), ptrConfiguration->romSet.basicROMFileName);

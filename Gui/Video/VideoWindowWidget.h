@@ -24,6 +24,7 @@ signals:
     void inputDeactivated();
 
 protected:
+    bool event(QEvent* ptrEvent) override;
     void paintEvent(QPaintEvent* ptrEvent) override;
     void closeEvent(QCloseEvent* ptrEvent) override;
     void keyPressEvent(QKeyEvent* ptrEvent) override;

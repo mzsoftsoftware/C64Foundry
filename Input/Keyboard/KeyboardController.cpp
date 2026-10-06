@@ -1,6 +1,9 @@
 #include "KeyboardController.h"
 
 #include <QDebug>
+#include <QEvent>
+#include <QKeyEvent>
+#include <QWindow>
 
 
 KeyboardController::KeyboardController(QObject* parent)
@@ -23,10 +26,6 @@ void KeyboardController::keyPressed(const int key, const quint32 nativeScanCode,
     if (!mapKey(key, nativeScanCode, c64Key))
         return;
 
-    qDebug()
-        << "KeyboardController: C64 key pressed"
-        << static_cast<int>(c64Key);
-
     emit input(
         {
             InputEventType::KeyPress,
@@ -45,10 +44,6 @@ void KeyboardController::keyReleased(const int key, const quint32 nativeScanCode
 
     if (!mapKey(key, nativeScanCode, c64Key))
         return;
-
-    qDebug()
-        << "KeyboardController: C64 key released"
-        << static_cast<int>(c64Key);
 
     emit input(
         {
@@ -113,4 +108,33 @@ bool KeyboardController::mapKey(int key, quint32 nativeScanCode, C64Key& c64Key)
     default:
         return false;
     }
+}
+
+bool KeyboardController::eventFilter(QObject* ptrObject, QEvent* ptrEvent)
+{
+    if (ptrEvent->type() == QEvent::KeyPress ||
+        ptrEvent->type() == QEvent::KeyRelease)
+    {
+        if (qobject_cast<QWindow*>(ptrObject) == nullptr)
+            return false;
+
+        QKeyEvent* ptrKeyEvent = static_cast<QKeyEvent*>(ptrEvent);
+
+        qDebug()
+            << "KEY"
+            << ptrEvent->type()
+            << "object =" << ptrObject
+            << "class =" << ptrObject->metaObject()->className()
+            << "key =" << ptrKeyEvent->key()
+            << "scan =" << ptrKeyEvent->nativeScanCode()
+            << "nativeModifiers =" << ptrKeyEvent->nativeModifiers()
+            << "autoRepeat =" << ptrKeyEvent->isAutoRepeat()
+            << "modifiers =" << ptrKeyEvent->modifiers();
+
+        return false;
+    }
+
+    // Deinen bisherigen STATE-Diagnosecode hier unverändert lassen.
+
+    return QObject::eventFilter(ptrObject, ptrEvent);
 }
