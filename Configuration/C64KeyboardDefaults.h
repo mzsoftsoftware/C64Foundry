@@ -7,5 +7,5 @@
 class C64KeyboardDefaults
 {
 public:
-    static C64KeyboardConfiguration configuration(HostPlatform::Type platform);
+    static QList<C64KeyboardMapping> mappings(HostPlatform::Type platform);
 };

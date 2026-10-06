@@ -1,15 +1,14 @@
 #include "C64KeyboardDefaults.h"
 
 
-C64KeyboardConfiguration C64KeyboardDefaults::configuration(
-    HostPlatform::Type platform)
+QList<C64KeyboardMapping> C64KeyboardDefaults::mappings(const HostPlatform::Type platform)
 {
-    C64KeyboardConfiguration configuration;
+    QList<C64KeyboardMapping> mappings;
 
     switch (platform)
     {
     case HostPlatform::Type::LinuxWayland:
-        configuration.mappings =
+        mappings =
             {
                 { 49, { C64Key::ArrowLeft } },
                 { 10, { C64Key::Key1 } },
@@ -58,5 +57,5 @@ C64KeyboardConfiguration C64KeyboardDefaults::configuration(
         break;
     }
 
-    return configuration;
+    return mappings;
 }

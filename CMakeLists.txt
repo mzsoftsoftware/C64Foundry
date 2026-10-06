@@ -77,7 +77,8 @@ qt_add_executable(C64Foundry
     Configuration/ConfigurationStorage.h Configuration/ConfigurationStorage.cpp
     Configuration/C64Configuration.h
     Configuration/HostPlatform.h Configuration/HostPlatform.cpp
-    Configuration/C64KeyboardConfiguration.h
+    Configuration/ROMSetDetector.h Configuration/ROMSetDetector.cpp
+    Configuration/C64KeyboardConfiguration.h Configuration/C64KeyboardConfiguration.cpp
     Configuration/C64KeyboardDefaults.h Configuration/C64KeyboardDefaults.cpp
 
     Gui/Emulator/EmulatorControlWidget.h Gui/Emulator/EmulatorControlWidget.cpp Gui/Emulator/EmulatorControlWidget.ui
@@ -96,6 +97,7 @@ qt_add_executable(C64Foundry
     Input/Keyboard/KeyboardController.h Input/Keyboard/KeyboardController.cpp
 
     Resources/C64Foundry.qrc
+
 
 )
 

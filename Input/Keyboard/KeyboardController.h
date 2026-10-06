@@ -1,11 +1,12 @@
 #pragma once
 
 #include <QObject>
+#include <QHash>
 
-//#include "Input/InputEvent.h"
 class InputEvent;
 class ConfigurationManager;
-class C64KeyboardConfiguration;
+
+#include "Configuration/C64Configuration.h"
 
 
 class KeyboardController : public QObject
@@ -25,11 +26,13 @@ signals:
 protected:
     bool eventFilter(QObject* ptrObject, QEvent* ptrEvent) override;
 
+private slots:
+    void updateConfiguration();
+
 private:
-    //void updateConfiguration();
-    //void setConfiguration(const C64KeyboardConfiguration& configuration);
-    //const C64KeyboardMapping* mapping(quint32 nativeScanCode) const;
+    const C64KeyboardMapping* mapping(quint32 nativeScanCode) const;
 
 private:
     ConfigurationManager* m_ptrConfigurationManager = nullptr;
+    QHash<quint32, C64KeyboardMapping> m_mappings;
 };

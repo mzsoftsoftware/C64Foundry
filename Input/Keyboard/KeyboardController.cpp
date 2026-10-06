@@ -5,38 +5,53 @@
 #include <QWindow>
 
 #include "Configuration/ConfigurationManager.h"
-#include "Configuration/C64Configuration.h"
+#include "Input/InputEvent.h"
 
 
 KeyboardController::KeyboardController(ConfigurationManager* ptrConfigurationManager, QObject* parent)
     : QObject(parent)
     , m_ptrConfigurationManager(ptrConfigurationManager)
 {
-    if (m_ptrConfigurationManager->activeConfiguration())
-    {
-        //setConfiguration(m_ptrConfigurationManager->activeConfiguration()->keyboard);
-    }
+    connect(m_ptrConfigurationManager, &ConfigurationManager::configurationChanged, this, &KeyboardController::updateConfiguration);
+
+    updateConfiguration();
 }
 KeyboardController::~KeyboardController()
 {
 }
 
-/*void KeyboardController::setConfiguration(const C64KeyboardConfiguration& configuration)
+void KeyboardController::updateConfiguration()
 {
-    m_configuration = configuration;
-}*/
+    m_mappings.clear();
+
+    const C64Configuration* ptrConfiguration = m_ptrConfigurationManager->activeConfiguration();
+    if(ptrConfiguration == nullptr)
+        return;
+
+    const QList<C64KeyboardMapping> mappings = ptrConfiguration->keyboard.mappings(ptrConfiguration->platform.type());
+    for (const C64KeyboardMapping& mapping : mappings)
+    {
+        m_mappings.insert(mapping.nativeScanCode, mapping);
+    }
+}
+
+const C64KeyboardMapping* KeyboardController::mapping(const quint32 nativeScanCode) const
+{
+    const auto iterator = m_mappings.constFind(nativeScanCode);
+    if (iterator == m_mappings.constEnd())
+        return nullptr;
+    return &iterator.value();
+}
 
 void KeyboardController::keyPressed(const int key, const quint32 nativeScanCode, const Qt::KeyboardModifiers modifiers, const bool autoRepeat)
 {
     Q_UNUSED(key);
-    Q_UNUSED(nativeScanCode);
     Q_UNUSED(modifiers);
 
     if (autoRepeat)
         return;
-/*
-    const C64KeyboardMapping* ptrMapping = mapping(nativeScanCode);
 
+    const C64KeyboardMapping* ptrMapping = mapping(nativeScanCode);
     if (ptrMapping == nullptr)
         return;
 
@@ -51,20 +66,17 @@ void KeyboardController::keyPressed(const int key, const quint32 nativeScanCode,
             InputEventType::KeyPress,
             ptrMapping->keys.first()
         });
-*/
 }
 
 void KeyboardController::keyReleased(const int key, const quint32 nativeScanCode, const Qt::KeyboardModifiers modifiers, const bool autoRepeat)
 {
     Q_UNUSED(key);
-    Q_UNUSED(nativeScanCode);
     Q_UNUSED(modifiers);
 
     if (autoRepeat)
         return;
-/*
-    const C64KeyboardMapping* ptrMapping = mapping(nativeScanCode);
 
+    const C64KeyboardMapping* ptrMapping = mapping(nativeScanCode);
     if (ptrMapping == nullptr)
         return;
 
@@ -79,19 +91,7 @@ void KeyboardController::keyReleased(const int key, const quint32 nativeScanCode
             InputEventType::KeyRelease,
             ptrMapping->keys.first()
         });
-*/
 }
-
-/*const C64KeyboardMapping* KeyboardController::mapping(const quint32 nativeScanCode) const
-{
-    for (const C64KeyboardMapping& mapping : m_configuration.mappings)
-    {
-        if (mapping.nativeScanCode == nativeScanCode)
-            return &mapping;
-    }
-
-    return nullptr;
-}*/
 
 bool KeyboardController::eventFilter(QObject* ptrObject, QEvent* ptrEvent)
 {

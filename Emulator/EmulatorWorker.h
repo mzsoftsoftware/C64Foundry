@@ -6,7 +6,6 @@
 #include <QElapsedTimer>
 #include <QQueue>
 
-
 #include "Emulator/EmulatorSpeed.h"
 #include "Input/InputEvent.h"
 

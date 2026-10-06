@@ -4,6 +4,8 @@
 #include <QtGlobal>
 
 #include "C64/Input/C64Keyboard.h"
+#include "HostPlatform.h"
+
 
 enum class C64KeyboardMappingMode
 {
@@ -23,5 +25,8 @@ class C64KeyboardConfiguration
 public:
     C64KeyboardConfiguration() = default;
 
-    QList<C64KeyboardMapping> mappings;
+    QList<C64KeyboardMapping> mappings(HostPlatform::Type platform) const;
+
+private:
+    QList<C64KeyboardMapping> m_overrides;
 };

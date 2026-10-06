@@ -14,4 +14,6 @@ private slots:
     void testRestore();
     void testRestoreAndCIA2NMI();
     void testCIA1KeyboardBusScan();
+    void testCIA1KeyboardMultipleKeys();
+    void testCIA1KeyboardHeldKey();
 };

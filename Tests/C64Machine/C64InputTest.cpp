@@ -411,3 +411,91 @@ void C64InputTest::testCIA1KeyboardBusScan()
         machine.readRAM(0x0002),
         quint8(0xFB));
 }
+
+void C64InputTest::testCIA1KeyboardMultipleKeys()
+{
+    C64Machine machine;
+
+    machine.writeCIA1Register(0x02, 0xFF);
+    machine.writeCIA1Register(0x03, 0x00);
+
+    //
+    // A and S are both located on PA1.
+    // A pulls PB2 low, S pulls PB5 low.
+    //
+    machine.keyPress(C64Key::KeyA);
+    machine.keyPress(C64Key::KeyS);
+
+    machine.writeCIA1Register(0x00, 0xFD);
+
+    QCOMPARE(
+        machine.readCIA1Register(0x01),
+        quint8(0xDB));
+
+    //
+    // Releasing A must leave S active.
+    //
+    machine.keyRelease(C64Key::KeyA);
+
+    QCOMPARE(
+        machine.readCIA1Register(0x01),
+        quint8(0xDF));
+
+    //
+    // Releasing S must clear the matrix again.
+    //
+    machine.keyRelease(C64Key::KeyS);
+
+    QCOMPARE(
+        machine.readCIA1Register(0x01),
+        quint8(0xFF));
+}
+
+void C64InputTest::testCIA1KeyboardHeldKey()
+{
+    C64Machine machine;
+
+    //
+    // Configure CIA1 Port A as output and
+    // Port B as input.
+    //
+    machine.writeCIA1Register(0x02, 0xFF);
+    machine.writeCIA1Register(0x03, 0x00);
+
+    //
+    // A is located at matrix position
+    // row 1, column 2.
+    //
+    machine.writeCIA1Register(0x00, 0xFD);
+
+    //
+    // Press A.
+    //
+    machine.keyPress(C64Key::KeyA);
+
+    QCOMPARE(
+        machine.readCIA1Register(0x01),
+        quint8(0xFB));
+
+    //
+    // Keep the key pressed while the machine
+    // continues running for many cycles.
+    //
+    machine.runCycles(100000);
+
+    //
+    // The matrix contact must still be closed.
+    //
+    QCOMPARE(
+        machine.readCIA1Register(0x01),
+        quint8(0xFB));
+
+    //
+    // Releasing A must open the matrix contact.
+    //
+    machine.keyRelease(C64Key::KeyA);
+
+    QCOMPARE(
+        machine.readCIA1Register(0x01),
+        quint8(0xFF));
+}
