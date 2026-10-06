@@ -196,6 +196,13 @@ bool EmulatorWorker::processRequests()
         m_bSpeedRequested = false;
     }
 
+    if (inputEvents.size() > 1)
+    {
+        qDebug()
+        << "EmulatorWorker: input events in batch ="
+        << inputEvents.size();
+    }
+
     bool bRequested = false;
 
     if (bROMSetRequested)
