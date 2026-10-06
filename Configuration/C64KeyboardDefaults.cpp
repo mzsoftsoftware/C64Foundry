@@ -23,7 +23,7 @@ QList<C64KeyboardMapping> C64KeyboardDefaults::mappings(const HostPlatform::Type
                 { 19, { C64Key::Key0 } },
                 { 20,  { C64Key::Plus } },
                 { 21,  { C64Key::Minus } },
-                { 51,  { C64Key::Pound } },
+                { 105,  { C64Key::Pound } },        // STRG Rechts
                 { 22,  { C64Key::InsertDelete } },
                 { 110, { C64Key::HomeClear } },
                 { 119, { C64Key::LeftShift, C64Key::HomeClear } },
@@ -55,7 +55,39 @@ QList<C64KeyboardMapping> C64KeyboardDefaults::mappings(const HostPlatform::Type
                 { 43, { C64Key::KeyH } },
                 { 44, { C64Key::KeyJ } },
                 { 45, { C64Key::KeyK } },
-                { 46, { C64Key::KeyL } }
+                { 46, { C64Key::KeyL } },
+                { 47, { C64Key::Colon } },       // Ö
+                { 48, { C64Key::Semicolon } },   // Ä
+                { 51, { C64Key::Equals } },      // #
+                { 36, { C64Key::Return } },
+
+                { 37, { C64Key::Commodore } },  // STRG Links
+                { 50, { C64Key::LeftShift } },
+                { 52, { C64Key::KeyZ } },
+                { 53, { C64Key::KeyX } },
+                { 54, { C64Key::KeyC } },
+                { 55, { C64Key::KeyV } },
+                { 56, { C64Key::KeyB } },
+                { 57, { C64Key::KeyN } },
+                { 58, { C64Key::KeyM } },
+                { 59, { C64Key::Comma } },
+                { 60, { C64Key::Period } },
+                { 61, { C64Key::Slash } },
+                { 62, { C64Key::RightShift } },
+
+                { 65, { C64Key::Space } },
+                { 111, { C64Key::LeftShift, C64Key::CursorUpDown } },       // Up
+                { 116, { C64Key::CursorUpDown } },                           // Down
+                { 113, { C64Key::LeftShift, C64Key::CursorLeftRight } },    // Left
+                { 114, { C64Key::CursorLeftRight } },                        // Right
+                { 67, { C64Key::F1F2 } },                       // F1
+                { 68, { C64Key::LeftShift, C64Key::F1F2 } },   // F2
+                { 69, { C64Key::F3F4 } },                       // F3
+                { 70, { C64Key::LeftShift, C64Key::F3F4 } },   // F4
+                { 71, { C64Key::F5F6 } },                       // F5
+                { 72, { C64Key::LeftShift, C64Key::F5F6 } },   // F6
+                { 73, { C64Key::F7F8 } },                       // F7
+                { 74, { C64Key::LeftShift, C64Key::F7F8 } },   // F8
 
             };
         break;
