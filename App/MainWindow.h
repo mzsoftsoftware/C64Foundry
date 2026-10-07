@@ -23,11 +23,16 @@ public:
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow() override;
 
+    bool initialize();
+
 private slots:
     void romSetLoaded(bool bLoaded);
 
 protected:
     void closeEvent(QCloseEvent* ptrEvent) override;
+
+private:
+    bool validateConfiguration();
 
 private:
     Ui::MainWindow* ui;

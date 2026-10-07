@@ -1,6 +1,11 @@
 #include "C64KeyboardDefaults.h"
 
 
+bool C64KeyboardDefaults::isSupported(const HostPlatform::Type platform)
+{
+    return platform == HostPlatform::Type::LinuxWayland;
+}
+
 QList<C64KeyboardMapping> C64KeyboardDefaults::mappings(const HostPlatform::Type platform)
 {
     QList<C64KeyboardMapping> mappings;

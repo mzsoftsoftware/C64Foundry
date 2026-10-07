@@ -24,8 +24,11 @@ int main(int argc, char *argv[])
         }
     }
 
-    MainWindow w;
-    w.show();
+    MainWindow mainWindow;
+    if (!mainWindow.initialize())
+        return 1;
+
+    mainWindow.show();
 
     return QApplication::exec();
 }
