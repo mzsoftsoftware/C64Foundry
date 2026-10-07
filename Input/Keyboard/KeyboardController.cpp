@@ -58,14 +58,8 @@ void KeyboardController::keyPressed(const int key, const quint32 nativeScanCode,
     if (ptrMapping->mode != C64KeyboardMappingMode::Momentary)
         return;
 
-    if (ptrMapping->keys.size() != 1)
-        return;
-
-    emit input(
-        {
-            InputEventType::KeyPress,
-            ptrMapping->keys.first()
-        });
+    for (const C64Key key : ptrMapping->keys)
+        pressKey(key);
 }
 
 void KeyboardController::keyReleased(const int key, const quint32 nativeScanCode, const Qt::KeyboardModifiers modifiers, const bool autoRepeat)
@@ -83,14 +77,8 @@ void KeyboardController::keyReleased(const int key, const quint32 nativeScanCode
     if (ptrMapping->mode != C64KeyboardMappingMode::Momentary)
         return;
 
-    if (ptrMapping->keys.size() != 1)
-        return;
-
-    emit input(
-        {
-            InputEventType::KeyRelease,
-            ptrMapping->keys.first()
-        });
+    for (const C64Key key : ptrMapping->keys)
+        releaseKey(key);
 }
 
 bool KeyboardController::eventFilter(QObject* ptrObject, QEvent* ptrEvent)
@@ -132,4 +120,34 @@ bool KeyboardController::eventFilter(QObject* ptrObject, QEvent* ptrEvent)
     }
 
     return QObject::eventFilter(ptrObject, ptrEvent);
+}
+
+void KeyboardController::pressKey(const C64Key key)
+{
+    int& count = m_pressedKeys[key];
+    ++count;
+    if (count != 1)
+        return;
+    emit input(
+        {
+            InputEventType::KeyPress,
+            key
+        });
+}
+
+void KeyboardController::releaseKey(const C64Key key)
+{
+    if (!m_pressedKeys.contains(key))
+        return;
+
+    --m_pressedKeys[key];
+    if (m_pressedKeys[key] != 0)
+        return;
+
+    m_pressedKeys.remove(key);
+    emit input(
+        {
+            InputEventType::KeyRelease,
+            key
+        });
 }

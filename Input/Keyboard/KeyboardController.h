@@ -31,8 +31,11 @@ private slots:
 
 private:
     const C64KeyboardMapping* mapping(quint32 nativeScanCode) const;
+    void pressKey(C64Key key);
+    void releaseKey(C64Key key);
 
 private:
     ConfigurationManager* m_ptrConfigurationManager = nullptr;
     QHash<quint32, C64KeyboardMapping> m_mappings;
+    QHash<C64Key, int> m_pressedKeys;
 };
