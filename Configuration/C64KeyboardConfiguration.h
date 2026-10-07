@@ -27,6 +27,12 @@ public:
 
     QList<C64KeyboardMapping> mappings(HostPlatform::Type platform) const;
 
+    const QList<C64KeyboardMapping>& overrides() const          { return m_overrides; }
+
+    void setOverride(const C64KeyboardMapping& mapping);
+    void removeOverride(quint32 nativeScanCode);
+    void clearOverrides();
+
 private:
     QList<C64KeyboardMapping> m_overrides;
 };

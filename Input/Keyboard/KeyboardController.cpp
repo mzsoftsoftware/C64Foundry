@@ -22,6 +22,7 @@ KeyboardController::~KeyboardController()
 
 void KeyboardController::updateConfiguration()
 {
+    resetKeyboardState();
     m_mappings.clear();
 
     const C64Configuration* ptrConfiguration = m_ptrConfigurationManager->activeConfiguration();
@@ -55,11 +56,30 @@ void KeyboardController::keyPressed(const int key, const quint32 nativeScanCode,
     if (ptrMapping == nullptr)
         return;
 
-    if (ptrMapping->mode != C64KeyboardMappingMode::Momentary)
-        return;
+    switch (ptrMapping->mode)
+    {
+    case C64KeyboardMappingMode::Momentary:
+        for (const C64Key key : ptrMapping->keys)
+            pressKey(key);
+        break;
 
-    for (const C64Key key : ptrMapping->keys)
-        pressKey(key);
+    case C64KeyboardMappingMode::Toggle:
+        if (m_activeToggles.contains(nativeScanCode))
+        {
+            for (const C64Key key : ptrMapping->keys)
+                releaseKey(key);
+
+            m_activeToggles.remove(nativeScanCode);
+        }
+        else
+        {
+            for (const C64Key key : ptrMapping->keys)
+                pressKey(key);
+
+            m_activeToggles.insert(nativeScanCode);
+        }
+        break;
+    }
 }
 
 void KeyboardController::keyReleased(const int key, const quint32 nativeScanCode, const Qt::KeyboardModifiers modifiers, const bool autoRepeat)
@@ -79,6 +99,23 @@ void KeyboardController::keyReleased(const int key, const quint32 nativeScanCode
 
     for (const C64Key key : ptrMapping->keys)
         releaseKey(key);
+}
+
+void KeyboardController::resetKeyboardState()
+{
+    const QList<C64Key> pressedKeys = m_pressedKeys.keys();
+
+    for (const C64Key key : pressedKeys)
+    {
+        emit input(
+            {
+                InputEventType::KeyRelease,
+                key
+            });
+    }
+
+    m_pressedKeys.clear();
+    m_activeToggles.clear();
 }
 
 bool KeyboardController::eventFilter(QObject* ptrObject, QEvent* ptrEvent)
