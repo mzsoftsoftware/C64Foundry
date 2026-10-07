@@ -33,6 +33,12 @@ public:
     void removeOverride(quint32 nativeScanCode);
     void clearOverrides();
 
+    static QString keyName(C64Key key);
+    static bool keyFromName(const QString& name, C64Key& key);
+
+    static QString mappingModeName(C64KeyboardMappingMode mode);
+    static bool mappingModeFromName(const QString& name, C64KeyboardMappingMode& mode);
+
 private:
     QList<C64KeyboardMapping> m_overrides;
 };
