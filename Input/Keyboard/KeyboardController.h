@@ -20,9 +20,12 @@ public:
 public slots:
     void keyPressed(int key, const quint32 nativeScanCode, Qt::KeyboardModifiers modifiers, bool autoRepeat);
     void keyReleased(int key, const quint32 nativeScanCode, Qt::KeyboardModifiers modifiers, bool autoRepeat);
+    void virtualKeyPressed(C64Key key);
+    void virtualKeyReleased(C64Key key);
 
 signals:
     void input(const InputEvent& event);
+    void keyStateChanged(C64Key key, bool bPressed);
 
 protected:
     bool eventFilter(QObject* ptrObject, QEvent* ptrEvent) override;
@@ -35,6 +38,8 @@ private:
 
     void pressKey(C64Key key);
     void releaseKey(C64Key key);
+    void pressPhysicalKey(C64Key key);
+    void releasePhysicalKey(C64Key key);
     void resetKeyboardState();
 
 private:
@@ -42,5 +47,7 @@ private:
 
     QHash<quint32, C64KeyboardMapping> m_mappings;
     QHash<C64Key, int> m_pressedKeys;
+    QHash<C64Key, int> m_physicalPressedKeys;
+    QSet<C64Key> m_virtualPressedKeys;
     QSet<quint32> m_activeToggles;
 };

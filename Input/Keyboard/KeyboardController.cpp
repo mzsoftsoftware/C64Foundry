@@ -60,21 +60,21 @@ void KeyboardController::keyPressed(const int key, const quint32 nativeScanCode,
     {
     case C64KeyboardMappingMode::Momentary:
         for (const C64Key key : ptrMapping->keys)
-            pressKey(key);
+            pressPhysicalKey(key);
         break;
 
     case C64KeyboardMappingMode::Toggle:
         if (m_activeToggles.contains(nativeScanCode))
         {
             for (const C64Key key : ptrMapping->keys)
-                releaseKey(key);
+                releasePhysicalKey(key);
 
             m_activeToggles.remove(nativeScanCode);
         }
         else
         {
             for (const C64Key key : ptrMapping->keys)
-                pressKey(key);
+                pressPhysicalKey(key);
 
             m_activeToggles.insert(nativeScanCode);
         }
@@ -98,7 +98,24 @@ void KeyboardController::keyReleased(const int key, const quint32 nativeScanCode
         return;
 
     for (const C64Key key : ptrMapping->keys)
-        releaseKey(key);
+        releasePhysicalKey(key);
+}
+
+void KeyboardController::virtualKeyPressed(const C64Key key)
+{
+    if (m_virtualPressedKeys.contains(key))
+        return;
+
+    m_virtualPressedKeys.insert(key);
+    pressKey(key);
+}
+void KeyboardController::virtualKeyReleased(const C64Key key)
+{
+    if (!m_virtualPressedKeys.contains(key))
+        return;
+
+    m_virtualPressedKeys.remove(key);
+    releaseKey(key);
 }
 
 void KeyboardController::resetKeyboardState()
@@ -112,9 +129,13 @@ void KeyboardController::resetKeyboardState()
                 InputEventType::KeyRelease,
                 key
             });
+
+        emit keyStateChanged(key, false);
     }
 
     m_pressedKeys.clear();
+    m_physicalPressedKeys.clear();
+    m_virtualPressedKeys.clear();
     m_activeToggles.clear();
 }
 
@@ -163,28 +184,53 @@ void KeyboardController::pressKey(const C64Key key)
 {
     int& count = m_pressedKeys[key];
     ++count;
+
     if (count != 1)
         return;
+
     emit input(
         {
             InputEventType::KeyPress,
             key
         });
-}
 
+    emit keyStateChanged(key, true);
+}
 void KeyboardController::releaseKey(const C64Key key)
 {
     if (!m_pressedKeys.contains(key))
         return;
 
     --m_pressedKeys[key];
+
     if (m_pressedKeys[key] != 0)
         return;
 
     m_pressedKeys.remove(key);
+
     emit input(
         {
             InputEventType::KeyRelease,
             key
         });
+
+    emit keyStateChanged(key, false);
 }
+
+void KeyboardController::pressPhysicalKey(const C64Key key)
+{
+    int& count = m_physicalPressedKeys[key];
+    ++count;
+    pressKey(key);
+}
+void KeyboardController::releasePhysicalKey(const C64Key key)
+{
+    if (!m_physicalPressedKeys.contains(key))
+        return;
+    int& count = m_physicalPressedKeys[key];
+    --count;
+    if (count == 0)
+        m_physicalPressedKeys.remove(key);
+    releaseKey(key);
+}
+
