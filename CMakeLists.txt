@@ -102,6 +102,7 @@ qt_add_executable(C64Foundry
     Output/Video/VideoThread.h Output/Video/VideoThread.cpp
 
     Resources/C64Foundry.qrc
+    Gui/Keyboard/C64KeyboardSymbol.h
 )
 
 target_include_directories(C64Foundry

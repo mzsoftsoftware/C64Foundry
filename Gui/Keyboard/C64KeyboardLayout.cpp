@@ -44,7 +44,7 @@ C64KeyboardLayout::C64KeyboardLayout()
 
     C64KeyboardKey* ptrKeyA = addKey(C64Key::KeyA,            "A",       2.0, 2.0);
     ptrKeyA->addLabel(QStringLiteral("A"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
-    ptrKeyA->addGraphicLabel(C64KeyboardLabelPosition::TopRight, C64KeyboardLabelModifier::Shift);
+    ptrKeyA->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
     ptrKeyA->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
 
     addKey(C64Key::KeyS,            "S",       3.0, 2.0);
@@ -74,11 +74,17 @@ C64KeyboardLayout::C64KeyboardLayout()
     addKey(C64Key::Period,          ".",      10.5, 3.0);
     addKey(C64Key::Slash,           "/",      11.5, 3.0);
     addKey(C64Key::RightShift,      "SHIFT",  12.5, 3.0, 1.5);
-    addKey(C64Key::CursorUpDown,    "CRSR",   14.0, 3.0);
+
+    C64KeyboardKey* ptrKeyCursor = addKey(C64Key::CursorUpDown, "CRSR", 14.0, 3.0);
+    ptrKeyCursor->addLabel(QStringLiteral("⇑"), C64KeyboardLabelPosition::TopCenter, C64KeyboardLabelModifier::Shift);
+    ptrKeyCursor->addLabel(QStringLiteral("CRSR"), C64KeyboardLabelPosition::Center, C64KeyboardLabelModifier::Always);
+    ptrKeyCursor->addLabel(QStringLiteral("⇓"), C64KeyboardLabelPosition::BottomCenter, C64KeyboardLabelModifier::None);
+
     addKey(C64Key::CursorLeftRight, "CRSR",   15.0, 3.0);
 
     // Space bar
-    addKey(C64Key::Space,           "SPACE",   2.75, 4.0, 9.0);
+    C64KeyboardKey* ptrKeySpace = addKey(C64Key::Space, "SPACE", 2.75, 4.0, 9.0);
+    ptrKeySpace->addLabel(QStringLiteral("SPACE"), C64KeyboardLabelPosition::Center, C64KeyboardLabelModifier::Always);
 
     // Function keys
     addKey(C64Key::F1F2,            "F1/F2",  16.75, 0.0, 1.5);
