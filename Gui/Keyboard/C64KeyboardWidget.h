@@ -34,10 +34,16 @@ public:
     void setKeyboardKeyPressed(C64Key key, bool bPressed);
     void setModifiers(const C64KeyboardModifiers& modifiers);
 
+signals:
+    void keyPressed(C64Key key);
+    void keyReleased(C64Key key);
+
 protected:
     void paintEvent(QPaintEvent* ptrEvent) override;
-    void mouseMoveEvent(QMouseEvent* ptrEvent) override;
     void leaveEvent(QEvent* ptrEvent) override;
+    void mouseMoveEvent(QMouseEvent* ptrEvent) override;
+    void mousePressEvent(QMouseEvent* ptrEvent) override;
+    void mouseReleaseEvent(QMouseEvent* ptrEvent) override;
 
 private:
     QTransform keyboardTransform() const;
@@ -45,10 +51,12 @@ private:
 
     void updateKey(const C64KeyboardKey* ptrKey);
     void setHoveredKey(C64KeyboardKey* ptrKey);
+    void releaseMouseKey();
 
 private:
     Mode m_mode = Mode::Input;
 
     C64KeyboardLayout m_layout;
     C64KeyboardKey* m_ptrHoveredKey = nullptr;
+    C64KeyboardKey* m_ptrMousePressedKey = nullptr;
 };

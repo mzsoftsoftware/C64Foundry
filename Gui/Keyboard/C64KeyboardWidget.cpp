@@ -2,6 +2,7 @@
 
 #include <QPaintEvent>
 #include <QPainter>
+#include <QMouseEvent>
 
 
 C64KeyboardWidget::C64KeyboardWidget(QWidget* parent)
@@ -17,6 +18,7 @@ void C64KeyboardWidget::setMode(const Mode mode)
 {
     if (m_mode == mode)
         return;
+    releaseMouseKey();
     m_mode = mode;
     setHoveredKey(nullptr);
     update();
@@ -108,15 +110,60 @@ void C64KeyboardWidget::paintEvent(QPaintEvent* ptrEvent)
         key.paint(&painter);
 }
 
+void C64KeyboardWidget::leaveEvent(QEvent* ptrEvent)
+{
+    setHoveredKey(nullptr);
+    QWidget::leaveEvent(ptrEvent);
+}
+
 void C64KeyboardWidget::mouseMoveEvent(QMouseEvent* ptrEvent)
 {
     const QPointF keyboardPosition = mapToKeyboard(ptrEvent->position());
     setHoveredKey(m_layout.keyAt(keyboardPosition));
     QWidget::mouseMoveEvent(ptrEvent);
 }
-
-void C64KeyboardWidget::leaveEvent(QEvent* ptrEvent)
+void C64KeyboardWidget::mousePressEvent(QMouseEvent* ptrEvent)
 {
-    setHoveredKey(nullptr);
-    QWidget::leaveEvent(ptrEvent);
+    if (m_mode != Mode::Input || ptrEvent->button() != Qt::LeftButton)
+    {
+        QWidget::mousePressEvent(ptrEvent);
+        return;
+    }
+    if (m_ptrMousePressedKey != nullptr)
+    {
+        ptrEvent->accept();
+        return;
+    }
+    const QPointF keyboardPosition = mapToKeyboard(ptrEvent->position());
+    C64KeyboardKey* ptrKey = m_layout.keyAt(keyboardPosition);
+    if (ptrKey == nullptr)
+    {
+        QWidget::mousePressEvent(ptrEvent);
+        return;
+    }
+    m_ptrMousePressedKey = ptrKey;
+    if (ptrKey->setMousePressed(true))
+        updateKey(ptrKey);
+    emit keyPressed(ptrKey->key());
+    ptrEvent->accept();
+}
+void C64KeyboardWidget::mouseReleaseEvent(QMouseEvent* ptrEvent)
+{
+    if (ptrEvent->button() != Qt::LeftButton || m_ptrMousePressedKey == nullptr)
+    {
+        QWidget::mouseReleaseEvent(ptrEvent);
+        return;
+    }
+    releaseMouseKey();
+    ptrEvent->accept();
+}
+void C64KeyboardWidget::releaseMouseKey()
+{
+    if (m_ptrMousePressedKey == nullptr)
+        return;
+    C64KeyboardKey* ptrKey = m_ptrMousePressedKey;
+    m_ptrMousePressedKey = nullptr;
+    if (ptrKey->setMousePressed(false))
+        updateKey(ptrKey);
+    emit keyReleased(ptrKey->key());
 }
