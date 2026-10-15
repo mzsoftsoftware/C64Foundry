@@ -32,6 +32,7 @@ public:
 
 public slots:
     void setKeyboardKeyPressed(C64Key key, bool bPressed);
+    void resetKeyboardState();
 
 signals:
     void keyPressed(C64Key key);

@@ -52,6 +52,7 @@ bool MainWindow::initialize()
     connect(ui->dockWidgetContents_VirtualKeyboard, &C64KeyboardWidget::keyPressed, m_ptrKeyboardController, &KeyboardController::virtualKeyPressed);
     connect(ui->dockWidgetContents_VirtualKeyboard, &C64KeyboardWidget::keyReleased, m_ptrKeyboardController, &KeyboardController::virtualKeyReleased);
     connect(m_ptrKeyboardController, &KeyboardController::keyStateChanged, ui->dockWidgetContents_VirtualKeyboard, &C64KeyboardWidget::setKeyboardKeyPressed);
+    connect(m_ptrKeyboardController, &KeyboardController::keyboardStateReset, ui->dockWidgetContents_VirtualKeyboard, &C64KeyboardWidget::resetKeyboardState);
 
     setupDockWidgetsMenu();
     restoreWindowLayout();

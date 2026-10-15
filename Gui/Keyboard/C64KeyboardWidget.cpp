@@ -36,6 +36,20 @@ void C64KeyboardWidget::setKeyboardKeyPressed(const C64Key key, const bool bPres
     if (ptrKey != nullptr && ptrKey->setKeyboardPressed(bPressed))
         updateKey(ptrKey);
 }
+void C64KeyboardWidget::resetKeyboardState()
+{
+    m_ptrMousePressedKey = nullptr;
+    setHoveredKey(nullptr);
+    for (C64KeyboardKey& key : m_layout.keys())
+    {
+        if (key.setMousePressed(false))
+            updateKey(&key);
+        if (key.setLatched(false))
+            updateKey(&key);
+        if (key.setKeyboardPressed(false))
+            updateKey(&key);
+    }
+}
 
 bool C64KeyboardWidget::isModifierKey(const C64Key key) const
 {

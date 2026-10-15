@@ -26,6 +26,7 @@ public slots:
 signals:
     void input(const InputEvent& event);
     void keyStateChanged(C64Key key, bool bPressed);
+    void keyboardStateReset();
 
 protected:
     bool eventFilter(QObject* ptrObject, QEvent* ptrEvent) override;

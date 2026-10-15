@@ -137,6 +137,8 @@ void KeyboardController::resetKeyboardState()
     m_physicalPressedKeys.clear();
     m_virtualPressedKeys.clear();
     m_activeToggles.clear();
+
+    emit keyboardStateReset();
 }
 
 bool KeyboardController::eventFilter(QObject* ptrObject, QEvent* ptrEvent)
