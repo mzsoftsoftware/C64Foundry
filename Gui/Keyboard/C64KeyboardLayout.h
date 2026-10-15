@@ -22,7 +22,7 @@ public:
     const C64KeyboardKey* keyAt(const QPointF& position) const;
 
 private:
-    void addKey(const C64Key key, const QString& qstrLabel, const qreal x, const qreal y, const qreal width = 1.0);
+    C64KeyboardKey* addKey(const C64Key key, const QString& qstrLabel, const qreal x, const qreal y, const qreal width = 1.0);
     void updateBounds();
 
 private:

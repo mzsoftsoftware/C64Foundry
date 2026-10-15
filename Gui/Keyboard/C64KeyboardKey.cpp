@@ -8,6 +8,8 @@
 #include <QtMath>
 #include <QDebug>
 
+#include "C64KeyboardSymbolData.h"
+
 
 C64KeyboardKey::C64KeyboardKey(const C64Key key, const QString& label, const QRectF& rect)
     : m_key(key)
@@ -16,27 +18,56 @@ C64KeyboardKey::C64KeyboardKey(const C64Key key, const QString& label, const QRe
 {
 }
 
-bool C64KeyboardKey::addLabel(const QString& svgResource, const C64KeyboardLabelPosition position, const C64KeyboardLabelModifier modifier)
+bool C64KeyboardKey::addLabel(const QString& text, const C64KeyboardLabelPosition position, const C64KeyboardLabelModifier modifier)
 {
-    if (svgResource.isEmpty())
+    if (text.isEmpty())
     {
-        qWarning() << "C64KeyboardKey: Empty SVG resource for key:" << static_cast<int>(m_key);
+        qWarning() << "C64KeyboardKey: Empty text for key:" << static_cast<int>(m_key);
         return false;
     }
-    for (const C64KeyboardKeyLabel& label : m_labels)
+    C64KeyboardKeyLabel label;
+    label.type = C64KeyboardLabelType::Text;
+    label.text = text;
+    label.position = position;
+    label.modifier = modifier;
+    return appendLabel(label);
+}
+
+
+bool C64KeyboardKey::addGraphicLabel(const C64KeyboardLabelPosition position, const C64KeyboardLabelModifier modifier)
+{
+    if (modifier != C64KeyboardLabelModifier::Shift && modifier != C64KeyboardLabelModifier::Commodore)
     {
-        if (label.modifier == modifier)
+        qWarning() << "C64KeyboardKey: Invalid graphic modifier for key:" << static_cast<int>(m_key);
+        return false;
+    }
+    if (C64KeyboardSymbolData::bitmap(m_key, modifier) == nullptr)
+    {
+        qWarning() << "C64KeyboardKey: No graphic bitmap defined for key:" << static_cast<int>(m_key) << "modifier:" << static_cast<int>(modifier);
+        return false;
+    }
+    C64KeyboardKeyLabel label;
+    label.type = C64KeyboardLabelType::Graphic;
+    label.position = position;
+    label.modifier = modifier;
+    return appendLabel(label);
+}
+bool C64KeyboardKey::appendLabel(const C64KeyboardKeyLabel& label)
+{
+    for (const C64KeyboardKeyLabel& existingLabel : m_labels)
+    {
+        if (existingLabel.modifier == label.modifier)
         {
             qWarning() << "C64KeyboardKey: Duplicate label modifier for key:" << static_cast<int>(m_key);
             return false;
         }
-        if (label.modifier == C64KeyboardLabelModifier::Always || modifier == C64KeyboardLabelModifier::Always)
+        if (existingLabel.modifier == C64KeyboardLabelModifier::Always || label.modifier == C64KeyboardLabelModifier::Always)
         {
             qWarning() << "C64KeyboardKey: Always cannot be combined with other labels for key:" << static_cast<int>(m_key);
             return false;
         }
     }
-    m_labels.append({ svgResource, position, modifier });
+    m_labels.append(label);
     return true;
 }
 

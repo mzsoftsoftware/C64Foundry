@@ -24,9 +24,18 @@ enum class C64KeyboardLabelModifier
     Always
 };
 
+enum class C64KeyboardLabelType
+{
+    Text,
+    Graphic
+};
+
 struct C64KeyboardKeyLabel
 {
-    QString svgResource;
+    C64KeyboardLabelType type = C64KeyboardLabelType::Text;
+
+    QString text;
+
     C64KeyboardLabelPosition position = C64KeyboardLabelPosition::Center;
     C64KeyboardLabelModifier modifier = C64KeyboardLabelModifier::Always;
 };

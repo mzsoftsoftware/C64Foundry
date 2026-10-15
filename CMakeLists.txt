@@ -90,16 +90,18 @@ qt_add_executable(C64Foundry
 
     Input/InputEvent.h
     Input/Keyboard/KeyboardController.h Input/Keyboard/KeyboardController.cpp
+    Gui/Keyboard/C64KeyboardModifiers.h
+    Gui/Keyboard/C64KeyboardKeyLabel.h
+    Gui/Keyboard/C64KeyboardLayout.h Gui/Keyboard/C64KeyboardLayout.cpp
+    Gui/Keyboard/C64KeyboardKey.h Gui/Keyboard/C64KeyboardKey.cpp
+    Gui/Keyboard/C64KeyboardSymbolData.h Gui/Keyboard/C64KeyboardSymbolData.cpp
+    Gui/Keyboard/C64KeyboardSymbolPainter.h Gui/Keyboard/C64KeyboardSymbolPainter.cpp
 
     Output/Video/VideoController.h Output/Video/VideoController.cpp
     Output/Video/VideoWorker.h Output/Video/VideoWorker.cpp
     Output/Video/VideoThread.h Output/Video/VideoThread.cpp
 
     Resources/C64Foundry.qrc
-    Gui/Keyboard/C64KeyboardLayout.h Gui/Keyboard/C64KeyboardLayout.cpp
-    Gui/Keyboard/C64KeyboardKey.h Gui/Keyboard/C64KeyboardKey.cpp
-    Gui/Keyboard/C64KeyboardModifiers.h
-    Gui/Keyboard/C64KeyboardKeyLabel.h
 )
 
 target_include_directories(C64Foundry

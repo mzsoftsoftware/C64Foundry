@@ -41,7 +41,12 @@ C64KeyboardLayout::C64KeyboardLayout()
     // Row 3
     addKey(C64Key::RunStop,         "RUN",     0.0, 2.0);
     addKey(C64Key::ShiftLock,       "LOCK",    1.0, 2.0);
-    addKey(C64Key::KeyA,            "A",       2.0, 2.0);
+
+    C64KeyboardKey* ptrKeyA = addKey(C64Key::KeyA,            "A",       2.0, 2.0);
+    ptrKeyA->addLabel(QStringLiteral("A"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyA->addGraphicLabel(C64KeyboardLabelPosition::TopRight, C64KeyboardLabelModifier::Shift);
+    ptrKeyA->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+
     addKey(C64Key::KeyS,            "S",       3.0, 2.0);
     addKey(C64Key::KeyD,            "D",       4.0, 2.0);
     addKey(C64Key::KeyF,            "F",       5.0, 2.0);
@@ -103,9 +108,10 @@ C64KeyboardKey* C64KeyboardLayout::keyById(const C64Key keyId)
     return nullptr;
 }
 
-void C64KeyboardLayout::addKey(const C64Key key, const QString& label, const qreal x, const qreal y, const qreal width)
-{
+C64KeyboardKey* C64KeyboardLayout::addKey(const C64Key key, const QString& label, const qreal x, const qreal y, const qreal width)
+{    
     m_keys.append(C64KeyboardKey(key, label, QRectF(x, y, width, 1.0)));
+    return &m_keys.last();
 }
 
 void C64KeyboardLayout::updateBounds()

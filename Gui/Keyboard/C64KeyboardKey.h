@@ -33,9 +33,13 @@ public:
     bool setModifiers(const C64KeyboardModifiers& modifiers);
 
     bool contains(const QPointF& position) const                    { return m_rect.contains(position); }
-    bool addLabel(const QString& svgResource, C64KeyboardLabelPosition position, C64KeyboardLabelModifier modifier);
+    bool addLabel(const QString& text, C64KeyboardLabelPosition position, C64KeyboardLabelModifier modifier);
+    bool addGraphicLabel(C64KeyboardLabelPosition position, C64KeyboardLabelModifier modifier);
 
     void paint(QPainter* ptrPainter) const;
+
+private:
+    bool appendLabel(const C64KeyboardKeyLabel& label);
 
 private:
     C64Key m_key;
