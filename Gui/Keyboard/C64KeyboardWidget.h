@@ -30,6 +30,9 @@ public:
     // Getter
     Mode mode() const                                       { return m_mode; }
 
+public slots:
+    void setKeyboardKeyPressed(C64Key key, bool bPressed);
+
 signals:
     void keyPressed(C64Key key);
     void keyReleased(C64Key key);
@@ -43,7 +46,6 @@ protected:
     void mouseReleaseEvent(QMouseEvent* ptrEvent) override;
 
 private:
-    void setKeyboardKeyPressed(C64Key key, bool bPressed);
     bool isModifierKey(C64Key key) const;
     void setModifiers(const C64KeyboardModifiers& modifiers);
     void setModifierLatched(C64KeyboardKey* ptrKey, bool bLatched);

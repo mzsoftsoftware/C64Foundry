@@ -31,7 +31,7 @@ protected:
     void closeEvent(QCloseEvent* ptrEvent) override;
 
 private:
-    void setupDockWidgets();
+    void setupDockWidgetsMenu();
 
     void saveWindowLayout();
     void restoreWindowLayout();

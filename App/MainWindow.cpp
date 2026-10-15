@@ -47,9 +47,13 @@ bool MainWindow::initialize()
     m_ptrKeyboardController = new KeyboardController(m_ptrConfigurationManager, this);
     qApp->installEventFilter(m_ptrKeyboardController);
     connect(m_ptrKeyboardController, &KeyboardController::input, m_ptrEmulatorController, &EmulatorController::input);
-    ui->dockWidgetContents_VirtualKeyboard->setMode(C64KeyboardWidget::Mode::Input);
 
-    setupDockWidgets();
+    ui->dockWidgetContents_VirtualKeyboard->setMode(C64KeyboardWidget::Mode::Input);
+    connect(ui->dockWidgetContents_VirtualKeyboard, &C64KeyboardWidget::keyPressed, m_ptrKeyboardController, &KeyboardController::virtualKeyPressed);
+    connect(ui->dockWidgetContents_VirtualKeyboard, &C64KeyboardWidget::keyReleased, m_ptrKeyboardController, &KeyboardController::virtualKeyReleased);
+    connect(m_ptrKeyboardController, &KeyboardController::keyStateChanged, ui->dockWidgetContents_VirtualKeyboard, &C64KeyboardWidget::setKeyboardKeyPressed);
+
+    setupDockWidgetsMenu();
     restoreWindowLayout();
 
     m_ptrEmulatorController->loadROMSet(m_ptrConfigurationManager->activeConfiguration()->romSet);
@@ -57,7 +61,7 @@ bool MainWindow::initialize()
     return true;
 }
 
-void MainWindow::setupDockWidgets()
+void MainWindow::setupDockWidgetsMenu()
 {
     QAction* ptrSeparator = ui->menuView->actions().first();
 

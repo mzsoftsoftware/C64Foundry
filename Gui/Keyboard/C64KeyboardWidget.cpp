@@ -36,6 +36,7 @@ void C64KeyboardWidget::setKeyboardKeyPressed(const C64Key key, const bool bPres
     if (ptrKey != nullptr && ptrKey->setKeyboardPressed(bPressed))
         updateKey(ptrKey);
 }
+
 bool C64KeyboardWidget::isModifierKey(const C64Key key) const
 {
     switch (key)
