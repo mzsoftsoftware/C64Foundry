@@ -35,6 +35,8 @@ void C64KeyboardWidget::setKeyboardKeyPressed(const C64Key key, const bool bPres
     C64KeyboardKey* ptrKey = m_layout.keyById(key);
     if (ptrKey != nullptr && ptrKey->setKeyboardPressed(bPressed))
         updateKey(ptrKey);
+    if (isModifierKey(key))
+        updateModifiers();
 }
 void C64KeyboardWidget::resetKeyboardState()
 {
@@ -49,6 +51,7 @@ void C64KeyboardWidget::resetKeyboardState()
         if (key.setKeyboardPressed(false))
             updateKey(&key);
     }
+    updateModifiers();
 }
 
 bool C64KeyboardWidget::isModifierKey(const C64Key key) const
@@ -86,6 +89,7 @@ void C64KeyboardWidget::setModifierLatched(C64KeyboardKey* ptrKey, const bool bL
         emit keyPressed(ptrKey->key());
     else
         emit keyReleased(ptrKey->key());
+    updateModifiers();
 }
 void C64KeyboardWidget::releaseTemporaryModifiers()
 {
@@ -96,6 +100,24 @@ void C64KeyboardWidget::releaseTemporaryModifiers()
         if (isModifierKey(key.key()) && key.isLatched())
             setModifierLatched(&key, false);
     }
+}
+void C64KeyboardWidget::updateModifiers()
+{
+    C64KeyboardModifiers modifiers;
+
+    const C64KeyboardKey* ptrLeftShift = m_layout.keyById(C64Key::LeftShift);
+    const C64KeyboardKey* ptrRightShift = m_layout.keyById(C64Key::RightShift);
+    const C64KeyboardKey* ptrCommodore = m_layout.keyById(C64Key::Commodore);
+    const C64KeyboardKey* ptrControl = m_layout.keyById(C64Key::Control);
+    const C64KeyboardKey* ptrShiftLock = m_layout.keyById(C64Key::ShiftLock);
+
+    modifiers.leftShift = ptrLeftShift != nullptr && ptrLeftShift->isPressed();
+    modifiers.rightShift = ptrRightShift != nullptr && ptrRightShift->isPressed();
+    modifiers.commodore = ptrCommodore != nullptr && ptrCommodore->isPressed();
+    modifiers.control = ptrControl != nullptr && ptrControl->isPressed();
+    modifiers.shiftLock = ptrShiftLock != nullptr && ptrShiftLock->isPressed();
+
+    setModifiers(modifiers);
 }
 
 QTransform C64KeyboardWidget::keyboardTransform() const

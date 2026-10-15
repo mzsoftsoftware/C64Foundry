@@ -51,6 +51,7 @@ private:
     void setModifiers(const C64KeyboardModifiers& modifiers);
     void setModifierLatched(C64KeyboardKey* ptrKey, bool bLatched);
     void releaseTemporaryModifiers();
+    void updateModifiers();
     void cancelMouseKey();
 
 private:
