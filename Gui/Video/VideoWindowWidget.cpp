@@ -1,10 +1,6 @@
 #include "VideoWindowWidget.h"
 
 #include <QPainter>
-#include <QApplication>
-#include <QCloseEvent>
-#include <QKeyEvent>
-#include <QFocusEvent>
 
 
 VideoWindowWidget::VideoWindowWidget(QWidget *parent)
@@ -53,10 +49,4 @@ void VideoWindowWidget::paintEvent(QPaintEvent* ptrEvent)
         m_bFramePending = false;
         emit frameTaken();
     }
-}
-
-void VideoWindowWidget::closeEvent(QCloseEvent* ptrEvent)
-{
-    QApplication::quit();
-    QWidget::closeEvent(ptrEvent);
 }

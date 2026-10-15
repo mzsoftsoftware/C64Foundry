@@ -1,8 +1,8 @@
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
 
+#include <QSettings>
 #include <QMessageBox>
-
 
 #include "Configuration/ConfigurationManager.h"
 #include "Configuration/C64Configuration.h"
@@ -12,8 +12,6 @@
 #include "Emulator/EmulatorController.h"
 #include "Input/Keyboard/KeyboardController.h"
 #include "Output/Video/VideoController.h"
-
-#include "Gui/Video/VideoWindowWidget.h"
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -40,25 +38,72 @@ bool MainWindow::initialize()
         return false;
 
     m_ptrEmulatorController = new EmulatorController(this);
+    ui->dockWidgetContents_EmulatorControl->setController(m_ptrEmulatorController);
     connect(m_ptrEmulatorController, &EmulatorController::romSetLoaded, this, &MainWindow::romSetLoaded);
 
     m_ptrVideoController = new VideoController(m_ptrEmulatorController->machine(), this);
-
-    m_ptrVideoWindowWidget = new VideoWindowWidget();
-    m_ptrVideoWindowWidget->setWindowTitle(QStringLiteral("C64Foundry"));
+    m_ptrVideoController->setVideoWidget(ui->dockWidgetContents_VideoWindow);
 
     m_ptrKeyboardController = new KeyboardController(m_ptrConfigurationManager, this);
     qApp->installEventFilter(m_ptrKeyboardController);
     connect(m_ptrKeyboardController, &KeyboardController::input, m_ptrEmulatorController, &EmulatorController::input);
+    ui->dockWidgetContents_VirtualKeyboard->setMode(C64KeyboardWidget::Mode::Input);
 
-    m_ptrVideoController->setVideoWidget(m_ptrVideoWindowWidget);
-    m_ptrVideoWindowWidget->show();
+    setupDockWidgets();
+    restoreWindowLayout();
 
     m_ptrEmulatorController->loadROMSet(m_ptrConfigurationManager->activeConfiguration()->romSet);
 
-    ui->dockWidgetContents_EmulatorControl->setController(m_ptrEmulatorController);
-
     return true;
+}
+
+void MainWindow::setupDockWidgets()
+{
+    QAction* ptrSeparator = ui->menuView->actions().first();
+
+    ui->menuView->insertAction(ptrSeparator, ui->dockWidget_EmulatorControl->toggleViewAction());
+    ui->menuView->insertAction(ptrSeparator, ui->dockWidget_Video->toggleViewAction());
+    ui->menuView->insertAction(ptrSeparator, ui->dockWidget_VirtualKeyboard->toggleViewAction());
+
+    connect(ui->actionResetWindowLayout, &QAction::triggered, this, &MainWindow::resetWindowLayout);
+}
+
+void MainWindow::saveWindowLayout()
+{
+    QSettings settings;
+
+    settings.beginGroup(QStringLiteral("MainWindow"));
+    settings.setValue(QStringLiteral("Geometry"), saveGeometry());
+    settings.setValue(QStringLiteral("State"), saveState());
+    settings.endGroup();
+}
+void MainWindow::restoreWindowLayout()
+{
+    QSettings settings;
+
+    settings.beginGroup(QStringLiteral("MainWindow"));
+
+    if (settings.contains(QStringLiteral("Geometry")))
+        restoreGeometry(settings.value(QStringLiteral("Geometry")).toByteArray());
+
+    if (settings.contains(QStringLiteral("State")))
+        restoreState(settings.value(QStringLiteral("State")).toByteArray());
+
+    settings.endGroup();
+}
+void MainWindow::resetWindowLayout()
+{
+    ui->dockWidget_EmulatorControl->setFloating(false);
+    ui->dockWidget_Video->setFloating(false);
+    ui->dockWidget_VirtualKeyboard->setFloating(false);
+
+    addDockWidget(Qt::TopDockWidgetArea, ui->dockWidget_EmulatorControl);
+    addDockWidget(Qt::RightDockWidgetArea, ui->dockWidget_Video);
+    addDockWidget(Qt::BottomDockWidgetArea, ui->dockWidget_VirtualKeyboard);
+
+    ui->dockWidget_EmulatorControl->show();
+    ui->dockWidget_Video->show();
+    ui->dockWidget_VirtualKeyboard->show();
 }
 
 bool MainWindow::validateConfiguration()
@@ -95,6 +140,8 @@ void MainWindow::romSetLoaded(const bool bLoaded)
 
 void MainWindow::closeEvent(QCloseEvent* ptrEvent)
 {
+    saveWindowLayout();
+
     QApplication::quit();
     QMainWindow::closeEvent(ptrEvent);
 }

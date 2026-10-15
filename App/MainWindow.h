@@ -12,7 +12,6 @@ class ConfigurationManager;
 class EmulatorController;
 class KeyboardController;
 class VideoController;
-class VideoWindowWidget;
 
 
 class MainWindow : public QMainWindow
@@ -32,6 +31,12 @@ protected:
     void closeEvent(QCloseEvent* ptrEvent) override;
 
 private:
+    void setupDockWidgets();
+
+    void saveWindowLayout();
+    void restoreWindowLayout();
+    void resetWindowLayout();
+
     bool validateConfiguration();
 
 private:
@@ -43,5 +48,4 @@ private:
     KeyboardController* m_ptrKeyboardController = nullptr;
 
     VideoController* m_ptrVideoController = nullptr;    
-    VideoWindowWidget* m_ptrVideoWindowWidget = nullptr;
 };

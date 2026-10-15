@@ -23,9 +23,20 @@
      <height>22</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <addaction name="separator"/>
+    <addaction name="actionResetWindowLayout"/>
+   </widget>
+   <addaction name="menuView"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QDockWidget" name="dockWidget_EmulatorControl">
+   <property name="windowTitle">
+    <string>Emulator Control</string>
+   </property>
    <property name="dockLocation">
     <enum>Qt::DockWidgetArea::TopDockWidgetArea</enum>
    </property>
@@ -34,12 +45,47 @@
    </attribute>
    <widget class="EmulatorControlWidget" name="dockWidgetContents_EmulatorControl"/>
   </widget>
+  <widget class="QDockWidget" name="dockWidget_Video">
+   <property name="windowTitle">
+    <string>Video</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="VideoWindowWidget" name="dockWidgetContents_VideoWindow"/>
+  </widget>
+  <widget class="QDockWidget" name="dockWidget_VirtualKeyboard">
+   <property name="windowTitle">
+    <string>Virtual Keyboard</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>8</number>
+   </attribute>
+   <widget class="C64KeyboardWidget" name="dockWidgetContents_VirtualKeyboard"/>
+  </widget>
+  <action name="actionResetWindowLayout">
+   <property name="text">
+    <string>Reset Window Layout</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
    <class>EmulatorControlWidget</class>
    <extends>QWidget</extends>
    <header>Gui/Emulator/EmulatorControlWidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>VideoWindowWidget</class>
+   <extends>QWidget</extends>
+   <header>Gui/Video/VideoWindowWidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>C64KeyboardWidget</class>
+   <extends>QWidget</extends>
+   <header>Gui/Keyboard/C64KeyboardWidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
