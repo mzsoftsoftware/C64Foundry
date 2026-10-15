@@ -18,7 +18,11 @@ void C64KeyboardWidget::setMode(const Mode mode)
 {
     if (m_mode == mode)
         return;
-    releaseMouseKey();
+    cancelMouseKey();
+    releaseTemporaryModifiers();
+    C64KeyboardKey* ptrShiftLock = m_layout.keyById(C64Key::ShiftLock);
+    if (ptrShiftLock != nullptr && ptrShiftLock->isLatched())
+        setModifierLatched(ptrShiftLock, false);
     m_mode = mode;
     setHoveredKey(nullptr);
     update();
@@ -32,6 +36,20 @@ void C64KeyboardWidget::setKeyboardKeyPressed(const C64Key key, const bool bPres
     if (ptrKey != nullptr && ptrKey->setKeyboardPressed(bPressed))
         updateKey(ptrKey);
 }
+bool C64KeyboardWidget::isModifierKey(const C64Key key) const
+{
+    switch (key)
+    {
+    case C64Key::LeftShift:
+    case C64Key::RightShift:
+    case C64Key::Control:
+    case C64Key::Commodore:
+    case C64Key::ShiftLock:
+        return true;
+    default:
+        return false;
+    }
+}
 void C64KeyboardWidget::setModifiers(const C64KeyboardModifiers& modifiers)
 {
     if (m_mode != Mode::Input)
@@ -42,7 +60,28 @@ void C64KeyboardWidget::setModifiers(const C64KeyboardModifiers& modifiers)
             updateKey(&key);
     }
 }
-
+void C64KeyboardWidget::setModifierLatched(C64KeyboardKey* ptrKey, const bool bLatched)
+{
+    if (ptrKey == nullptr || !isModifierKey(ptrKey->key()))
+        return;
+    if (!ptrKey->setLatched(bLatched))
+        return;
+    updateKey(ptrKey);
+    if (bLatched)
+        emit keyPressed(ptrKey->key());
+    else
+        emit keyReleased(ptrKey->key());
+}
+void C64KeyboardWidget::releaseTemporaryModifiers()
+{
+    for (C64KeyboardKey& key : m_layout.keys())
+    {
+        if (key.key() == C64Key::ShiftLock)
+            continue;
+        if (isModifierKey(key.key()) && key.isLatched())
+            setModifierLatched(&key, false);
+    }
+}
 
 QTransform C64KeyboardWidget::keyboardTransform() const
 {
@@ -99,6 +138,12 @@ void C64KeyboardWidget::setHoveredKey(C64KeyboardKey* ptrKey)
     }
 }
 
+bool C64KeyboardWidget::event(QEvent* ptrEvent)
+{
+    if (ptrEvent->type() == QEvent::UngrabMouse)
+        cancelMouseKey();
+    return QWidget::event(ptrEvent);
+}
 void C64KeyboardWidget::paintEvent(QPaintEvent* ptrEvent)
 {
     QPainter painter(this);
@@ -144,7 +189,8 @@ void C64KeyboardWidget::mousePressEvent(QMouseEvent* ptrEvent)
     m_ptrMousePressedKey = ptrKey;
     if (ptrKey->setMousePressed(true))
         updateKey(ptrKey);
-    emit keyPressed(ptrKey->key());
+    if (!isModifierKey(ptrKey->key()))
+        emit keyPressed(ptrKey->key());
     ptrEvent->accept();
 }
 void C64KeyboardWidget::mouseReleaseEvent(QMouseEvent* ptrEvent)
@@ -165,5 +211,24 @@ void C64KeyboardWidget::releaseMouseKey()
     m_ptrMousePressedKey = nullptr;
     if (ptrKey->setMousePressed(false))
         updateKey(ptrKey);
-    emit keyReleased(ptrKey->key());
+    if (isModifierKey(ptrKey->key()))
+    {
+        setModifierLatched(ptrKey, !ptrKey->isLatched());
+    }
+    else
+    {
+        emit keyReleased(ptrKey->key());
+        releaseTemporaryModifiers();
+    }
+}
+void C64KeyboardWidget::cancelMouseKey()
+{
+    if (m_ptrMousePressedKey == nullptr)
+        return;
+    C64KeyboardKey* ptrKey = m_ptrMousePressedKey;
+    m_ptrMousePressedKey = nullptr;
+    if (ptrKey->setMousePressed(false))
+        updateKey(ptrKey);
+    if (!isModifierKey(ptrKey->key()))
+        emit keyReleased(ptrKey->key());
 }

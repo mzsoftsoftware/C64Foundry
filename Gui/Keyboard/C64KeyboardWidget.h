@@ -30,20 +30,25 @@ public:
     // Getter
     Mode mode() const                                       { return m_mode; }
 
-    // Operations
-    void setKeyboardKeyPressed(C64Key key, bool bPressed);
-    void setModifiers(const C64KeyboardModifiers& modifiers);
-
 signals:
     void keyPressed(C64Key key);
     void keyReleased(C64Key key);
 
 protected:
+    bool event(QEvent* ptrEvent) override;
     void paintEvent(QPaintEvent* ptrEvent) override;
     void leaveEvent(QEvent* ptrEvent) override;
     void mouseMoveEvent(QMouseEvent* ptrEvent) override;
     void mousePressEvent(QMouseEvent* ptrEvent) override;
     void mouseReleaseEvent(QMouseEvent* ptrEvent) override;
+
+private:
+    void setKeyboardKeyPressed(C64Key key, bool bPressed);
+    bool isModifierKey(C64Key key) const;
+    void setModifiers(const C64KeyboardModifiers& modifiers);
+    void setModifierLatched(C64KeyboardKey* ptrKey, bool bLatched);
+    void releaseTemporaryModifiers();
+    void cancelMouseKey();
 
 private:
     QTransform keyboardTransform() const;
