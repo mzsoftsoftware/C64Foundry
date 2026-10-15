@@ -41,6 +41,7 @@ private:
     void releaseKey(C64Key key);
     void pressPhysicalKey(C64Key key);
     void releasePhysicalKey(C64Key key);
+    void resetPhysicalKeyboardState();
     void resetKeyboardState();
 
 private:

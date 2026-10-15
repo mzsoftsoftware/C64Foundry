@@ -143,6 +143,11 @@ void KeyboardController::resetKeyboardState()
 
 bool KeyboardController::eventFilter(QObject* ptrObject, QEvent* ptrEvent)
 {
+    if (ptrEvent->type() == QEvent::ApplicationDeactivate)
+    {
+        resetPhysicalKeyboardState();
+        return false;
+    }
     if (ptrEvent->type() == QEvent::KeyPress ||
         ptrEvent->type() == QEvent::KeyRelease)
     {
@@ -235,4 +240,14 @@ void KeyboardController::releasePhysicalKey(const C64Key key)
         m_physicalPressedKeys.remove(key);
     releaseKey(key);
 }
-
+void KeyboardController::resetPhysicalKeyboardState()
+{
+    const QHash<C64Key, int> pressedKeys = m_physicalPressedKeys;
+    m_physicalPressedKeys.clear();
+    m_activeToggles.clear();
+    for (QHash<C64Key, int>::const_iterator iterator = pressedKeys.constBegin(); iterator != pressedKeys.constEnd(); ++iterator)
+    {
+        for (int index = 0; index < iterator.value(); ++index)
+            releaseKey(iterator.key());
+    }
+}
