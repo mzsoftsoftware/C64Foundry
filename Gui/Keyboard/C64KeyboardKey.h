@@ -2,9 +2,11 @@
 
 #include <QRectF>
 #include <QString>
+#include <QVector>
 
 #include "C64/Input/C64Keyboard.h"
 #include "C64KeyboardModifiers.h"
+#include "C64KeyboardKeyLabel.h"
 
 class QPainter;
 
@@ -17,6 +19,7 @@ public:
     // Getter
     C64Key key() const                                              { return m_key; }
     QRectF rect() const                                             { return m_rect; }
+    const QVector<C64KeyboardKeyLabel>& labels() const              { return m_labels; }
 
     bool isHovered() const                                          { return m_bHovered; }
     bool isPressed() const                                          { return m_bMousePressed || m_bKeyboardPressed || m_bLatched; }
@@ -30,6 +33,7 @@ public:
     bool setModifiers(const C64KeyboardModifiers& modifiers);
 
     bool contains(const QPointF& position) const                    { return m_rect.contains(position); }
+    bool addLabel(const QString& svgResource, C64KeyboardLabelPosition position, C64KeyboardLabelModifier modifier);
 
     void paint(QPainter* ptrPainter) const;
 
@@ -37,6 +41,7 @@ private:
     C64Key m_key;
     QString m_label;
     QRectF m_rect;
+    QVector<C64KeyboardKeyLabel> m_labels;
 
     C64KeyboardModifiers m_modifiers;
 

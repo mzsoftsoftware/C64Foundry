@@ -5,8 +5,8 @@
 #include <QFontMetricsF>
 #include <QPainter>
 #include <QPen>
-
 #include <QtMath>
+#include <QDebug>
 
 
 C64KeyboardKey::C64KeyboardKey(const C64Key key, const QString& label, const QRectF& rect)
@@ -14,6 +14,30 @@ C64KeyboardKey::C64KeyboardKey(const C64Key key, const QString& label, const QRe
     , m_label(label)
     , m_rect(rect)
 {
+}
+
+bool C64KeyboardKey::addLabel(const QString& svgResource, const C64KeyboardLabelPosition position, const C64KeyboardLabelModifier modifier)
+{
+    if (svgResource.isEmpty())
+    {
+        qWarning() << "C64KeyboardKey: Empty SVG resource for key:" << static_cast<int>(m_key);
+        return false;
+    }
+    for (const C64KeyboardKeyLabel& label : m_labels)
+    {
+        if (label.modifier == modifier)
+        {
+            qWarning() << "C64KeyboardKey: Duplicate label modifier for key:" << static_cast<int>(m_key);
+            return false;
+        }
+        if (label.modifier == C64KeyboardLabelModifier::Always || modifier == C64KeyboardLabelModifier::Always)
+        {
+            qWarning() << "C64KeyboardKey: Always cannot be combined with other labels for key:" << static_cast<int>(m_key);
+            return false;
+        }
+    }
+    m_labels.append({ svgResource, position, modifier });
+    return true;
 }
 
 bool C64KeyboardKey::setHovered(const bool bHovered)

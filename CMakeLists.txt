@@ -99,6 +99,7 @@ qt_add_executable(C64Foundry
     Gui/Keyboard/C64KeyboardLayout.h Gui/Keyboard/C64KeyboardLayout.cpp
     Gui/Keyboard/C64KeyboardKey.h Gui/Keyboard/C64KeyboardKey.cpp
     Gui/Keyboard/C64KeyboardModifiers.h
+    Gui/Keyboard/C64KeyboardKeyLabel.h
 )
 
 target_include_directories(C64Foundry
