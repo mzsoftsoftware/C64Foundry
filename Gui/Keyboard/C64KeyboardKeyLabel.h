@@ -27,7 +27,8 @@ enum class C64KeyboardLabelModifier
 enum class C64KeyboardLabelType
 {
     Text,
-    Graphic
+    Graphic,
+    Symbol
 };
 
 struct C64KeyboardKeyLabel

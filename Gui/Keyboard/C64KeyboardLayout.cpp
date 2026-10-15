@@ -76,9 +76,9 @@ C64KeyboardLayout::C64KeyboardLayout()
     addKey(C64Key::RightShift,      "SHIFT",  12.5, 3.0, 1.5);
 
     C64KeyboardKey* ptrKeyCursor = addKey(C64Key::CursorUpDown, "CRSR", 14.0, 3.0);
-    ptrKeyCursor->addLabel(QStringLiteral("⇑"), C64KeyboardLabelPosition::TopCenter, C64KeyboardLabelModifier::Shift);
+    ptrKeyCursor->addSymbolLabel(C64KeyboardSymbol::DoubleArrowUp, C64KeyboardLabelPosition::TopCenter, C64KeyboardLabelModifier::Shift);
     ptrKeyCursor->addLabel(QStringLiteral("CRSR"), C64KeyboardLabelPosition::Center, C64KeyboardLabelModifier::Always);
-    ptrKeyCursor->addLabel(QStringLiteral("⇓"), C64KeyboardLabelPosition::BottomCenter, C64KeyboardLabelModifier::None);
+    ptrKeyCursor->addSymbolLabel(C64KeyboardSymbol::DoubleArrowDown, C64KeyboardLabelPosition::BottomCenter, C64KeyboardLabelModifier::None);
 
     addKey(C64Key::CursorLeftRight, "CRSR",   15.0, 3.0);
 

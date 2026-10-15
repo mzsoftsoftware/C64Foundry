@@ -7,6 +7,7 @@
 #include "C64/Input/C64Keyboard.h"
 #include "C64KeyboardModifiers.h"
 #include "C64KeyboardKeyLabel.h"
+#include "C64KeyboardSymbol.h"
 
 class QPainter;
 
@@ -35,6 +36,7 @@ public:
     bool contains(const QPointF& position) const                    { return m_rect.contains(position); }
     bool addLabel(const QString& text, C64KeyboardLabelPosition position, C64KeyboardLabelModifier modifier);
     bool addGraphicLabel(C64KeyboardLabelPosition position, C64KeyboardLabelModifier modifier);
+    bool addSymbolLabel(C64KeyboardSymbol symbol, C64KeyboardLabelPosition position, C64KeyboardLabelModifier modifier);
 
     void paint(QPainter* ptrPainter) const;
 
