@@ -340,14 +340,14 @@ void C64KeyboardKey::paintLabels(QPainter* ptrPainter, const QRectF& rect) const
 
             if (textWidth > 0.0 && textHeight > 0.0)
             {
-                qreal textScale = qMin(labelRect.width() / textWidth, labelRect.height() / textHeight);
+                constexpr qreal TextScaleFactor = 1.15;
+                constexpr qreal TextHorizontalMargin = 0.04;
+                const qreal availableWidth = qMax(0.0, labelRect.width() - 2.0 * TextHorizontalMargin);
+                qreal textScale = qMin(availableWidth / textWidth, labelRect.height() / textHeight) * TextScaleFactor;
                 QPointF textCenter = labelRect.center();
 
-                // Normale Zeichen oben links etwas größer und näher am Rand.
                 if (label.position == C64KeyboardLabelPosition::TopLeft)
                 {
-                    textScale *= 1.15;
-
                     textCenter.rx() -= labelRect.width() * 0.08;
                     textCenter.ry() -= labelRect.height() * 0.08;
                 }

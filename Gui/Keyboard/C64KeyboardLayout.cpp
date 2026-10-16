@@ -18,8 +18,14 @@ C64KeyboardLayout::C64KeyboardLayout()
     addKey(C64Key::Plus,            "+",      11.25, 0.0);
     addKey(C64Key::Minus,           "-",      12.25, 0.0);
     addKey(C64Key::Pound,           "£",      13.25, 0.0);
-    addKey(C64Key::HomeClear,       "HOME",   14.25, 0.0);
-    addKey(C64Key::InsertDelete,    "DEL",    15.25, 0.0);
+
+    C64KeyboardKey* ptrKeyHomeClear = addKey(C64Key::HomeClear, "HOME", 14.25, 0.0);
+    ptrKeyHomeClear->addLabel(QStringLiteral("CLR"), C64KeyboardLabelPosition::TopCenter, C64KeyboardLabelModifier::Shift);
+    ptrKeyHomeClear->addLabel(QStringLiteral("HOME"), C64KeyboardLabelPosition::BottomCenter, C64KeyboardLabelModifier::None);
+
+    C64KeyboardKey* ptrKeyInsertDelete = addKey(C64Key::InsertDelete, "DEL", 15.25, 0.0);
+    ptrKeyInsertDelete->addLabel(QStringLiteral("INST"), C64KeyboardLabelPosition::TopCenter, C64KeyboardLabelModifier::Shift);
+    ptrKeyInsertDelete->addLabel(QStringLiteral("DEL"), C64KeyboardLabelPosition::BottomCenter, C64KeyboardLabelModifier::None);
 
     // Row 2
     addKey(C64Key::Control,         "CTRL",    0.25, 1.0, 1.5);
@@ -90,10 +96,22 @@ C64KeyboardLayout::C64KeyboardLayout()
     ptrKeySpace->addLabel(QStringLiteral("SPACE"), C64KeyboardLabelPosition::Center, C64KeyboardLabelModifier::Always);
 
     // Function keys
-    addKey(C64Key::F1F2,            "F1/F2",  16.75, 0.0, 1.5);
-    addKey(C64Key::F3F4,            "F3/F4",  16.75, 1.0, 1.5);
-    addKey(C64Key::F5F6,            "F5/F6",  16.75, 2.0, 1.5);
-    addKey(C64Key::F7F8,            "F7/F8",  16.75, 3.0, 1.5);
+    // Function keys
+    C64KeyboardKey* ptrKeyF1F2 = addKey(C64Key::F1F2, "F1/F2", 16.75, 0.0, 1.5);
+    ptrKeyF1F2->addLabel(QStringLiteral("F1"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyF1F2->addLabel(QStringLiteral("F2"), C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
+
+    C64KeyboardKey* ptrKeyF3F4 = addKey(C64Key::F3F4, "F3/F4", 16.75, 1.0, 1.5);
+    ptrKeyF3F4->addLabel(QStringLiteral("F3"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyF3F4->addLabel(QStringLiteral("F4"), C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
+
+    C64KeyboardKey* ptrKeyF5F6 = addKey(C64Key::F5F6, "F5/F6", 16.75, 2.0, 1.5);
+    ptrKeyF5F6->addLabel(QStringLiteral("F5"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyF5F6->addLabel(QStringLiteral("F6"), C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
+
+    C64KeyboardKey* ptrKeyF7F8 = addKey(C64Key::F7F8, "F7/F8", 16.75, 3.0, 1.5);
+    ptrKeyF7F8->addLabel(QStringLiteral("F7"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyF7F8->addLabel(QStringLiteral("F8"), C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     updateBounds();
 }
