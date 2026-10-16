@@ -10,5 +10,17 @@ enum class C64KeyboardSymbol
     DoubleArrowUp,
     DoubleArrowDown,
     DoubleArrowLeft,
-    DoubleArrowRight
+    DoubleArrowRight,
+
+    ColorBlack,
+    ColorWhite,
+    ColorRed,
+    ColorCyan,
+    ColorPurple,
+    ColorGreen,
+    ColorBlue,
+    ColorYellow,
+
+    ReverseOn,
+    ReverseOff
 };
