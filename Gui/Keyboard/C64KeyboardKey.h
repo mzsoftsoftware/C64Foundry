@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QRectF>
+#include <QColor>
 #include <QString>
 #include <QVector>
 
@@ -44,6 +45,7 @@ private:
     bool appendLabel(const C64KeyboardKeyLabel& label);
     QRectF calculateLabelRect(C64KeyboardLabelPosition position, const QRectF& rect) const;
     void paintLabels(QPainter* ptrPainter, const QRectF& rect) const;
+    QColor labelColor(const C64KeyboardLabelModifier modifier) const;
 
 private:
     C64Key m_key;

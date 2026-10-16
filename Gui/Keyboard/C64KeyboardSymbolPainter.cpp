@@ -43,6 +43,9 @@ void C64KeyboardSymbolPainter::paintSymbol(QPainter* ptrPainter, const C64Keyboa
     if (ptrPainter == nullptr || rect.isEmpty())
         return;
 
+    const bool dimmed = color != QColor(30, 30, 30);
+    const QColor inactiveColor(145, 137, 124);
+
     switch (symbol)
     {
     case C64KeyboardSymbol::ArrowUp:
@@ -57,35 +60,35 @@ void C64KeyboardSymbolPainter::paintSymbol(QPainter* ptrPainter, const C64Keyboa
         break;
 
     case C64KeyboardSymbol::ColorBlack:
-        paintSquare(ptrPainter, rect, QColor(0, 0, 0), true);
+        paintSquare(ptrPainter, rect, dimmed ? inactiveColor : QColor(0, 0, 0), true);
         break;
 
     case C64KeyboardSymbol::ColorWhite:
-        paintSquare(ptrPainter, rect, QColor(255, 255, 255), true);
+        paintSquare(ptrPainter, rect, dimmed ? inactiveColor : QColor(255, 255, 255), true);
         break;
 
     case C64KeyboardSymbol::ColorRed:
-        paintSquare(ptrPainter, rect, QColor(136, 0, 0), true);
+        paintSquare(ptrPainter, rect, dimmed ? inactiveColor : QColor(136, 0, 0), true);
         break;
 
     case C64KeyboardSymbol::ColorCyan:
-        paintSquare(ptrPainter, rect, QColor(170, 255, 238), true);
+        paintSquare(ptrPainter, rect, dimmed ? inactiveColor : QColor(170, 255, 238), true);
         break;
 
     case C64KeyboardSymbol::ColorPurple:
-        paintSquare(ptrPainter, rect, QColor(204, 68, 204), true);
+        paintSquare(ptrPainter, rect, dimmed ? inactiveColor : QColor(204, 68, 204), true);
         break;
 
     case C64KeyboardSymbol::ColorGreen:
-        paintSquare(ptrPainter, rect, QColor(0, 204, 85), true);
+        paintSquare(ptrPainter, rect, dimmed ? inactiveColor : QColor(0, 204, 85), true);
         break;
 
     case C64KeyboardSymbol::ColorBlue:
-        paintSquare(ptrPainter, rect, QColor(0, 0, 170), true);
+        paintSquare(ptrPainter, rect, dimmed ? inactiveColor : QColor(0, 0, 170), true);
         break;
 
     case C64KeyboardSymbol::ColorYellow:
-        paintSquare(ptrPainter, rect, QColor(238, 238, 119), true);
+        paintSquare(ptrPainter, rect, dimmed ? inactiveColor : QColor(238, 238, 119), true);
         break;
 
     case C64KeyboardSymbol::ReverseOn:
@@ -93,7 +96,7 @@ void C64KeyboardSymbolPainter::paintSymbol(QPainter* ptrPainter, const C64Keyboa
         break;
 
     case C64KeyboardSymbol::ReverseOff:
-        paintSquare(ptrPainter, rect, QColor(200, 190, 170), true, true);
+        paintSquare(ptrPainter, rect, dimmed ? inactiveColor : QColor(200, 190, 170), true, true);
         break;
     }
 }

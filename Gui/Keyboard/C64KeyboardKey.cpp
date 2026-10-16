@@ -293,8 +293,6 @@ void C64KeyboardKey::paintLabels(QPainter* ptrPainter, const QRectF& rect) const
     constexpr qreal MaximumTextHeight = 0.45;
     constexpr qreal MaximumMultilineTextHeight = 0.70;
 
-    const QColor color(30, 30, 30);
-
     // Gemeinsame Schrift für alle Textlabels dieser Taste.
     QFont font = ptrPainter->font();
     font.setBold(true);
@@ -351,6 +349,8 @@ void C64KeyboardKey::paintLabels(QPainter* ptrPainter, const QRectF& rect) const
 
         if (labelRect.isEmpty())
             continue;
+
+        const QColor color = labelColor(label.modifier);
 
         if (label.type == C64KeyboardLabelType::Graphic)
         {
@@ -429,4 +429,36 @@ void C64KeyboardKey::paintLabels(QPainter* ptrPainter, const QRectF& rect) const
             ptrPainter->restore();
         }
     }
+}
+
+QColor C64KeyboardKey::labelColor(const C64KeyboardLabelModifier modifier) const
+{
+    const QColor activeColor(30, 30, 30);
+    const QColor inactiveColor(145, 137, 124);
+
+    if (modifier == C64KeyboardLabelModifier::Always)
+        return activeColor;
+
+    const bool shiftActive = m_modifiers.isShiftActive();
+    const bool commodoreActive = m_modifiers.commodore;
+    const bool controlActive = m_modifiers.control;
+
+    const int activeModifierCount = static_cast<int>(shiftActive) + static_cast<int>(commodoreActive) + static_cast<int>(controlActive);
+
+    if (activeModifierCount == 0)
+        return activeColor;
+
+    if (activeModifierCount > 1)
+        return inactiveColor;
+
+    if (controlActive)
+        return inactiveColor;
+
+    if (shiftActive && modifier == C64KeyboardLabelModifier::Shift)
+        return activeColor;
+
+    if (commodoreActive && modifier == C64KeyboardLabelModifier::Commodore)
+        return activeColor;
+
+    return inactiveColor;
 }
