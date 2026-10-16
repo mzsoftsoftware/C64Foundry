@@ -283,9 +283,57 @@ void C64KeyboardKey::paintLabels(QPainter* ptrPainter, const QRectF& rect) const
         return;
 
     constexpr qreal SymbolMargin = 0.025;
+    constexpr qreal TextScaleFactor = 1.15;
+    constexpr qreal TextHorizontalMargin = 0.04;
+    constexpr qreal MaximumTextHeight = 0.45;
 
     const QColor color(30, 30, 30);
 
+    // Gemeinsame Schrift für alle Textlabels dieser Taste.
+    QFont font = ptrPainter->font();
+    font.setBold(true);
+    font.setPixelSize(100);
+
+    const QFontMetricsF metrics(font);
+    const qreal fontHeight = metrics.height();
+
+    // Kleinsten zulässigen Skalierungsfaktor aller Textlabels ermitteln.
+    // Dadurch erhalten alle Textlabels einer Taste dieselbe Schriftgröße.
+    qreal commonTextScale = 0.0;
+    bool hasTextLabel = false;
+
+    for (const C64KeyboardKeyLabel& label : m_labels)
+    {
+        if (label.type != C64KeyboardLabelType::Text)
+            continue;
+
+        const QRectF labelRect = calculateLabelRect(label.position, rect);
+
+        if (labelRect.isEmpty())
+            continue;
+
+        const qreal textWidth = metrics.horizontalAdvance(label.text);
+
+        if (textWidth <= 0.0 || fontHeight <= 0.0)
+            continue;
+
+        const qreal availableWidth = qMax(0.0, labelRect.width() - 2.0 * TextHorizontalMargin);
+        const qreal availableHeight = labelRect.height();
+
+        // Vergrößerung nur innerhalb der verfügbaren Fläche.
+        const qreal widthScale = availableWidth / textWidth;
+        const qreal heightScale = availableHeight / fontHeight;
+
+        qreal textScale = qMin(widthScale, heightScale) * TextScaleFactor;
+        textScale = qMin(textScale, MaximumTextHeight / fontHeight);
+
+        if (!hasTextLabel || textScale < commonTextScale)
+            commonTextScale = textScale;
+
+        hasTextLabel = true;
+    }
+
+    // Labels zeichnen.
     for (const C64KeyboardKeyLabel& label : m_labels)
     {
         const QRectF labelRect = calculateLabelRect(label.position, rect);
@@ -315,6 +363,7 @@ void C64KeyboardKey::paintLabels(QPainter* ptrPainter, const QRectF& rect) const
 
             ptrPainter->setPen(borderPen);
             ptrPainter->setBrush(Qt::NoBrush);
+
             ptrPainter->drawRect(symbolRect);
 
             C64KeyboardSymbolPainter::paintBitmap(ptrPainter, *ptrBitmap, bitmapRect, color);
@@ -325,44 +374,36 @@ void C64KeyboardKey::paintLabels(QPainter* ptrPainter, const QRectF& rect) const
         {
             C64KeyboardSymbolPainter::paintSymbol(ptrPainter, label.symbol, labelRect, color);
         }
-        else
+        else if (label.type == C64KeyboardLabelType::Text)
         {
+            if (!hasTextLabel || commonTextScale <= 0.0)
+                continue;
+
+            const qreal textWidth = metrics.horizontalAdvance(label.text);
+
+            if (textWidth <= 0.0 || fontHeight <= 0.0)
+                continue;
+
+            QPointF textCenter = labelRect.center();
+
+            // Normale Zeichen oben links etwas näher am oberen linken Rand.
+            if (label.position == C64KeyboardLabelPosition::TopLeft)
+            {
+                textCenter.rx() -= labelRect.width() * 0.08;
+                textCenter.ry() -= labelRect.height() * 0.08;
+            }
+
             ptrPainter->save();
 
-            QFont font = ptrPainter->font();
-            font.setBold(true);
-            font.setPixelSize(100);
             ptrPainter->setFont(font);
+            ptrPainter->setPen(color);
 
-            const QFontMetricsF metrics(font);
-            const qreal textWidth = metrics.horizontalAdvance(label.text);
-            const qreal textHeight = metrics.height();
+            ptrPainter->translate(textCenter);
+            ptrPainter->scale(commonTextScale, commonTextScale);
 
-            if (textWidth > 0.0 && textHeight > 0.0)
-            {
-                constexpr qreal TextScaleFactor = 1.15;
-                constexpr qreal TextHorizontalMargin = 0.04;
-                const qreal availableWidth = qMax(0.0, labelRect.width() - 2.0 * TextHorizontalMargin);
-                qreal textScale = qMin(availableWidth / textWidth, labelRect.height() / textHeight) * TextScaleFactor;
-                QPointF textCenter = labelRect.center();
+            const QRectF localTextRect(-textWidth / 2.0, -fontHeight / 2.0, textWidth, fontHeight);
 
-                if (label.position == C64KeyboardLabelPosition::TopLeft)
-                {
-                    textCenter.rx() -= labelRect.width() * 0.08;
-                    textCenter.ry() -= labelRect.height() * 0.08;
-                }
-
-                constexpr qreal MaximumTextHeight = 0.45;
-                textScale = qMin(textScale, MaximumTextHeight / textHeight);
-
-                ptrPainter->setPen(color);
-                ptrPainter->translate(textCenter);
-                ptrPainter->scale(textScale, textScale);
-
-                const QRectF localTextRect(-textWidth / 2.0, -textHeight / 2.0, textWidth, textHeight);
-
-                ptrPainter->drawText(localTextRect, Qt::AlignCenter, label.text);
-            }
+            ptrPainter->drawText(localTextRect, Qt::AlignCenter, label.text);
 
             ptrPainter->restore();
         }

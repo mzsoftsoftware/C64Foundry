@@ -28,7 +28,9 @@ C64KeyboardLayout::C64KeyboardLayout()
     ptrKeyInsertDelete->addLabel(QStringLiteral("DEL"), C64KeyboardLabelPosition::BottomCenter, C64KeyboardLabelModifier::None);
 
     // Row 2
-    addKey(C64Key::Control,         "CTRL",    0.25, 1.0, 1.5);
+    C64KeyboardKey* ptrKeyControl = addKey(C64Key::Control, "CTRL", 0.25, 1.0, 1.5);
+    ptrKeyControl->addLabel(QStringLiteral("CTRL"), C64KeyboardLabelPosition::Center, C64KeyboardLabelModifier::Always);
+
     addKey(C64Key::KeyQ,            "Q",       1.75, 1.0);
     addKey(C64Key::KeyW,            "W",       2.75, 1.0);
     addKey(C64Key::KeyE,            "E",       3.75, 1.0);
@@ -42,11 +44,16 @@ C64KeyboardLayout::C64KeyboardLayout()
     addKey(C64Key::At,              "@",      11.75, 1.0);
     addKey(C64Key::Asterisk,        "*",      12.75, 1.0);
     addKey(C64Key::ArrowUp,         "↑",      13.75, 1.0);
-    addKey(C64Key::Restore,         "RESTORE",14.75, 1.0, 1.5);
+
+    C64KeyboardKey* ptrKeyRestore = addKey(C64Key::Restore, "RESTORE", 14.75, 1.0, 1.5);
+    ptrKeyRestore->addLabel(QStringLiteral("RESTORE"), C64KeyboardLabelPosition::Center, C64KeyboardLabelModifier::Always);
 
     // Row 3
-    addKey(C64Key::RunStop,         "RUN",     0.0, 2.0);
-    addKey(C64Key::ShiftLock,       "LOCK",    1.0, 2.0);
+    C64KeyboardKey* ptrKeyRunStop = addKey(C64Key::RunStop, "RUN", 0.0, 2.0);
+    ptrKeyRunStop->addLabel(QStringLiteral("RUN\nSTOP"), C64KeyboardLabelPosition::Center, C64KeyboardLabelModifier::Always);
+
+    C64KeyboardKey* ptrKeyShiftLock = addKey(C64Key::ShiftLock, "LOCK", 1.0, 2.0);
+    ptrKeyShiftLock->addLabel(QStringLiteral("SHIFT\nLOCK"), C64KeyboardLabelPosition::Center, C64KeyboardLabelModifier::Always);
 
     C64KeyboardKey* ptrKeyA = addKey(C64Key::KeyA,            "A",       2.0, 2.0);
     ptrKeyA->addLabel(QStringLiteral("A"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
@@ -64,11 +71,17 @@ C64KeyboardLayout::C64KeyboardLayout()
     addKey(C64Key::Colon,           ":",      11.0, 2.0);
     addKey(C64Key::Semicolon,       ";",      12.0, 2.0);
     addKey(C64Key::Equals,          "=",      13.0, 2.0);
-    addKey(C64Key::Return,          "RETURN", 14.0, 2.0, 2.0);
+
+    C64KeyboardKey* ptrKeyReturn = addKey(C64Key::Return, "RETURN", 14.0, 2.0, 2.0);
+    ptrKeyReturn->addLabel(QStringLiteral("RETURN"), C64KeyboardLabelPosition::Center, C64KeyboardLabelModifier::Always);
 
     // Row 4
-    addKey(C64Key::Commodore,       "CBM",     0.0, 3.0);
-    addKey(C64Key::LeftShift,       "SHIFT",   1.0, 3.0, 1.5);
+    C64KeyboardKey* ptrKeyCommodore = addKey(C64Key::Commodore, "CBM", 0.0, 3.0);
+    ptrKeyCommodore->addLabel(QStringLiteral("CBM"), C64KeyboardLabelPosition::Center, C64KeyboardLabelModifier::Always);
+
+    C64KeyboardKey* ptrKeyLeftShift = addKey(C64Key::LeftShift, "SHIFT", 1.0, 3.0, 1.5);
+    ptrKeyLeftShift->addLabel(QStringLiteral("SHIFT"), C64KeyboardLabelPosition::Center, C64KeyboardLabelModifier::Always);
+
     addKey(C64Key::KeyZ,            "Z",       2.5, 3.0);
     addKey(C64Key::KeyX,            "X",       3.5, 3.0);
     addKey(C64Key::KeyC,            "C",       4.5, 3.0);
@@ -79,7 +92,9 @@ C64KeyboardLayout::C64KeyboardLayout()
     addKey(C64Key::Comma,           ",",       9.5, 3.0);
     addKey(C64Key::Period,          ".",      10.5, 3.0);
     addKey(C64Key::Slash,           "/",      11.5, 3.0);
-    addKey(C64Key::RightShift,      "SHIFT",  12.5, 3.0, 1.5);
+
+    C64KeyboardKey* ptrKeyRightShift = addKey(C64Key::RightShift, "SHIFT", 12.5, 3.0, 1.5);
+    ptrKeyRightShift->addLabel(QStringLiteral("SHIFT"), C64KeyboardLabelPosition::Center, C64KeyboardLabelModifier::Always);
 
     C64KeyboardKey* ptrKeyCursorUpDown = addKey(C64Key::CursorUpDown, "CRSR", 14.0, 3.0);
     ptrKeyCursorUpDown->addSymbolLabel(C64KeyboardSymbol::DoubleArrowUp, C64KeyboardLabelPosition::TopCenter, C64KeyboardLabelModifier::Shift);
