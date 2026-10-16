@@ -1,109 +1,95 @@
 # C64Foundry
 
-C64Foundry is a C64 development environment with an integrated C64 emulator, editor and debugger.
+C64Foundry is an early-stage, Qt 6/C++ Commodore 64 emulator intended to become an integrated C64 software development environment. The project currently provides an emulator core, a desktop control interface, video output and host/virtual keyboard input. An editor, assembler/compiler integration, file-device support and development debugger are not yet available.
 
-The project is developed in C++ and Qt 6 and is intended to provide an integrated development environment specifically for the Commodore 64.
+> **Status:** Work in progress. This is not a complete or cycle-perfect C64 emulator. Functionality described below is based on the implementation in the supplied repository snapshot, not a claim of general software compatibility.
 
-## Status
+## Currently implemented
 
-**Early development**
+### Emulator core
 
-C64Foundry is currently in the initial development phase. The project structure and basic application foundation are being established before the C64 emulation core is implemented.
+- MOS 6510 CPU with a micro-operation/instruction-table implementation, documented and numerous undocumented operations, CPU port behavior, reset, IRQ and NMI handling, and bus-cycle support.
+- 64 KiB RAM, BASIC/KERNAL/character ROM loading, color RAM, CPU-port-controlled memory banking and VIC-II memory access.
+- CIA 6526 port and data-direction registers, Timer A and interrupt-mask/status handling. Other CIA functions remain incomplete.
+- Two CIA instances, keyboard matrix input via CIA1, and RESTORE-driven NMI.
+- VIC-II raster timing, raster IRQ, badline logic, BA/AEC bus arbitration, screen/character fetches, border behavior and a basic high-resolution character-pixel pipeline.
+- Triple-buffered VIC-II frame data with a separate video worker that converts C64 color indices into Qt images.
+- PAL, NTSC and old-NTSC timing definitions in the core. Runtime selection is not yet exposed as a user setting.
+- Direct program-byte loading into RAM at a caller-supplied address via `C64Machine::loadProgram()`. This is **not** a PRG-file loader.
 
-## Goals
+### Desktop application
 
-C64Foundry is intended to combine the tools needed for C64 development in a single application:
+- Qt Widgets main window with dockable emulator controls, video display and virtual C64 keyboard.
+- Start, stop, reset, speed selection (0.5×, 1×, 2×, 5×, warp) and execution statistics.
+- Saved and restored dock/window layout, including a layout-reset action.
+- Physical keyboard input using native scan codes on **Linux Wayland**.
+- Momentary and toggle mappings, multi-key mappings, physical/virtual input aggregation and key-state synchronization.
+- Interactive virtual keyboard with mouse input, latched modifiers, key legends and visual pressed/hovered states.
+- Configuration persistence for ROM paths, active configuration, platform identity and keyboard mapping overrides.
+- Embedded OpenROMs as the default ROM set; optional detection of VICE ROM files at `/usr/share/vice/C64`.
 
-* C64 emulator
-* C64 monitor
-* source code editor
-* debugger
-* disassembler
-* assembler/compiler integration
-* project management
-* disk image support
-* C64 hardware and memory inspection
+### Important limitations
 
-The emulator will be implemented specifically for C64 hardware and will not depend on SDL or other multimedia frameworks.
+- The VIC-II currently renders a basic character-pixel path; bitmap/multicolor/extended-background modes and actual sprite rendering are missing. Several sprite-related registers can be read/written without corresponding sprite rendering.
+- CIA Timer B, TOD, serial shift, alarm and other advanced behavior are not implemented.
+- No SID sound synthesis or audio output.
+- No `.prg` file import workflow, IEC device, 1541 drive, disk-image handling, GeoRAM or REU.
+- No integrated source editor, project manager, assembler/compiler pipeline or debugger.
+- Keyboard mappings for X11, Windows and macOS are not implemented; the application explicitly rejects unsupported keyboard platforms.
+- Saved keyboard overrides exist in the data model but there is no configuration editor for them.
+- ROM loading and machine timing are not yet presented as complete interactive configuration workflows.
+
+## Requirements
+
+- CMake 3.19 or newer
+- C++ compiler supported by Qt 6
+- Qt 6.5 or newer with Core, Widgets and LinguistTools
+- Linux Wayland for the currently supported keyboard input backend
+
+The application is built with strict compiler warnings (`-Wall -Wextra -Wpedantic -Werror`). Other operating systems are not currently supported as runnable keyboard-enabled targets.
+
+## Build
+
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+cmake --build build --parallel
+./build/C64Foundry
+```
+
+The exact executable location may vary with the CMake generator and build configuration. No Docker setup is required.
+
+## Getting started
+
+1. Build and launch under a Linux Wayland session.
+2. The application creates a default configuration with embedded OpenROMs on first run.
+3. If a compatible VICE installation exists in the expected system directory, an additional ROM configuration can be detected.
+4. Use the emulator control dock to start, stop or reset the machine and select its execution speed.
+5. Use the physical keyboard or virtual C64 keyboard to send input; dock panels can be moved, hidden or floated.
+
+**Note:** The application does not yet provide a GUI to switch between stored machine configurations or load a PRG file.
 
 ## Architecture
 
-The project is designed to separate the C64 emulation core from the Qt-based application and user interface.
+| Directory | Responsibility |
+| --- | --- |
+| `C64/CPU` | MOS 6510 execution and instruction micro-operations |
+| `C64/Bus`, `C64/Memory` | Address decoding, banking and memory devices |
+| `C64/CIA`, `C64/VIC-II`, `C64/Input` | C64 hardware and keyboard matrix |
+| `Emulator` | Worker thread, command processing and speed regulation |
+| `Input/Keyboard` | Host and virtual keyboard event aggregation |
+| `Output/Video` | Frame acquisition and image conversion |
+| `Gui` | Emulator controls, keyboard and video widgets |
+| `Configuration` | Platform identification, ROM detection and persistent settings |
+| `App` | Application initialization and main window |
+| `Resources` | Embedded ROM resources and licenses |
+| `Tools` | Development utilities |
 
-The planned high-level architecture is:
+The emulator core is a separate static library (`C64FoundryCore`). The Qt application owns the emulator and video workers and connects them to dockable widgets.
 
-```text
-C64Foundry
-├── Core
-│   ├── CPU 6510
-│   ├── Memory
-│   ├── VIC-II
-│   ├── CIA
-│   ├── SID
-│   ├── IEC
-│   ├── Disk Drive 1541
-│   └── C64
-│
-├── Emulator
-│
-├── Debugger
-│
-└── GUI
-    ├── Main Window
-    ├── Project
-    ├── Editor
-    ├── C64 Monitor
-    ├── Debugger
-    ├── Registers
-    ├── Memory
-    ├── Disassembler
-    └── Output
-```
+## Development direction
 
-The emulation core is intended to remain independent of Qt wherever practical. Qt 6 is used for the application, graphical user interface, input handling and audio/video output.
+The next focus is practical program loading and completing missing emulator functionality required by C64 software. Expansion memory, storage access, project/editor integration and development-oriented debugging follow in stages. See [TODO.md](TODO.md) for actionable work and [ROADMAP.md](ROADMAP.md) for milestones.
 
-## C64 Emulator
+## Licensing
 
-The emulator is an independent implementation.
-
-Its development is informed by publicly available C64 hardware and software documentation and by studying existing C64 emulators and related projects, including [VICE](https://vice-emu.sourceforge.io/) and [Emu64](https://github.com/ThKattan/emu64).
-
-No source code from these projects is intended to be used in C64Foundry.
-
-Technical references are documented in [docs/REFERENCES.md](docs/REFERENCES.md).
-
-## Technology
-
-* C++
-* C++20
-* Qt 6
-* CMake
-* Native Qt Widgets
-* No SDL / SDL2 dependency
-
-## Building
-
-C64Foundry uses CMake and requires Qt 6.
-
-A typical build can be performed with:
-
-```bash
-cmake -S . -B build
-cmake --build build
-```
-
-The project is primarily developed and tested on Linux.
-
-## Development
-
-C64Foundry is developed as a modular project. The emulator core, debugger and graphical user interface are kept as separate areas of the codebase to make the emulator usable independently of the GUI where practical.
-
-Development decisions and architectural information are documented in the `docs` directory.
-
-## License
-
-C64Foundry is licensed under the Apache License 2.0.
-
-See the [LICENSE](LICENSE) file for the full license text.
-
-Copyright © 2026 MZ Software GmbH.
+C64Foundry is distributed under the repository's [GPL-3.0 license](LICENSE). The bundled OpenROMs have their own license, included under `Resources/ROMs/OpenROMs/LICENSE`. Review both before redistributing binaries.
