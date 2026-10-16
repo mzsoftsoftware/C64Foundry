@@ -86,39 +86,63 @@ C64KeyboardLayout::C64KeyboardLayout()
 
     C64KeyboardKey* ptrKeyQ = addKey(C64Key::KeyQ, "Q", 1.75, 1.0);
     ptrKeyQ->addLabel(QStringLiteral("Q"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyQ->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyQ->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyW = addKey(C64Key::KeyW, "W", 2.75, 1.0);
     ptrKeyW->addLabel(QStringLiteral("W"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyW->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyW->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyE = addKey(C64Key::KeyE, "E", 3.75, 1.0);
     ptrKeyE->addLabel(QStringLiteral("E"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyE->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyE->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyR = addKey(C64Key::KeyR, "R", 4.75, 1.0);
     ptrKeyR->addLabel(QStringLiteral("R"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyR->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyR->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyT = addKey(C64Key::KeyT, "T", 5.75, 1.0);
     ptrKeyT->addLabel(QStringLiteral("T"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyT->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyT->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyY = addKey(C64Key::KeyY, "Y", 6.75, 1.0);
     ptrKeyY->addLabel(QStringLiteral("Y"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyY->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyY->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyU = addKey(C64Key::KeyU, "U", 7.75, 1.0);
     ptrKeyU->addLabel(QStringLiteral("U"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyU->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyU->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyI = addKey(C64Key::KeyI, "I", 8.75, 1.0);
     ptrKeyI->addLabel(QStringLiteral("I"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyI->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyI->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyO = addKey(C64Key::KeyO, "O", 9.75, 1.0);
     ptrKeyO->addLabel(QStringLiteral("O"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyO->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyO->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyP = addKey(C64Key::KeyP, "P", 10.75, 1.0);
     ptrKeyP->addLabel(QStringLiteral("P"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyP->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyP->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyAt = addKey(C64Key::At, "@", 11.75, 1.0);
     ptrKeyAt->addLabel(QStringLiteral("@"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyAt->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyAt->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyAsterisk = addKey(C64Key::Asterisk, "*", 12.75, 1.0);
     ptrKeyAsterisk->addLabel(QStringLiteral("*"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyAsterisk->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyAsterisk->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyArrowUp = addKey(C64Key::ArrowUp, "↑", 13.75, 1.0);
     ptrKeyArrowUp->addSymbolLabel(C64KeyboardSymbol::ArrowUp, C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
@@ -141,27 +165,43 @@ C64KeyboardLayout::C64KeyboardLayout()
 
     C64KeyboardKey* ptrKeyS = addKey(C64Key::KeyS, "S", 3.0, 2.0);
     ptrKeyS->addLabel(QStringLiteral("S"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyS->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyS->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyD = addKey(C64Key::KeyD, "D", 4.0, 2.0);
     ptrKeyD->addLabel(QStringLiteral("D"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyD->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyD->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyF = addKey(C64Key::KeyF, "F", 5.0, 2.0);
     ptrKeyF->addLabel(QStringLiteral("F"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyF->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyF->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyG = addKey(C64Key::KeyG, "G", 6.0, 2.0);
     ptrKeyG->addLabel(QStringLiteral("G"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyG->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyG->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyH = addKey(C64Key::KeyH, "H", 7.0, 2.0);
     ptrKeyH->addLabel(QStringLiteral("H"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyH->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyH->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyJ = addKey(C64Key::KeyJ, "J", 8.0, 2.0);
     ptrKeyJ->addLabel(QStringLiteral("J"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyJ->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyJ->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyK = addKey(C64Key::KeyK, "K", 9.0, 2.0);
     ptrKeyK->addLabel(QStringLiteral("K"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyK->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyK->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyL = addKey(C64Key::KeyL, "L", 10.0, 2.0);
     ptrKeyL->addLabel(QStringLiteral("L"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyL->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyL->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyColon = addKey(C64Key::Colon, ":", 11.0, 2.0);
     ptrKeyColon->addLabel(QStringLiteral(":"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
@@ -186,24 +226,38 @@ C64KeyboardLayout::C64KeyboardLayout()
 
     C64KeyboardKey* ptrKeyZ = addKey(C64Key::KeyZ, "Z", 2.5, 3.0);
     ptrKeyZ->addLabel(QStringLiteral("Z"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyZ->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyZ->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyX = addKey(C64Key::KeyX, "X", 3.5, 3.0);
     ptrKeyX->addLabel(QStringLiteral("X"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyX->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyX->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyC = addKey(C64Key::KeyC, "C", 4.5, 3.0);
     ptrKeyC->addLabel(QStringLiteral("C"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyC->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyC->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyV = addKey(C64Key::KeyV, "V", 5.5, 3.0);
     ptrKeyV->addLabel(QStringLiteral("V"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyV->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyV->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyB = addKey(C64Key::KeyB, "B", 6.5, 3.0);
     ptrKeyB->addLabel(QStringLiteral("B"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyB->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyB->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyN = addKey(C64Key::KeyN, "N", 7.5, 3.0);
     ptrKeyN->addLabel(QStringLiteral("N"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyN->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyN->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyM = addKey(C64Key::KeyM, "M", 8.5, 3.0);
     ptrKeyM->addLabel(QStringLiteral("M"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyM->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyM->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyComma = addKey(C64Key::Comma, ",", 9.5, 3.0);
     ptrKeyComma->addLabel(QStringLiteral(","), C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::None);
