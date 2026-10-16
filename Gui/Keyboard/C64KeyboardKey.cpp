@@ -281,6 +281,9 @@ QRectF C64KeyboardKey::calculateLabelRect(const C64KeyboardLabelPosition positio
 
 void C64KeyboardKey::paintLabels(QPainter* ptrPainter, const QRectF& rect) const
 {
+    constexpr qreal GraphicHorizontalOffset = 0.015;
+    constexpr qreal GraphicBorderWidth = 0.008;
+
     if (ptrPainter == nullptr || m_labels.isEmpty() || rect.isEmpty())
         return;
 
@@ -357,7 +360,15 @@ void C64KeyboardKey::paintLabels(QPainter* ptrPainter, const QRectF& rect) const
                 continue;
 
             const qreal size = qMin(labelRect.width(), labelRect.height());
-            const QRectF symbolRect(labelRect.center().x() - size / 2.0, labelRect.center().y() - size / 2.0, size, size);
+
+            QPointF symbolCenter = labelRect.center();
+
+            if (label.position == C64KeyboardLabelPosition::BottomLeft)
+                symbolCenter.rx() -= GraphicHorizontalOffset;
+            else if (label.position == C64KeyboardLabelPosition::BottomRight)
+                symbolCenter.rx() += GraphicHorizontalOffset;
+
+            const QRectF symbolRect(symbolCenter.x() - size / 2.0, symbolCenter.y() - size / 2.0, size, size);
             const QRectF bitmapRect = symbolRect.adjusted(SymbolMargin, SymbolMargin, -SymbolMargin, -SymbolMargin);
 
             if (bitmapRect.isEmpty())
@@ -366,8 +377,7 @@ void C64KeyboardKey::paintLabels(QPainter* ptrPainter, const QRectF& rect) const
             ptrPainter->save();
 
             QPen borderPen(color);
-            borderPen.setWidth(0);
-            borderPen.setCosmetic(true);
+            borderPen.setWidthF(GraphicBorderWidth);
 
             ptrPainter->setPen(borderPen);
             ptrPainter->setBrush(Qt::NoBrush);
