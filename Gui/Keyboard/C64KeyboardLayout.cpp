@@ -59,12 +59,18 @@ C64KeyboardLayout::C64KeyboardLayout()
 
     C64KeyboardKey* ptrKeyPlus = addKey(C64Key::Plus, "+", 11.25, 0.0);
     ptrKeyPlus->addLabel(QStringLiteral("+"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyPlus->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyPlus->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyMinus = addKey(C64Key::Minus, "-", 12.25, 0.0);
     ptrKeyMinus->addLabel(QStringLiteral("-"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyMinus->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyMinus->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyPound = addKey(C64Key::Pound, "£", 13.25, 0.0);
     ptrKeyPound->addLabel(QStringLiteral("£"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
+    ptrKeyPound->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyPound->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyHomeClear = addKey(C64Key::HomeClear, "HOME", 14.25, 0.0);
     ptrKeyHomeClear->addLabel(QStringLiteral("CLR"), C64KeyboardLabelPosition::TopCenter, C64KeyboardLabelModifier::Shift);
@@ -130,8 +136,8 @@ C64KeyboardLayout::C64KeyboardLayout()
 
     C64KeyboardKey* ptrKeyA = addKey(C64Key::KeyA, "A", 2.0, 2.0);
     ptrKeyA->addLabel(QStringLiteral("A"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
-    ptrKeyA->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
     ptrKeyA->addGraphicLabel(C64KeyboardLabelPosition::BottomLeft, C64KeyboardLabelModifier::Commodore);
+    ptrKeyA->addGraphicLabel(C64KeyboardLabelPosition::BottomRight, C64KeyboardLabelModifier::Shift);
 
     C64KeyboardKey* ptrKeyS = addKey(C64Key::KeyS, "S", 3.0, 2.0);
     ptrKeyS->addLabel(QStringLiteral("S"), C64KeyboardLabelPosition::TopLeft, C64KeyboardLabelModifier::None);
