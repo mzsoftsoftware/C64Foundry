@@ -75,12 +75,15 @@ C64KeyboardLayout::C64KeyboardLayout()
     addKey(C64Key::Slash,           "/",      11.5, 3.0);
     addKey(C64Key::RightShift,      "SHIFT",  12.5, 3.0, 1.5);
 
-    C64KeyboardKey* ptrKeyCursor = addKey(C64Key::CursorUpDown, "CRSR", 14.0, 3.0);
-    ptrKeyCursor->addSymbolLabel(C64KeyboardSymbol::DoubleArrowUp, C64KeyboardLabelPosition::TopCenter, C64KeyboardLabelModifier::Shift);
-    ptrKeyCursor->addLabel(QStringLiteral("CRSR"), C64KeyboardLabelPosition::Center, C64KeyboardLabelModifier::Always);
-    ptrKeyCursor->addSymbolLabel(C64KeyboardSymbol::DoubleArrowDown, C64KeyboardLabelPosition::BottomCenter, C64KeyboardLabelModifier::None);
+    C64KeyboardKey* ptrKeyCursorUpDown = addKey(C64Key::CursorUpDown, "CRSR", 14.0, 3.0);
+    ptrKeyCursorUpDown->addSymbolLabel(C64KeyboardSymbol::DoubleArrowUp, C64KeyboardLabelPosition::TopCenter, C64KeyboardLabelModifier::Shift);
+    ptrKeyCursorUpDown->addLabel(QStringLiteral("CRSR"), C64KeyboardLabelPosition::Center, C64KeyboardLabelModifier::Always);
+    ptrKeyCursorUpDown->addSymbolLabel(C64KeyboardSymbol::DoubleArrowDown, C64KeyboardLabelPosition::BottomCenter, C64KeyboardLabelModifier::None);
 
-    addKey(C64Key::CursorLeftRight, "CRSR",   15.0, 3.0);
+    C64KeyboardKey* ptrKeyCursorLeftRight = addKey(C64Key::CursorLeftRight, "CRSR", 15.0, 3.0);
+    ptrKeyCursorLeftRight->addSymbolLabel(C64KeyboardSymbol::DoubleArrowLeft, C64KeyboardLabelPosition::TopCenter, C64KeyboardLabelModifier::Shift);
+    ptrKeyCursorLeftRight->addLabel(QStringLiteral("CRSR"), C64KeyboardLabelPosition::Center, C64KeyboardLabelModifier::Always);
+    ptrKeyCursorLeftRight->addSymbolLabel(C64KeyboardSymbol::DoubleArrowRight, C64KeyboardLabelPosition::BottomCenter, C64KeyboardLabelModifier::None);
 
     // Space bar
     C64KeyboardKey* ptrKeySpace = addKey(C64Key::Space, "SPACE", 2.75, 4.0, 9.0);

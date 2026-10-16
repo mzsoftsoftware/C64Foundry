@@ -33,8 +33,6 @@ bool C64KeyboardKey::addLabel(const QString& text, const C64KeyboardLabelPositio
     label.modifier = modifier;
     return appendLabel(label);
 }
-
-
 bool C64KeyboardKey::addGraphicLabel(const C64KeyboardLabelPosition position, const C64KeyboardLabelModifier modifier)
 {
     if (modifier != C64KeyboardLabelModifier::Shift && modifier != C64KeyboardLabelModifier::Commodore)
@@ -53,6 +51,17 @@ bool C64KeyboardKey::addGraphicLabel(const C64KeyboardLabelPosition position, co
     label.modifier = modifier;
     return appendLabel(label);
 }
+bool C64KeyboardKey::addSymbolLabel(const C64KeyboardSymbol symbol, const C64KeyboardLabelPosition position, const C64KeyboardLabelModifier modifier)
+{
+    C64KeyboardKeyLabel label;
+    label.type = C64KeyboardLabelType::Symbol;
+    label.symbol = symbol;
+    label.position = position;
+    label.modifier = modifier;
+
+    return appendLabel(label);
+}
+
 bool C64KeyboardKey::appendLabel(const C64KeyboardKeyLabel& label)
 {
     for (const C64KeyboardKeyLabel& existingLabel : m_labels)
@@ -108,7 +117,7 @@ void C64KeyboardKey::paint(QPainter* ptrPainter) const
 {
     constexpr qreal KeyMargin = 0.04;
     constexpr qreal KeyRadius = 0.08;
-    constexpr qreal TextMargin = 0.12;
+    constexpr qreal TextMargin = 0.08;
 
     const QRectF keyRect = m_rect.adjusted(KeyMargin, KeyMargin, -KeyMargin, -KeyMargin);
     const QRectF textRect = keyRect.adjusted(TextMargin, TextMargin, -TextMargin, -TextMargin);
@@ -160,7 +169,7 @@ void C64KeyboardKey::paint(QPainter* ptrPainter) const
 QRectF C64KeyboardKey::calculateLabelRect(const C64KeyboardLabelPosition position, const QRectF& rect) const
 {
     constexpr qreal MinimumCenterSize = 0.04;
-    constexpr qreal CenterTextHeight = 0.18;
+    constexpr qreal CenterTextHeight = 0.24;
 
     if (rect.isEmpty())
         return QRectF();
@@ -311,6 +320,10 @@ void C64KeyboardKey::paintLabels(QPainter* ptrPainter, const QRectF& rect) const
             C64KeyboardSymbolPainter::paintBitmap(ptrPainter, *ptrBitmap, bitmapRect, color);
 
             ptrPainter->restore();
+        }
+        else if (label.type == C64KeyboardLabelType::Symbol)
+        {
+            C64KeyboardSymbolPainter::paintSymbol(ptrPainter, label.symbol, labelRect, color);
         }
         else
         {

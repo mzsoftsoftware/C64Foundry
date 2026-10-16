@@ -2,6 +2,8 @@
 
 #include <QString>
 
+#include "C64KeyboardSymbol.h"
+
 
 enum class C64KeyboardLabelPosition
 {
@@ -34,6 +36,7 @@ enum class C64KeyboardLabelType
 struct C64KeyboardKeyLabel
 {
     C64KeyboardLabelType type = C64KeyboardLabelType::Text;
+    C64KeyboardSymbol symbol = C64KeyboardSymbol::ArrowUp;
 
     QString text;
 
