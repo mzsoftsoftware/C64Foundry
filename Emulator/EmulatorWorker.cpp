@@ -227,6 +227,7 @@ bool EmulatorWorker::processRequests()
         m_bPowerOffRequested = false;
         m_bSoftResetRequested = false;
         m_bHardResetRequested = false;
+        m_bPauseRequested = false;
         m_bSpeedRequested = false;
     }
 
@@ -264,24 +265,6 @@ bool EmulatorWorker::processRequests()
                 break;
             }
         }
-    }
-
-    if (bProgramRequested)
-    {
-        const bool bLoaded = m_ptrMachine->loadProgram(programAddressRequested, programDataRequested);
-        if (bLoaded)
-        {
-            const quint32 endAddress = static_cast<quint32>(programAddressRequested) + static_cast<quint32>(programDataRequested.size());
-            m_ptrMachine->setBasicProgramEnd(static_cast<quint16>(endAddress & 0xFFFF));
-            qDebug() << "EmulatorWorker: program loaded"
-                     << "start:" << Qt::hex << programAddressRequested
-                     << "end:" << endAddress;
-        }
-        else
-        {
-            qWarning() << "EmulatorWorker: program could not be loaded";
-        }
-        emit programLoaded(bLoaded);
     }
 
     // PowerOff hat Vorrang vor PowerOn.
@@ -343,6 +326,24 @@ bool EmulatorWorker::processRequests()
             m_ptrMachine->softReset();
             bRestartTiming = m_state == Emulator::State::Running;
         }
+    }
+
+    if (bProgramRequested)
+    {
+        bool bLoaded = false;
+
+        if (m_state == Emulator::State::Paused)
+        {
+            bLoaded = m_ptrMachine->loadProgram(programAddressRequested, programDataRequested);
+
+            if (bLoaded)
+            {
+                const quint32 endAddress = static_cast<quint32>(programAddressRequested) + static_cast<quint32>(programDataRequested.size());
+                m_ptrMachine->setBasicProgramEnd(static_cast<quint16>(endAddress & 0xFFFF));
+            }
+        }
+
+        emit programLoaded(bLoaded);
     }
 
     // Geschwindigkeit.
