@@ -1,0 +1,4 @@
+#ifndef EMULATORSTATE_H
+#define EMULATORSTATE_H
+
+#endif // EMULATORSTATE_H

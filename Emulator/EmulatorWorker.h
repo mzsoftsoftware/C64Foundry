@@ -11,6 +11,7 @@
 #include "Input/InputEvent.h"
 
 class C64Machine;
+class IECBus;
 #include "C64/C64ROMSet.h"
 
 
@@ -18,7 +19,7 @@ class EmulatorWorker : public QObject
 {
     Q_OBJECT
 public:
-    explicit EmulatorWorker(QObject *parent = nullptr);
+    explicit EmulatorWorker(IECBus* ptrIECBus, QObject* parent = nullptr);
     virtual ~EmulatorWorker();
 
     // Getter

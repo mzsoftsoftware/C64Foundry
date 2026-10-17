@@ -7,17 +7,22 @@ C64CIA2Port::C64CIA2Port()
 
 C64CIA2Port::~C64CIA2Port()
 {
-    if (m_ptrIECBus)
-        m_ptrIECBus->removeParticipant(m_participantId);
+    setIECBus(nullptr);
 }
 
 void C64CIA2Port::setIECBus(IECBus* ptrIECBus)
 {
-    Q_ASSERT(m_ptrIECBus == nullptr);
-    Q_ASSERT(ptrIECBus != nullptr);
+    if (m_ptrIECBus == ptrIECBus)
+        return;
+
+    if (m_ptrIECBus != nullptr)
+        m_ptrIECBus->removeParticipant(m_participantId);
 
     m_ptrIECBus = ptrIECBus;
-    m_participantId = m_ptrIECBus->addParticipant();
+    m_participantId = 0;
+
+    if (m_ptrIECBus != nullptr)
+        m_participantId = m_ptrIECBus->addParticipant();
 }
 
 quint8 C64CIA2Port::portAInputs(quint8 portBOutput) const

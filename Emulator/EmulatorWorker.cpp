@@ -7,10 +7,12 @@
 #include "C64/C64Timing.h"
 
 
-EmulatorWorker::EmulatorWorker(QObject *parent)
+EmulatorWorker::EmulatorWorker(IECBus* ptrIECBus, QObject* parent)
     : QObject{parent}
 {
     m_ptrMachine = new C64Machine();
+
+    m_ptrMachine->setIECBus(ptrIECBus);
     m_ptrMachine->powerOn();
 
     qDebug() << "EmulatorWorker: created and powered";

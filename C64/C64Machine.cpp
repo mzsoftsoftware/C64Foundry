@@ -35,9 +35,7 @@ C64Machine::C64Machine()
     m_ptrCIA1Port = new C64CIA1Port();
     m_ptrCIA1Port->setKeyboard(m_ptrKeyboard);
 
-    m_ptrIECBus = new IECBus();
     m_ptrCIA2Port = new C64CIA2Port();
-    m_ptrCIA2Port->setIECBus(m_ptrIECBus);
 
     m_ptrCIA1->setPort(m_ptrCIA1Port);
     m_ptrCIA2->setPort(m_ptrCIA2Port);
@@ -45,8 +43,6 @@ C64Machine::C64Machine()
 C64Machine::~C64Machine()
 {
     delete m_ptrCIA2Port;
-    delete m_ptrIECBus;
-
     delete m_ptrCIA1Port;
     delete m_ptrKeyboard;
 
@@ -58,6 +54,10 @@ C64Machine::~C64Machine()
     delete m_ptrBus;
 }
 
+void C64Machine::setIECBus(IECBus* ptrIECBus)
+{
+    m_ptrCIA2Port->setIECBus(ptrIECBus);
+}
 bool C64Machine::loadROMSet(const C64ROMSet& romSet)
 {
     //
@@ -177,7 +177,6 @@ void C64Machine::keyRelease(C64Key key)
     }
     m_ptrKeyboard->release(key);
 }
-
 
 void C64Machine::setTiming(const C64::Timing& timing)
 {

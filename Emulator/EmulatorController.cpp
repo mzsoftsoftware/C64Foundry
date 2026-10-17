@@ -5,13 +5,16 @@
 #include "Emulator/EmulatorThread.h"
 #include "Emulator/EmulatorWorker.h"
 
+#include "C64/IEC/IECBus.h"
+
 
 EmulatorController::EmulatorController(QObject *parent)
     : QObject{parent}
 {
     qDebug() << "EmulatorController: created" << QThread::currentThreadId();
 
-    m_ptrWorker = new EmulatorWorker();
+    m_ptrIECBus = new IECBus();
+    m_ptrWorker = new EmulatorWorker(m_ptrIECBus);
     m_ptrThread = new EmulatorThread(m_ptrWorker, this);
 
     connect(m_ptrWorker, &EmulatorWorker::romSetLoaded, this, &EmulatorController::romSetLoaded);

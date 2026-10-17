@@ -23,6 +23,7 @@ public:
     virtual ~C64Machine();
 
     // Operations
+    void setIECBus(IECBus* ptrIECBus);
     bool loadROMSet(const C64ROMSet& romSet);
     bool loadProgram(quint16 address, const QByteArray& data);
     void setBasicProgramEnd(quint16 endAddress);
@@ -82,8 +83,6 @@ public:
     quint16 videoFrameWidth() const;
     quint16 videoFrameHeight() const;
 
-    IECBus* iecBus()                { return m_ptrIECBus; }
-
 private:
     C64::Timing     m_timing = C64::PALTiming;
     quint64         m_cycles = 0;
@@ -104,6 +103,4 @@ private:
 
     C64Keyboard*    m_ptrKeyboard = nullptr;
     bool            m_restorePressed = false;
-
-    IECBus*         m_ptrIECBus = nullptr;
 };

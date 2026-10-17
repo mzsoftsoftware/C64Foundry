@@ -17,11 +17,10 @@ C64MachineIECTest::~C64MachineIECTest()
 
 void C64MachineIECTest::testInitialIECLineStates()
 {
+    IECBus bus;
     C64Machine machine;
-
-    IECBus* ptrBus = machine.iecBus();
-
-    QVERIFY(ptrBus != nullptr);
+    machine.setIECBus(&bus);
+    IECBus* ptrBus = &bus;
 
     QVERIFY(ptrBus->lineHigh(IECBus::Line::ATN));
     QVERIFY(ptrBus->lineHigh(IECBus::Line::CLK));
@@ -30,11 +29,10 @@ void C64MachineIECTest::testInitialIECLineStates()
 
 void C64MachineIECTest::testCIA2IECOutputs()
 {
+    IECBus bus;
     C64Machine machine;
-
-    IECBus* ptrBus = machine.iecBus();
-
-    QVERIFY(ptrBus != nullptr);
+    machine.setIECBus(&bus);
+    IECBus* ptrBus = &bus;
 
     //
     // PA4-PA6 are IEC outputs.
@@ -67,11 +65,10 @@ void C64MachineIECTest::testCIA2IECOutputs()
 
 void C64MachineIECTest::testCIA2DataDirection()
 {
+    IECBus bus;
     C64Machine machine;
-
-    IECBus* ptrBus = machine.iecBus();
-
-    QVERIFY(ptrBus != nullptr);
+    machine.setIECBus(&bus);
+    IECBus* ptrBus = &bus;
 
     //
     // PRA high, but all pins configured as inputs.
@@ -113,11 +110,10 @@ void C64MachineIECTest::testCIA2DataDirection()
 
 void C64MachineIECTest::testExternalIECInputs()
 {
+    IECBus bus;
     C64Machine machine;
-
-    IECBus* ptrBus = machine.iecBus();
-
-    QVERIFY(ptrBus != nullptr);
+    machine.setIECBus(&bus);
+    IECBus* ptrBus = &bus;
 
     const IECBus::ParticipantId drive = ptrBus->addParticipant();
 
@@ -149,11 +145,10 @@ void C64MachineIECTest::testExternalIECInputs()
 
 void C64MachineIECTest::testVICBankBitsUnaffected()
 {
+    IECBus bus;
     C64Machine machine;
-
-    IECBus* ptrBus = machine.iecBus();
-
-    QVERIFY(ptrBus != nullptr);
+    machine.setIECBus(&bus);
+    IECBus* ptrBus = &bus;
 
     //
     // PA0 and PA1 select the VIC-II memory bank.
@@ -174,11 +169,10 @@ void C64MachineIECTest::testVICBankBitsUnaffected()
 
 void C64MachineIECTest::testResetAndPowerOn()
 {
+    IECBus bus;
     C64Machine machine;
-
-    IECBus* ptrBus = machine.iecBus();
-
-    QVERIFY(ptrBus != nullptr);
+    machine.setIECBus(&bus);
+    IECBus* ptrBus = &bus;
 
     //
     // Pull all IEC lines low.
