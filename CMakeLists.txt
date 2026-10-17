@@ -49,6 +49,8 @@ add_library(C64FoundryCore STATIC
 
     C64/Input/C64Keyboard.h C64/Input/C64Keyboard.cpp
     C64/Input/C64CIA1Port.h C64/Input/C64CIA1Port.cpp
+
+    C64/IEC/IECBus.h C64/IEC/IECBus.cpp
 )
 
 target_include_directories(C64FoundryCore
