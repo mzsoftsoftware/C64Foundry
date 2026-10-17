@@ -27,23 +27,21 @@ public:
 public slots:
     void loadROMSet(const C64ROMSet& romSet);
     void input(const InputEvent& event);
-
-    void start();
-    void stop();
-    void reset();
-    void setSpeed(Emulator::Speed speed);
-
     void loadProgram(quint16 address, const QByteArray& data);
+
+    void powerOn();
+    void powerOff();
+    void pause(bool bPaused);
+    void softReset();
+    void hardReset();    void setSpeed(Emulator::Speed speed);
 
 signals:
     void romSetLoaded(bool bLoaded);
+    void programLoaded(bool bLoaded);
 
-    //void runningChanged(bool bRunning);
     void stateChanged(Emulator::State state);
     void speedChanged(Emulator::Speed speed);
     void statisticsChanged(quint64 cycles, quint64 currentCyclesPerSecond, quint64 averageCyclesPerSecond);
-
-    void programLoaded(bool bLoaded);
 
 private:
     EmulatorThread* m_ptrThread = nullptr;

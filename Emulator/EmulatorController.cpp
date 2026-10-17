@@ -18,9 +18,10 @@ EmulatorController::EmulatorController(QObject *parent)
     m_ptrThread = new EmulatorThread(m_ptrWorker, this);
 
     connect(m_ptrWorker, &EmulatorWorker::romSetLoaded, this, &EmulatorController::romSetLoaded);
-    connect(m_ptrWorker, &EmulatorWorker::runningChanged, this, &EmulatorController::runningChanged);
-    connect(m_ptrWorker, &EmulatorWorker::statisticsChanged, this, &EmulatorController::statisticsChanged);
     connect(m_ptrWorker, &EmulatorWorker::programLoaded, this, &EmulatorController::programLoaded);
+    connect(m_ptrWorker, &EmulatorWorker::stateChanged, this, &EmulatorController::stateChanged);
+    connect(m_ptrWorker, &EmulatorWorker::speedChanged, this, &EmulatorController::speedChanged);
+    connect(m_ptrWorker, &EmulatorWorker::statisticsChanged, this, &EmulatorController::statisticsChanged);
 
     m_ptrThread->start();
 }
@@ -47,34 +48,43 @@ void EmulatorController::loadROMSet(const C64ROMSet& romSet)
     qDebug() << "EmulatorController: load ROM set";
     m_ptrWorker->requestROMSet(romSet);
 }
+void EmulatorController::loadProgram(const quint16 address, const QByteArray& data)
+{
+    qDebug() << "EmulatorController: load program";
+    m_ptrWorker->requestProgram(address, data);
+}
 void EmulatorController::input(const InputEvent& event)
 {
     m_ptrWorker->requestInput(event);
 }
 
-void EmulatorController::start()
+void EmulatorController::powerOn()
 {
-    qDebug() << "EmulatorController: start";
-    m_ptrWorker->requestStart();
+    qDebug() << "EmulatorController: powerOn";
+    m_ptrWorker->requestPowerOn();
 }
-void EmulatorController::stop()
+void EmulatorController::powerOff()
 {
-    qDebug() << "EmulatorController: stop";
-    m_ptrWorker->requestStop();
+    qDebug() << "EmulatorController: powerOff";
+    m_ptrWorker->requestPowerOff();
 }
-void EmulatorController::reset()
+void EmulatorController::pause(bool bPaused)
 {
-    qDebug() << "EmulatorController: reset";
-    m_ptrWorker->requestReset();
+    qDebug() << "EmulatorController: pause" << bPaused;
+    m_ptrWorker->requestPause(bPaused);
+}
+void EmulatorController::softReset()
+{
+    qDebug() << "EmulatorController: softReset";
+    m_ptrWorker->requestSoftReset();
+}
+void EmulatorController::hardReset()
+{
+    qDebug() << "EmulatorController: hardReset";
+    m_ptrWorker->requestHardReset();
 }
 void EmulatorController::setSpeed(Emulator::Speed speed)
 {
-    qDebug() << "EmulatorController: setSpeed";
+    qDebug() << "EmulatorController: setSpeed" << speed;
     m_ptrWorker->requestSpeed(speed);
-}
-
-void EmulatorController::loadProgram(const quint16 address, const QByteArray& data)
-{
-    qDebug() << "EmulatorController: load program";
-    m_ptrWorker->requestProgram(address, data);
 }
