@@ -5,6 +5,7 @@
 #include <QWaitCondition>
 #include <QElapsedTimer>
 #include <QQueue>
+#include <QByteArray>
 
 #include "Emulator/EmulatorSpeed.h"
 #include "Input/InputEvent.h"
@@ -35,12 +36,15 @@ public:
     void requestSpeed(Emulator::Speed speed);
     void requestShutdown();
 
+    void requestProgram(quint16 address, const QByteArray& data);
+
 
 signals:
     void romSetLoaded(bool bLoaded);
     void runningChanged(bool bRunning);
     void speedChanged(Emulator::Speed spped);
     void statisticsChanged(quint64 cycles, quint64 currentCyclesPerSecond, quint64 averageCyclesPerSecond);
+    void programLoaded(bool bLoaded);
 
 private:
     bool waitForRequests();
@@ -71,6 +75,10 @@ private:
     bool m_bShutdownRequested = false;
     bool m_bSpeedRequested = false;
     Emulator::Speed m_speedRequested = Emulator::Speed::Normal;
+
+    bool m_bProgramRequested = false;
+    quint16 m_programAddressRequested = 0;
+    QByteArray m_programDataRequested;
 
     // Statistics
     quint64 m_totalCycles = 0;

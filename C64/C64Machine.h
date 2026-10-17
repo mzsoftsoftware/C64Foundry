@@ -23,6 +23,7 @@ public:
     // Operations
     bool loadROMSet(const C64ROMSet& romSet);
     bool loadProgram(quint16 address, const QByteArray& data);
+    void setBasicProgramEnd(quint16 endAddress);
 
     void powerOn();
     void reset();

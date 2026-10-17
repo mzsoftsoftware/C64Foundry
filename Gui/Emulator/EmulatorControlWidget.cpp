@@ -1,7 +1,14 @@
 #include "EmulatorControlWidget.h"
 #include "ui_EmulatorControlWidget.h"
 
+#include <QFileDialog>
+#include <QMessageBox>
+#include <QSettings>
+#include <QFileInfo>
+#include <QDir>
+
 #include "Emulator/EmulatorController.h"
+#include "Storage/PRG/C64PRGFile.h"
 
 
 EmulatorControlWidget::EmulatorControlWidget(QWidget *parent)
@@ -24,12 +31,14 @@ void EmulatorControlWidget::setController(EmulatorController* ptrController)
 
     connect(m_ptrController, &EmulatorController::runningChanged, this, &EmulatorControlWidget::setRunning);
     connect(m_ptrController, &EmulatorController::statisticsChanged, this, &EmulatorControlWidget::onStatisticsChanged);
+    connect(m_ptrController, &EmulatorController::programLoaded, this, &EmulatorControlWidget::onProgramLoaded);
 }
 
 void EmulatorControlWidget::setRunning(bool bRunning)
 {
     ui->pushButton_Start->setEnabled(!bRunning);
     ui->pushButton_Stop->setEnabled(bRunning);
+    ui->pushButton_LoadPRG->setEnabled(bRunning);
 }
 
 void EmulatorControlWidget::setupSpeedComboBox()
@@ -83,3 +92,38 @@ void EmulatorControlWidget::onStatisticsChanged(const quint64 cycles, quint64 cu
     ui->label_Cycles->setText(QString::number(cycles));
     ui->label_CycleRate->setText(QString::number(averageCyclesPerSecond));
 }
+
+void EmulatorControlWidget::on_pushButton_LoadPRG_clicked()
+{
+    if (!m_ptrController)
+        return;
+
+    QSettings settings;
+
+    const QString lastDirectory = settings.value(QStringLiteral("FileDialogs/LastPRGDirectory"), QDir::homePath()).toString();
+
+    const QString fileName = QFileDialog::getOpenFileName(this, tr("Load PRG file"), lastDirectory, tr("C64 programs (*.prg);;All files (*)"));
+
+    if (fileName.isEmpty())
+        return;
+
+    settings.setValue(QStringLiteral("FileDialogs/LastPRGDirectory"), QFileInfo(fileName).absolutePath());
+
+    C64PRGFile prgFile;
+
+    if (!prgFile.load(fileName))
+    {
+        QMessageBox::warning(this, tr("Load PRG file"), prgFile.errorString());
+        return;
+    }
+
+    m_ptrController->loadProgram(prgFile.loadAddress(), prgFile.data());
+}
+void EmulatorControlWidget::onProgramLoaded(bool bLoaded)
+{
+    if (!bLoaded)
+    {
+        QMessageBox::warning(this, tr("Load PRG file"), tr("The PRG file could not be loaded into C64 memory."));
+    }
+}
+

@@ -17,6 +17,7 @@ EmulatorController::EmulatorController(QObject *parent)
     connect(m_ptrWorker, &EmulatorWorker::romSetLoaded, this, &EmulatorController::romSetLoaded);
     connect(m_ptrWorker, &EmulatorWorker::runningChanged, this, &EmulatorController::runningChanged);
     connect(m_ptrWorker, &EmulatorWorker::statisticsChanged, this, &EmulatorController::statisticsChanged);
+    connect(m_ptrWorker, &EmulatorWorker::programLoaded, this, &EmulatorController::programLoaded);
 
     m_ptrThread->start();
 }
@@ -66,4 +67,10 @@ void EmulatorController::setSpeed(Emulator::Speed speed)
 {
     qDebug() << "EmulatorController: setSpeed";
     m_ptrWorker->requestSpeed(speed);
+}
+
+void EmulatorController::loadProgram(const quint16 address, const QByteArray& data)
+{
+    qDebug() << "EmulatorController: load program";
+    m_ptrWorker->requestProgram(address, data);
 }

@@ -3,6 +3,7 @@
 
 #include <QSettings>
 #include <QMessageBox>
+#include <QDebug>
 
 #include "Configuration/ConfigurationManager.h"
 #include "Configuration/C64Configuration.h"
@@ -12,6 +13,8 @@
 #include "Emulator/EmulatorController.h"
 #include "Input/Keyboard/KeyboardController.h"
 #include "Output/Video/VideoController.h"
+
+#include "Storage/PRG/C64PRGFile.h"
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -58,6 +61,23 @@ bool MainWindow::initialize()
     restoreWindowLayout();
 
     m_ptrEmulatorController->loadROMSet(m_ptrConfigurationManager->activeConfiguration()->romSet);
+
+
+    C64PRGFile prgFile;
+
+    if (prgFile.load(QStringLiteral("/tmp/BasicSys.prg")))
+    {
+        qDebug() << "PRG load address:" << Qt::hex << prgFile.loadAddress();
+        qDebug() << "PRG data size:" << Qt::dec << prgFile.data().size();
+        qDebug() << "BASIC detected:" << prgFile.isBasicProgram();
+
+        if (prgFile.isBasicProgram())
+            qDebug() << "BASIC end address:" << Qt::hex << prgFile.basicEndAddress();
+    }
+    else
+    {
+        qWarning() << "PRG loading failed:" << prgFile.errorString();
+    }
 
     return true;
 }

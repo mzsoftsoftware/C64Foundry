@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QObject>
+#include <QByteArray>
 
 #include "EmulatorSpeed.h"
 
@@ -31,12 +32,16 @@ public slots:
     void reset();
     void setSpeed(Emulator::Speed speed);
 
+    void loadProgram(quint16 address, const QByteArray& data);
+
 signals:
     void romSetLoaded(bool bLoaded);
 
     void runningChanged(bool bRunning);
     void speedChanged(Emulator::Speed speed);
     void statisticsChanged(quint64 cycles, quint64 currentCyclesPerSecond, quint64 averageCyclesPerSecond);
+
+    void programLoaded(bool bLoaded);
 
 private:
     EmulatorThread* m_ptrThread = nullptr;

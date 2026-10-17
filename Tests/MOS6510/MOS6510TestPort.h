@@ -51,5 +51,6 @@ private slots:
     void testDataRegisterBits67LowAfterOutputToInput();
 
     void testProcessorPortPins();
+    void testCpuPortUpdatesMemoryMapping();
 
 };

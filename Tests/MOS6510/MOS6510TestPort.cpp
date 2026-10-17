@@ -1130,3 +1130,52 @@ void MOS6510TestPort::testProcessorPortPins()
     QCOMPARE(m_cpu.portPins(), quint8(0x05));
 }
 
+void MOS6510TestPort::testCpuPortUpdatesMemoryMapping()
+{
+    setupCpu();
+
+    // Das CPU-Port-Mapping wiederherstellen, das initialize() gesetzt hat.
+    // setupCpu() überschreibt es für die übrigen CPU-Tests mit $00.
+    m_bus.setCpuPortLines(m_cpu.portPins());
+
+    QCOMPARE(m_cpu.portPins(), quint8(0x3F));
+    QCOMPARE(m_bus.cpuPortLines(), quint8(0x07));
+
+    m_cpu.setProgramCounter(0x1000);
+
+    m_memory.writeRAM(0x1000, 0xA9); // LDA #$2F
+    m_memory.writeRAM(0x1001, 0x2F);
+    m_memory.writeRAM(0x1002, 0x85); // STA $00
+    m_memory.writeRAM(0x1003, 0x00);
+    m_memory.writeRAM(0x1004, 0xA9); // LDA #$35
+    m_memory.writeRAM(0x1005, 0x35);
+    m_memory.writeRAM(0x1006, 0x85); // STA $01
+    m_memory.writeRAM(0x1007, 0x01);
+    m_memory.writeRAM(0x1008, 0xEA); // NOP
+
+    // LDA #$2F
+    clock();
+    clock();
+
+    // STA $00
+    clock();
+    clock();
+    clock();
+
+    QCOMPARE(m_bus.cpuPortLines(), quint8(0x00));
+
+    // LDA #$35
+    clock();
+    clock();
+
+    // STA $01
+    clock();
+    clock();
+    clock();
+
+    QCOMPARE(m_bus.cpuPortLines(), quint8(0x05));
+
+    QCOMPARE(m_bus.memorySource(0xA000), C64Bus::MemorySource::RAM);
+    QCOMPARE(m_bus.memorySource(0xD000), C64Bus::MemorySource::IO);
+    QCOMPARE(m_bus.memorySource(0xE000), C64Bus::MemorySource::RAM);
+}

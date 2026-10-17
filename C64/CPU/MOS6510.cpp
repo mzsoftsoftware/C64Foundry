@@ -64,6 +64,8 @@ void MOS6510::initialize()
     m_pageCrossed = false;
     m_dummyReadPending = false;
     m_pageCrossingCycle = false;
+
+    m_ptrBus->setCpuPortLines(portPins());
 }
 
 void MOS6510::reset()
@@ -1943,6 +1945,7 @@ void MOS6510::write(const quint16 address, const quint8 value)
             m_portDataSetCycleBit7 = m_cycles + PortDataFalloffCycles;
         }
         m_portDataDirection = value;
+        m_ptrBus->setCpuPortLines(portPins());
         m_ptrBus->writeCycle(address);
         return;
     }
@@ -1963,6 +1966,7 @@ void MOS6510::write(const quint16 address, const quint8 value)
             m_portDataSetCycleBit7 = m_cycles + PortDataFalloffCycles;
         }
         m_portData = value;
+        m_ptrBus->setCpuPortLines(portPins());
         m_ptrBus->writeCycle(address);
         return;
     }

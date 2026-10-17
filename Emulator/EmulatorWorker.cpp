@@ -149,13 +149,24 @@ void EmulatorWorker::requestSpeed(const Emulator::Speed speed)
     m_waitCondition.wakeOne();
 }
 
+void EmulatorWorker::requestProgram(const quint16 address, const QByteArray& data)
+{
+    QMutexLocker locker(&m_mutex);
+    m_programAddressRequested = address;
+    m_programDataRequested = data;
+    m_bProgramRequested = true;
+    qDebug() << "EmulatorWorker: program requested";
+    m_waitCondition.wakeOne();
+}
+
 bool EmulatorWorker::waitForRequests()
 {
     QMutexLocker locker(&m_mutex);
     while (!m_bROMSetRequested && m_inputEvents.isEmpty() &&
            !m_bStartRequested && !m_bStopRequested &&
            !m_bResetRequested && !m_bShutdownRequested &&
-           !m_bSpeedRequested)
+           !m_bSpeedRequested &&
+           !m_bProgramRequested)
     {
         m_waitCondition.wait(&m_mutex);
     }
@@ -175,6 +186,10 @@ bool EmulatorWorker::processRequests()
     bool bSpeedRequested = false;    
     Emulator::Speed speedRequested = Emulator::Speed::Normal;
 
+    bool bProgramRequested = false;
+    quint16 programAddressRequested = 0;
+    QByteArray programDataRequested;
+
     {
         QMutexLocker locker(&m_mutex);
 
@@ -188,12 +203,18 @@ bool EmulatorWorker::processRequests()
         bSpeedRequested = m_bSpeedRequested;
         speedRequested = m_speedRequested;
 
+        bProgramRequested = m_bProgramRequested;
+        programAddressRequested = m_programAddressRequested;
+        programDataRequested.swap(m_programDataRequested);
+
         m_bROMSetRequested = false;
 
         m_bStartRequested = false;
         m_bResetRequested = false;
         m_bStopRequested = false;
         m_bSpeedRequested = false;
+
+        m_bProgramRequested = false;
     }
 
     if (inputEvents.size() > 1)
@@ -279,6 +300,24 @@ bool EmulatorWorker::processRequests()
 
             emit speedChanged(m_speed);
         }
+    }
+
+    if (bProgramRequested)
+    {
+        const bool bLoaded = m_ptrMachine->loadProgram(programAddressRequested, programDataRequested);
+        if (bLoaded)
+        {
+            const quint32 endAddress = static_cast<quint32>(programAddressRequested) + static_cast<quint32>(programDataRequested.size());
+            m_ptrMachine->setBasicProgramEnd(static_cast<quint16>(endAddress & 0xFFFF));
+            qDebug() << "EmulatorWorker: program loaded"
+                     << "start:" << Qt::hex << programAddressRequested
+                     << "end:" << endAddress;
+        }
+        else
+        {
+            qWarning() << "EmulatorWorker: program could not be loaded";
+        }
+        emit programLoaded(bLoaded);
     }
 
     return bRequested;

@@ -66,6 +66,17 @@ bool C64Machine::loadProgram(const quint16 address, const QByteArray& data)
     }
     return true;
 }
+void C64Machine::setBasicProgramEnd(const quint16 endAddress)
+{
+    m_ptrMemory->writeRAM(0x002B, 0x01);
+    m_ptrMemory->writeRAM(0x002C, 0x08);
+
+    m_ptrMemory->writeRAM(0x002D, static_cast<quint8>(endAddress & 0xFF));
+    m_ptrMemory->writeRAM(0x002E, static_cast<quint8>(endAddress >> 8));
+
+    m_ptrMemory->writeRAM(0x00AE, static_cast<quint8>(endAddress & 0xFF));
+    m_ptrMemory->writeRAM(0x00AF, static_cast<quint8>(endAddress >> 8));
+}
 
 void C64Machine::powerOn()
 {

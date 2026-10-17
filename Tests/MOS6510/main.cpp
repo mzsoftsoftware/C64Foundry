@@ -41,6 +41,8 @@
 #include "MOS6510TestUndocumentedXAA.h"
 #include "MOS6510TestUndocumentedKIL.h"
 
+#include "MOS6510TestVICE.h"
+
 #include "MOS6510TestDormann.h"
 #include "MOS6510TestSeddon.h"
 #include "MOS6510TestBlargg.h"
@@ -88,6 +90,8 @@ int main(int argc, char* argv[])
     MOS6510TestUndocumentedTAS testUndocTAS;
     MOS6510TestUndocumentedXAA testUndocXAA;
     MOS6510TestUndocumentedKIL testUndocKIL;
+
+    MOS6510TestVICE testVICE;
 
     MOS6510TestDormann testDormann;
     MOS6510TestSeddon testSeddon;
@@ -211,6 +215,11 @@ int main(int argc, char* argv[])
     if(result != 0) return result;
 
     result = QTest::qExec(&testUndocKIL, argc, argv);
+    if(result != 0) return result;
+
+    // --------------------------
+
+    result = QTest::qExec(&testVICE, argc, argv);
     if(result != 0) return result;
 
     // --------------------------

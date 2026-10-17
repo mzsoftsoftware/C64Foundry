@@ -31,6 +31,9 @@ private slots:
     void setRunning(bool bRunning);
     void onStatisticsChanged(quint64 cycles, quint64 currentCyclesPerSecond, quint64 averageCyclesPerSecond);
 
+    void on_pushButton_LoadPRG_clicked();
+    void onProgramLoaded(bool bLoaded);
+
 private:
     void setupSpeedComboBox();
 
