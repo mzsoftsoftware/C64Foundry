@@ -30,23 +30,23 @@ public:
 
     void requestROMSet(const C64ROMSet& romSet);
     void requestInput(const InputEvent& event);
+    void requestProgram(quint16 address, const QByteArray& data);
 
-    void requestStart();
-    void requestStop();
-    void requestReset();
+    void requestPowerOn();
+    void requestPowerOff();
+    void requestPause(bool bPaused);
+    void requestSoftReset();
+    void requestHardReset();
     void requestSpeed(Emulator::Speed speed);
     void requestShutdown();
 
-    void requestProgram(quint16 address, const QByteArray& data);
-
-
 signals:
     void romSetLoaded(bool bLoaded);
-    void stateChanged(EmulatorState state);
-//    void runningChanged(bool bRunning);
+    void programLoaded(bool bLoaded);
+
+    void stateChanged(Emulator::State state);
     void speedChanged(Emulator::Speed spped);
     void statisticsChanged(quint64 cycles, quint64 currentCyclesPerSecond, quint64 averageCyclesPerSecond);
-    void programLoaded(bool bLoaded);
 
 private:
     bool waitForRequests();
@@ -61,8 +61,7 @@ private:
     QWaitCondition m_waitCondition;
 
     // Current state
-    EmulatorState m_state = EmulatorState::PoweredOff;
-    //bool m_bRunning = false;
+    Emulator::State m_state = Emulator::State::PoweredOff;
     Emulator::Speed m_speed = Emulator::Speed::Normal;
     QElapsedTimer m_speedTimer;
     quint64 m_speedStartCycles = 0;
@@ -70,18 +69,26 @@ private:
     // Request
     bool m_bROMSetRequested = false;
     C64ROMSet m_romSetRequested;
-    QQueue<InputEvent> m_inputEvents;
 
-    bool m_bStartRequested = false;
-    bool m_bResetRequested = false;
-    bool m_bStopRequested = false;
-    bool m_bShutdownRequested = false;
-    bool m_bSpeedRequested = false;
-    Emulator::Speed m_speedRequested = Emulator::Speed::Normal;
+    QQueue<InputEvent> m_inputEvents;
 
     bool m_bProgramRequested = false;
     quint16 m_programAddressRequested = 0;
     QByteArray m_programDataRequested;
+
+    bool m_bPowerOnRequested = false;
+    bool m_bPowerOffRequested = false;
+
+    bool m_bPauseRequested = false;
+    bool m_bPauseRequestedValue = false;
+
+    bool m_bSoftResetRequested = false;
+    bool m_bHardResetRequested = false;
+
+    bool m_bSpeedRequested = false;
+    Emulator::Speed m_speedRequested = Emulator::Speed::Normal;
+
+    bool m_bShutdownRequested = false;
 
     // Statistics
     quint64 m_totalCycles = 0;

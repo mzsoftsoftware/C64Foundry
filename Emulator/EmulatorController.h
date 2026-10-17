@@ -39,7 +39,7 @@ signals:
     void romSetLoaded(bool bLoaded);
 
     //void runningChanged(bool bRunning);
-    void stateChanged(EmulatorState state);
+    void stateChanged(Emulator::State state);
     void speedChanged(Emulator::Speed speed);
     void statisticsChanged(quint64 cycles, quint64 currentCyclesPerSecond, quint64 averageCyclesPerSecond);
 

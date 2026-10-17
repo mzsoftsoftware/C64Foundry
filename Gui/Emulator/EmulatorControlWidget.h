@@ -2,7 +2,7 @@
 
 #include <QWidget>
 
-#include "Emulator/EmulatorSpeed.h"
+#include "Emulator/EmulatorTypes.h"
 
 class EmulatorController;
 
