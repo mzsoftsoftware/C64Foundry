@@ -27,6 +27,7 @@ public:
 
     // Operations
     void clock();
+    void reset();
 
 private:
     MOS6526Port* m_ptrPort = nullptr;

@@ -184,3 +184,32 @@ void MOS6526::clock()
         }
     }
 }
+
+void MOS6526::reset()
+{
+    m_portA = 0x00;
+    m_dataDirectionA = 0x00;
+    m_portAInputs = 0xFF;
+
+    m_portB = 0x00;
+    m_dataDirectionB = 0x00;
+    m_portBInputs = 0xFF;
+
+    m_timerALatch = 0x0000;
+    m_timerACounter = 0x0000;
+
+    m_controlRegisterA = 0x00;
+    m_controlRegisterB = 0x00;
+
+    m_interruptStatus = 0x00;
+    m_interruptMask = 0x00;
+
+    m_unimplementedReadReported = 0x0000;
+    m_unimplementedWriteReported = 0x0000;
+
+    //
+    // Notify connected hardware about the reset port state.
+    //
+    if (m_ptrPort)
+        m_ptrPort->portAOutputChanged(m_portA, m_dataDirectionA);
+}

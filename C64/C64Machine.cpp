@@ -99,12 +99,18 @@ void C64Machine::powerOn()
 {
     m_cycles = 0;
 
+    m_ptrCIA1->reset();
+    m_ptrCIA2->reset();
+
     m_ptrCpu->initialize();
     m_ptrCpu->reset();
 }
 void C64Machine::reset()
 {
     m_cycles = 0;
+
+    m_ptrCIA1->reset();
+    m_ptrCIA2->reset();
 
     m_ptrCpu->reset();
 }
