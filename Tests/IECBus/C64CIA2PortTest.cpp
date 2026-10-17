@@ -19,7 +19,8 @@ C64CIA2PortTest::~C64CIA2PortTest()
 void C64CIA2PortTest::testInitialIECLineStates()
 {
     IECBus bus;
-    C64CIA2Port port(&bus);
+    C64CIA2Port port;
+    port.setIECBus(&bus);
     MOS6526 cia;
 
     cia.setPort(&port);
@@ -32,7 +33,8 @@ void C64CIA2PortTest::testInitialIECLineStates()
 void C64CIA2PortTest::testClockOutput()
 {
     IECBus bus;
-    C64CIA2Port port(&bus);
+    C64CIA2Port port;
+    port.setIECBus(&bus);
     MOS6526 cia;
 
     cia.setPort(&port);
@@ -58,7 +60,8 @@ void C64CIA2PortTest::testClockOutput()
 void C64CIA2PortTest::testDataOutput()
 {
     IECBus bus;
-    C64CIA2Port port(&bus);
+    C64CIA2Port port;
+    port.setIECBus(&bus);
     MOS6526 cia;
 
     cia.setPort(&port);
@@ -83,7 +86,8 @@ void C64CIA2PortTest::testDataOutput()
 void C64CIA2PortTest::testAttentionOutput()
 {
     IECBus bus;
-    C64CIA2Port port(&bus);
+    C64CIA2Port port;
+    port.setIECBus(&bus);
     MOS6526 cia;
 
     cia.setPort(&port);
@@ -108,7 +112,8 @@ void C64CIA2PortTest::testAttentionOutput()
 void C64CIA2PortTest::testClockInput()
 {
     IECBus bus;
-    C64CIA2Port port(&bus);
+    C64CIA2Port port;
+    port.setIECBus(&bus);
     MOS6526 cia;
 
     cia.setPort(&port);
@@ -134,7 +139,8 @@ void C64CIA2PortTest::testClockInput()
 void C64CIA2PortTest::testDataInput()
 {
     IECBus bus;
-    C64CIA2Port port(&bus);
+    C64CIA2Port port;
+    port.setIECBus(&bus);
     MOS6526 cia;
 
     cia.setPort(&port);
@@ -160,7 +166,8 @@ void C64CIA2PortTest::testDataInput()
 void C64CIA2PortTest::testDataDirectionRegister()
 {
     IECBus bus;
-    C64CIA2Port port(&bus);
+    C64CIA2Port port;
+    port.setIECBus(&bus);
     MOS6526 cia;
 
     cia.setPort(&port);
@@ -190,7 +197,8 @@ void C64CIA2PortTest::testDataDirectionRegister()
 void C64CIA2PortTest::testIndependentIECSignals()
 {
     IECBus bus;
-    C64CIA2Port port(&bus);
+    C64CIA2Port port;
+    port.setIECBus(&bus);
     MOS6526 cia;
 
     cia.setPort(&port);
@@ -223,7 +231,8 @@ void C64CIA2PortTest::testIndependentIECSignals()
 void C64CIA2PortTest::testExternalParticipantPullsClockLow()
 {
     IECBus bus;
-    C64CIA2Port port(&bus);
+    C64CIA2Port port;
+    port.setIECBus(&bus);
     MOS6526 cia;
 
     cia.setPort(&port);
@@ -259,7 +268,8 @@ void C64CIA2PortTest::testExternalParticipantPullsClockLow()
 void C64CIA2PortTest::testExternalParticipantPullsDataLow()
 {
     IECBus bus;
-    C64CIA2Port port(&bus);
+    C64CIA2Port port;
+    port.setIECBus(&bus);
     MOS6526 cia;
 
     cia.setPort(&port);
@@ -289,7 +299,8 @@ void C64CIA2PortTest::testExternalParticipantPullsDataLow()
 void C64CIA2PortTest::testVICBankBitsUnaffected()
 {
     IECBus bus;
-    C64CIA2Port port(&bus);
+    C64CIA2Port port;
+    port.setIECBus(&bus);
     MOS6526 cia;
 
     cia.setPort(&port);

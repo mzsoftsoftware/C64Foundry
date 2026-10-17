@@ -11,9 +11,11 @@ public:
 
     enum class Line
     {
+        SRQ,
         ATN,
         CLK,
-        DATA
+        DATA,
+        RESET
     };
 
     IECBus();

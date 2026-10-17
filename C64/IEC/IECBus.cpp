@@ -57,14 +57,20 @@ quint8 IECBus::lineMask(const Line line)
 {
     switch (line)
     {
-    case Line::ATN:
+    case Line::SRQ:
         return 0x01;
 
-    case Line::CLK:
+    case Line::ATN:
         return 0x02;
 
-    case Line::DATA:
+    case Line::CLK:
         return 0x04;
+
+    case Line::DATA:
+        return 0x08;
+
+    case Line::RESET:
+        return 0x10;
     }
 
     return 0x00;

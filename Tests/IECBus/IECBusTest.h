@@ -19,5 +19,11 @@ private slots:
     void testReleaseLine();
     void testRemoveParticipant();
     void testInvalidParticipant();
+
+    void testSRQLine();
+    void testRESETLine();
+    void testNewLineIndependence();
+    void testNewLinesMultipleParticipants();
+    void testNewLinesRemoveParticipant();
 };
 
