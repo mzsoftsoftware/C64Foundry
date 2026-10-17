@@ -3,6 +3,7 @@
 #include "C64MachineTest.h"
 #include "C64ROMSetTest.h"
 #include "C64InputTest.h"
+#include "C64MachineIECTest.h"
 #include "C64Performance.h"
 
 
@@ -11,6 +12,7 @@ int main(int argc, char* argv[])
     C64ROMSetTest romsetTest;
     C64MachineTest machineTest;
     C64InputTest inputTest;
+    C64MachineIECTest iecTest;
     C64Performance performance;
 
     int result = 0;
@@ -21,6 +23,9 @@ int main(int argc, char* argv[])
     if(result != 0) return result;
 
     result = QTest::qExec(&inputTest, argc, argv);
+    if(result != 0) return result;
+
+    result = QTest::qExec(&iecTest, argc, argv);
     if(result != 0) return result;
 
     result = QTest::qExec(&performance, argc, argv);

@@ -7,15 +7,19 @@
 class C64CIA2Port : public MOS6526Port
 {
 public:
-    explicit C64CIA2Port(IECBus* ptrBus);
+    explicit C64CIA2Port();
     virtual ~C64CIA2Port() override;
 
+    // Setter
+    void setIECBus(IECBus* ptrIECBus);
+
+    // Operations
     quint8 portAInputs(quint8 portBOutput) const override;
     quint8 portBInputs(quint8 portAOutput) const override;
 
     void portAOutputChanged(quint8 portA, quint8 dataDirectionA) override;
 
 private:
-    IECBus* m_ptrBus = nullptr;
+    IECBus* m_ptrIECBus = nullptr;
     IECBus::ParticipantId m_participantId = 0;
 };

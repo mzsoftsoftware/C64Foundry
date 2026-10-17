@@ -13,6 +13,7 @@
 C64Machine::C64Machine()
 {
     m_ptrBus = new C64Bus();
+
     m_ptrMemory = new C64Memory();
     m_ptrBus->setMemory(m_ptrMemory);
 
@@ -22,7 +23,6 @@ C64Machine::C64Machine()
     m_ptrBus->setVICII(m_ptrVICII);
 
     m_ptrCIA1 = new MOS6526();
-    m_ptrCIA1->setPort(&m_cia1Port);
     m_ptrBus->setCIA1(m_ptrCIA1);
 
     m_ptrCIA2 = new MOS6526();
@@ -30,9 +30,26 @@ C64Machine::C64Machine()
 
     m_ptrCpu = new MOS6510();
     m_ptrCpu->setBus(m_ptrBus);
+
+    m_ptrKeyboard = new C64Keyboard();
+    m_ptrCIA1Port = new C64CIA1Port();
+    m_ptrCIA1Port->setKeyboard(m_ptrKeyboard);
+
+    m_ptrIECBus = new IECBus();
+    m_ptrCIA2Port = new C64CIA2Port();
+    m_ptrCIA2Port->setIECBus(m_ptrIECBus);
+
+    m_ptrCIA1->setPort(m_ptrCIA1Port);
+    m_ptrCIA2->setPort(m_ptrCIA2Port);
 }
 C64Machine::~C64Machine()
 {
+    delete m_ptrCIA2Port;
+    delete m_ptrIECBus;
+
+    delete m_ptrCIA1Port;
+    delete m_ptrKeyboard;
+
     delete m_ptrCpu;
     delete m_ptrCIA2;
     delete m_ptrCIA1;
@@ -142,7 +159,7 @@ void C64Machine::keyPress(C64Key key)
         m_ptrCpu->setNmiLine(m_restorePressed || m_ptrCIA2->irq());
         return;
     }
-    m_keyboard.press(key);
+    m_ptrKeyboard->press(key);
 }
 void C64Machine::keyRelease(C64Key key)
 {
@@ -152,7 +169,7 @@ void C64Machine::keyRelease(C64Key key)
         m_ptrCpu->setNmiLine(m_restorePressed || m_ptrCIA2->irq());
         return;
     }
-    m_keyboard.release(key);
+    m_ptrKeyboard->release(key);
 }
 
 

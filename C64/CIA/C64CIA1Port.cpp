@@ -3,8 +3,10 @@
 #include "C64/Input/C64Keyboard.h"
 
 
-C64CIA1Port::C64CIA1Port(C64Keyboard* ptrKeyboard)
-    : m_ptrKeyboard(ptrKeyboard)
+C64CIA1Port::C64CIA1Port()
+{
+}
+C64CIA1Port::~C64CIA1Port()
 {
 }
 

@@ -11,7 +11,9 @@ class MOS6526;
 
 #include "C64/C64Timing.h"
 #include "CIA/C64CIA1Port.h"
+#include "CIA/C64CIA2Port.h"
 #include "Input/C64Keyboard.h"
+#include "IEC/IECBus.h"
 
 
 class C64Machine
@@ -80,22 +82,28 @@ public:
     quint16 videoFrameWidth() const;
     quint16 videoFrameHeight() const;
 
+    IECBus* iecBus()                { return m_ptrIECBus; }
+
 private:
-    C64::Timing m_timing = C64::PALTiming;
-    quint64 m_cycles = 0;
+    C64::Timing     m_timing = C64::PALTiming;
+    quint64         m_cycles = 0;
 
-    C64Memory*  m_ptrMemory = nullptr;
-    C64Bus*     m_ptrBus = nullptr;
+    C64Memory*      m_ptrMemory = nullptr;
+    C64Bus*         m_ptrBus = nullptr;
 
-    MOS6510*    m_ptrCpu = nullptr;
-    VICII*      m_ptrVICII = nullptr;
+    MOS6510*        m_ptrCpu = nullptr;
+    VICII*          m_ptrVICII = nullptr;
 
-    MOS6526*    m_ptrCIA1 = nullptr;
-    MOS6526*    m_ptrCIA2 = nullptr;
+    MOS6526*        m_ptrCIA1 = nullptr;
+    C64CIA1Port*    m_ptrCIA1Port = nullptr;
+
+    MOS6526*        m_ptrCIA2 = nullptr;
+    C64CIA2Port*    m_ptrCIA2Port = nullptr;
 
     // SID
 
-    C64Keyboard m_keyboard;
-    C64CIA1Port m_cia1Port { &m_keyboard };
-    bool m_restorePressed = false;
+    C64Keyboard*    m_ptrKeyboard = nullptr;
+    bool            m_restorePressed = false;
+
+    IECBus*         m_ptrIECBus = nullptr;
 };

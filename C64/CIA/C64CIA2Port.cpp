@@ -1,17 +1,23 @@
 #include "C64CIA2Port.h"
 
 
-C64CIA2Port::C64CIA2Port(IECBus* ptrBus)
-    : m_ptrBus(ptrBus)
+C64CIA2Port::C64CIA2Port()
 {
-    if (m_ptrBus)
-        m_participantId = m_ptrBus->addParticipant();
 }
 
 C64CIA2Port::~C64CIA2Port()
 {
-    if (m_ptrBus)
-        m_ptrBus->removeParticipant(m_participantId);
+    if (m_ptrIECBus)
+        m_ptrIECBus->removeParticipant(m_participantId);
+}
+
+void C64CIA2Port::setIECBus(IECBus* ptrIECBus)
+{
+    Q_ASSERT(m_ptrIECBus == nullptr);
+    Q_ASSERT(ptrIECBus != nullptr);
+
+    m_ptrIECBus = ptrIECBus;
+    m_participantId = m_ptrIECBus->addParticipant();
 }
 
 quint8 C64CIA2Port::portAInputs(quint8 portBOutput) const
@@ -20,17 +26,17 @@ quint8 C64CIA2Port::portAInputs(quint8 portBOutput) const
 
     quint8 inputs = 0xFF;
 
-    if (!m_ptrBus)
+    if (!m_ptrIECBus)
         return inputs;
 
     //
     // PA2 = IEC CLK IN
     // PA3 = IEC DATA IN
     //
-    if (!m_ptrBus->lineHigh(IECBus::Line::CLK))
+    if (!m_ptrIECBus->lineHigh(IECBus::Line::CLK))
         inputs &= static_cast<quint8>(~0x04);
 
-    if (!m_ptrBus->lineHigh(IECBus::Line::DATA))
+    if (!m_ptrIECBus->lineHigh(IECBus::Line::DATA))
         inputs &= static_cast<quint8>(~0x08);
 
     return inputs;
@@ -45,7 +51,7 @@ quint8 C64CIA2Port::portBInputs(quint8 portAOutput) const
 
 void C64CIA2Port::portAOutputChanged(quint8 portA, quint8 dataDirectionA)
 {
-    if (!m_ptrBus)
+    if (!m_ptrIECBus)
         return;
 
     //
@@ -64,7 +70,7 @@ void C64CIA2Port::portAOutputChanged(quint8 portA, quint8 dataDirectionA)
     const bool dataLow = (dataDirectionA & 0x20) && (portA & 0x20);
     const bool attentionLow = (dataDirectionA & 0x40) && (portA & 0x40);
 
-    m_ptrBus->setLineLow(m_participantId, IECBus::Line::CLK, clockLow);
-    m_ptrBus->setLineLow(m_participantId, IECBus::Line::DATA, dataLow);
-    m_ptrBus->setLineLow(m_participantId, IECBus::Line::ATN, attentionLow);
+    m_ptrIECBus->setLineLow(m_participantId, IECBus::Line::CLK, clockLow);
+    m_ptrIECBus->setLineLow(m_participantId, IECBus::Line::DATA, dataLow);
+    m_ptrIECBus->setLineLow(m_participantId, IECBus::Line::ATN, attentionLow);
 }

@@ -7,6 +7,7 @@ add_executable(C64MachineTest
 
     ${CMAKE_SOURCE_DIR}/Resources/C64Foundry.qrc
     C64Performance.h C64Performance.cpp
+    C64MachineIECTest.h C64MachineIECTest.cpp
 )
 
 set_target_properties(C64MachineTest PROPERTIES
