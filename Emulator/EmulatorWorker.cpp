@@ -233,18 +233,19 @@ bool EmulatorWorker::processRequests()
 
     bool bRestartTiming = false;
 
-    if (m_state == Emulator::State::PoweredOff)
+    if (bROMSetRequested)
     {
-        if (bROMSetRequested)
-        {
-            bool bLoaded = false;
+        bool bLoaded = false;
+
+        if (m_state == Emulator::State::PoweredOff)
             bLoaded = m_ptrMachine->loadROMSet(romSetRequested);
-            if (bLoaded)
-                qDebug() << "EmulatorWorker: ROM set loaded";
-            else
-                qWarning() << "EmulatorWorker: ROM set could not be loaded";
-            emit romSetLoaded(bLoaded);
-        }
+
+        if (bLoaded)
+            qDebug() << "EmulatorWorker: ROM set loaded";
+        else
+            qWarning() << "EmulatorWorker: ROM set could not be loaded";
+
+        emit romSetLoaded(bLoaded);
     }
 
     // Eingaben nur bei eingeschalteter Maschine.
