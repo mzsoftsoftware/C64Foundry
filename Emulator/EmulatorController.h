@@ -33,7 +33,9 @@ public slots:
     void powerOff();
     void pause(bool bPaused);
     void softReset();
-    void hardReset();    void setSpeed(Emulator::Speed speed);
+    void hardReset();
+
+    void setSpeed(Emulator::Speed speed);
 
 signals:
     void romSetLoaded(bool bLoaded);
@@ -42,6 +44,27 @@ signals:
     void stateChanged(Emulator::State state);
     void speedChanged(Emulator::Speed speed);
     void statisticsChanged(quint64 cycles, quint64 currentCyclesPerSecond, quint64 averageCyclesPerSecond);
+
+private slots:
+    void onWorkerStateChanged(Emulator::State state);
+    void onWorkerProgramLoaded(bool bLoaded);
+
+private:
+    enum class ProgramLoadState
+    {
+        Idle,
+        WaitingForPowerOn,
+        WaitingForPause,
+        WaitingForProgram,
+        WaitingForResume
+    };
+
+    void cancelProgramLoad();
+    Emulator::State m_state = Emulator::State::PoweredOff;
+    ProgramLoadState m_programLoadState = ProgramLoadState::Idle;
+    quint16 m_programAddress = 0;
+    QByteArray m_programData;
+    bool m_bResumeAfterProgramLoad = false;
 
 private:
     EmulatorThread* m_ptrThread = nullptr;

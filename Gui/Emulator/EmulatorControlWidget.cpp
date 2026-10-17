@@ -18,6 +18,8 @@ EmulatorControlWidget::EmulatorControlWidget(QWidget *parent)
     ui->setupUi(this);
 
     setupSpeedComboBox();
+    ui->pushButton_Power->setStyleSheet(QStringLiteral("QPushButton:checked { background-color: #248a39; color: white; }"));
+    setState(Emulator::State::PoweredOff);
 }
 
 EmulatorControlWidget::~EmulatorControlWidget()
@@ -29,16 +31,24 @@ void EmulatorControlWidget::setController(EmulatorController* ptrController)
 {
     m_ptrController = ptrController;
 
-    connect(m_ptrController, &EmulatorController::runningChanged, this, &EmulatorControlWidget::setRunning);
+    connect(m_ptrController, &EmulatorController::stateChanged, this, &EmulatorControlWidget::setState);
     connect(m_ptrController, &EmulatorController::statisticsChanged, this, &EmulatorControlWidget::onStatisticsChanged);
     connect(m_ptrController, &EmulatorController::programLoaded, this, &EmulatorControlWidget::onProgramLoaded);
 }
 
-void EmulatorControlWidget::setRunning(bool bRunning)
+void EmulatorControlWidget::setState(Emulator::State state)
 {
-    ui->pushButton_Start->setEnabled(!bRunning);
-    ui->pushButton_Stop->setEnabled(bRunning);
-    ui->pushButton_LoadPRG->setEnabled(bRunning);
+    const bool bPoweredOn = state != Emulator::State::PoweredOff;
+    const bool bPaused = state == Emulator::State::Paused;
+
+    ui->pushButton_Power->setChecked(bPoweredOn);
+    ui->pushButton_Pause->setChecked(bPaused);
+
+    ui->pushButton_Pause->setEnabled(bPoweredOn);
+    ui->pushButton_SoftReset->setEnabled(bPoweredOn);
+    ui->pushButton_HardReset->setEnabled(bPoweredOn);
+
+    ui->pushButton_LoadPRG->setEnabled(bPoweredOn);
 }
 
 void EmulatorControlWidget::setupSpeedComboBox()
@@ -52,26 +62,47 @@ void EmulatorControlWidget::setupSpeedComboBox()
     ui->comboBox_Speed->setCurrentIndex(1);
 }
 
-void EmulatorControlWidget::on_pushButton_Start_clicked()
+void EmulatorControlWidget::on_pushButton_Power_clicked()
 {
-    if(!m_ptrController)
+    const bool bPowerOn = ui->pushButton_Power->isChecked();
+
+    ui->pushButton_Power->setChecked(!bPowerOn);
+
+    if (!m_ptrController)
         return;
 
-    m_ptrController->start();
+    if (bPowerOn)
+        m_ptrController->powerOn();
+    else
+        m_ptrController->powerOff();
 }
-void EmulatorControlWidget::on_pushButton_Reset_clicked()
+
+void EmulatorControlWidget::on_pushButton_Pause_clicked()
 {
-    if(!m_ptrController)
+    const bool bPaused = ui->pushButton_Pause->isChecked();
+
+    ui->pushButton_Pause->setChecked(!bPaused);
+
+    if (!m_ptrController)
         return;
 
-    m_ptrController->reset();
+    m_ptrController->pause(bPaused);
 }
-void EmulatorControlWidget::on_pushButton_Stop_clicked()
+
+void EmulatorControlWidget::on_pushButton_SoftReset_clicked()
 {
-    if(!m_ptrController)
+    if (!m_ptrController)
         return;
 
-    m_ptrController->stop();
+    m_ptrController->softReset();
+}
+
+void EmulatorControlWidget::on_pushButton_HardReset_clicked()
+{
+    if (!m_ptrController)
+        return;
+
+    m_ptrController->hardReset();
 }
 
 

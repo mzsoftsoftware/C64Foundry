@@ -23,12 +23,13 @@ public:
     void setController(EmulatorController* ptrController);
 
 private slots:
-    void on_pushButton_Start_clicked();
-    void on_pushButton_Reset_clicked();
-    void on_pushButton_Stop_clicked();
+    void on_pushButton_Power_clicked();
+    void on_pushButton_Pause_clicked();
+    void on_pushButton_SoftReset_clicked();
+    void on_pushButton_HardReset_clicked();
     void on_comboBox_Speed_currentIndexChanged(int index);
 
-    void setRunning(bool bRunning);
+    void setState(Emulator::State state);
     void onStatisticsChanged(quint64 cycles, quint64 currentCyclesPerSecond, quint64 averageCyclesPerSecond);
 
     void on_pushButton_LoadPRG_clicked();
