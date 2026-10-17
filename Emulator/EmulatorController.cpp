@@ -32,6 +32,7 @@ EmulatorController::~EmulatorController()
     m_ptrThread->wait();
 
     delete m_ptrWorker;
+    delete m_ptrIECBus;
 
     qDebug() << "EmulatorController: destroyed";
 }

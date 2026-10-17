@@ -112,11 +112,10 @@ void C64Machine::powerOn()
     m_ptrMemory->initialize();
     m_ptrVICII->initialize();
 
-    m_ptrCIA1->reset();
-    m_ptrCIA2->reset();
+    m_ptrCIA1->initialize();
+    m_ptrCIA2->initialize();
 
     m_ptrCpu->initialize();
-    m_ptrCpu->reset();
 
     m_cycles = 0;
     m_restorePressed = false;
