@@ -56,7 +56,16 @@ C64Machine::~C64Machine()
 
 void C64Machine::setIECBus(IECBus* ptrIECBus)
 {
-    m_ptrCIA2Port->setIECBus(ptrIECBus);
+    if (m_ptrIECBus == ptrIECBus)
+        return;
+
+    if (m_bPoweredOn)
+        m_ptrCIA2Port->setIECBus(nullptr);
+
+    m_ptrIECBus = ptrIECBus;
+
+    if (m_bPoweredOn && m_ptrIECBus)
+        m_ptrCIA2Port->setIECBus(m_ptrIECBus);
 }
 bool C64Machine::loadROMSet(const C64ROMSet& romSet)
 {
@@ -97,26 +106,72 @@ void C64Machine::setBasicProgramEnd(const quint16 endAddress)
 
 void C64Machine::powerOn()
 {
-    m_cycles = 0;
+    if (m_bPoweredOn)
+        return;
+
+    m_ptrMemory->initialize();
+    m_ptrVICII->initialize();
 
     m_ptrCIA1->reset();
     m_ptrCIA2->reset();
 
     m_ptrCpu->initialize();
     m_ptrCpu->reset();
-}
-void C64Machine::reset()
-{
+
     m_cycles = 0;
+    m_restorePressed = false;
+
+    if (m_ptrIECBus)
+        m_ptrCIA2Port->setIECBus(m_ptrIECBus);
+
+    m_bPoweredOn = true;
+}
+void C64Machine::powerOff()
+{
+    if (!m_bPoweredOn)
+        return;
+
+    m_ptrCIA2Port->setIECBus(nullptr);
+
+    m_bPoweredOn = false;
+}
+void C64Machine::softReset()
+{
+    if (!m_bPoweredOn)
+        return;
+
+    m_ptrMemory->reset();
+    m_ptrVICII->reset();
 
     m_ptrCIA1->reset();
     m_ptrCIA2->reset();
 
     m_ptrCpu->reset();
+
+    m_restorePressed = false;
 }
+void C64Machine::hardReset()
+{
+    if (!m_bPoweredOn)
+        return;
+
+    m_ptrMemory->initialize();
+    m_ptrVICII->initialize();
+
+    m_ptrCIA1->initialize();
+    m_ptrCIA2->initialize();
+
+    m_ptrCpu->initialize();
+
+    m_restorePressed = false;
+}
+
 
 void C64Machine::clock()
 {
+    if (!m_bPoweredOn)
+        return;
+
     ++m_cycles;
 
     m_ptrBus->clock();

@@ -15,6 +15,79 @@ VICII::~VICII()
         delete[] m_ptrFrameBuffers[index];
 }
 
+void VICII::initialize()
+{
+    for (quint8 index = 0; index < 0x10; ++index)
+        m_spritePositionRegisters[index] = 0x00;
+
+    m_spriteXMSB = 0x00;
+    m_controlRegister1 = 0x00;
+    m_spriteEnable = 0x00;
+    m_controlRegister2 = 0xC0;
+    m_spriteYExpansion = 0x00;
+    m_memoryPointers = 0x01;
+
+    m_videoCounter = 0;
+    m_videoCounterBase = 0;
+    m_videoMatrixBaseAddress = 0x0000;
+    m_videoMatrixLineIndex = 0;
+    m_displayState = false;
+
+    for (quint8 index = 0; index < 40; ++index)
+    {
+        m_videoMatrixLine[index] = 0x00;
+        m_colorLine[index] = 0x00;
+    }
+
+    m_graphicsData = 0x00;
+    m_graphicsShiftRegister = 0x00;
+    m_graphicsColor = 0x00;
+    m_graphicsPixelPhase = 0x00;
+    m_outputPixel = 0x00;
+
+    for (quint8 index = 0; index < 8; ++index)
+        m_graphicsPixels[index] = 0x00;
+
+    m_characterBaseAddress = 0x0000;
+
+    m_mainBorder = true;
+    m_verticalBorder = true;
+
+    m_spriteDataPriority = 0x00;
+    m_spriteMulticolor = 0x00;
+    m_spriteXExpansion = 0x00;
+
+    m_badLinesEnabled = false;
+    m_badLine = false;
+
+    for (quint8 index = 0; index < 0x0F; ++index)
+        m_colorRegisters[index] = 0xF0;
+
+    m_rasterLine = 0;
+    m_rasterCycle = 0;
+    m_rasterCompare = 0x0000;
+    m_rasterX = 0;
+    m_rowCounter = 0;
+
+    m_interruptStatus = 0x00;
+    m_interruptMask = 0xF0;
+
+    updateHorizontalBorderTiming();
+    updateVerticalBorderTiming();
+
+    m_frameBufferIndex = 0;
+
+    for (quint32 index = 0; index < m_frameBufferSize; ++index)
+        m_ptrWriteFrameBuffer[index] = 0x00;
+}
+void VICII::reset()
+{
+    //
+    // The VIC-II is not directly reset by the C64 RESET line.
+    // Its registers and internal state remain unchanged.
+    //
+}
+
 quint8 VICII::readRegister(const quint8 address) const
 {
     //

@@ -26,8 +26,9 @@ public:
     void setPortBInputs(quint8 value)                       { m_portBInputs = value; }
 
     // Operations
-    void clock();
+    void initialize();
     void reset();
+    void clock();
 
 private:
     MOS6526Port* m_ptrPort = nullptr;

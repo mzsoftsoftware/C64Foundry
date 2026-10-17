@@ -1,4 +1,11 @@
-#ifndef EMULATORSTATE_H
-#define EMULATORSTATE_H
+#pragma once
 
-#endif // EMULATORSTATE_H
+namespace Emulator
+{
+enum class State
+{
+    PoweredOff,
+    Running,
+    Paused
+};
+}

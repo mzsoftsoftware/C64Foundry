@@ -185,6 +185,10 @@ void MOS6526::clock()
     }
 }
 
+void MOS6526::initialize()
+{
+    reset();
+}
 void MOS6526::reset()
 {
     m_portA = 0x00;

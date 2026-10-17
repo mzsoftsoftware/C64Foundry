@@ -13,6 +13,10 @@ public:
     explicit C64Memory();
     virtual ~C64Memory();
 
+    // Operations
+    void initialize();
+    void reset();
+
     // Operations RAM
     quint8 readRAM(const quint16 address) const;
     void writeRAM(const quint16 address, const quint8 value);

@@ -13,6 +13,10 @@ public:
     explicit VICII();
     virtual ~VICII();
 
+    // Operations
+    void initialize();
+    void reset();
+
     // Getter
     bool irq() const                                        { return (m_interruptStatus & m_interruptMask & 0x0F) != 0; }
     quint8 readRegister(quint8 address) const;

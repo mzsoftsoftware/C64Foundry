@@ -11,6 +11,11 @@ RAM::~RAM()
 {
 }
 
+void RAM::initialize()
+{
+    memset(m_data, 0, sizeof(m_data));
+}
+
 quint8 RAM::read(const quint16 address) const
 {
     return m_data[address];

@@ -269,7 +269,7 @@ bool EmulatorWorker::processRequests()
     }
     if (bResetRequested)
     {
-        m_ptrMachine->reset();
+        m_ptrMachine->softReset();
 
         m_totalCycles = 0;
         m_measuredCycles = 0;

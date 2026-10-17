@@ -66,6 +66,8 @@ void MOS6510::initialize()
     m_pageCrossingCycle = false;
 
     m_ptrBus->setCpuPortLines(portPins());
+
+    reset();
 }
 
 void MOS6510::reset()

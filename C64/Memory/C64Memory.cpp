@@ -26,6 +26,16 @@ C64Memory::~C64Memory()
     delete m_ptrColorRAM;
 }
 
+void C64Memory::initialize()
+{
+    m_ptrRAM->initialize();
+    m_ptrColorRAM->initialize();
+}
+void C64Memory::reset()
+{
+    // RAM und Color-RAM bleiben unverändert.
+}
+
 quint8 C64Memory::readRAM(const quint16 address) const
 {
     return m_ptrRAM->read(address);

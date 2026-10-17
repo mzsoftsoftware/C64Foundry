@@ -11,6 +11,12 @@ ColorRAM::~ColorRAM()
 {
 }
 
+void ColorRAM::initialize()
+{
+    for (quint16 address = 0; address < 1024; ++address)
+        m_data[address] = 0x00;
+}
+
 quint8 ColorRAM::read(const quint16 address) const
 {
     return m_data[address] & 0x0F;

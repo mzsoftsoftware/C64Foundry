@@ -29,7 +29,9 @@ public:
     void setBasicProgramEnd(quint16 endAddress);
 
     void powerOn();
-    void reset();
+    void powerOff();
+    void softReset();
+    void hardReset();
 
     void clock();
     void runCycles(quint64 cycles);
@@ -103,4 +105,7 @@ private:
 
     C64Keyboard*    m_ptrKeyboard = nullptr;
     bool            m_restorePressed = false;
+
+    IECBus*         m_ptrIECBus = nullptr;
+    bool            m_bPoweredOn = false;
 };
