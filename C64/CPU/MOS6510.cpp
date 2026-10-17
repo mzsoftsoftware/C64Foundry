@@ -70,6 +70,9 @@ void MOS6510::initialize()
 
 void MOS6510::reset()
 {
+    m_portDataDirection = 0x00;
+    m_ptrBus->setCpuPortLines(portPins());
+
     m_resetCycle = 0;
     m_irqPending = false;
     m_irqPolled = false;

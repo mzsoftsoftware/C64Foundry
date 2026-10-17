@@ -59,6 +59,9 @@ void MOS6510TestControlFlow::testJmpAbsoluteProgramCounterWrapAround()
     m_cpu.clock();
     m_cpu.clock();
 
+    // Restore full RAM mapping for the program-counter wrap-around test.
+    m_bus.setCpuPortLines(0x00);
+
     //
     // JMP operand crosses $FFFF -> $0000.
     //
@@ -272,6 +275,9 @@ void MOS6510TestControlFlow::testJsrProgramCounterWrapAround()
     m_cpu.clock();
     m_cpu.clock();
     m_cpu.clock();
+
+    // Restore full RAM mapping for the program-counter wrap-around test.
+    m_bus.setCpuPortLines(0x00);
 
     //
     // JSR operand crosses $FFFF -> $0000.
