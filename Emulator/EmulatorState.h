@@ -1,11 +1,8 @@
 #pragma once
 
-namespace Emulator
-{
-enum class State
+enum class EmulatorState
 {
     PoweredOff,
     Running,
     Paused
 };
-}

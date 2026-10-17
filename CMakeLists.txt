@@ -86,7 +86,7 @@ qt_add_executable(C64Foundry
     Gui/Keyboard/C64KeyboardWidget.h Gui/Keyboard/C64KeyboardWidget.cpp
     Gui/Video/VideoWindowWidget.h Gui/Video/VideoWindowWidget.cpp
 
-    Emulator/EmulatorSpeed.h
+
     Emulator/EmulatorController.h Emulator/EmulatorController.cpp
     Emulator/EmulatorWorker.h Emulator/EmulatorWorker.cpp
     Emulator/EmulatorThread.h Emulator/EmulatorThread.cpp
@@ -108,7 +108,8 @@ qt_add_executable(C64Foundry
     Storage/PRG/C64PRGFile.h Storage/PRG/C64PRGFile.cpp
 
     Resources/C64Foundry.qrc
-    Emulator/EmulatorState.h
+
+    Emulator/EmulatorTypes.h
 )
 
 target_include_directories(C64Foundry

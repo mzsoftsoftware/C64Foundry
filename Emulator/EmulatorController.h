@@ -3,7 +3,7 @@
 #include <QObject>
 #include <QByteArray>
 
-#include "EmulatorSpeed.h"
+#include "EmulatorTypes.h"
 
 #include "C64/C64ROMSet.h"
 #include "Input/InputEvent.h"
@@ -38,7 +38,8 @@ public slots:
 signals:
     void romSetLoaded(bool bLoaded);
 
-    void runningChanged(bool bRunning);
+    //void runningChanged(bool bRunning);
+    void stateChanged(EmulatorState state);
     void speedChanged(Emulator::Speed speed);
     void statisticsChanged(quint64 cycles, quint64 currentCyclesPerSecond, quint64 averageCyclesPerSecond);
 

@@ -7,7 +7,7 @@
 #include <QQueue>
 #include <QByteArray>
 
-#include "Emulator/EmulatorSpeed.h"
+#include "EmulatorTypes.h"
 #include "Input/InputEvent.h"
 
 class C64Machine;
@@ -42,7 +42,8 @@ public:
 
 signals:
     void romSetLoaded(bool bLoaded);
-    void runningChanged(bool bRunning);
+    void stateChanged(EmulatorState state);
+//    void runningChanged(bool bRunning);
     void speedChanged(Emulator::Speed spped);
     void statisticsChanged(quint64 cycles, quint64 currentCyclesPerSecond, quint64 averageCyclesPerSecond);
     void programLoaded(bool bLoaded);
@@ -60,7 +61,8 @@ private:
     QWaitCondition m_waitCondition;
 
     // Current state
-    bool m_bRunning = false;
+    EmulatorState m_state = EmulatorState::PoweredOff;
+    //bool m_bRunning = false;
     Emulator::Speed m_speed = Emulator::Speed::Normal;
     QElapsedTimer m_speedTimer;
     quint64 m_speedStartCycles = 0;
