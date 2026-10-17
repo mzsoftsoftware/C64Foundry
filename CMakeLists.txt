@@ -37,6 +37,8 @@ add_library(C64FoundryCore STATIC
 
     C64/CIA/MOS6526Port.h
     C64/CIA/MOS6526.h C64/CIA/MOS6526.cpp
+    C64/CIA/C64CIA1Port.h C64/CIA/C64CIA1Port.cpp
+    C64/CIA/C64CIA2Port.h C64/CIA/C64CIA2Port.cpp
 
     C64/Bus/C64Bus.h C64/Bus/C64Bus.cpp
 
@@ -48,7 +50,6 @@ add_library(C64FoundryCore STATIC
     C64/VIC-II/VIC-II.h C64/VIC-II/VIC-II.cpp
 
     C64/Input/C64Keyboard.h C64/Input/C64Keyboard.cpp
-    C64/Input/C64CIA1Port.h C64/Input/C64CIA1Port.cpp
 
     C64/IEC/IECBus.h C64/IEC/IECBus.cpp
 )

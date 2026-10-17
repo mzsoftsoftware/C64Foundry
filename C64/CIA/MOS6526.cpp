@@ -83,12 +83,16 @@ void MOS6526::writeRegister(const quint8 address, const quint8 value)
     {
     case 0x00:
         m_portA = value;
+        if (m_ptrPort)
+            m_ptrPort->portAOutputChanged(m_portA, m_dataDirectionA);
         return;
     case 0x01:
         m_portB = value;
         return;
     case 0x02:
         m_dataDirectionA = value;
+        if (m_ptrPort)
+            m_ptrPort->portAOutputChanged(m_portA, m_dataDirectionA);
         return;
     case 0x03:
         m_dataDirectionB = value;

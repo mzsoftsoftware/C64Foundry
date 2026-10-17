@@ -1,6 +1,6 @@
 #include "C64CIA1Port.h"
 
-#include "C64Keyboard.h"
+#include "C64/Input/C64Keyboard.h"
 
 
 C64CIA1Port::C64CIA1Port(C64Keyboard* ptrKeyboard)

@@ -10,8 +10,8 @@ class VICII;
 class MOS6526;
 
 #include "C64/C64Timing.h"
+#include "CIA/C64CIA1Port.h"
 #include "Input/C64Keyboard.h"
-#include "Input/C64CIA1Port.h"
 
 
 class C64Machine

@@ -1,6 +1,7 @@
 add_executable(IECBusTest
     main.cpp
     IECBusTest.h IECBusTest.cpp
+    C64CIA2PortTest.h C64CIA2PortTest.cpp
 )
 
 target_link_libraries(IECBusTest
