@@ -10,13 +10,33 @@ MOS6510TestBase::~MOS6510TestBase()
 {
 }
 
-void MOS6510TestBase::setupCpu()
+void MOS6510TestBase::setupCpu(const bool completeReset)
 {
     m_bus.setMemory(&m_memory);
     m_cpu.setBus(&m_bus);
     m_cpu.initialize();
 
+    //
+    // Use RAM instead of ROM for CPU tests.
+    //
     m_bus.setCpuPortLines(0x00);
+
+    if (completeReset)
+    {
+        //
+        // Complete the seven reset cycles.
+        //
+        for (quint8 cycle = 0; cycle < 7; ++cycle)
+        {
+            m_bus.clock();
+            m_cpu.clock();
+        }
+    }
+
+    //
+    // Clear bus access information from initialization.
+    //
+    m_bus.clock();
 }
 
 void MOS6510TestBase::clock()

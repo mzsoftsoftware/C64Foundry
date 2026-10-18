@@ -11,7 +11,7 @@ public:
     explicit MOS6510TestBase();
     virtual ~MOS6510TestBase();
 
-    void setupCpu();
+    void setupCpu(bool completeReset = true);
 
 protected:
     void clock();

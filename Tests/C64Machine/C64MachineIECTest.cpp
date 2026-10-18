@@ -204,6 +204,22 @@ void C64MachineIECTest::testResetAndPowerOn()
     machine.writeCIA2Register(0x00, 0x70);
 
     QVERIFY(!ptrBus->lineHigh(IECBus::Line::ATN));
+    QVERIFY(!ptrBus->lineHigh(IECBus::Line::CLK));
+    QVERIFY(!ptrBus->lineHigh(IECBus::Line::DATA));
+
+    //
+    // PowerOff must release all IEC lines.
+    //
+    machine.powerOff();
+
+    QVERIFY(ptrBus->lineHigh(IECBus::Line::ATN));
+    QVERIFY(ptrBus->lineHigh(IECBus::Line::CLK));
+    QVERIFY(ptrBus->lineHigh(IECBus::Line::DATA));
+
+    //
+    // PowerOn must reconnect the C64 with released IEC lines.
+    //
+    machine.powerOn();
 
     QVERIFY(ptrBus->lineHigh(IECBus::Line::ATN));
     QVERIFY(ptrBus->lineHigh(IECBus::Line::CLK));

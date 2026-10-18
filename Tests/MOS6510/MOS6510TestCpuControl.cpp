@@ -13,7 +13,7 @@ MOS6510TestCpuControl::~MOS6510TestCpuControl()
 
 void MOS6510TestCpuControl::testCycleCounter()
 {
-    setupCpu();
+    setupCpu(false);
 
     QCOMPARE(m_cpu.cycles(), quint64(0));
 
@@ -407,6 +407,7 @@ void MOS6510TestCpuControl::testReadyLowStopsIrqRead()
 
     m_cpu.setProgramCounter(0x2000);
     m_cpu.setStackPointer(0xFF);
+    m_cpu.setStatus(0x20); // I = 0, IRQ enabled
 
     m_memory.writeRAM(0x2000, 0xEA);
     m_memory.writeRAM(0x2001, 0xEA);
@@ -491,6 +492,7 @@ void MOS6510TestCpuControl::testReadyLowDoesNotStopIrqWrite()
 
     m_cpu.setProgramCounter(0x2000);
     m_cpu.setStackPointer(0xFF);
+    m_cpu.setStatus(0x20); // I = 0, IRQ enabled
 
     m_memory.writeRAM(0x2000, 0xEA);
     m_memory.writeRAM(0x2001, 0xEA);
@@ -685,6 +687,7 @@ void MOS6510TestCpuControl::testReset()
     m_memory.writeRAM(0xFFFD, 0x34);
 
     m_cpu.reset();
+    m_bus.setCpuPortLines(0x00);
 
     //
     // RESET takes seven cycles.
@@ -719,6 +722,10 @@ void MOS6510TestCpuControl::testResetVector()
     m_memory.writeRAM(0xFFFD, 0xAB);
 
     m_cpu.reset();
+    m_bus.setCpuPortLines(0x00);
+
+    QCOMPARE(m_bus.memorySource(0xFFFC), C64Bus::MemorySource::RAM);
+    QCOMPARE(m_bus.memorySource(0xFFFD), C64Bus::MemorySource::RAM);
 
     for (int i = 0; i < 7; ++i)
         clock();
@@ -802,6 +809,7 @@ void MOS6510TestCpuControl::testResetCycles()
     m_memory.writeRAM(0xABCD, 0xEA);
 
     m_cpu.reset();
+    m_bus.setCpuPortLines(0x00);
 
     //
     // C1
@@ -885,15 +893,28 @@ void MOS6510TestCpuControl::testIrq()
     m_cpu.setStackPointer(0x80);
     m_cpu.setStatus(0x20);
 
-    m_memory.writeRAM(0x1234, 0xEA);
+    m_memory.writeRAM(0x1234, 0xEA); // NOP
 
     m_memory.writeRAM(0xFFFE, 0x78);
     m_memory.writeRAM(0xFFFF, 0x56);
 
     m_cpu.setIrqLine(true);
 
-    for (int i = 0; i < 7; ++i)
+    //
+    // Complete the instruction preceding the IRQ.
+    //
+    clock();
+    clock();
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1235));
+
+    //
+    // Execute the seven IRQ cycles.
+    //
+    for (quint8 cycle = 0; cycle < 7; ++cycle)
+    {
         clock();
+    }
 
     QCOMPARE(m_cpu.programCounter(), quint16(0x5678));
     QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
@@ -936,12 +957,17 @@ void MOS6510TestCpuControl::testIrqStack()
     m_memory.writeRAM(0xFFFF, 0xAB);
 
     m_cpu.setIrqLine(true);
+    //
+    // Complete the instruction preceding the IRQ.
+    //
+    clock();
+    clock();
 
     for (int i = 0; i < 7; ++i)
         clock();
 
     QCOMPARE(m_memory.readRAM(0x0180), quint8(0x34));
-    QCOMPARE(m_memory.readRAM(0x017F), quint8(0x56));
+    QCOMPARE(m_memory.readRAM(0x017F), quint8(0x57));
 
     // IRQ: B=0, U=1
     QCOMPARE(m_memory.readRAM(0x017E), quint8(0x29));
@@ -964,6 +990,11 @@ void MOS6510TestCpuControl::testIrqStatus()
     m_memory.writeRAM(0xFFFF, 0x56);
 
     m_cpu.setIrqLine(true);
+    //
+    // Complete the instruction preceding the IRQ.
+    //
+    clock();
+    clock();
 
     for (int i = 0; i < 7; ++i)
         clock();
@@ -983,7 +1014,8 @@ void MOS6510TestCpuControl::testIrqCycles()
     m_cpu.setStackPointer(0x80);
     m_cpu.setStatus(0x39); // B=1, I=0
 
-    m_memory.writeRAM(0x3456, 0xEA);
+    m_memory.writeRAM(0x3456, 0xEA); // NOP
+    m_memory.writeRAM(0x3457, 0xEA);
 
     m_memory.writeRAM(0xFFFE, 0xCD);
     m_memory.writeRAM(0xFFFF, 0xAB);
@@ -992,19 +1024,29 @@ void MOS6510TestCpuControl::testIrqCycles()
 
     m_cpu.setIrqLine(true);
 
-    // C1: Dummy opcode read
+    // Complete the preceding NOP.
     clock();
     verifyRead(0x3456, 0xEA);
 
-    QCOMPARE(m_cpu.programCounter(), quint16(0x3456));
+    clock();
+    verifyRead(0x3457, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x3457));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x80));
+
+    // C1: Suppressed opcode fetch
+    clock();
+    verifyRead(0x3457, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x3457));
     QCOMPARE(m_cpu.stackPointer(), quint8(0x80));
     QVERIFY(!m_cpu.statusFlag(MOS6510StatusFlag::InterruptDisable));
 
     // C2: Second dummy read
     clock();
-    verifyRead(0x3456, 0xEA);
+    verifyRead(0x3457, 0xEA);
 
-    QCOMPARE(m_cpu.programCounter(), quint16(0x3456));
+    QCOMPARE(m_cpu.programCounter(), quint16(0x3457));
     QCOMPARE(m_cpu.stackPointer(), quint8(0x80));
     QVERIFY(!m_cpu.statusFlag(MOS6510StatusFlag::InterruptDisable));
 
@@ -1017,28 +1059,26 @@ void MOS6510TestCpuControl::testIrqCycles()
 
     // C4: Push PCL
     clock();
-    verifyWrite(0x017F, 0x56);
+    verifyWrite(0x017F, 0x57);
 
     QCOMPARE(m_cpu.stackPointer(), quint8(0x7E));
     QVERIFY(!m_cpu.statusFlag(MOS6510StatusFlag::InterruptDisable));
 
-    // C5: Push status.
-    // IRQ pushes B=0 and U=1.
-    // I is still clear during this cycle.
+    // C5: Push status, B=0 and U=1
     clock();
     verifyWrite(0x017E, 0x29);
 
     QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
     QVERIFY(!m_cpu.statusFlag(MOS6510StatusFlag::InterruptDisable));
 
-    // C6: Read IRQ vector low and set I
+    // C6: Read IRQ vector low
     clock();
     verifyRead(0xFFFE, 0xCD);
 
     QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
     QVERIFY(m_cpu.statusFlag(MOS6510StatusFlag::InterruptDisable));
 
-    // C7: Read IRQ vector high and finish interrupt sequence
+    // C7: Read IRQ vector high
     clock();
     verifyRead(0xFFFF, 0xAB);
 
@@ -1046,7 +1086,7 @@ void MOS6510TestCpuControl::testIrqCycles()
     QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
     QVERIFY(m_cpu.statusFlag(MOS6510StatusFlag::InterruptDisable));
 
-    // C8: First normal opcode fetch in IRQ handler
+    // C8: First opcode fetch in IRQ handler
     clock();
     verifyRead(0xABCD, 0xEA);
 }
@@ -1456,21 +1496,33 @@ void MOS6510TestCpuControl::testNmi()
     m_cpu.setStackPointer(0x80);
     m_cpu.setStatus(0x20);
 
-    m_memory.writeRAM(0x1234, 0xEA);
+    m_memory.writeRAM(0x1234, 0xEA); // NOP
 
     m_memory.writeRAM(0xFFFA, 0x78);
     m_memory.writeRAM(0xFFFB, 0x56);
 
     m_cpu.setNmiLine(true);
 
-    for (int i = 0; i < 7; ++i)
+    //
+    // Complete the instruction preceding the NMI.
+    //
+    clock();
+    clock();
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x1235));
+
+    //
+    // Execute the seven NMI cycles.
+    //
+    for (quint8 cycle = 0; cycle < 7; ++cycle)
+    {
         clock();
+    }
 
     QCOMPARE(m_cpu.programCounter(), quint16(0x5678));
     QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
 
-    QVERIFY(m_cpu.statusFlag(
-        MOS6510StatusFlag::InterruptDisable));
+    QVERIFY(m_cpu.statusFlag(MOS6510StatusFlag::InterruptDisable));
 }
 void MOS6510TestCpuControl::testNmiIgnoredInterruptDisable()
 {
@@ -1487,6 +1539,11 @@ void MOS6510TestCpuControl::testNmiIgnoredInterruptDisable()
     m_memory.writeRAM(0xFFFB, 0x56);
 
     m_cpu.setNmiLine(true);
+    //
+    // Complete the instruction preceding the NMI.
+    //
+    clock();
+    clock();
 
     for (int i = 0; i < 7; ++i)
         clock();
@@ -1512,12 +1569,17 @@ void MOS6510TestCpuControl::testNmiStack()
     m_memory.writeRAM(0xFFFB, 0xAB);
 
     m_cpu.setNmiLine(true);
+    //
+    // Complete the instruction preceding the NMI.
+    //
+    clock();
+    clock();
 
     for (int i = 0; i < 7; ++i)
         clock();
 
     QCOMPARE(m_memory.readRAM(0x0180), quint8(0x34));
-    QCOMPARE(m_memory.readRAM(0x017F), quint8(0x56));
+    QCOMPARE(m_memory.readRAM(0x017F), quint8(0x57));
 
     //
     // NMI pushes B=0 and U=1.
@@ -1544,6 +1606,11 @@ void MOS6510TestCpuControl::testNmiStatus()
     m_memory.writeRAM(0xFFFB, 0x56);
 
     m_cpu.setNmiLine(true);
+    //
+    // Complete the instruction preceding the NMI.
+    //
+    clock();
+    clock();
 
     for (int i = 0; i < 7; ++i)
         clock();
@@ -1572,6 +1639,7 @@ void MOS6510TestCpuControl::testNmiCycles()
     m_cpu.setStatus(0x39); // B=1, I=0
 
     m_memory.writeRAM(0x3456, 0xEA);
+    m_memory.writeRAM(0x3457, 0xEA);
 
     m_memory.writeRAM(0xFFFA, 0xCD);
     m_memory.writeRAM(0xFFFB, 0xAB);
@@ -1581,86 +1649,81 @@ void MOS6510TestCpuControl::testNmiCycles()
     m_cpu.setNmiLine(true);
 
     //
-    // C1
-    // Suppressed opcode fetch.
+    // Complete the preceding NOP.
     //
     clock();
-
     verifyRead(0x3456, 0xEA);
 
-    QCOMPARE(m_cpu.programCounter(), quint16(0x3456));
+    clock();
+    verifyRead(0x3457, 0xEA);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x3457));
     QCOMPARE(m_cpu.stackPointer(), quint8(0x80));
 
     //
-    // C2
-    // Second dummy read.
+    // C1: Suppressed opcode fetch.
     //
     clock();
+    verifyRead(0x3457, 0xEA);
 
-    verifyRead(0x3456, 0xEA);
-
-    QCOMPARE(m_cpu.programCounter(), quint16(0x3456));
+    QCOMPARE(m_cpu.programCounter(), quint16(0x3457));
     QCOMPARE(m_cpu.stackPointer(), quint8(0x80));
 
     //
-    // C3
-    // Push PCH.
+    // C2: Second dummy read.
     //
     clock();
+    verifyRead(0x3457, 0xEA);
 
+    QCOMPARE(m_cpu.programCounter(), quint16(0x3457));
+    QCOMPARE(m_cpu.stackPointer(), quint8(0x80));
+
+    //
+    // C3: Push PCH.
+    //
+    clock();
     verifyWrite(0x0180, 0x34);
+
     QCOMPARE(m_cpu.stackPointer(), quint8(0x7F));
 
     //
-    // C4
-    // Push PCL.
+    // C4: Push PCL.
     //
     clock();
+    verifyWrite(0x017F, 0x57);
 
-    verifyWrite(0x017F, 0x56);
     QCOMPARE(m_cpu.stackPointer(), quint8(0x7E));
 
     //
-    // C5
-    // Push P with B=0 and U=1.
+    // C5: Push status with B=0 and U=1.
     //
     clock();
-
     verifyWrite(0x017E, 0x29);
 
     QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
-
-    QVERIFY(!m_cpu.statusFlag(
-        MOS6510StatusFlag::InterruptDisable));
+    QVERIFY(!m_cpu.statusFlag(MOS6510StatusFlag::InterruptDisable));
 
     //
-    // C6
-    // Set I and read NMI vector low.
+    // C6: Read NMI vector low and set I.
     //
     clock();
-
     verifyRead(0xFFFA, 0xCD);
 
-    QVERIFY(m_cpu.statusFlag(
-        MOS6510StatusFlag::InterruptDisable));
+    QVERIFY(m_cpu.statusFlag(MOS6510StatusFlag::InterruptDisable));
 
     //
-    // C7
-    // Read NMI vector high.
+    // C7: Read NMI vector high.
     //
     clock();
-
     verifyRead(0xFFFB, 0xAB);
 
     QCOMPARE(m_cpu.programCounter(), quint16(0xABCD));
     QCOMPARE(m_cpu.stackPointer(), quint8(0x7D));
 
     //
-    // C8
-    // First normal opcode fetch in NMI handler.
+    // C8: First opcode fetch in NMI handler.
     //
     clock();
-
     verifyRead(0xABCD, 0xEA);
 
     QCOMPARE(m_cpu.programCounter(), quint16(0xABCE));
@@ -1685,6 +1748,11 @@ void MOS6510TestCpuControl::testNmiEdgeTriggered()
     // Generate one NMI edge and leave the line active.
     //
     m_cpu.setNmiLine(true);
+    //
+    // Complete the instruction preceding the first NMI.
+    //
+    clock();
+    clock();
 
     for (int i = 0; i < 7; ++i)
         clock();
@@ -1731,6 +1799,11 @@ void MOS6510TestCpuControl::testNmiSecondEdge()
     // First NMI edge.
     //
     m_cpu.setNmiLine(true);
+    //
+    // Complete the instruction preceding the first NMI.
+    //
+    clock();
+    clock();
 
     for (int i = 0; i < 7; ++i)
         clock();
@@ -2067,16 +2140,32 @@ void MOS6510TestCpuControl::testNmiBeforeBrk()
 {
     setupCpu();
 
-    m_cpu.setProgramCounter(0x2000);
+    m_cpu.setProgramCounter(0x1FFF);
     m_cpu.setStackPointer(0x80);
     m_cpu.setStatus(0x20);
 
-    m_memory.writeRAM(0x2000, 0x00);
+    m_memory.writeRAM(0x1FFF, 0xEA); // NOP
+    m_memory.writeRAM(0x2000, 0x00); // BRK
 
     m_memory.writeRAM(0xFFFA, 0x00);
     m_memory.writeRAM(0xFFFB, 0x40);
 
+    //
+    // Fetch the preceding NOP.
+    //
+    clock();
+    verifyRead(0x1FFF, 0xEA);
+
+    //
+    // Generate the NMI edge before the BRK opcode.
+    //
     m_cpu.setNmiLine(true);
+
+    //
+    // Complete NOP and accept NMI.
+    //
+    clock();
+    verifyRead(0x2000, 0x00);
 
     //
     // NMI C1 reads the BRK opcode but does not execute it.
@@ -2966,6 +3055,7 @@ void MOS6510TestCpuControl::testResetDuringInstruction()
     // The remaining LDA cycles must never execute.
     //
     m_cpu.reset();
+    m_bus.setCpuPortLines(0x00);
 
     //
     // RESET C1:
