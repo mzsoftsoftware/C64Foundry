@@ -237,6 +237,7 @@ void C64InputTest::testRestore()
 void C64InputTest::testRestoreAndCIA2NMI()
 {
     C64Machine machine;
+    machine.powerOn();
 
     //
     // The CPU NMI line must initially be inactive.
@@ -343,6 +344,7 @@ void C64InputTest::testCIA1KeyboardBusScan()
         characterFile.fileName());
 
     C64Machine machine;
+    machine.powerOn();
 
     QVERIFY(machine.loadROMSet(romSet));
 
@@ -401,7 +403,6 @@ void C64InputTest::testCIA1KeyboardBusScan()
 
     QVERIFY(machine.loadProgram(0x0800, program));
 
-    machine.powerOn();
     machine.runCycles(100);
 
     //

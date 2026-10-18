@@ -52,6 +52,7 @@ void C64MachineTest::testLoadInvalidROMSet()
 void C64MachineTest::testRunCycles()
 {
     C64Machine machine;
+    machine.powerOn();
     QCOMPARE(machine.cycles(), quint64(0));
     machine.runCycles(100);
     QCOMPARE(machine.cycles(), quint64(100));
@@ -62,6 +63,7 @@ void C64MachineTest::testRunCycles()
 void C64MachineTest::testLoadProgram()
 {
     C64Machine machine;
+    machine.powerOn();
 
     QByteArray program;
     program.append(char(0xA9));     // LDA #$42
@@ -120,6 +122,7 @@ void C64MachineTest::testExecuteProgram()
 
     C64ROMSet romSet(basicFile.fileName(), kernalFile.fileName(), characterFile.fileName());
     C64Machine machine;
+    machine.powerOn();
     QVERIFY(machine.loadROMSet(romSet));
 
     QByteArray program;
@@ -173,6 +176,7 @@ void C64MachineTest::testVICIIRasterIRQ()
         characterFile.fileName());
 
     C64Machine machine;
+    machine.powerOn();
 
     QVERIFY(machine.loadROMSet(romSet));
 
@@ -224,8 +228,6 @@ void C64MachineTest::testVICIIRasterIRQ()
 
     QVERIFY(machine.loadProgram(0x0900, irqHandler));
 
-    machine.powerOn();
-
     //
     // Enough time to reach raster line 1 and execute the IRQ handler.
     //
@@ -236,6 +238,7 @@ void C64MachineTest::testVICIIRasterIRQ()
 void C64MachineTest::testVICIIAEC()
 {
     C64Machine machine;
+    machine.powerOn();
 
     //
     // Enable display and select YSCROLL 0.
@@ -289,6 +292,7 @@ void C64MachineTest::testVICIIAEC()
 void C64MachineTest::testVICIIBAWrite()
 {
     C64Machine machine;
+    machine.powerOn();
 
     //
     // Enable display and select YSCROLL 0.
@@ -315,8 +319,6 @@ void C64MachineTest::testVICIIBAWrite()
     program.append(char(0x08));
 
     QVERIFY(machine.loadProgram(0x0800, program));
-
-    machine.powerOn();
 
     //
     // Advance to raster line $30, cycle 11.
@@ -346,6 +348,7 @@ void C64MachineTest::testVICIIBAWrite()
 void C64MachineTest::testVICIIAECStopsCPUAccess()
 {
     C64Machine machine;
+    machine.powerOn();
 
     //
     // Enable display and select YSCROLL 0.
@@ -385,6 +388,7 @@ void C64MachineTest::testVICIIAECStopsCPUAccess()
 void C64MachineTest::testVICIIBadLineCPUStall()
 {
     C64Machine machine;
+    machine.powerOn();
 
     //
     // Enable display and select YSCROLL 0.
@@ -454,6 +458,7 @@ void C64MachineTest::testCIARegisterAccess()
 void C64MachineTest::testCIAClock()
 {
     C64Machine machine;
+    machine.powerOn();
 
     //
     // Load different values into Timer A of both CIAs.
@@ -527,6 +532,7 @@ void C64MachineTest::testCIA1IRQ()
         characterFile.fileName());
 
     C64Machine machine;
+    machine.powerOn();
 
     QVERIFY(machine.loadROMSet(romSet));
 
@@ -578,8 +584,6 @@ void C64MachineTest::testCIA1IRQ()
     // Force load and start Timer A.
     //
     machine.writeCIA1Register(0x0E, 0x11);
-
-    machine.powerOn();
 
     //
     // Enough time for Timer A to underflow and

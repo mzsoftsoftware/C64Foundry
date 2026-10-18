@@ -12,7 +12,7 @@ add_compile_options(
     -Werror
 )
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS
+find_package(Qt6 6.6 REQUIRED COMPONENTS
     Core
     Widgets
     LinguistTools
@@ -87,6 +87,7 @@ qt_add_executable(C64Foundry
     Gui/Video/VideoWindowWidget.h Gui/Video/VideoWindowWidget.cpp
 
     Emulator/EmulatorTypes.h
+    Emulator/EmulationTime.h
     Emulator/EmulatorController.h Emulator/EmulatorController.cpp
     Emulator/EmulatorWorker.h Emulator/EmulatorWorker.cpp
     Emulator/EmulatorThread.h Emulator/EmulatorThread.cpp
@@ -108,6 +109,8 @@ qt_add_executable(C64Foundry
     Storage/PRG/C64PRGFile.h Storage/PRG/C64PRGFile.cpp
 
     Resources/C64Foundry.qrc
+    Emulator/EmulationClock.h Emulator/EmulationClock.cpp
+
 
 )
 

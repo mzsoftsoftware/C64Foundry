@@ -33,6 +33,7 @@ void C64MachineIECTest::testCIA2IECOutputs()
     C64Machine machine;
     machine.setIECBus(&bus);
     IECBus* ptrBus = &bus;
+    machine.powerOn();
 
     //
     // PA4-PA6 are IEC outputs.
@@ -69,6 +70,7 @@ void C64MachineIECTest::testCIA2DataDirection()
     C64Machine machine;
     machine.setIECBus(&bus);
     IECBus* ptrBus = &bus;
+    machine.powerOn();
 
     //
     // PRA high, but all pins configured as inputs.
@@ -114,6 +116,7 @@ void C64MachineIECTest::testExternalIECInputs()
     C64Machine machine;
     machine.setIECBus(&bus);
     IECBus* ptrBus = &bus;
+    machine.powerOn();
 
     const IECBus::ParticipantId drive = ptrBus->addParticipant();
 
@@ -173,6 +176,7 @@ void C64MachineIECTest::testResetAndPowerOn()
     C64Machine machine;
     machine.setIECBus(&bus);
     IECBus* ptrBus = &bus;
+    machine.powerOn();
 
     //
     // Pull all IEC lines low.
@@ -184,7 +188,7 @@ void C64MachineIECTest::testResetAndPowerOn()
     QVERIFY(!ptrBus->lineHigh(IECBus::Line::CLK));
     QVERIFY(!ptrBus->lineHigh(IECBus::Line::DATA));
 
-    machine.reset();
+    machine.softReset();
 
     //
     // Reset must release the C64's IEC outputs.
@@ -200,8 +204,6 @@ void C64MachineIECTest::testResetAndPowerOn()
     machine.writeCIA2Register(0x00, 0x70);
 
     QVERIFY(!ptrBus->lineHigh(IECBus::Line::ATN));
-
-    machine.powerOn();
 
     QVERIFY(ptrBus->lineHigh(IECBus::Line::ATN));
     QVERIFY(ptrBus->lineHigh(IECBus::Line::CLK));
