@@ -948,6 +948,13 @@ void MOS6510TestUndocumentedSLO::testExhaustive()
 
                 m_cpu.initialize();
 
+                m_bus.setCpuPortLines(0x00);
+
+                for (quint8 cycle = 0; cycle < 7; ++cycle)
+                {
+                    clock();
+                }
+
                 m_cpu.setAccumulator(a);
                 m_cpu.setXRegister(0x37);
                 m_cpu.setYRegister(0x59);

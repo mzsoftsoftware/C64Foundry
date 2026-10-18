@@ -2033,6 +2033,7 @@ void MOS6510TestCpuControl::testNmiDuringIrqBeforeVector()
     m_cpu.setStatus(0x20);
 
     m_memory.writeRAM(0x2000, 0xEA);
+    m_memory.writeRAM(0x2001, 0xEA);
 
     m_memory.writeRAM(0xFFFA, 0x00);
     m_memory.writeRAM(0xFFFB, 0x40);
@@ -2041,18 +2042,26 @@ void MOS6510TestCpuControl::testNmiDuringIrqBeforeVector()
     m_memory.writeRAM(0xFFFF, 0x50);
 
     m_cpu.setIrqLine(true);
+    //
+    // Complete the preceding NOP.
+    //
+    clock();
+    verifyRead(0x2000, 0xEA);
+
+    clock();
+    verifyRead(0x2001, 0xEA);
 
     //
     // IRQ C1
     //
     clock();
-    verifyRead(0x2000, 0xEA);
+    verifyRead(0x2001, 0xEA);
 
     //
     // IRQ C2
     //
     clock();
-    verifyRead(0x2000, 0xEA);
+    verifyRead(0x2001, 0xEA);
 
     //
     // IRQ C3: PCH
@@ -2064,7 +2073,7 @@ void MOS6510TestCpuControl::testNmiDuringIrqBeforeVector()
     // IRQ C4: PCL
     //
     clock();
-    verifyWrite(0x017F, 0x00);
+    verifyWrite(0x017F, 0x01);
 
     //
     // NMI arrives while IRQ sequence is already running.
@@ -2102,6 +2111,7 @@ void MOS6510TestCpuControl::testNmiDuringIrqTooLateForVector()
     m_cpu.setStatus(0x20);
 
     m_memory.writeRAM(0x2000, 0xEA);
+    m_memory.writeRAM(0x2001, 0xEA);
 
     m_memory.writeRAM(0xFFFA, 0x34);
     m_memory.writeRAM(0xFFFB, 0x12);
@@ -2110,6 +2120,14 @@ void MOS6510TestCpuControl::testNmiDuringIrqTooLateForVector()
     m_memory.writeRAM(0xFFFF, 0x56);
 
     m_cpu.setIrqLine(true);
+    //
+    // Complete the preceding NOP.
+    //
+    clock();
+    verifyRead(0x2000, 0xEA);
+
+    clock();
+    verifyRead(0x2001, 0xEA);
 
     //
     // IRQ C1-C5.
@@ -2151,21 +2169,20 @@ void MOS6510TestCpuControl::testNmiBeforeBrk()
     m_memory.writeRAM(0xFFFB, 0x40);
 
     //
-    // Fetch the preceding NOP.
-    //
-    clock();
-    verifyRead(0x1FFF, 0xEA);
-
-    //
-    // Generate the NMI edge before the BRK opcode.
+    // Generate the NMI edge before executing the preceding NOP.
     //
     m_cpu.setNmiLine(true);
 
     //
-    // Complete NOP and accept NMI.
+    // Complete the preceding NOP.
     //
     clock();
+    verifyRead(0x1FFF, 0xEA);
+
+    clock();
     verifyRead(0x2000, 0x00);
+
+    QCOMPARE(m_cpu.programCounter(), quint16(0x2000));
 
     //
     // NMI C1 reads the BRK opcode but does not execute it.
@@ -2316,6 +2333,7 @@ void MOS6510TestCpuControl::testNmiLateDuringIrq()
     m_cpu.setStatus(0x20);
 
     m_memory.writeRAM(0x2000, 0xEA);
+    m_memory.writeRAM(0x2001, 0xEA);
 
     //
     // NMI vector -> $4000
@@ -2336,6 +2354,14 @@ void MOS6510TestCpuControl::testNmiLateDuringIrq()
     m_memory.writeRAM(0x3001, 0xEA);
 
     m_cpu.setIrqLine(true);
+    //
+    // Complete the preceding NOP.
+    //
+    clock();
+    verifyRead(0x2000, 0xEA);
+
+    clock();
+    verifyRead(0x2001, 0xEA);
 
     //
     // IRQ C1-C5.
@@ -2473,6 +2499,7 @@ void MOS6510TestCpuControl::testNmiLostDuringIrqVectorFetch()
     m_cpu.setStatus(0x20);
 
     m_memory.writeRAM(0x2000, 0xEA);
+    m_memory.writeRAM(0x2001, 0xEA);
 
     //
     // NMI vector -> $4000
@@ -2494,6 +2521,15 @@ void MOS6510TestCpuControl::testNmiLostDuringIrqVectorFetch()
     m_memory.writeRAM(0x3002, 0xEA);
 
     m_cpu.setIrqLine(true);
+
+    //
+    // Complete the preceding NOP.
+    //
+    clock();
+    verifyRead(0x2000, 0xEA);
+
+    clock();
+    verifyRead(0x2001, 0xEA);
 
     //
     // IRQ C1-C5.
