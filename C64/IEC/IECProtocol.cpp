@@ -12,18 +12,21 @@ IECProtocol::IECProtocol(const quint8 deviceNumber, IECBus* ptrBus, const IECBus
 
 void IECProtocol::reset()
 {
+    releaseBus();
+
     m_state = State::Idle;
     m_mode = Mode::None;
 
     m_secondaryAddress = 0;
     m_receivedByte = 0;
     m_receivedBits = 0;
+    m_stateCycles = 0;
+    m_endOfInformation = false;
+
+    m_receivedBytes.clear();
 
     m_previousAttentionHigh = lineHigh(IECBus::Line::ATN);
     m_previousClockHigh = lineHigh(IECBus::Line::CLK);
-
-    setLineLow(IECBus::Line::CLK, false);
-    setLineLow(IECBus::Line::DATA, false);
 }
 
 void IECProtocol::clock()
@@ -34,12 +37,113 @@ void IECProtocol::clock()
     const bool attentionHigh = lineHigh(IECBus::Line::ATN);
     const bool clockHigh = lineHigh(IECBus::Line::CLK);
 
-    if (attentionHigh != m_previousAttentionHigh)
+    const bool attentionFalling = m_previousAttentionHigh && !attentionHigh;
+    const bool clockRising = !m_previousClockHigh && clockHigh;
+    const bool clockFalling = m_previousClockHigh && !clockHigh;
+
+    if (!lineHigh(IECBus::Line::RESET))
     {
-        if (!attentionHigh)
-            processAttention();
-        else if (m_state == State::Attention)
-            m_state = State::Idle;
+        reset();
+        return;
+    }
+
+    if (attentionFalling)
+        processAttention();
+
+    ++m_stateCycles;
+
+    switch (m_state)
+    {
+    case State::Idle:
+        break;
+
+    case State::Attention:
+        m_state = State::WaitClockLow;
+        m_stateCycles = 0;
+        break;
+
+    case State::WaitClockLow:
+        if (!clockHigh)
+        {
+            setLineLow(IECBus::Line::DATA, false);
+            m_state = State::WaitClockHigh;
+            m_stateCycles = 0;
+        }
+        break;
+
+    case State::WaitClockHigh:
+        if (clockHigh)
+        {
+            m_stateCycles = 0;
+            m_state = State::ReceiveBits;
+            m_receivedByte = 0;
+            m_receivedBits = 0;
+            m_endOfInformation = false;
+        }
+        break;
+
+    case State::ReceiveBits:
+        if (m_receivedBits == 0 && clockHigh && attentionHigh && m_mode == Mode::Listen && m_stateCycles >= EOI_TIMEOUT_CYCLES)
+        {
+            setLineLow(IECBus::Line::DATA, true);
+            m_endOfInformation = true;
+            m_state = State::AcknowledgeEOI;
+            m_stateCycles = 0;
+            break;
+        }
+
+        if (clockFalling)
+        {
+            m_stateCycles = 0;
+        }
+
+        if (clockRising)
+        {
+            if (lineHigh(IECBus::Line::DATA))
+                m_receivedByte |= static_cast<quint8>(1U << m_receivedBits);
+
+            ++m_receivedBits;
+
+            if (m_receivedBits == 8)
+            {
+                m_state = State::WaitByteEnd;
+                m_stateCycles = 0;
+            }
+        }
+        break;
+
+    case State::WaitByteEnd:
+        if (clockFalling)
+        {
+            processReceivedByte(m_receivedByte, !attentionHigh);
+
+            setLineLow(IECBus::Line::DATA, true);
+
+            m_state = State::Acknowledge;
+            m_stateCycles = 0;
+        }
+        break;
+
+    case State::Acknowledge:
+        if (m_stateCycles >= BYTE_ACK_CYCLES)
+        {
+            setLineLow(IECBus::Line::DATA, false);
+            beginNextByte();
+        }
+        break;
+
+    case State::AcknowledgeEOI:
+        if (m_stateCycles >= EOI_ACK_CYCLES)
+        {
+            setLineLow(IECBus::Line::DATA, false);
+
+            m_state = State::ReceiveBits;
+            m_stateCycles = 0;
+        }
+        break;
+
+    case State::Send:
+        break;
     }
 
     m_previousAttentionHigh = attentionHigh;
@@ -48,45 +152,114 @@ void IECProtocol::clock()
 
 void IECProtocol::processAttention()
 {
+    releaseBus();
+
     m_state = State::Attention;
+    m_stateCycles = 0;
 
     m_receivedByte = 0;
     m_receivedBits = 0;
+    m_endOfInformation = false;
+
+    // ATN wird von allen IEC-Geräten bestätigt.
+    setLineLow(IECBus::Line::DATA, true);
 }
 
 void IECProtocol::processReceivedByte(const quint8 value, const bool attention)
 {
-    if (!attention)
-        return;
-
-    if (value == 0x3F)
+    if (attention)
     {
-        m_mode = Mode::None;
+        if (value == 0x3F)
+        {
+            m_mode = Mode::None;
+            return;
+        }
+
+        if (value == 0x5F)
+        {
+            m_mode = Mode::None;
+            return;
+        }
+
+        if ((value & 0xE0) == 0x20)
+        {
+            m_mode = ((value & 0x1F) == m_deviceNumber) ? Mode::Listen : Mode::None;
+            return;
+        }
+
+        if ((value & 0xE0) == 0x40)
+        {
+            m_mode = ((value & 0x1F) == m_deviceNumber) ? Mode::Talk : Mode::None;
+            return;
+        }
+
+        if ((value & 0xE0) == 0x60 && m_mode != Mode::None)
+        {
+            m_secondaryAddress = value & 0x0F;
+            return;
+        }
+
+        if ((value & 0xF0) == 0xE0 && m_mode != Mode::None)
+        {
+            m_secondaryAddress = value & 0x0F;
+            return;
+        }
+
+        if ((value & 0xF0) == 0xF0 && m_mode != Mode::None)
+        {
+            m_secondaryAddress = value & 0x0F;
+            return;
+        }
+
+        return;
+    }
+
+    if (m_mode == Mode::Listen)
+    {
+        ReceivedByte receivedByte;
+        receivedByte.value = value;
+        receivedByte.secondaryAddress = m_secondaryAddress;
+        receivedByte.eoi = m_endOfInformation;
+
+        m_receivedBytes.enqueue(receivedByte);
+    }
+}
+
+void IECProtocol::beginNextByte()
+{
+    m_receivedByte = 0;
+    m_receivedBits = 0;
+    m_endOfInformation = false;
+    m_stateCycles = 0;
+
+    if (lineHigh(IECBus::Line::ATN) && m_mode != Mode::Listen)
+    {
         m_state = State::Idle;
-        return;
+        releaseBus();
     }
-
-    if (value == 0x5F)
+    else
     {
-        m_mode = Mode::None;
-        m_state = State::Idle;
-        return;
+        m_state = State::WaitClockHigh;
     }
+}
 
-    if ((value & 0xE0) == 0x20)
-    {
-        m_mode = ((value & 0x1F) == m_deviceNumber) ? Mode::Listen : Mode::None;
-        return;
-    }
+void IECProtocol::releaseBus()
+{
+    setLineLow(IECBus::Line::CLK, false);
+    setLineLow(IECBus::Line::DATA, false);
+}
 
-    if ((value & 0xE0) == 0x40)
-    {
-        m_mode = ((value & 0x1F) == m_deviceNumber) ? Mode::Talk : Mode::None;
-        return;
-    }
+bool IECProtocol::hasReceivedByte() const
+{
+    return !m_receivedBytes.isEmpty();
+}
 
-    if ((value & 0xE0) == 0x60 && m_mode != Mode::None)
-        m_secondaryAddress = value & 0x1F;
+IECProtocol::ReceivedByte IECProtocol::takeReceivedByte()
+{
+    if (m_receivedBytes.isEmpty())
+        return ReceivedByte();
+
+    return m_receivedBytes.dequeue();
 }
 
 bool IECProtocol::lineHigh(const IECBus::Line line) const
