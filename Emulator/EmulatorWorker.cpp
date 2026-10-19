@@ -13,11 +13,15 @@ EmulatorWorker::EmulatorWorker(IECBus* ptrIECBus, QObject* parent)
     m_ptrMachine = new C64Machine();
     m_ptrMachine->setIECBus(ptrIECBus);
 
+    m_ptrScheduler = new EmulationScheduler(m_ptrMachine);
+
     qDebug() << "EmulatorWorker: created";
 }
 EmulatorWorker::~EmulatorWorker()
 {
     m_ptrMachine->powerOff();
+
+    delete m_ptrScheduler;
     delete m_ptrMachine;
 
     qDebug() << "EmulatorWorker: destroyed";
@@ -57,8 +61,7 @@ void EmulatorWorker::run()
         if (m_state != Emulator::State::Running)
             continue;
 
-        for (quint64 index = 0; index < cyclesPerBatch; ++index)
-            m_ptrMachine->clock();
+        m_ptrScheduler->runCycles(cyclesPerBatch);
 
         m_totalCycles += cyclesPerBatch;
         m_measuredCycles += cyclesPerBatch;

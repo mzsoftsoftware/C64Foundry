@@ -52,6 +52,8 @@ add_library(C64FoundryCore STATIC
     C64/Input/C64Keyboard.h C64/Input/C64Keyboard.cpp
 
     C64/IEC/IECBus.h C64/IEC/IECBus.cpp
+    C64/IEC/IECDevice.h C64/IEC/IECDevice.cpp
+    C64/IEC/IECProtocol.h C64/IEC/IECProtocol.cpp
 )
 
 target_include_directories(C64FoundryCore
@@ -88,9 +90,11 @@ qt_add_executable(C64Foundry
 
     Emulator/EmulatorTypes.h
     Emulator/EmulationTime.h
+    Emulator/EmulationClock.h Emulator/EmulationClock.cpp
+    Emulator/EmulationScheduler.h Emulator/EmulationScheduler.cpp
     Emulator/EmulatorController.h Emulator/EmulatorController.cpp
-    Emulator/EmulatorWorker.h Emulator/EmulatorWorker.cpp
     Emulator/EmulatorThread.h Emulator/EmulatorThread.cpp
+    Emulator/EmulatorWorker.h Emulator/EmulatorWorker.cpp
 
     Input/InputEvent.h
     Input/Keyboard/KeyboardController.h Input/Keyboard/KeyboardController.cpp
@@ -109,9 +113,6 @@ qt_add_executable(C64Foundry
     Storage/PRG/C64PRGFile.h Storage/PRG/C64PRGFile.cpp
 
     Resources/C64Foundry.qrc
-    Emulator/EmulationClock.h Emulator/EmulationClock.cpp
-
-
 )
 
 target_include_directories(C64Foundry

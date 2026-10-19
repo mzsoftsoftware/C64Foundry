@@ -8,6 +8,7 @@
 #include <QByteArray>
 
 #include "EmulatorTypes.h"
+#include "EmulationScheduler.h"
 #include "Input/InputEvent.h"
 
 class C64Machine;
@@ -56,6 +57,7 @@ private:
 
 private:
     C64Machine *m_ptrMachine = nullptr;
+    EmulationScheduler* m_ptrScheduler = nullptr;
 
     QMutex m_mutex;
     QWaitCondition m_waitCondition;
