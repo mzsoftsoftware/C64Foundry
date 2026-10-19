@@ -1,5 +1,6 @@
-
 #include "IECProtocol.h"
+
+#include <QDebug>
 
 
 IECProtocol::IECProtocol(const quint8 deviceNumber, IECBus* ptrBus, const IECBus::ParticipantId participantId)
@@ -65,6 +66,8 @@ void IECProtocol::clock()
     case State::WaitClockLow:
         if (!clockHigh)
         {
+            qDebug() << "IECProtocol: CLK LOW, releasing DATA";
+
             setLineLow(IECBus::Line::DATA, false);
             m_state = State::WaitClockHigh;
             m_stateCycles = 0;
@@ -152,6 +155,8 @@ void IECProtocol::clock()
 
 void IECProtocol::processAttention()
 {
+    qDebug() << "IECProtocol: ATN detected, device" << m_deviceNumber;
+
     releaseBus();
 
     m_state = State::Attention;

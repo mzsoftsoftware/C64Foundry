@@ -1,5 +1,7 @@
 #include "C64CIA2Port.h"
 
+#include <QDebug>
+
 
 C64CIA2Port::C64CIA2Port()
 {
@@ -39,10 +41,10 @@ quint8 C64CIA2Port::portAInputs(quint8 portBOutput) const
     // PA3 = IEC DATA IN
     //
     if (!m_ptrIECBus->lineHigh(IECBus::Line::CLK))
-        inputs &= static_cast<quint8>(~0x04);
+        inputs &= static_cast<quint8>(~0x40);
 
     if (!m_ptrIECBus->lineHigh(IECBus::Line::DATA))
-        inputs &= static_cast<quint8>(~0x08);
+        inputs &= static_cast<quint8>(~0x80);
 
     return inputs;
 }
@@ -73,8 +75,7 @@ void C64CIA2Port::portAOutputChanged(quint8 portA, quint8 dataDirectionA)
     //
     const bool clockLow = (dataDirectionA & 0x10) && (portA & 0x10);
     const bool dataLow = (dataDirectionA & 0x20) && (portA & 0x20);
-    const bool attentionLow = (dataDirectionA & 0x40) && (portA & 0x40);
-
+    const bool attentionLow = (dataDirectionA & 0x08) && (portA & 0x08);
     m_ptrIECBus->setLineLow(m_participantId, IECBus::Line::CLK, clockLow);
     m_ptrIECBus->setLineLow(m_participantId, IECBus::Line::DATA, dataLow);
     m_ptrIECBus->setLineLow(m_participantId, IECBus::Line::ATN, attentionLow);

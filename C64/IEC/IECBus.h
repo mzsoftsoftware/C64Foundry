@@ -29,7 +29,11 @@ public:
 
 private:
     static quint8 lineMask(Line line);
+    void updateLineStates();
 
     QHash<ParticipantId, quint8> m_participants;
     ParticipantId m_nextParticipantId = 1;
+
+    // Bit gesetzt = mindestens ein Teilnehmer zieht die Leitung auf Low.
+    quint8 m_linesLow = 0;
 };

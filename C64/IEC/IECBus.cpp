@@ -20,7 +20,12 @@ IECBus::ParticipantId IECBus::addParticipant()
 
 bool IECBus::removeParticipant(const ParticipantId participant)
 {
-    return m_participants.remove(participant) != 0;
+    if (m_participants.remove(participant) == 0)
+        return false;
+
+    updateLineStates();
+
+    return true;
 }
 
 bool IECBus::setLineLow(const ParticipantId participant, const Line line, const bool low)
@@ -31,26 +36,35 @@ bool IECBus::setLineLow(const ParticipantId participant, const Line line, const 
         return false;
 
     const quint8 mask = lineMask(line);
+    const quint8 previousState = it.value();
 
     if (low)
         it.value() |= mask;
     else
         it.value() &= static_cast<quint8>(~mask);
 
+    // Keine Änderung: Der effektive Buszustand bleibt gleich.
+    if (it.value() == previousState)
+        return true;
+
+    updateLineStates();
+
     return true;
 }
 
 bool IECBus::lineHigh(const Line line) const
 {
-    const quint8 mask = lineMask(line);
+    return (m_linesLow & lineMask(line)) == 0;
+}
+
+void IECBus::updateLineStates()
+{
+    quint8 linesLow = 0;
 
     for (QHash<ParticipantId, quint8>::const_iterator it = m_participants.cbegin(); it != m_participants.cend(); ++it)
-    {
-        if ((it.value() & mask) != 0)
-            return false;
-    }
+        linesLow |= it.value();
 
-    return true;
+    m_linesLow = linesLow;
 }
 
 quint8 IECBus::lineMask(const Line line)

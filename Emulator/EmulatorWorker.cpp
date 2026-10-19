@@ -6,6 +6,8 @@
 #include "C64/C64Machine.h"
 #include "C64/C64Timing.h"
 
+#include "C64/IEC/IECAsciiPrinter.h"
+
 
 EmulatorWorker::EmulatorWorker(IECBus* ptrIECBus, QObject* parent)
     : QObject{parent}
@@ -15,11 +17,17 @@ EmulatorWorker::EmulatorWorker(IECBus* ptrIECBus, QObject* parent)
 
     m_ptrScheduler = new EmulationScheduler(m_ptrMachine);
 
+    m_ptrAsciiPrinter = new IECAsciiPrinter(ptrIECBus, 4);
+    m_ptrScheduler->addIECDevice(m_ptrAsciiPrinter);
+
     qDebug() << "EmulatorWorker: created";
 }
 EmulatorWorker::~EmulatorWorker()
 {
     m_ptrMachine->powerOff();
+
+    m_ptrScheduler->removeIECDevice(m_ptrAsciiPrinter);
+    delete m_ptrAsciiPrinter;
 
     delete m_ptrScheduler;
     delete m_ptrMachine;
@@ -62,6 +70,12 @@ void EmulatorWorker::run()
             continue;
 
         m_ptrScheduler->runCycles(cyclesPerBatch);
+        if (m_ptrAsciiPrinter->hasOutput())
+        {
+            const QByteArray output = m_ptrAsciiPrinter->takeOutput();
+
+            qDebug().noquote() << "IEC ASCII Printer:" << QString::fromLatin1(output);
+        }
 
         m_totalCycles += cyclesPerBatch;
         m_measuredCycles += cyclesPerBatch;
@@ -288,6 +302,7 @@ bool EmulatorWorker::processRequests()
         if (m_state == Emulator::State::PoweredOff)
         {
             m_ptrMachine->powerOn();
+            m_ptrAsciiPrinter->reset();
 
             m_totalCycles = 0;
             m_measuredCycles = 0;
@@ -323,6 +338,8 @@ bool EmulatorWorker::processRequests()
         if (bHardResetRequested)
         {
             m_ptrMachine->hardReset();
+            m_ptrAsciiPrinter->reset();
+
             bRestartTiming = m_state == Emulator::State::Running;
         }
         else if (bSoftResetRequested)

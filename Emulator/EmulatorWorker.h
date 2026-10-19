@@ -13,6 +13,7 @@
 
 class C64Machine;
 class IECBus;
+class IECAsciiPrinter;
 #include "C64/C64ROMSet.h"
 
 
@@ -58,6 +59,7 @@ private:
 private:
     C64Machine *m_ptrMachine = nullptr;
     EmulationScheduler* m_ptrScheduler = nullptr;
+    IECAsciiPrinter* m_ptrAsciiPrinter = nullptr;
 
     QMutex m_mutex;
     QWaitCondition m_waitCondition;
