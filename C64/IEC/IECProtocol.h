@@ -39,10 +39,10 @@ public:
 
     explicit IECProtocol(quint8 deviceNumber, IECBus* ptrBus, IECBus::ParticipantId participantId);
 
-    quint8 deviceNumber() const { return m_deviceNumber; }
-    State state() const { return m_state; }
-    Mode mode() const { return m_mode; }
-    quint8 secondaryAddress() const { return m_secondaryAddress; }
+    quint8 deviceNumber() const             { return m_deviceNumber; }
+    State state() const                     { return m_state; }
+    Mode mode() const                       { return m_mode; }
+    quint8 secondaryAddress() const         { return m_secondaryAddress; }
 
     void reset();
     void clock();
@@ -52,7 +52,7 @@ public:
 
 private:
     void processAttention();
-    void processReceivedByte(quint8 value, bool attention);
+    bool processReceivedByte(quint8 value, bool attention);
     void beginNextByte();
     void releaseBus();
 
@@ -62,7 +62,7 @@ private:
 private:
     static constexpr quint32 EOI_TIMEOUT_CYCLES = 200;
     static constexpr quint32 EOI_ACK_CYCLES = 80;
-    static constexpr quint32 BYTE_ACK_CYCLES = 30;
+    static constexpr quint32 BYTE_ACK_CYCLES = 100;
 
     quint8 m_deviceNumber = 0;
     IECBus* m_ptrBus = nullptr;
@@ -80,6 +80,7 @@ private:
     bool m_previousAttentionHigh = true;
     bool m_previousClockHigh = true;
     bool m_endOfInformation = false;
+    bool m_acknowledgeByte = false;
 
     QQueue<ReceivedByte> m_receivedBytes;
 };

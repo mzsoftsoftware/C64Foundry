@@ -79,4 +79,18 @@ void C64CIA2Port::portAOutputChanged(quint8 portA, quint8 dataDirectionA)
     m_ptrIECBus->setLineLow(m_participantId, IECBus::Line::CLK, clockLow);
     m_ptrIECBus->setLineLow(m_participantId, IECBus::Line::DATA, dataLow);
     m_ptrIECBus->setLineLow(m_participantId, IECBus::Line::ATN, attentionLow);
+
+    static quint8 previousOutputs = 0xFF;
+
+    const quint8 outputs = portA & 0x38;
+
+    if (outputs != previousOutputs)
+    {
+        qDebug().nospace()
+        << "CIA2 IEC: ATN=" << ((outputs & 0x08) != 0)
+        << " CLK=" << ((outputs & 0x10) != 0)
+        << " DATA=" << ((outputs & 0x20) != 0);
+
+        previousOutputs = outputs;
+    }
 }
