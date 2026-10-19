@@ -1,7 +1,5 @@
 #include "C64CIA2Port.h"
 
-#include <QDebug>
-
 
 C64CIA2Port::C64CIA2Port()
 {
@@ -86,11 +84,6 @@ void C64CIA2Port::portAOutputChanged(quint8 portA, quint8 dataDirectionA)
 
     if (outputs != previousOutputs)
     {
-        qDebug().nospace()
-        << "CIA2 IEC: ATN=" << ((outputs & 0x08) != 0)
-        << " CLK=" << ((outputs & 0x10) != 0)
-        << " DATA=" << ((outputs & 0x20) != 0);
-
         previousOutputs = outputs;
     }
 }

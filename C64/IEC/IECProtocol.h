@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <QQueue>
@@ -14,12 +13,14 @@ public:
     {
         Idle,
         Attention,
-        WaitClockLow,
         WaitClockHigh,
+        WaitFirstClockLow,
         ReceiveBits,
         WaitByteEnd,
         Acknowledge,
+        WaitNextClockHigh,
         AcknowledgeEOI,
+        WaitEOIRelease,
         Send
     };
 
@@ -52,7 +53,7 @@ public:
 
 private:
     void processAttention();
-    bool processReceivedByte(quint8 value, bool attention);
+    void processReceivedByte(quint8 value, bool attention);
     void beginNextByte();
     void releaseBus();
 
@@ -80,7 +81,10 @@ private:
     bool m_previousAttentionHigh = true;
     bool m_previousClockHigh = true;
     bool m_endOfInformation = false;
-    bool m_acknowledgeByte = false;
+
+    // Merkt sich, ob während der aktuellen ATN-Phase
+    // CLK bereits auf Low gewesen ist.
+    bool m_attentionClockLowSeen = false;
 
     QQueue<ReceivedByte> m_receivedBytes;
 };

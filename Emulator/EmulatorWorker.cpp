@@ -73,8 +73,6 @@ void EmulatorWorker::run()
         if (m_ptrAsciiPrinter->hasOutput())
         {
             const QByteArray output = m_ptrAsciiPrinter->takeOutput();
-
-            qDebug().noquote() << "IEC ASCII Printer:" << QString::fromLatin1(output);
         }
 
         m_totalCycles += cyclesPerBatch;
