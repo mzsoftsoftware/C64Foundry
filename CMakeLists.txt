@@ -115,6 +115,7 @@ qt_add_executable(C64Foundry
     Storage/PRG/C64PRGFile.h Storage/PRG/C64PRGFile.cpp
 
     Resources/C64Foundry.qrc
+    C64/IEC/IECDeviceManager.h C64/IEC/IECDeviceManager.cpp
 )
 
 target_include_directories(C64Foundry
