@@ -28,8 +28,7 @@ public:
     C64Machine* machine() const;
 
     // Requests
-    EmulatorRequest::RequestId nextRequestId();
-    void request(EmulatorRequest* ptrRequest);
+    EmulatorRequest::RequestId request(EmulatorRequest* ptrRequest);
 
 public slots:
     void loadROMSet(const C64ROMSet& romSet);

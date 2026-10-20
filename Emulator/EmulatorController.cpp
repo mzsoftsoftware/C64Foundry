@@ -33,7 +33,7 @@ EmulatorController::~EmulatorController()
 {
     qDebug() << "EmulatorController: shutting down";
 
-    m_ptrWorker->request(new EmulatorRequestShutdown(nextRequestId()));
+    m_ptrWorker->request(new EmulatorRequestShutdown());
     m_ptrThread->wait();
 
     delete m_ptrWorker;
@@ -48,33 +48,58 @@ C64Machine* EmulatorController::machine() const
     return m_ptrWorker->machine();
 }
 
-
-EmulatorRequest::RequestId EmulatorController::nextRequestId()
-{
-    return m_nextRequestId++;
-}
-
-
-void EmulatorController::request(EmulatorRequest* ptrRequest)
+EmulatorRequest::RequestId EmulatorController::request(EmulatorRequest* ptrRequest)
 {
     if (ptrRequest == nullptr)
-        return;
+        return 0;
 
+    const EmulatorRequest::RequestId id = m_nextRequestId++;
+
+    ptrRequest->setId(id);
     m_ptrWorker->request(ptrRequest);
-}
 
+    return id;
+}
 
 void EmulatorController::loadROMSet(const C64ROMSet& romSet)
 {
-    qDebug() << "EmulatorController: load ROM set";
-
-    request(new EmulatorRequestLoadROMSet(nextRequestId(), romSet));
+    request(new EmulatorRequestLoadROMSet(romSet));
 }
-
 
 void EmulatorController::input(const InputEvent& event)
 {
-    request(new EmulatorRequestInput(nextRequestId(), event));
+    request(new EmulatorRequestInput(event));
+}
+
+void EmulatorController::powerOn()
+{
+    request(new EmulatorRequestPowerOn());
+}
+
+void EmulatorController::powerOff()
+{
+    cancelProgramLoad();
+    request(new EmulatorRequestPowerOff());
+}
+
+void EmulatorController::pause(bool bPaused)
+{
+    request(new EmulatorRequestPause(bPaused));
+}
+
+void EmulatorController::softReset()
+{
+    request(new EmulatorRequestSoftReset());
+}
+
+void EmulatorController::hardReset()
+{
+    request(new EmulatorRequestHardReset());
+}
+
+void EmulatorController::setSpeed(Emulator::Speed speed)
+{
+    request(new EmulatorRequestSetSpeed(speed));
 }
 
 
@@ -89,80 +114,26 @@ void EmulatorController::loadProgram(quint16 address, const QByteArray& data)
 
     m_programAddress = address;
     m_programData = data;
-
     m_bResumeAfterProgramLoad = m_state != Emulator::State::Paused;
 
     switch (m_state)
     {
     case Emulator::State::PoweredOff:
         m_programLoadState = ProgramLoadState::WaitingForPowerOn;
-        m_programRequestId = nextRequestId();
-        request(new EmulatorRequestPowerOn(m_programRequestId));
+        m_programRequestId = request(new EmulatorRequestPowerOn());
         break;
 
     case Emulator::State::Running:
         m_programLoadState = ProgramLoadState::WaitingForPause;
-        m_programRequestId = nextRequestId();
-        request(new EmulatorRequestPause(m_programRequestId, true));
+        m_programRequestId = request(new EmulatorRequestPause(true));
         break;
 
     case Emulator::State::Paused:
         m_programLoadState = ProgramLoadState::WaitingForProgram;
-        m_programRequestId = nextRequestId();
-        request(new EmulatorRequestLoadProgram(m_programRequestId, m_programAddress, m_programData));
+        m_programRequestId = request(new EmulatorRequestLoadProgram(m_programAddress, m_programData));
         break;
     }
 }
-
-
-void EmulatorController::powerOn()
-{
-    qDebug() << "EmulatorController: powerOn";
-
-    request(new EmulatorRequestPowerOn(nextRequestId()));
-}
-
-
-void EmulatorController::powerOff()
-{
-    qDebug() << "EmulatorController: powerOff";
-
-    cancelProgramLoad();
-    request(new EmulatorRequestPowerOff(nextRequestId()));
-}
-
-
-void EmulatorController::pause(bool bPaused)
-{
-    qDebug() << "EmulatorController: pause" << bPaused;
-
-    request(new EmulatorRequestPause(nextRequestId(), bPaused));
-}
-
-
-void EmulatorController::softReset()
-{
-    qDebug() << "EmulatorController: softReset";
-
-    request(new EmulatorRequestSoftReset(nextRequestId()));
-}
-
-
-void EmulatorController::hardReset()
-{
-    qDebug() << "EmulatorController: hardReset";
-
-    request(new EmulatorRequestHardReset(nextRequestId()));
-}
-
-
-void EmulatorController::setSpeed(Emulator::Speed speed)
-{
-    qDebug() << "EmulatorController: setSpeed" << speed;
-
-    request(new EmulatorRequestSetSpeed(nextRequestId(), speed));
-}
-
 
 void EmulatorController::onWorkerStateChanged(Emulator::State state)
 {
@@ -219,13 +190,11 @@ void EmulatorController::processProgramLoadResponse(const QSharedPointer<Emulato
             return;
         }
 
+        // Nach PowerOn
         m_programLoadState = ProgramLoadState::WaitingForPause;
-        m_programRequestId = nextRequestId();
-
-        request(new EmulatorRequestPause(m_programRequestId, true));
+        m_programRequestId = request(new EmulatorRequestPause(true));
         break;
     }
-
     case ProgramLoadState::WaitingForPause:
     {
         if (!bSuccess)
@@ -235,32 +204,28 @@ void EmulatorController::processProgramLoadResponse(const QSharedPointer<Emulato
             return;
         }
 
+        // Nach Pause
         m_programLoadState = ProgramLoadState::WaitingForProgram;
-        m_programRequestId = nextRequestId();
-
-        request(new EmulatorRequestLoadProgram(m_programRequestId, m_programAddress, m_programData));
+        m_programRequestId = request(new EmulatorRequestLoadProgram(m_programAddress, m_programData));
         break;
     }
-
     case ProgramLoadState::WaitingForProgram:
     {
-        emit programLoaded(bSuccess);
+        const bool bLoaded = bSuccess;
 
         if (m_bResumeAfterProgramLoad)
         {
             m_programLoadState = ProgramLoadState::WaitingForResume;
-            m_programRequestId = nextRequestId();
-
-            request(new EmulatorRequestPause(m_programRequestId, false));
+            m_programRequestId = request(new EmulatorRequestPause(false));
         }
         else
         {
             cancelProgramLoad();
         }
 
+        emit programLoaded(bLoaded);
         break;
     }
-
     case ProgramLoadState::WaitingForResume:
     {
         if (!bSuccess)
@@ -269,7 +234,6 @@ void EmulatorController::processProgramLoadResponse(const QSharedPointer<Emulato
         cancelProgramLoad();
         break;
     }
-
     case ProgramLoadState::Idle:
         break;
     }

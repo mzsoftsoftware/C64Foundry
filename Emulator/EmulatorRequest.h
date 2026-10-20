@@ -8,6 +8,8 @@
 #include "Input/InputEvent.h"
 
 
+class EmulatorController;
+
 class EmulatorRequest
 {
 public:
@@ -27,9 +29,8 @@ public:
         Shutdown
     };
 
-    EmulatorRequest(Type type, RequestId id)
+    explicit EmulatorRequest(Type type)
         : m_type(type)
-        , m_id(id)
     {
     }
 
@@ -42,16 +43,20 @@ public:
     RequestId id() const { return m_id; }
 
 private:
+    friend class EmulatorController;
+
+    void setId(RequestId id) { m_id = id; }
+
     Type m_type;
-    RequestId m_id;
+    RequestId m_id = 0;
 };
 
 
 class EmulatorRequestLoadROMSet : public EmulatorRequest
 {
 public:
-    EmulatorRequestLoadROMSet(RequestId id, const C64ROMSet& romSet)
-        : EmulatorRequest(Type::LoadROMSet, id)
+    EmulatorRequestLoadROMSet(const C64ROMSet& romSet)
+        : EmulatorRequest(Type::LoadROMSet)
         , m_romSet(romSet)
     {
     }
@@ -66,8 +71,8 @@ private:
 class EmulatorRequestLoadProgram : public EmulatorRequest
 {
 public:
-    EmulatorRequestLoadProgram(RequestId id, quint16 address, const QByteArray& data)
-        : EmulatorRequest(Type::LoadProgram, id)
+    EmulatorRequestLoadProgram(quint16 address, const QByteArray& data)
+        : EmulatorRequest(Type::LoadProgram)
         , m_address(address)
         , m_data(data)
     {
@@ -85,8 +90,8 @@ private:
 class EmulatorRequestInput : public EmulatorRequest
 {
 public:
-    EmulatorRequestInput(RequestId id, const InputEvent& event)
-        : EmulatorRequest(Type::Input, id)
+    EmulatorRequestInput(const InputEvent& event)
+        : EmulatorRequest(Type::Input)
         , m_event(event)
     {
     }
@@ -101,8 +106,8 @@ private:
 class EmulatorRequestPowerOn : public EmulatorRequest
 {
 public:
-    explicit EmulatorRequestPowerOn(RequestId id)
-        : EmulatorRequest(Type::PowerOn, id)
+    explicit EmulatorRequestPowerOn()
+        : EmulatorRequest(Type::PowerOn)
     {
     }
 };
@@ -111,8 +116,8 @@ public:
 class EmulatorRequestPowerOff : public EmulatorRequest
 {
 public:
-    explicit EmulatorRequestPowerOff(RequestId id)
-        : EmulatorRequest(Type::PowerOff, id)
+    explicit EmulatorRequestPowerOff()
+        : EmulatorRequest(Type::PowerOff)
     {
     }
 };
@@ -121,8 +126,8 @@ public:
 class EmulatorRequestPause : public EmulatorRequest
 {
 public:
-    EmulatorRequestPause(RequestId id, bool paused)
-        : EmulatorRequest(Type::Pause, id)
+    EmulatorRequestPause(bool paused)
+        : EmulatorRequest(Type::Pause)
         , m_paused(paused)
     {
     }
@@ -137,8 +142,8 @@ private:
 class EmulatorRequestSoftReset : public EmulatorRequest
 {
 public:
-    explicit EmulatorRequestSoftReset(RequestId id)
-        : EmulatorRequest(Type::SoftReset, id)
+    explicit EmulatorRequestSoftReset()
+        : EmulatorRequest(Type::SoftReset)
     {
     }
 };
@@ -147,8 +152,8 @@ public:
 class EmulatorRequestHardReset : public EmulatorRequest
 {
 public:
-    explicit EmulatorRequestHardReset(RequestId id)
-        : EmulatorRequest(Type::HardReset, id)
+    explicit EmulatorRequestHardReset()
+        : EmulatorRequest(Type::HardReset)
     {
     }
 };
@@ -157,8 +162,8 @@ public:
 class EmulatorRequestSetSpeed : public EmulatorRequest
 {
 public:
-    EmulatorRequestSetSpeed(RequestId id, Emulator::Speed speed)
-        : EmulatorRequest(Type::SetSpeed, id)
+    EmulatorRequestSetSpeed(Emulator::Speed speed)
+        : EmulatorRequest(Type::SetSpeed)
         , m_speed(speed)
     {
     }
@@ -173,8 +178,8 @@ private:
 class EmulatorRequestShutdown : public EmulatorRequest
 {
 public:
-    explicit EmulatorRequestShutdown(RequestId id)
-        : EmulatorRequest(Type::Shutdown, id)
+    explicit EmulatorRequestShutdown()
+        : EmulatorRequest(Type::Shutdown)
     {
     }
 };
