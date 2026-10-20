@@ -72,7 +72,8 @@ void EmulatorWorker::run()
         m_ptrScheduler->runCycles(cyclesPerBatch);
         if (m_ptrAsciiPrinter->hasOutput())
         {
-            const QByteArray output = m_ptrAsciiPrinter->takeOutput();
+            const QByteArray output = m_ptrAsciiPrinter->outputSnapshot();
+            m_ptrAsciiPrinter->tearOff();
         }
 
         m_totalCycles += cyclesPerBatch;

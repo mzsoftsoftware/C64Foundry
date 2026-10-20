@@ -2,7 +2,7 @@
 
 
 IECAsciiPrinter::IECAsciiPrinter(IECBus* ptrBus, const quint8 deviceNumber)
-    : IECDevice(deviceNumber, ptrBus)
+    : IECPrinter(deviceNumber, ptrBus)
     , m_protocol(deviceNumber, iecBus(), participantId())
 {
 }
@@ -11,10 +11,15 @@ IECAsciiPrinter::~IECAsciiPrinter()
 {
 }
 
+QList<quint8> IECAsciiPrinter::supportedDeviceNumbers() const
+{
+    return { 4, 5 };
+}
+
 void IECAsciiPrinter::reset()
 {
+    IECPrinter::reset();
     m_protocol.reset();
-    m_output.clear();
 }
 
 void IECAsciiPrinter::clock()
@@ -25,25 +30,17 @@ void IECAsciiPrinter::clock()
     {
         const IECProtocol::ReceivedByte receivedByte = m_protocol.takeReceivedByte();
 
-        m_output.append(static_cast<char>(receivedByte.value));
+        m_pendingOutput.append(static_cast<char>(receivedByte.value));
+
+        if (receivedByte.eoi)
+        {
+            appendOutput(m_pendingOutput);
+            m_pendingOutput.clear();
+        }
     }
 }
 
-bool IECAsciiPrinter::hasOutput() const
+void IECAsciiPrinter::clearPendingOutput()
 {
-    return !m_output.isEmpty();
-}
-
-QByteArray IECAsciiPrinter::takeOutput()
-{
-    QByteArray output;
-
-    output.swap(m_output);
-
-    return output;
-}
-
-void IECAsciiPrinter::clearOutput()
-{
-    m_output.clear();
+    m_pendingOutput.clear();
 }

@@ -54,6 +54,7 @@ add_library(C64FoundryCore STATIC
     C64/IEC/IECBus.h C64/IEC/IECBus.cpp
     C64/IEC/IECDevice.h C64/IEC/IECDevice.cpp
     C64/IEC/IECProtocol.h C64/IEC/IECProtocol.cpp
+    C64/IEC/IECPrinter.h C64/IEC/IECPrinter.cpp
     C64/IEC/IECAsciiPrinter.h C64/IEC/IECAsciiPrinter.cpp
 )
 
