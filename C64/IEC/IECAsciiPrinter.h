@@ -1,11 +1,9 @@
 #pragma once
 
 #include "IECPrinter.h"
-
-#include <QByteArray>
-#include <QList>
-
 #include "IECProtocol.h"
+
+#include <QList>
 
 
 class IECAsciiPrinter : public IECPrinter
@@ -19,10 +17,6 @@ public:
     void reset() override;
     void clock() override;
 
-protected:
-    void clearPendingOutput() override;
-
 private:
     IECProtocol m_protocol;
-    QByteArray m_pendingOutput;
 };

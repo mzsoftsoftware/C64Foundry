@@ -25,7 +25,21 @@ QByteArray IECPrinter::outputSnapshot() const
     return m_output;
 }
 
-void IECPrinter::appendOutput(const QByteArray& data)
+void IECPrinter::receiveByte(const quint8 value)
+{
+    m_pendingOutput.append(static_cast<char>(value));
+}
+
+void IECPrinter::finishTransmission()
+{
+    if (m_pendingOutput.isEmpty())
+        return;
+
+    processReceivedData(m_pendingOutput);
+    m_pendingOutput.clear();
+}
+
+void IECPrinter::processReceivedData(const QByteArray& data)
 {
     if (data.isEmpty())
         return;
@@ -34,13 +48,9 @@ void IECPrinter::appendOutput(const QByteArray& data)
     ++m_outputRevision;
 }
 
-void IECPrinter::clearPendingOutput()
-{
-}
-
 void IECPrinter::tearOff()
 {
-    clearPendingOutput();
+    m_pendingOutput.clear();
 
     if (!m_output.isEmpty())
     {

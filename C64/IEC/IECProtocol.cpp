@@ -19,6 +19,7 @@ void IECProtocol::reset()
     m_secondaryAddress = 0;
     m_receivedByte = 0;
     m_receivedBits = 0;
+    m_listenEnded = false;
     m_stateCycles = 0;
 
     m_endOfInformation = false;
@@ -223,6 +224,9 @@ void IECProtocol::processReceivedByte(const quint8 value, const bool attention)
     {
         if (value == 0x3F)
         {
+            if (m_mode == Mode::Listen)
+                m_listenEnded = true;
+
             m_mode = Mode::None;
             return;
         }
@@ -311,6 +315,13 @@ IECProtocol::ReceivedByte IECProtocol::takeReceivedByte()
         return ReceivedByte();
 
     return m_receivedBytes.dequeue();
+}
+
+bool IECProtocol::takeListenEnded()
+{
+    const bool ended = m_listenEnded;
+    m_listenEnded = false;
+    return ended;
 }
 
 bool IECProtocol::lineHigh(const IECBus::Line line) const

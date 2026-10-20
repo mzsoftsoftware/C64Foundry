@@ -50,6 +50,7 @@ public:
 
     bool hasReceivedByte() const;
     ReceivedByte takeReceivedByte();
+    bool takeListenEnded();
 
 private:
     void processAttention();
@@ -75,6 +76,7 @@ private:
     quint8 m_secondaryAddress = 0;
     quint8 m_receivedByte = 0;
     quint8 m_receivedBits = 0;
+    bool m_listenEnded = false;
 
     quint32 m_stateCycles = 0;
 

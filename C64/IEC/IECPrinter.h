@@ -19,10 +19,13 @@ public:
     void reset() override;
 
 protected:
-    void appendOutput(const QByteArray& data);
-    virtual void clearPendingOutput();
+    void receiveByte(quint8 value);
+    void finishTransmission();
+
+    virtual void processReceivedData(const QByteArray& data);
 
 private:
     QByteArray m_output;
+    QByteArray m_pendingOutput;
     quint64 m_outputRevision = 0;
 };

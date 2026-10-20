@@ -30,17 +30,12 @@ void IECAsciiPrinter::clock()
     {
         const IECProtocol::ReceivedByte receivedByte = m_protocol.takeReceivedByte();
 
-        m_pendingOutput.append(static_cast<char>(receivedByte.value));
+        receiveByte(receivedByte.value);
 
         if (receivedByte.eoi)
-        {
-            appendOutput(m_pendingOutput);
-            m_pendingOutput.clear();
-        }
+            finishTransmission();
     }
-}
 
-void IECAsciiPrinter::clearPendingOutput()
-{
-    m_pendingOutput.clear();
+    if (m_protocol.takeListenEnded())
+        finishTransmission();
 }
