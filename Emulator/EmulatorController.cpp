@@ -26,6 +26,9 @@ EmulatorController::EmulatorController(QObject* parent)
     connect(m_ptrWorker, &EmulatorWorker::speedChanged, this, &EmulatorController::speedChanged);
     connect(m_ptrWorker, &EmulatorWorker::statisticsChanged, this, &EmulatorController::statisticsChanged);
 
+    connect(m_ptrWorker, &EmulatorWorker::iecDeviceChanged, this, &EmulatorController::iecDeviceChanged, Qt::QueuedConnection);
+    connect(m_ptrWorker, &EmulatorWorker::printerOutputChanged, this, &EmulatorController::printerOutputChanged, Qt::QueuedConnection);
+
     m_ptrThread->start();
 }
 

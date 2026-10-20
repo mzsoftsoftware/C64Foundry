@@ -6,6 +6,7 @@
 #include "EmulatorTypes.h"
 #include "EmulatorRequest.h"
 #include "EmulatorResponse.h"
+#include "EmulatorIECDeviceEvent.h"
 
 #include "C64/C64ROMSet.h"
 #include "Input/InputEvent.h"
@@ -52,6 +53,9 @@ signals:
     void stateChanged(Emulator::State state);
     void speedChanged(Emulator::Speed speed);
     void statisticsChanged(quint64 cycles, quint64 currentCyclesPerSecond, quint64 averageCyclesPerSecond);
+
+    void iecDeviceChanged(EmulatorIECDeviceEvent::Type type, IECDeviceConfiguration::DeviceId deviceId);
+    void printerOutputChanged(IECDeviceConfiguration::DeviceId deviceId, quint64 revision, QByteArray output);
 
 private slots:
     void onWorkerRequestDone(QSharedPointer<EmulatorResponse> response);
