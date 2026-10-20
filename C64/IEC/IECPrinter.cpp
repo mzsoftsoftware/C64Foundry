@@ -61,5 +61,7 @@ void IECPrinter::tearOff()
 
 void IECPrinter::reset()
 {
-    tearOff();
+    m_pendingOutput.clear();
+    m_output.clear();
+    m_outputRevision = 0;
 }

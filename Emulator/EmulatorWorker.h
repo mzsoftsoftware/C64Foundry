@@ -57,6 +57,9 @@ private:
     bool setIECDeviceConfiguration(const IECDeviceConfiguration& configuration);
     bool removeIECDevice(IECDeviceConfiguration::DeviceId id);
 
+    void invalidatePrinterOutputRevision(IECDeviceConfiguration::DeviceId deviceId);
+    void invalidateAllPrinterOutputRevisions();
+
     void publishIECDeviceEvent(EmulatorIECDeviceEvent::Type type, IECDeviceConfiguration::DeviceId deviceId);
     void publishPrinterOutputChanges();
 

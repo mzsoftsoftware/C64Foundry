@@ -304,6 +304,7 @@ EmulatorResponse::Result EmulatorWorker::processRequest(const EmulatorRequest* p
 
         m_ptrMachine->powerOn();
         m_ptrIECDeviceManager->reset();
+        invalidateAllPrinterOutputRevisions();
         publishIECDeviceEvent(EmulatorIECDeviceEvent::Type::Reset, 0);
         publishPrinterOutputChanges();
 
@@ -378,6 +379,7 @@ EmulatorResponse::Result EmulatorWorker::processRequest(const EmulatorRequest* p
 
         m_ptrMachine->hardReset();
         m_ptrIECDeviceManager->reset();
+        invalidateAllPrinterOutputRevisions();
         publishIECDeviceEvent(EmulatorIECDeviceEvent::Type::Reset, 0);
         publishPrinterOutputChanges();
 
@@ -580,6 +582,7 @@ bool EmulatorWorker::setIECDeviceConfiguration(const IECDeviceConfiguration& con
     if (ptrRemovedDevice != nullptr)
     {
         m_ptrScheduler->removeIECDevice(ptrRemovedDevice);
+        invalidatePrinterOutputRevision(configuration.id());
         delete ptrRemovedDevice;
     }
 
@@ -601,10 +604,21 @@ bool EmulatorWorker::removeIECDevice(IECDeviceConfiguration::DeviceId id)
     if (ptrRemovedDevice != nullptr)
     {
         m_ptrScheduler->removeIECDevice(ptrRemovedDevice);
+        invalidatePrinterOutputRevision(id);
         delete ptrRemovedDevice;
     }
 
     return true;
+}
+
+void EmulatorWorker::invalidatePrinterOutputRevision(IECDeviceConfiguration::DeviceId deviceId)
+{
+    m_printerOutputRevisions.remove(deviceId);
+}
+
+void EmulatorWorker::invalidateAllPrinterOutputRevisions()
+{
+    m_printerOutputRevisions.clear();
 }
 
 void EmulatorWorker::publishIECDeviceEvent(EmulatorIECDeviceEvent::Type type, IECDeviceConfiguration::DeviceId deviceId)
