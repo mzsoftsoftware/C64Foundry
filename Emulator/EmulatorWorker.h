@@ -5,11 +5,14 @@
 #include <QWaitCondition>
 #include <QElapsedTimer>
 #include <QQueue>
+#include <QByteArray>
+#include <QHash>
 
 #include "EmulatorTypes.h"
 #include "EmulationScheduler.h"
 #include "EmulatorRequest.h"
 #include "EmulatorResponse.h"
+#include "EmulatorIECDeviceEvent.h"
 
 class C64Machine;
 class IECBus;
@@ -37,6 +40,9 @@ signals:
     void speedChanged(Emulator::Speed speed);
     void statisticsChanged(quint64 cycles, quint64 currentCyclesPerSecond, quint64 averageCyclesPerSecond);
 
+    void iecDeviceChanged(EmulatorIECDeviceEvent::Type type, IECDeviceConfiguration::DeviceId deviceId);
+    void printerOutputChanged(IECDeviceConfiguration::DeviceId deviceId, quint64 revision, QByteArray output);
+
 private:
     void waitForRequests();
     bool processNextRequest();
@@ -51,10 +57,15 @@ private:
     bool setIECDeviceConfiguration(const IECDeviceConfiguration& configuration);
     bool removeIECDevice(IECDeviceConfiguration::DeviceId id);
 
+    void publishIECDeviceEvent(EmulatorIECDeviceEvent::Type type, IECDeviceConfiguration::DeviceId deviceId);
+    void publishPrinterOutputChanges();
+
 private:
     C64Machine* m_ptrMachine = nullptr;
     EmulationScheduler* m_ptrScheduler = nullptr;
     IECDeviceManager* m_ptrIECDeviceManager = nullptr;
+
+    QHash<IECDeviceConfiguration::DeviceId, quint64> m_printerOutputRevisions;
 
     QMutex m_mutex;
     QWaitCondition m_waitCondition;

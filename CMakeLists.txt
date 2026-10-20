@@ -107,6 +107,7 @@ qt_add_executable(C64Foundry
     Emulator/EmulatorController.h Emulator/EmulatorController.cpp
     Emulator/EmulatorThread.h Emulator/EmulatorThread.cpp
     Emulator/EmulatorWorker.h Emulator/EmulatorWorker.cpp
+    Emulator/EmulatorIECDeviceEvent.h
 
     Input/InputEvent.h
     Input/Keyboard/KeyboardController.h Input/Keyboard/KeyboardController.cpp

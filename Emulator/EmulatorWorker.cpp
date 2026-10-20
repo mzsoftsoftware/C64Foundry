@@ -9,11 +9,14 @@
 
 #include "C64/IEC/IECDeviceManager.h"
 #include "C64/IEC/IECDevice.h"
+#include "C64/IEC/IECPrinter.h"
 
 
 EmulatorWorker::EmulatorWorker(IECBus* ptrIECBus, QObject* parent)
     : QObject{parent}
 {
+    qRegisterMetaType<EmulatorIECDeviceEvent::Type>("EmulatorIECDeviceEvent::Type");
+
     m_ptrMachine = new C64Machine();
     m_ptrMachine->setIECBus(ptrIECBus);
 
@@ -100,6 +103,7 @@ void EmulatorWorker::run()
             continue;
 
         m_ptrScheduler->runCycles(cyclesPerBatch);
+        publishPrinterOutputChanges();
 
         m_totalCycles += cyclesPerBatch;
         m_measuredCycles += cyclesPerBatch;
@@ -220,6 +224,8 @@ bool EmulatorWorker::processNextRequest()
 
     delete ptrRequest;
 
+    publishPrinterOutputChanges();
+
     emit requestDone(response);
 
     return bRestartTiming;
@@ -298,6 +304,8 @@ EmulatorResponse::Result EmulatorWorker::processRequest(const EmulatorRequest* p
 
         m_ptrMachine->powerOn();
         m_ptrIECDeviceManager->reset();
+        publishIECDeviceEvent(EmulatorIECDeviceEvent::Type::Reset, 0);
+        publishPrinterOutputChanges();
 
         m_totalCycles = 0;
         m_measuredCycles = 0;
@@ -370,6 +378,8 @@ EmulatorResponse::Result EmulatorWorker::processRequest(const EmulatorRequest* p
 
         m_ptrMachine->hardReset();
         m_ptrIECDeviceManager->reset();
+        publishIECDeviceEvent(EmulatorIECDeviceEvent::Type::Reset, 0);
+        publishPrinterOutputChanges();
 
         if (m_state == Emulator::State::Running)
             bRestartTiming = true;
@@ -447,8 +457,8 @@ QSharedPointer<EmulatorResponse> EmulatorWorker::processIECRequest(const Emulato
         {
             response->setDeviceId(id);
             result = EmulatorResponse::Result::Success;
+            publishIECDeviceEvent(EmulatorIECDeviceEvent::Type::Added, id);
         }
-
         break;
     }
 
@@ -460,8 +470,8 @@ QSharedPointer<EmulatorResponse> EmulatorWorker::processIECRequest(const Emulato
         {
             response->setDeviceId(ptrIECRequest->deviceId());
             result = EmulatorResponse::Result::Success;
+            publishIECDeviceEvent(EmulatorIECDeviceEvent::Type::Removed, ptrIECRequest->deviceId());
         }
-
         break;
     }
 
@@ -473,8 +483,8 @@ QSharedPointer<EmulatorResponse> EmulatorWorker::processIECRequest(const Emulato
         {
             response->setDeviceId(ptrIECRequest->configuration().id());
             result = EmulatorResponse::Result::Success;
+            publishIECDeviceEvent(EmulatorIECDeviceEvent::Type::ConfigurationChanged, ptrIECRequest->configuration().id());
         }
-
         break;
     }
 
@@ -595,4 +605,53 @@ bool EmulatorWorker::removeIECDevice(IECDeviceConfiguration::DeviceId id)
     }
 
     return true;
+}
+
+void EmulatorWorker::publishIECDeviceEvent(EmulatorIECDeviceEvent::Type type, IECDeviceConfiguration::DeviceId deviceId)
+{
+    qDebug() << "EmulatorWorker: iecDeviceChanged"
+             << "type:" << static_cast<int>(type)
+             << "deviceId:" << deviceId;
+
+    emit iecDeviceChanged(type, deviceId);
+}
+
+void EmulatorWorker::publishPrinterOutputChanges()
+{
+    const QList<IECDeviceManager::ConfigurationPtr> configurations = m_ptrIECDeviceManager->configurations();
+    QHash<IECDeviceConfiguration::DeviceId, quint64> currentRevisions;
+
+    for (const IECDeviceManager::ConfigurationPtr& ptrConfiguration : configurations)
+    {
+        IECPrinter* ptrPrinter = dynamic_cast<IECPrinter*>(m_ptrIECDeviceManager->device(ptrConfiguration->id()));
+
+        if (ptrPrinter == nullptr)
+            continue;
+
+        const IECDeviceConfiguration::DeviceId deviceId = ptrConfiguration->id();
+        const quint64 revision = ptrPrinter->outputRevision();
+
+        currentRevisions.insert(deviceId, revision);
+
+        if (!m_printerOutputRevisions.contains(deviceId))
+        {
+            if (revision == 0 && !ptrPrinter->hasOutput())
+                continue;
+        }
+        else if (m_printerOutputRevisions.value(deviceId) == revision)
+        {
+            continue;
+        }
+
+        const QByteArray output = ptrPrinter->outputSnapshot();
+
+        qDebug() << "EmulatorWorker: printerOutputChanged"
+                 << "deviceId:" << deviceId
+                 << "revision:" << revision
+                 << "bytes:" << output.size();
+
+        emit printerOutputChanged(deviceId, revision, output);
+    }
+
+    m_printerOutputRevisions = currentRevisions;
 }
