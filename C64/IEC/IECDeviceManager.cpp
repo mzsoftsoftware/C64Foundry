@@ -30,24 +30,24 @@ QList<quint8> IECDeviceManager::supportedDeviceNumbers(const IECDeviceType type)
     return {};
 }
 
-QList<IECDeviceManager::DeviceInfo> IECDeviceManager::devices() const
+QList<IECDeviceConfiguration> IECDeviceManager::configurations() const
 {
-    QList<DeviceInfo> result;
+    QList<IECDeviceConfiguration> result;
 
     for (const DeviceEntry& entry : m_devices)
-        result.append(entry.info);
+        result.append(entry.configuration);
 
     return result;
 }
 
-bool IECDeviceManager::deviceInfo(const DeviceId id, DeviceInfo& info) const
+bool IECDeviceManager::configuration(const DeviceId id, IECDeviceConfiguration& configuration) const
 {
     const DeviceEntry* ptrEntry = findEntry(id);
 
     if (ptrEntry == nullptr)
         return false;
 
-    info = ptrEntry->info;
+    configuration = ptrEntry->configuration;
     return true;
 }
 
@@ -55,7 +55,7 @@ IECDeviceManager::DeviceEntry* IECDeviceManager::findEntry(const DeviceId id)
 {
     for (DeviceEntry& entry : m_devices)
     {
-        if (entry.info.id == id)
+        if (entry.configuration.id == id)
             return &entry;
     }
 
@@ -66,7 +66,7 @@ const IECDeviceManager::DeviceEntry* IECDeviceManager::findEntry(const DeviceId 
 {
     for (const DeviceEntry& entry : m_devices)
     {
-        if (entry.info.id == id)
+        if (entry.configuration.id == id)
             return &entry;
     }
 
@@ -77,22 +77,22 @@ bool IECDeviceManager::isDeviceNumberReserved(const quint8 deviceNumber, const D
 {
     for (const DeviceEntry& entry : m_devices)
     {
-        if (entry.info.id != excludedId && entry.info.deviceNumber == deviceNumber)
+        if (entry.configuration.id != excludedId && entry.configuration.deviceNumber == deviceNumber)
             return true;
     }
 
     return false;
 }
 
-IECDevice* IECDeviceManager::createDevice(const IECDeviceType type, const quint8 deviceNumber) const
+IECDevice* IECDeviceManager::createDevice(const IECDeviceConfiguration& configuration) const
 {
     if (m_ptrBus == nullptr)
         return nullptr;
 
-    switch (type)
+    switch (configuration.type)
     {
     case IECDeviceType::PrinterASCII:
-        return new IECAsciiPrinter(m_ptrBus, deviceNumber);
+        return new IECAsciiPrinter(m_ptrBus, configuration.deviceNumber);
     }
 
     return nullptr;
@@ -109,14 +109,14 @@ IECDeviceManager::DeviceId IECDeviceManager::addDevice(const IECDeviceType type)
 
         DeviceEntry entry;
 
-        entry.info.id = m_nextDeviceId++;
-        entry.info.type = type;
-        entry.info.deviceNumber = deviceNumber;
-        entry.info.enabled = false;
+        entry.configuration.id = m_nextDeviceId++;
+        entry.configuration.type = type;
+        entry.configuration.deviceNumber = deviceNumber;
+        entry.configuration.enabled = false;
 
         m_devices.append(entry);
 
-        return entry.info.id;
+        return entry.configuration.id;
     }
 
     return 0;
@@ -128,7 +128,7 @@ bool IECDeviceManager::removeDevice(const DeviceId id, IECDevice*& ptrRemovedDev
 
     for (qsizetype index = 0; index < m_devices.size(); ++index)
     {
-        if (m_devices[index].info.id != id)
+        if (m_devices[index].configuration.id != id)
             continue;
 
         ptrRemovedDevice = m_devices[index].ptrDevice;
@@ -140,70 +140,39 @@ bool IECDeviceManager::removeDevice(const DeviceId id, IECDevice*& ptrRemovedDev
     return false;
 }
 
-bool IECDeviceManager::setDeviceEnabled(const DeviceId id, const bool enabled, IECDevice*& ptrRemovedDevice)
+bool IECDeviceManager::setConfiguration(const IECDeviceConfiguration& configuration, IECDevice*& ptrRemovedDevice)
 {
     ptrRemovedDevice = nullptr;
 
-    DeviceEntry* ptrEntry = findEntry(id);
+    DeviceEntry* ptrEntry = findEntry(configuration.id);
 
     if (ptrEntry == nullptr)
         return false;
 
-    if (ptrEntry->info.enabled == enabled)
+    const QList<quint8> supportedNumbers = supportedDeviceNumbers(configuration.type);
+
+    if (!supportedNumbers.contains(configuration.deviceNumber))
+        return false;
+
+    if (isDeviceNumberReserved(configuration.deviceNumber, configuration.id))
+        return false;
+
+    if (ptrEntry->configuration == configuration)
         return true;
 
-    if (enabled)
+    IECDevice* ptrNewDevice = nullptr;
+
+    if (configuration.enabled)
     {
-        IECDevice* ptrDevice = createDevice(ptrEntry->info.type, ptrEntry->info.deviceNumber);
-
-        if (ptrDevice == nullptr)
-            return false;
-
-        ptrEntry->ptrDevice = ptrDevice;
-        ptrEntry->info.enabled = true;
-    }
-    else
-    {
-        ptrRemovedDevice = ptrEntry->ptrDevice;
-        ptrEntry->ptrDevice = nullptr;
-        ptrEntry->info.enabled = false;
-    }
-
-    return true;
-}
-
-bool IECDeviceManager::setDeviceNumber(const DeviceId id, const quint8 deviceNumber, IECDevice*& ptrRemovedDevice)
-{
-    ptrRemovedDevice = nullptr;
-
-    DeviceEntry* ptrEntry = findEntry(id);
-
-    if (ptrEntry == nullptr)
-        return false;
-
-    const QList<quint8> supportedNumbers = supportedDeviceNumbers(ptrEntry->info.type);
-
-    if (!supportedNumbers.contains(deviceNumber))
-        return false;
-
-    if (isDeviceNumberReserved(deviceNumber, id))
-        return false;
-
-    if (ptrEntry->info.deviceNumber == deviceNumber)
-        return true;
-
-    if (ptrEntry->info.enabled)
-    {
-        IECDevice* ptrNewDevice = createDevice(ptrEntry->info.type, deviceNumber);
+        ptrNewDevice = createDevice(configuration);
 
         if (ptrNewDevice == nullptr)
             return false;
-
-        ptrRemovedDevice = ptrEntry->ptrDevice;
-        ptrEntry->ptrDevice = ptrNewDevice;
     }
 
-    ptrEntry->info.deviceNumber = deviceNumber;
+    ptrRemovedDevice = ptrEntry->ptrDevice;
+    ptrEntry->ptrDevice = ptrNewDevice;
+    ptrEntry->configuration = configuration;
 
     return true;
 }

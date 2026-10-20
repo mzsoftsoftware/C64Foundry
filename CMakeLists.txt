@@ -52,6 +52,7 @@ add_library(C64FoundryCore STATIC
     C64/Input/C64Keyboard.h C64/Input/C64Keyboard.cpp
 
     C64/IEC/IECDeviceManager.h C64/IEC/IECDeviceManager.cpp
+    C64/IEC/IECDeviceConfiguration.h C64/IEC/IECDeviceConfiguration.cpp
     C64/IEC/IECBus.h C64/IEC/IECBus.cpp
     C64/IEC/IECDevice.h C64/IEC/IECDevice.cpp
     C64/IEC/IECProtocol.h C64/IEC/IECProtocol.cpp
