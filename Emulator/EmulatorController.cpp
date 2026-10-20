@@ -21,7 +21,7 @@ EmulatorController::EmulatorController(QObject* parent)
     m_ptrWorker = new EmulatorWorker(m_ptrIECBus);
     m_ptrThread = new EmulatorThread(m_ptrWorker, this);
 
-    connect(m_ptrWorker, &EmulatorWorker::requestDone, this, &EmulatorController::onWorkerRequestDone);
+    connect(m_ptrWorker, &EmulatorWorker::requestDone, this, &EmulatorController::onWorkerRequestDone, Qt::QueuedConnection);
     connect(m_ptrWorker, &EmulatorWorker::stateChanged, this, &EmulatorController::onWorkerStateChanged);
     connect(m_ptrWorker, &EmulatorWorker::speedChanged, this, &EmulatorController::speedChanged);
     connect(m_ptrWorker, &EmulatorWorker::statisticsChanged, this, &EmulatorController::statisticsChanged);
@@ -33,7 +33,7 @@ EmulatorController::~EmulatorController()
 {
     qDebug() << "EmulatorController: shutting down";
 
-    m_ptrWorker->request(new EmulatorRequestShutdown());
+    request(new EmulatorRequestShutdown());
     m_ptrThread->wait();
 
     delete m_ptrWorker;
