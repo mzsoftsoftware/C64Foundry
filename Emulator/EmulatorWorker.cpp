@@ -22,27 +22,29 @@ EmulatorWorker::EmulatorWorker(IECBus* ptrIECBus, QObject* parent)
 
     // Vorläufige Standardkonfiguration, bis die Geräteverwaltung
     // über die Anwendung konfiguriert werden kann.
-
     const IECDeviceManager::DeviceId deviceId = m_ptrIECDeviceManager->addDevice(IECDeviceType::PrinterASCII);
-
     if (deviceId != 0)
     {
-        IECDeviceConfiguration configuration;
+        IECDeviceManager::ConfigurationPtr ptrConfiguration = m_ptrIECDeviceManager->configuration(deviceId);
 
-        if (m_ptrIECDeviceManager->configuration(deviceId, configuration))
+        if (!ptrConfiguration.isNull())
         {
-            configuration.enabled = true;
+            ptrConfiguration->setEnabled(true);
 
             IECDevice* ptrRemovedDevice = nullptr;
 
-            if (m_ptrIECDeviceManager->setConfiguration(configuration, ptrRemovedDevice))
+            if (m_ptrIECDeviceManager->setConfiguration(*ptrConfiguration, ptrRemovedDevice))
             {
+                if (ptrRemovedDevice != nullptr)
+                {
+                    m_ptrScheduler->removeIECDevice(ptrRemovedDevice);
+                    delete ptrRemovedDevice;
+                }
+
                 IECDevice* ptrDevice = m_ptrIECDeviceManager->device(deviceId);
 
                 if (ptrDevice != nullptr)
                     m_ptrScheduler->addIECDevice(ptrDevice);
-
-                delete ptrRemovedDevice;
             }
         }
     }
@@ -457,28 +459,26 @@ void EmulatorWorker::synchronizeSpeed()
         QThread::usleep(static_cast<unsigned long>(waitMicroseconds));
 }
 
-
 void EmulatorWorker::registerIECDevices()
 {
-    const QList<IECDeviceConfiguration> configurations = m_ptrIECDeviceManager->configurations();
+    const QList<IECDeviceManager::ConfigurationPtr> configurations = m_ptrIECDeviceManager->configurations();
 
-    for (const IECDeviceConfiguration& configuration : configurations)
+    for (const IECDeviceManager::ConfigurationPtr& ptrConfiguration : configurations)
     {
-        IECDevice* ptrDevice = m_ptrIECDeviceManager->device(configuration.id);
+        IECDevice* ptrDevice = m_ptrIECDeviceManager->device(ptrConfiguration->id());
 
         if (ptrDevice != nullptr)
             m_ptrScheduler->addIECDevice(ptrDevice);
     }
 }
 
-
 void EmulatorWorker::unregisterIECDevices()
 {
-    const QList<IECDeviceConfiguration> configurations = m_ptrIECDeviceManager->configurations();
+    const QList<IECDeviceManager::ConfigurationPtr> configurations = m_ptrIECDeviceManager->configurations();
 
-    for (const IECDeviceConfiguration& configuration : configurations)
+    for (const IECDeviceManager::ConfigurationPtr& ptrConfiguration : configurations)
     {
-        IECDevice* ptrDevice = m_ptrIECDeviceManager->device(configuration.id);
+        IECDevice* ptrDevice = m_ptrIECDeviceManager->device(ptrConfiguration->id());
 
         if (ptrDevice != nullptr)
             m_ptrScheduler->removeIECDevice(ptrDevice);

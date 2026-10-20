@@ -1,6 +1,7 @@
 #include "IECDeviceManager.h"
 
 #include "IECAsciiPrinter.h"
+#include "IECAsciiPrinterConfiguration.h"
 
 
 IECDeviceManager::IECDeviceManager(IECBus* ptrBus)
@@ -14,12 +15,14 @@ IECDeviceManager::~IECDeviceManager()
         delete entry.ptrDevice;
 }
 
+
 QList<IECDeviceType> IECDeviceManager::availableDeviceTypes() const
 {
     return { IECDeviceType::PrinterASCII };
 }
 
-QList<quint8> IECDeviceManager::supportedDeviceNumbers(const IECDeviceType type) const
+
+QList<quint8> IECDeviceManager::supportedDeviceNumbers(IECDeviceType type) const
 {
     switch (type)
     {
@@ -30,105 +33,131 @@ QList<quint8> IECDeviceManager::supportedDeviceNumbers(const IECDeviceType type)
     return {};
 }
 
-QList<IECDeviceConfiguration> IECDeviceManager::configurations() const
+
+QList<IECDeviceManager::ConfigurationPtr> IECDeviceManager::configurations() const
 {
-    QList<IECDeviceConfiguration> result;
+    QList<ConfigurationPtr> result;
 
     for (const DeviceEntry& entry : m_devices)
-        result.append(entry.configuration);
+        result.append(ConfigurationPtr(entry.configuration->clone()));
 
     return result;
 }
 
-bool IECDeviceManager::configuration(const DeviceId id, IECDeviceConfiguration& configuration) const
+
+IECDeviceManager::ConfigurationPtr IECDeviceManager::configuration(DeviceId id) const
 {
     const DeviceEntry* ptrEntry = findEntry(id);
 
     if (ptrEntry == nullptr)
-        return false;
+        return ConfigurationPtr();
 
-    configuration = ptrEntry->configuration;
-    return true;
+    return ConfigurationPtr(ptrEntry->configuration->clone());
 }
 
-IECDeviceManager::DeviceEntry* IECDeviceManager::findEntry(const DeviceId id)
+
+IECDeviceManager::DeviceEntry* IECDeviceManager::findEntry(DeviceId id)
 {
     for (DeviceEntry& entry : m_devices)
     {
-        if (entry.configuration.id == id)
+        if (entry.configuration->id() == id)
             return &entry;
     }
 
     return nullptr;
 }
 
-const IECDeviceManager::DeviceEntry* IECDeviceManager::findEntry(const DeviceId id) const
+
+const IECDeviceManager::DeviceEntry* IECDeviceManager::findEntry(DeviceId id) const
 {
     for (const DeviceEntry& entry : m_devices)
     {
-        if (entry.configuration.id == id)
+        if (entry.configuration->id() == id)
             return &entry;
     }
 
     return nullptr;
 }
 
-bool IECDeviceManager::isDeviceNumberReserved(const quint8 deviceNumber, const DeviceId excludedId) const
+
+bool IECDeviceManager::isDeviceNumberReserved(quint8 deviceNumber, DeviceId excludedId) const
 {
     for (const DeviceEntry& entry : m_devices)
     {
-        if (entry.configuration.id != excludedId && entry.configuration.deviceNumber == deviceNumber)
+        if (entry.configuration->id() != excludedId && entry.configuration->deviceNumber() == deviceNumber)
             return true;
     }
 
     return false;
 }
 
+
+IECDeviceManager::ConfigurationPtr IECDeviceManager::createConfiguration(IECDeviceType type) const
+{
+    switch (type)
+    {
+    case IECDeviceType::PrinterASCII:
+        return ConfigurationPtr(new IECAsciiPrinterConfiguration());
+    }
+
+    return ConfigurationPtr();
+}
+
+
 IECDevice* IECDeviceManager::createDevice(const IECDeviceConfiguration& configuration) const
 {
     if (m_ptrBus == nullptr)
         return nullptr;
 
-    switch (configuration.type)
+    switch (configuration.type())
     {
     case IECDeviceType::PrinterASCII:
-        return new IECAsciiPrinter(m_ptrBus, configuration.deviceNumber);
+        return new IECAsciiPrinter(m_ptrBus, configuration.deviceNumber());
     }
 
     return nullptr;
 }
 
-IECDeviceManager::DeviceId IECDeviceManager::addDevice(const IECDeviceType type)
+
+IECDeviceManager::DeviceId IECDeviceManager::addDevice(IECDeviceType type)
 {
     const QList<quint8> numbers = supportedDeviceNumbers(type);
 
-    for (const quint8 deviceNumber : numbers)
+    for (quint8 deviceNumber : numbers)
     {
         if (isDeviceNumberReserved(deviceNumber))
             continue;
 
-        DeviceEntry entry;
+        ConfigurationPtr ptrConfiguration = createConfiguration(type);
 
-        entry.configuration.id = m_nextDeviceId++;
-        entry.configuration.type = type;
-        entry.configuration.deviceNumber = deviceNumber;
-        entry.configuration.enabled = false;
+        if (ptrConfiguration.isNull())
+            return 0;
+
+        const DeviceId id = m_nextDeviceId++;
+
+        ptrConfiguration->setId(id);
+        ptrConfiguration->setDeviceNumber(deviceNumber);
+        ptrConfiguration->setEnabled(false);
+
+        DeviceEntry entry;
+        entry.configuration = ptrConfiguration;
 
         m_devices.append(entry);
 
-        return entry.configuration.id;
+        return id;
     }
 
     return 0;
 }
 
-bool IECDeviceManager::removeDevice(const DeviceId id, IECDevice*& ptrRemovedDevice)
+
+bool IECDeviceManager::removeDevice(DeviceId id, IECDevice*& ptrRemovedDevice)
 {
     ptrRemovedDevice = nullptr;
 
     for (qsizetype index = 0; index < m_devices.size(); ++index)
     {
-        if (m_devices[index].configuration.id != id)
+        if (m_devices[index].configuration->id() != id)
             continue;
 
         ptrRemovedDevice = m_devices[index].ptrDevice;
@@ -140,29 +169,36 @@ bool IECDeviceManager::removeDevice(const DeviceId id, IECDevice*& ptrRemovedDev
     return false;
 }
 
+
 bool IECDeviceManager::setConfiguration(const IECDeviceConfiguration& configuration, IECDevice*& ptrRemovedDevice)
 {
     ptrRemovedDevice = nullptr;
 
-    DeviceEntry* ptrEntry = findEntry(configuration.id);
+    DeviceEntry* ptrEntry = findEntry(configuration.id());
 
     if (ptrEntry == nullptr)
         return false;
 
-    const QList<quint8> supportedNumbers = supportedDeviceNumbers(configuration.type);
+    const QList<quint8> supportedNumbers = supportedDeviceNumbers(configuration.type());
 
-    if (!supportedNumbers.contains(configuration.deviceNumber))
+    if (!supportedNumbers.contains(configuration.deviceNumber()))
         return false;
 
-    if (isDeviceNumberReserved(configuration.deviceNumber, configuration.id))
+    if (isDeviceNumberReserved(configuration.deviceNumber(), configuration.id()))
         return false;
 
-    if (ptrEntry->configuration == configuration)
+    // Die Geräte-ID bleibt erhalten, der Gerätetyp kann sich ändern.
+    if (*ptrEntry->configuration == configuration)
         return true;
+
+    ConfigurationPtr ptrNewConfiguration(configuration.clone());
+
+    if (ptrNewConfiguration.isNull())
+        return false;
 
     IECDevice* ptrNewDevice = nullptr;
 
-    if (configuration.enabled)
+    if (configuration.enabled())
     {
         ptrNewDevice = createDevice(configuration);
 
@@ -171,13 +207,15 @@ bool IECDeviceManager::setConfiguration(const IECDeviceConfiguration& configurat
     }
 
     ptrRemovedDevice = ptrEntry->ptrDevice;
+
     ptrEntry->ptrDevice = ptrNewDevice;
-    ptrEntry->configuration = configuration;
+    ptrEntry->configuration = ptrNewConfiguration;
 
     return true;
 }
 
-IECDevice* IECDeviceManager::device(const DeviceId id) const
+
+IECDevice* IECDeviceManager::device(DeviceId id) const
 {
     const DeviceEntry* ptrEntry = findEntry(id);
 
@@ -186,6 +224,7 @@ IECDevice* IECDeviceManager::device(const DeviceId id) const
 
     return ptrEntry->ptrDevice;
 }
+
 
 void IECDeviceManager::reset()
 {

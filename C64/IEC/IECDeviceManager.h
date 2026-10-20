@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QList>
+#include <QSharedPointer>
 #include <QtGlobal>
 
 #include "IECDevice.h"
@@ -11,7 +12,8 @@
 class IECDeviceManager
 {
 public:
-    using DeviceId = quint64;
+    using DeviceId = IECDeviceConfiguration::DeviceId;
+    using ConfigurationPtr = QSharedPointer<IECDeviceConfiguration>;
 
     explicit IECDeviceManager(IECBus* ptrBus);
     ~IECDeviceManager();
@@ -22,12 +24,11 @@ public:
     QList<IECDeviceType> availableDeviceTypes() const;
     QList<quint8> supportedDeviceNumbers(IECDeviceType type) const;
 
-    QList<IECDeviceConfiguration> configurations() const;
-    bool configuration(DeviceId id, IECDeviceConfiguration& configuration) const;
+    QList<ConfigurationPtr> configurations() const;
+    ConfigurationPtr configuration(DeviceId id) const;
 
     DeviceId addDevice(IECDeviceType type);
     bool removeDevice(DeviceId id, IECDevice*& ptrRemovedDevice);
-
     bool setConfiguration(const IECDeviceConfiguration& configuration, IECDevice*& ptrRemovedDevice);
 
     IECDevice* device(DeviceId id) const;
@@ -37,7 +38,7 @@ public:
 private:
     struct DeviceEntry
     {
-        IECDeviceConfiguration configuration;
+        ConfigurationPtr configuration;
         IECDevice* ptrDevice = nullptr;
     };
 
@@ -45,6 +46,8 @@ private:
     const DeviceEntry* findEntry(DeviceId id) const;
 
     bool isDeviceNumberReserved(quint8 deviceNumber, DeviceId excludedId = 0) const;
+
+    ConfigurationPtr createConfiguration(IECDeviceType type) const;
     IECDevice* createDevice(const IECDeviceConfiguration& configuration) const;
 
     IECBus* m_ptrBus = nullptr;
