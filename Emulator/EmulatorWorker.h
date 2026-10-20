@@ -41,12 +41,15 @@ private:
     void waitForRequests();
     bool processNextRequest();
     EmulatorResponse::Result processRequest(const EmulatorRequest* ptrRequest, bool& bRestartTiming);
+    QSharedPointer<EmulatorResponse> processIECRequest(const EmulatorRequest* ptrRequest);
 
     quint64 targetCyclesPerSecond() const;
     void synchronizeSpeed();
 
     void registerIECDevices();
     void unregisterIECDevices();
+    bool setIECDeviceConfiguration(const IECDeviceConfiguration& configuration);
+    bool removeIECDevice(IECDeviceConfiguration::DeviceId id);
 
 private:
     C64Machine* m_ptrMachine = nullptr;

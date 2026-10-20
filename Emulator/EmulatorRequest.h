@@ -2,10 +2,12 @@
 
 #include <QByteArray>
 #include <QtGlobal>
+#include <QSharedPointer>
 
 #include "EmulatorTypes.h"
-#include "C64/C64ROMSet.h"
 #include "Input/InputEvent.h"
+#include "C64/C64ROMSet.h"
+#include "C64/IEC/IECDeviceConfiguration.h"
 
 
 class EmulatorController;
@@ -26,7 +28,11 @@ public:
         SoftReset,
         HardReset,
         SetSpeed,
-        Shutdown
+        Shutdown,
+        GetIECConfigurations,
+        AddIECDevice,
+        RemoveIECDevice,
+        SetIECConfiguration
     };
 
     explicit EmulatorRequest(Type type)
@@ -51,7 +57,6 @@ private:
     RequestId m_id = 0;
 };
 
-
 class EmulatorRequestLoadROMSet : public EmulatorRequest
 {
 public:
@@ -66,7 +71,6 @@ public:
 private:
     C64ROMSet m_romSet;
 };
-
 
 class EmulatorRequestLoadProgram : public EmulatorRequest
 {
@@ -86,7 +90,6 @@ private:
     QByteArray m_data;
 };
 
-
 class EmulatorRequestInput : public EmulatorRequest
 {
 public:
@@ -102,7 +105,6 @@ private:
     InputEvent m_event;
 };
 
-
 class EmulatorRequestPowerOn : public EmulatorRequest
 {
 public:
@@ -112,7 +114,6 @@ public:
     }
 };
 
-
 class EmulatorRequestPowerOff : public EmulatorRequest
 {
 public:
@@ -121,7 +122,6 @@ public:
     {
     }
 };
-
 
 class EmulatorRequestPause : public EmulatorRequest
 {
@@ -138,7 +138,6 @@ private:
     bool m_paused;
 };
 
-
 class EmulatorRequestSoftReset : public EmulatorRequest
 {
 public:
@@ -148,7 +147,6 @@ public:
     }
 };
 
-
 class EmulatorRequestHardReset : public EmulatorRequest
 {
 public:
@@ -157,7 +155,6 @@ public:
     {
     }
 };
-
 
 class EmulatorRequestSetSpeed : public EmulatorRequest
 {
@@ -174,7 +171,6 @@ private:
     Emulator::Speed m_speed;
 };
 
-
 class EmulatorRequestShutdown : public EmulatorRequest
 {
 public:
@@ -182,4 +178,60 @@ public:
         : EmulatorRequest(Type::Shutdown)
     {
     }
+};
+
+
+class EmulatorRequestGetIECConfigurations : public EmulatorRequest
+{
+public:
+    EmulatorRequestGetIECConfigurations()
+        : EmulatorRequest(Type::GetIECConfigurations)
+    {
+    }
+};
+
+
+class EmulatorRequestAddIECDevice : public EmulatorRequest
+{
+public:
+    explicit EmulatorRequestAddIECDevice(IECDeviceType type)
+        : EmulatorRequest(Type::AddIECDevice)
+        , m_type(type)
+    {
+    }
+
+    IECDeviceType deviceType() const { return m_type; }
+
+private:
+    IECDeviceType m_type;
+};
+
+class EmulatorRequestRemoveIECDevice : public EmulatorRequest
+{
+public:
+    explicit EmulatorRequestRemoveIECDevice(IECDeviceConfiguration::DeviceId id)
+        : EmulatorRequest(Type::RemoveIECDevice)
+        , m_deviceId(id)
+    {
+    }
+
+    IECDeviceConfiguration::DeviceId deviceId() const { return m_deviceId; }
+
+private:
+    IECDeviceConfiguration::DeviceId m_deviceId;
+};
+
+class EmulatorRequestSetIECConfiguration : public EmulatorRequest
+{
+public:
+    explicit EmulatorRequestSetIECConfiguration(const IECDeviceConfiguration& configuration)
+        : EmulatorRequest(Type::SetIECConfiguration)
+        , m_configuration(configuration.clone())
+    {
+    }
+
+    const IECDeviceConfiguration& configuration() const { return *m_configuration; }
+
+private:
+    QSharedPointer<IECDeviceConfiguration> m_configuration;
 };

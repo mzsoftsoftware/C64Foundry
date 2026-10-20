@@ -177,6 +177,7 @@ void EmulatorWorker::waitForRequests()
 }
 
 
+
 bool EmulatorWorker::processNextRequest()
 {
     EmulatorRequest* ptrRequest = nullptr;
@@ -191,8 +192,24 @@ bool EmulatorWorker::processNextRequest()
     }
 
     bool bRestartTiming = false;
+    QSharedPointer<EmulatorResponse> response;
 
-    const EmulatorResponse::Result result = processRequest(ptrRequest, bRestartTiming);
+    switch (ptrRequest->type())
+    {
+    case EmulatorRequest::Type::GetIECConfigurations:
+    case EmulatorRequest::Type::AddIECDevice:
+    case EmulatorRequest::Type::RemoveIECDevice:
+    case EmulatorRequest::Type::SetIECConfiguration:
+        response = processIECRequest(ptrRequest);
+        break;
+
+    default:
+    {
+        const EmulatorResponse::Result result = processRequest(ptrRequest, bRestartTiming);
+        response = QSharedPointer<EmulatorResponse>(new EmulatorResponse(ptrRequest->id(), ptrRequest->type(), result));
+        break;
+    }
+    }
 
     if (bRestartTiming && !m_bShutdown)
     {
@@ -201,15 +218,12 @@ bool EmulatorWorker::processNextRequest()
         m_measuredCycles = 0;
     }
 
-    const QSharedPointer<EmulatorResponse> response(new EmulatorResponse(ptrRequest->id(), ptrRequest->type(), result));
-
     delete ptrRequest;
 
     emit requestDone(response);
 
     return bRestartTiming;
 }
-
 
 EmulatorResponse::Result EmulatorWorker::processRequest(const EmulatorRequest* ptrRequest, bool& bRestartTiming)
 {
@@ -232,7 +246,6 @@ EmulatorResponse::Result EmulatorWorker::processRequest(const EmulatorRequest* p
 
         return EmulatorResponse::Result::Success;
     }
-
     case EmulatorRequest::Type::LoadProgram:
     {
         if (m_state != Emulator::State::Paused)
@@ -254,7 +267,6 @@ EmulatorResponse::Result EmulatorWorker::processRequest(const EmulatorRequest* p
 
         return EmulatorResponse::Result::Success;
     }
-
     case EmulatorRequest::Type::Input:
     {
         if (m_state == Emulator::State::PoweredOff)
@@ -279,7 +291,6 @@ EmulatorResponse::Result EmulatorWorker::processRequest(const EmulatorRequest* p
 
         return EmulatorResponse::Result::Success;
     }
-
     case EmulatorRequest::Type::PowerOn:
     {
         if (m_state != Emulator::State::PoweredOff)
@@ -299,7 +310,6 @@ EmulatorResponse::Result EmulatorWorker::processRequest(const EmulatorRequest* p
 
         return EmulatorResponse::Result::Success;
     }
-
     case EmulatorRequest::Type::PowerOff:
     {
         if (m_state == Emulator::State::PoweredOff)
@@ -314,7 +324,6 @@ EmulatorResponse::Result EmulatorWorker::processRequest(const EmulatorRequest* p
 
         return EmulatorResponse::Result::Success;
     }
-
     case EmulatorRequest::Type::Pause:
     {
         const EmulatorRequestPause* ptrPauseRequest = static_cast<const EmulatorRequestPause*>(ptrRequest);
@@ -342,7 +351,6 @@ EmulatorResponse::Result EmulatorWorker::processRequest(const EmulatorRequest* p
 
         return EmulatorResponse::Result::Success;
     }
-
     case EmulatorRequest::Type::SoftReset:
     {
         if (m_state == Emulator::State::PoweredOff)
@@ -355,7 +363,6 @@ EmulatorResponse::Result EmulatorWorker::processRequest(const EmulatorRequest* p
 
         return EmulatorResponse::Result::Success;
     }
-
     case EmulatorRequest::Type::HardReset:
     {
         if (m_state == Emulator::State::PoweredOff)
@@ -369,7 +376,6 @@ EmulatorResponse::Result EmulatorWorker::processRequest(const EmulatorRequest* p
 
         return EmulatorResponse::Result::Success;
     }
-
     case EmulatorRequest::Type::SetSpeed:
     {
         const EmulatorRequestSetSpeed* ptrSpeedRequest = static_cast<const EmulatorRequestSetSpeed*>(ptrRequest);
@@ -399,18 +405,87 @@ EmulatorResponse::Result EmulatorWorker::processRequest(const EmulatorRequest* p
 
         return EmulatorResponse::Result::Success;
     }
-
     case EmulatorRequest::Type::Shutdown:
     {
         m_bShutdown = true;
 
         return EmulatorResponse::Result::Success;
     }
+    case EmulatorRequest::Type::GetIECConfigurations:
+    case EmulatorRequest::Type::AddIECDevice:
+    case EmulatorRequest::Type::RemoveIECDevice:
+    case EmulatorRequest::Type::SetIECConfiguration:
+        return EmulatorResponse::Result::InvalidParameter;
     }
 
     return EmulatorResponse::Result::InvalidParameter;
 }
 
+
+QSharedPointer<EmulatorResponse> EmulatorWorker::processIECRequest(const EmulatorRequest* ptrRequest)
+{
+    EmulatorResponse::Result result = EmulatorResponse::Result::Failed;
+
+    QSharedPointer<EmulatorResponseIEC> response(new EmulatorResponseIEC(ptrRequest->id(), ptrRequest->type(), result));
+
+    switch (ptrRequest->type())
+    {
+    case EmulatorRequest::Type::GetIECConfigurations:
+    {
+        response->setConfigurations(m_ptrIECDeviceManager->configurations());
+        result = EmulatorResponse::Result::Success;
+        break;
+    }
+
+    case EmulatorRequest::Type::AddIECDevice:
+    {
+        const EmulatorRequestAddIECDevice* ptrIECRequest = static_cast<const EmulatorRequestAddIECDevice*>(ptrRequest);
+
+        const IECDeviceManager::DeviceId id = m_ptrIECDeviceManager->addDevice(ptrIECRequest->deviceType());
+
+        if (id != 0)
+        {
+            response->setDeviceId(id);
+            result = EmulatorResponse::Result::Success;
+        }
+
+        break;
+    }
+
+    case EmulatorRequest::Type::RemoveIECDevice:
+    {
+        const EmulatorRequestRemoveIECDevice* ptrIECRequest = static_cast<const EmulatorRequestRemoveIECDevice*>(ptrRequest);
+
+        if (removeIECDevice(ptrIECRequest->deviceId()))
+        {
+            response->setDeviceId(ptrIECRequest->deviceId());
+            result = EmulatorResponse::Result::Success;
+        }
+
+        break;
+    }
+
+    case EmulatorRequest::Type::SetIECConfiguration:
+    {
+        const EmulatorRequestSetIECConfiguration* ptrIECRequest = static_cast<const EmulatorRequestSetIECConfiguration*>(ptrRequest);
+
+        if (setIECDeviceConfiguration(ptrIECRequest->configuration()))
+        {
+            response->setDeviceId(ptrIECRequest->configuration().id());
+            result = EmulatorResponse::Result::Success;
+        }
+
+        break;
+    }
+
+    default:
+        result = EmulatorResponse::Result::InvalidParameter;
+        break;
+    }
+
+    response->setResult(result);
+    return response;
+}
 
 quint64 EmulatorWorker::targetCyclesPerSecond() const
 {
@@ -483,4 +558,41 @@ void EmulatorWorker::unregisterIECDevices()
         if (ptrDevice != nullptr)
             m_ptrScheduler->removeIECDevice(ptrDevice);
     }
+}
+
+bool EmulatorWorker::setIECDeviceConfiguration(const IECDeviceConfiguration& configuration)
+{
+    IECDevice* ptrRemovedDevice = nullptr;
+
+    if (!m_ptrIECDeviceManager->setConfiguration(configuration, ptrRemovedDevice))
+        return false;
+
+    if (ptrRemovedDevice != nullptr)
+    {
+        m_ptrScheduler->removeIECDevice(ptrRemovedDevice);
+        delete ptrRemovedDevice;
+    }
+
+    IECDevice* ptrDevice = m_ptrIECDeviceManager->device(configuration.id());
+
+    if (ptrDevice != nullptr)
+        m_ptrScheduler->addIECDevice(ptrDevice);
+
+    return true;
+}
+
+bool EmulatorWorker::removeIECDevice(IECDeviceConfiguration::DeviceId id)
+{
+    IECDevice* ptrRemovedDevice = nullptr;
+
+    if (!m_ptrIECDeviceManager->removeDevice(id, ptrRemovedDevice))
+        return false;
+
+    if (ptrRemovedDevice != nullptr)
+    {
+        m_ptrScheduler->removeIECDevice(ptrRemovedDevice);
+        delete ptrRemovedDevice;
+    }
+
+    return true;
 }
