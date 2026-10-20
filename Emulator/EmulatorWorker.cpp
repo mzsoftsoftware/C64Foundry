@@ -1,6 +1,7 @@
 #include "EmulatorWorker.h"
 
 #include <QDebug>
+#include <QMutexLocker>
 #include <QThread>
 
 #include "C64/C64Machine.h"
@@ -40,14 +41,21 @@ EmulatorWorker::EmulatorWorker(IECBus* ptrIECBus, QObject* parent)
 
                 if (ptrDevice != nullptr)
                     m_ptrScheduler->addIECDevice(ptrDevice);
+
+                delete ptrRemovedDevice;
             }
         }
     }
 
     qDebug() << "EmulatorWorker: created";
 }
+
 EmulatorWorker::~EmulatorWorker()
 {
+    // Der EmulatorThread muss vor dem Destruktor beendet worden sein.
+    while (!m_requests.isEmpty())
+        delete m_requests.dequeue();
+
     m_ptrMachine->powerOff();
     unregisterIECDevices();
 
@@ -58,6 +66,7 @@ EmulatorWorker::~EmulatorWorker()
     qDebug() << "EmulatorWorker: destroyed";
 }
 
+
 void EmulatorWorker::run()
 {
     qDebug() << "EmulatorWorker: run() started" << QThread::currentThreadId();
@@ -65,30 +74,26 @@ void EmulatorWorker::run()
     const quint64 cyclesPerBatch = 500;
     QElapsedTimer statisticsTimer;
 
-    while (true)
+    while (!m_bShutdown)
     {
+        // Bei ausgeschalteter oder pausierter Maschine auf Requests warten.
         if (m_state != Emulator::State::Running)
-        {
-            if (!waitForRequests())
-                break;
-        }
+            waitForRequests();
 
-        if (processRequests())
+        // Pro Schleifendurchlauf maximal einen Request ausführen.
+        // Die Response wird unmittelbar nach der Verarbeitung gesendet.
+        const bool bRestartTiming = processNextRequest();
+
+        if (m_bShutdown)
+            break;
+
+        if (bRestartTiming)
         {
             m_measuredCycles = 0;
             statisticsTimer.restart();
         }
 
-        bool bShutdownRequested = false;
-
-        {
-            QMutexLocker locker(&m_mutex);
-            bShutdownRequested = m_bShutdownRequested;
-        }
-
-        if (bShutdownRequested)
-            break;
-
+        // Ein normaler Scheduler-Batch pro Schleifendurchlauf.
         if (m_state != Emulator::State::Running)
             continue;
 
@@ -125,289 +130,289 @@ void EmulatorWorker::run()
     qDebug() << "EmulatorWorker: run() finished";
 }
 
-void EmulatorWorker::requestROMSet(const C64ROMSet& romSet)
-{
-    QMutexLocker locker(&m_mutex);
-    m_romSetRequested = romSet;
-    m_bROMSetRequested = true;
-    qDebug() << "EmulatorWorker: ROM set requested";
-    m_waitCondition.wakeOne();
-}
-void EmulatorWorker::requestInput(const InputEvent& event)
-{
-    QMutexLocker locker(&m_mutex);
-    m_inputEvents.enqueue(event);
-    m_waitCondition.wakeOne();
-}
-void EmulatorWorker::requestProgram(const quint16 address, const QByteArray& data)
-{
-    QMutexLocker locker(&m_mutex);
-    m_programAddressRequested = address;
-    m_programDataRequested = data;
-    m_bProgramRequested = true;
-    qDebug() << "EmulatorWorker: program requested";
-    m_waitCondition.wakeOne();
-}
 
-void EmulatorWorker::requestPowerOn()
+void EmulatorWorker::request(EmulatorRequest* ptrRequest)
 {
-    QMutexLocker locker(&m_mutex);
-    m_bPowerOnRequested = true;
-    m_waitCondition.wakeOne();
-}
-void EmulatorWorker::requestPowerOff()
-{
-    QMutexLocker locker(&m_mutex);
-    m_bPowerOffRequested = true;
-    m_waitCondition.wakeOne();
-}
-void EmulatorWorker::requestPause(bool bPaused)
-{
-    QMutexLocker locker(&m_mutex);
-    m_bPauseRequested = true;
-    m_bPauseRequestedValue = bPaused;
-    m_waitCondition.wakeOne();
-}
-void EmulatorWorker::requestSoftReset()
-{
-    QMutexLocker locker(&m_mutex);
-    m_bSoftResetRequested = true;
-    m_waitCondition.wakeOne();
-}
-void EmulatorWorker::requestHardReset()
-{
-    QMutexLocker locker(&m_mutex);
-    m_bHardResetRequested = true;
-    m_waitCondition.wakeOne();
-}
-void EmulatorWorker::requestSpeed(const Emulator::Speed speed)
-{
-    QMutexLocker locker(&m_mutex);
-    m_bSpeedRequested = true;
-    m_speedRequested = speed;
-    qDebug() << "EmulatorWorker: speed requested";
-    m_waitCondition.wakeOne();
-}
-void EmulatorWorker::requestShutdown()
-{
-    QMutexLocker locker(&m_mutex);
-    m_bShutdownRequested = true;
-    qDebug() << "EmulatorWorker: shutdown requested";
-    m_waitCondition.wakeOne();
-}
+    if (ptrRequest == nullptr)
+        return;
 
-bool EmulatorWorker::waitForRequests()
-{
-    QMutexLocker locker(&m_mutex);
-    while (!m_bROMSetRequested && m_inputEvents.isEmpty() && !m_bProgramRequested &&
-           !m_bPowerOnRequested && !m_bPowerOffRequested && !m_bPauseRequested &&
-           !m_bSoftResetRequested && !m_bHardResetRequested &&
-           !m_bSpeedRequested && !m_bShutdownRequested)
-    {
-        m_waitCondition.wait(&m_mutex);
-    }
-    return !m_bShutdownRequested;
-}
-
-bool EmulatorWorker::processRequests()
-{
-    bool bROMSetRequested = false;
-    C64ROMSet romSetRequested;
-
-    QQueue<InputEvent> inputEvents;
-
-    bool bProgramRequested = false;
-    quint16 programAddressRequested = 0;
-    QByteArray programDataRequested;
-
-    bool bPowerOnRequested = false;
-    bool bPowerOffRequested = false;
-
-    bool bPauseRequested = false;
-    bool bPauseRequestedValue = false;
-
-    bool bSoftResetRequested = false;
-    bool bHardResetRequested = false;
-
-    bool bSpeedRequested = false;    
-    Emulator::Speed speedRequested = Emulator::Speed::Normal;
+    bool bAccepted = false;
 
     {
         QMutexLocker locker(&m_mutex);
 
-        bROMSetRequested = m_bROMSetRequested;
-        romSetRequested = m_romSetRequested;
-        inputEvents.swap(m_inputEvents);
-        bProgramRequested = m_bProgramRequested;
-        programAddressRequested = m_programAddressRequested;
-        programDataRequested.swap(m_programDataRequested);
+        if (m_bAcceptRequests)
+        {
+            m_requests.enqueue(ptrRequest);
+            bAccepted = true;
 
-        bPowerOnRequested = m_bPowerOnRequested;
-        bPowerOffRequested = m_bPowerOffRequested;
+            // Ab Shutdown keine weiteren Requests mehr annehmen.
+            // Bereits eingereihte Requests bleiben in FIFO-Reihenfolge erhalten.
+            if (ptrRequest->type() == EmulatorRequest::Type::Shutdown)
+                m_bAcceptRequests = false;
 
-        bPauseRequested = m_bPauseRequested;
-        bPauseRequestedValue = m_bPauseRequestedValue;
+            m_waitCondition.wakeOne();
+        }
+    }
 
-        bSoftResetRequested = m_bSoftResetRequested;
-        bHardResetRequested = m_bHardResetRequested;
+    if (!bAccepted)
+    {
+        const QSharedPointer<EmulatorResponse> response(new EmulatorResponse(ptrRequest->id(), ptrRequest->type(), EmulatorResponse::Result::Cancelled));
 
-        bSpeedRequested = m_bSpeedRequested;
-        speedRequested = m_speedRequested;
+        delete ptrRequest;
 
-        m_bROMSetRequested = false;
-        m_bProgramRequested = false;
+        emit requestDone(response);
+    }
+}
 
-        m_bPowerOnRequested = false;
-        m_bPowerOffRequested = false;
-        m_bSoftResetRequested = false;
-        m_bHardResetRequested = false;
-        m_bPauseRequested = false;
-        m_bSpeedRequested = false;
+
+void EmulatorWorker::waitForRequests()
+{
+    QMutexLocker locker(&m_mutex);
+
+    while (m_requests.isEmpty())
+        m_waitCondition.wait(&m_mutex);
+}
+
+
+bool EmulatorWorker::processNextRequest()
+{
+    EmulatorRequest* ptrRequest = nullptr;
+
+    {
+        QMutexLocker locker(&m_mutex);
+
+        if (m_requests.isEmpty())
+            return false;
+
+        ptrRequest = m_requests.dequeue();
     }
 
     bool bRestartTiming = false;
 
-    if (bROMSetRequested)
-    {
-        bool bLoaded = false;
+    const EmulatorResponse::Result result = processRequest(ptrRequest, bRestartTiming);
 
-        if (m_state == Emulator::State::PoweredOff)
-            bLoaded = m_ptrMachine->loadROMSet(romSetRequested);
-
-        if (bLoaded)
-            qDebug() << "EmulatorWorker: ROM set loaded";
-        else
-            qWarning() << "EmulatorWorker: ROM set could not be loaded";
-
-        emit romSetLoaded(bLoaded);
-    }
-
-    // Eingaben nur bei eingeschalteter Maschine.
-    if (m_state != Emulator::State::PoweredOff)
-    {
-        while (!inputEvents.isEmpty())
-        {
-            const InputEvent event = inputEvents.dequeue();
-
-            switch (event.type)
-            {
-            case InputEventType::KeyPress:
-                m_ptrMachine->keyPress(event.key);
-                break;
-
-            case InputEventType::KeyRelease:
-                m_ptrMachine->keyRelease(event.key);
-                break;
-            }
-        }
-    }
-
-    // PowerOff hat Vorrang vor PowerOn.
-    if (bPowerOffRequested)
-    {
-        if (m_state != Emulator::State::PoweredOff)
-        {
-            m_ptrMachine->powerOff();
-            m_state = Emulator::State::PoweredOff;
-
-            emit stateChanged(m_state);
-            emit statisticsChanged(m_totalCycles, 0, 0);
-        }
-    }
-    else if (bPowerOnRequested)
-    {
-        if (m_state == Emulator::State::PoweredOff)
-        {
-            m_ptrMachine->powerOn();
-            m_ptrIECDeviceManager->reset();
-
-            m_totalCycles = 0;
-            m_measuredCycles = 0;
-
-            m_state = Emulator::State::Running;
-            bRestartTiming = true;
-
-            emit stateChanged(m_state);
-            emit statisticsChanged(m_totalCycles, 0, 0);
-        }
-    }
-    // Pause und Resume.
-    if (bPauseRequested)
-    {
-        if (bPauseRequestedValue && m_state == Emulator::State::Running)
-        {
-            m_state = Emulator::State::Paused;
-
-            emit stateChanged(m_state);
-            emit statisticsChanged(m_totalCycles, 0, 0);
-        }
-        else if (!bPauseRequestedValue && m_state == Emulator::State::Paused)
-        {
-            m_state = Emulator::State::Running;
-            bRestartTiming = true;
-
-            emit stateChanged(m_state);
-        }
-    }
-    // Reset verändert den Betriebszustand nicht.
-    if (m_state != Emulator::State::PoweredOff)
-    {
-        if (bHardResetRequested)
-        {
-            m_ptrMachine->hardReset();
-            m_ptrIECDeviceManager->reset();
-
-            bRestartTiming = m_state == Emulator::State::Running;
-        }
-        else if (bSoftResetRequested)
-        {
-            m_ptrMachine->softReset();
-            bRestartTiming = m_state == Emulator::State::Running;
-        }
-    }
-
-    if (bProgramRequested)
-    {
-        bool bLoaded = false;
-
-        if (m_state == Emulator::State::Paused)
-        {
-            bLoaded = m_ptrMachine->loadProgram(programAddressRequested, programDataRequested);
-
-            if (bLoaded)
-            {
-                const quint32 endAddress = static_cast<quint32>(programAddressRequested) + static_cast<quint32>(programDataRequested.size());
-                m_ptrMachine->setBasicProgramEnd(static_cast<quint16>(endAddress & 0xFFFF));
-            }
-        }
-
-        emit programLoaded(bLoaded);
-    }
-
-    // Geschwindigkeit.
-    if (bSpeedRequested && m_speed != speedRequested)
-    {
-        m_speed = speedRequested;
-
-        if (m_state == Emulator::State::Running)
-            bRestartTiming = true;
-
-        emit speedChanged(m_speed);
-    }
-
-    if (bRestartTiming)
+    if (bRestartTiming && !m_bShutdown)
     {
         m_speedStartCycles = m_totalCycles;
         m_speedTimer.restart();
         m_measuredCycles = 0;
     }
 
+    const QSharedPointer<EmulatorResponse> response(new EmulatorResponse(ptrRequest->id(), ptrRequest->type(), result));
+
+    delete ptrRequest;
+
+    emit requestDone(response);
+
     return bRestartTiming;
 }
 
+
+EmulatorResponse::Result EmulatorWorker::processRequest(const EmulatorRequest* ptrRequest, bool& bRestartTiming)
+{
+    switch (ptrRequest->type())
+    {
+    case EmulatorRequest::Type::LoadROMSet:
+    {
+        if (m_state != Emulator::State::PoweredOff)
+            return EmulatorResponse::Result::InvalidState;
+
+        const EmulatorRequestLoadROMSet* ptrROMRequest = static_cast<const EmulatorRequestLoadROMSet*>(ptrRequest);
+
+        if (!m_ptrMachine->loadROMSet(ptrROMRequest->romSet()))
+        {
+            qWarning() << "EmulatorWorker: ROM set could not be loaded";
+            return EmulatorResponse::Result::Failed;
+        }
+
+        qDebug() << "EmulatorWorker: ROM set loaded";
+
+        return EmulatorResponse::Result::Success;
+    }
+
+    case EmulatorRequest::Type::LoadProgram:
+    {
+        if (m_state != Emulator::State::Paused)
+            return EmulatorResponse::Result::InvalidState;
+
+        const EmulatorRequestLoadProgram* ptrProgramRequest = static_cast<const EmulatorRequestLoadProgram*>(ptrRequest);
+
+        if (!m_ptrMachine->loadProgram(ptrProgramRequest->address(), ptrProgramRequest->data()))
+        {
+            qWarning() << "EmulatorWorker: program could not be loaded";
+            return EmulatorResponse::Result::Failed;
+        }
+
+        const quint32 endAddress = static_cast<quint32>(ptrProgramRequest->address()) + static_cast<quint32>(ptrProgramRequest->data().size());
+
+        m_ptrMachine->setBasicProgramEnd(static_cast<quint16>(endAddress & 0xFFFF));
+
+        qDebug() << "EmulatorWorker: program loaded";
+
+        return EmulatorResponse::Result::Success;
+    }
+
+    case EmulatorRequest::Type::Input:
+    {
+        if (m_state == Emulator::State::PoweredOff)
+            return EmulatorResponse::Result::InvalidState;
+
+        const EmulatorRequestInput* ptrInputRequest = static_cast<const EmulatorRequestInput*>(ptrRequest);
+        const InputEvent& event = ptrInputRequest->event();
+
+        switch (event.type)
+        {
+        case InputEventType::KeyPress:
+            m_ptrMachine->keyPress(event.key);
+            break;
+
+        case InputEventType::KeyRelease:
+            m_ptrMachine->keyRelease(event.key);
+            break;
+
+        default:
+            return EmulatorResponse::Result::InvalidParameter;
+        }
+
+        return EmulatorResponse::Result::Success;
+    }
+
+    case EmulatorRequest::Type::PowerOn:
+    {
+        if (m_state != Emulator::State::PoweredOff)
+            return EmulatorResponse::Result::InvalidState;
+
+        m_ptrMachine->powerOn();
+        m_ptrIECDeviceManager->reset();
+
+        m_totalCycles = 0;
+        m_measuredCycles = 0;
+
+        m_state = Emulator::State::Running;
+        bRestartTiming = true;
+
+        emit stateChanged(m_state);
+        emit statisticsChanged(m_totalCycles, 0, 0);
+
+        return EmulatorResponse::Result::Success;
+    }
+
+    case EmulatorRequest::Type::PowerOff:
+    {
+        if (m_state == Emulator::State::PoweredOff)
+            return EmulatorResponse::Result::InvalidState;
+
+        m_ptrMachine->powerOff();
+
+        m_state = Emulator::State::PoweredOff;
+
+        emit stateChanged(m_state);
+        emit statisticsChanged(m_totalCycles, 0, 0);
+
+        return EmulatorResponse::Result::Success;
+    }
+
+    case EmulatorRequest::Type::Pause:
+    {
+        const EmulatorRequestPause* ptrPauseRequest = static_cast<const EmulatorRequestPause*>(ptrRequest);
+
+        if (ptrPauseRequest->paused())
+        {
+            if (m_state != Emulator::State::Running)
+                return EmulatorResponse::Result::InvalidState;
+
+            m_state = Emulator::State::Paused;
+
+            emit stateChanged(m_state);
+            emit statisticsChanged(m_totalCycles, 0, 0);
+        }
+        else
+        {
+            if (m_state != Emulator::State::Paused)
+                return EmulatorResponse::Result::InvalidState;
+
+            m_state = Emulator::State::Running;
+            bRestartTiming = true;
+
+            emit stateChanged(m_state);
+        }
+
+        return EmulatorResponse::Result::Success;
+    }
+
+    case EmulatorRequest::Type::SoftReset:
+    {
+        if (m_state == Emulator::State::PoweredOff)
+            return EmulatorResponse::Result::InvalidState;
+
+        m_ptrMachine->softReset();
+
+        if (m_state == Emulator::State::Running)
+            bRestartTiming = true;
+
+        return EmulatorResponse::Result::Success;
+    }
+
+    case EmulatorRequest::Type::HardReset:
+    {
+        if (m_state == Emulator::State::PoweredOff)
+            return EmulatorResponse::Result::InvalidState;
+
+        m_ptrMachine->hardReset();
+        m_ptrIECDeviceManager->reset();
+
+        if (m_state == Emulator::State::Running)
+            bRestartTiming = true;
+
+        return EmulatorResponse::Result::Success;
+    }
+
+    case EmulatorRequest::Type::SetSpeed:
+    {
+        const EmulatorRequestSetSpeed* ptrSpeedRequest = static_cast<const EmulatorRequestSetSpeed*>(ptrRequest);
+
+        switch (ptrSpeedRequest->speed())
+        {
+        case Emulator::Speed::Half:
+        case Emulator::Speed::Normal:
+        case Emulator::Speed::Double:
+        case Emulator::Speed::Five:
+        case Emulator::Speed::Warp:
+            break;
+
+        default:
+            return EmulatorResponse::Result::InvalidParameter;
+        }
+
+        if (m_speed != ptrSpeedRequest->speed())
+        {
+            m_speed = ptrSpeedRequest->speed();
+
+            if (m_state == Emulator::State::Running)
+                bRestartTiming = true;
+
+            emit speedChanged(m_speed);
+        }
+
+        return EmulatorResponse::Result::Success;
+    }
+
+    case EmulatorRequest::Type::Shutdown:
+    {
+        m_bShutdown = true;
+
+        return EmulatorResponse::Result::Success;
+    }
+    }
+
+    return EmulatorResponse::Result::InvalidParameter;
+}
+
+
 quint64 EmulatorWorker::targetCyclesPerSecond() const
 {
-    quint64 c64CyclesPerSecond = m_ptrMachine->timing().cyclesPerSecond;
+    const quint64 c64CyclesPerSecond = m_ptrMachine->timing().cyclesPerSecond;
 
     switch (m_speed)
     {
@@ -430,24 +435,26 @@ quint64 EmulatorWorker::targetCyclesPerSecond() const
     return c64CyclesPerSecond;
 }
 
+
 void EmulatorWorker::synchronizeSpeed()
 {
     const quint64 targetCycles = targetCyclesPerSecond();
+
     if (targetCycles == 0)
         return;
 
     const quint64 elapsedNanoseconds = static_cast<quint64>(m_speedTimer.nsecsElapsed());
     const quint64 elapsedCycles = m_totalCycles - m_speedStartCycles;
     const quint64 targetNanoseconds = (elapsedCycles * 1000000000ULL) / targetCycles;
+
     if (targetNanoseconds <= elapsedNanoseconds)
         return;
 
     const quint64 waitNanoseconds = targetNanoseconds - elapsedNanoseconds;
     const quint64 waitMicroseconds = waitNanoseconds / 1000;
+
     if (waitMicroseconds > 0)
-    {
         QThread::usleep(static_cast<unsigned long>(waitMicroseconds));
-    }
 }
 
 
@@ -463,6 +470,8 @@ void EmulatorWorker::registerIECDevices()
             m_ptrScheduler->addIECDevice(ptrDevice);
     }
 }
+
+
 void EmulatorWorker::unregisterIECDevices()
 {
     const QList<IECDeviceConfiguration> configurations = m_ptrIECDeviceManager->configurations();

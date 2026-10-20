@@ -4,6 +4,8 @@
 #include <QByteArray>
 
 #include "EmulatorTypes.h"
+#include "EmulatorRequest.h"
+#include "EmulatorResponse.h"
 
 #include "C64/C64ROMSet.h"
 #include "Input/InputEvent.h"
@@ -17,12 +19,17 @@ class IECBus;
 class EmulatorController : public QObject
 {
     Q_OBJECT
+
 public:
-    explicit EmulatorController(QObject *parent);
+    explicit EmulatorController(QObject* parent = nullptr);
     virtual ~EmulatorController();
 
     // Getter
     C64Machine* machine() const;
+
+    // Requests
+    EmulatorRequest::RequestId nextRequestId();
+    void request(EmulatorRequest* ptrRequest);
 
 public slots:
     void loadROMSet(const C64ROMSet& romSet);
@@ -34,10 +41,12 @@ public slots:
     void pause(bool bPaused);
     void softReset();
     void hardReset();
-
     void setSpeed(Emulator::Speed speed);
 
 signals:
+    void requestDone(QSharedPointer<EmulatorResponse> response);
+
+    // Bestehende GUI-Schnittstelle
     void romSetLoaded(bool bLoaded);
     void programLoaded(bool bLoaded);
 
@@ -46,8 +55,8 @@ signals:
     void statisticsChanged(quint64 cycles, quint64 currentCyclesPerSecond, quint64 averageCyclesPerSecond);
 
 private slots:
+    void onWorkerRequestDone(QSharedPointer<EmulatorResponse> response);
     void onWorkerStateChanged(Emulator::State state);
-    void onWorkerProgramLoaded(bool bLoaded);
 
 private:
     enum class ProgramLoadState
@@ -60,15 +69,23 @@ private:
     };
 
     void cancelProgramLoad();
-    Emulator::State m_state = Emulator::State::PoweredOff;
-    ProgramLoadState m_programLoadState = ProgramLoadState::Idle;
-    quint16 m_programAddress = 0;
-    QByteArray m_programData;
-    bool m_bResumeAfterProgramLoad = false;
+    void processProgramLoadResponse(const QSharedPointer<EmulatorResponse>& response);
 
 private:
     EmulatorThread* m_ptrThread = nullptr;
     EmulatorWorker* m_ptrWorker = nullptr;
-
     IECBus* m_ptrIECBus = nullptr;
+
+    Emulator::State m_state = Emulator::State::PoweredOff;
+
+    EmulatorRequest::RequestId m_nextRequestId = 1;
+
+    // Programmladen
+    ProgramLoadState m_programLoadState = ProgramLoadState::Idle;
+    EmulatorRequest::RequestId m_programRequestId = 0;
+
+    quint16 m_programAddress = 0;
+    QByteArray m_programData;
+
+    bool m_bResumeAfterProgramLoad = false;
 };
