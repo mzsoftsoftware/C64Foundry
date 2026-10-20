@@ -13,7 +13,7 @@
 
 class C64Machine;
 class IECBus;
-class IECAsciiPrinter;
+class IECDeviceManager;
 #include "C64/C64ROMSet.h"
 
 
@@ -56,10 +56,13 @@ private:
     quint64 targetCyclesPerSecond() const;
     void synchronizeSpeed();
 
+    void registerIECDevices();
+    void unregisterIECDevices();
+
 private:
-    C64Machine *m_ptrMachine = nullptr;
+    C64Machine* m_ptrMachine = nullptr;
     EmulationScheduler* m_ptrScheduler = nullptr;
-    IECAsciiPrinter* m_ptrAsciiPrinter = nullptr;
+    IECDeviceManager* m_ptrIECDeviceManager = nullptr;
 
     QMutex m_mutex;
     QWaitCondition m_waitCondition;

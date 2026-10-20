@@ -51,6 +51,7 @@ add_library(C64FoundryCore STATIC
 
     C64/Input/C64Keyboard.h C64/Input/C64Keyboard.cpp
 
+    C64/IEC/IECDeviceManager.h C64/IEC/IECDeviceManager.cpp
     C64/IEC/IECBus.h C64/IEC/IECBus.cpp
     C64/IEC/IECDevice.h C64/IEC/IECDevice.cpp
     C64/IEC/IECProtocol.h C64/IEC/IECProtocol.cpp
@@ -115,7 +116,6 @@ qt_add_executable(C64Foundry
     Storage/PRG/C64PRGFile.h Storage/PRG/C64PRGFile.cpp
 
     Resources/C64Foundry.qrc
-    C64/IEC/IECDeviceManager.h C64/IEC/IECDeviceManager.cpp
 )
 
 target_include_directories(C64Foundry

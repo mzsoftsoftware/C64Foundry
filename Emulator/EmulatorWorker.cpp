@@ -6,7 +6,8 @@
 #include "C64/C64Machine.h"
 #include "C64/C64Timing.h"
 
-#include "C64/IEC/IECAsciiPrinter.h"
+#include "C64/IEC/IECDeviceManager.h"
+#include "C64/IEC/IECDevice.h"
 
 
 EmulatorWorker::EmulatorWorker(IECBus* ptrIECBus, QObject* parent)
@@ -16,19 +17,28 @@ EmulatorWorker::EmulatorWorker(IECBus* ptrIECBus, QObject* parent)
     m_ptrMachine->setIECBus(ptrIECBus);
 
     m_ptrScheduler = new EmulationScheduler(m_ptrMachine);
+    m_ptrIECDeviceManager = new IECDeviceManager(ptrIECBus);
 
-    m_ptrAsciiPrinter = new IECAsciiPrinter(ptrIECBus, 4);
-    m_ptrScheduler->addIECDevice(m_ptrAsciiPrinter);
+    // Vorläufige Standardkonfiguration, bis die Geräteverwaltung
+    // über die Anwendung konfiguriert werden kann.
+    const IECDeviceManager::DeviceId deviceId = m_ptrIECDeviceManager->addDevice(IECDeviceType::PrinterASCII);
+
+    if (deviceId != 0)
+    {
+        IECDevice* ptrRemovedDevice = nullptr;
+
+        if (m_ptrIECDeviceManager->setDeviceEnabled(deviceId, true, ptrRemovedDevice))
+            m_ptrScheduler->addIECDevice(m_ptrIECDeviceManager->device(deviceId));
+    }
 
     qDebug() << "EmulatorWorker: created";
 }
 EmulatorWorker::~EmulatorWorker()
 {
     m_ptrMachine->powerOff();
+    unregisterIECDevices();
 
-    m_ptrScheduler->removeIECDevice(m_ptrAsciiPrinter);
-    delete m_ptrAsciiPrinter;
-
+    delete m_ptrIECDeviceManager;
     delete m_ptrScheduler;
     delete m_ptrMachine;
 
@@ -70,11 +80,6 @@ void EmulatorWorker::run()
             continue;
 
         m_ptrScheduler->runCycles(cyclesPerBatch);
-        if (m_ptrAsciiPrinter->hasOutput())
-        {
-            const QByteArray output = m_ptrAsciiPrinter->outputSnapshot();
-            m_ptrAsciiPrinter->tearOff();
-        }
 
         m_totalCycles += cyclesPerBatch;
         m_measuredCycles += cyclesPerBatch;
@@ -301,7 +306,7 @@ bool EmulatorWorker::processRequests()
         if (m_state == Emulator::State::PoweredOff)
         {
             m_ptrMachine->powerOn();
-            m_ptrAsciiPrinter->reset();
+            m_ptrIECDeviceManager->reset();
 
             m_totalCycles = 0;
             m_measuredCycles = 0;
@@ -337,7 +342,7 @@ bool EmulatorWorker::processRequests()
         if (bHardResetRequested)
         {
             m_ptrMachine->hardReset();
-            m_ptrAsciiPrinter->reset();
+            m_ptrIECDeviceManager->reset();
 
             bRestartTiming = m_state == Emulator::State::Running;
         }
@@ -429,5 +434,32 @@ void EmulatorWorker::synchronizeSpeed()
     if (waitMicroseconds > 0)
     {
         QThread::usleep(static_cast<unsigned long>(waitMicroseconds));
+    }
+}
+
+
+void EmulatorWorker::registerIECDevices()
+{
+    const QList<IECDeviceManager::DeviceInfo> devices = m_ptrIECDeviceManager->devices();
+
+    for (const IECDeviceManager::DeviceInfo& info : devices)
+    {
+        IECDevice* ptrDevice = m_ptrIECDeviceManager->device(info.id);
+
+        if (ptrDevice != nullptr)
+            m_ptrScheduler->addIECDevice(ptrDevice);
+    }
+}
+
+void EmulatorWorker::unregisterIECDevices()
+{
+    const QList<IECDeviceManager::DeviceInfo> devices = m_ptrIECDeviceManager->devices();
+
+    for (const IECDeviceManager::DeviceInfo& info : devices)
+    {
+        IECDevice* ptrDevice = m_ptrIECDeviceManager->device(info.id);
+
+        if (ptrDevice != nullptr)
+            m_ptrScheduler->removeIECDevice(ptrDevice);
     }
 }
