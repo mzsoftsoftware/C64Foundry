@@ -43,22 +43,35 @@ private slots:
 
     void onRequestDone(QSharedPointer<EmulatorResponse> response);
     void onIECDeviceChanged(EmulatorIECDeviceEvent::Type type, IECDeviceConfiguration::DeviceId deviceId);
+    void onDeviceEnabledChanged(IECDeviceConfiguration::DeviceId deviceId, bool enabled);
+    void onDeviceRemoveRequested(IECDeviceConfiguration::DeviceId deviceId);
 
     void on_pushButton_Refresh_clicked();
 
 private:
     void setupAddMenu();
+    void updateAddMenu();
 
     void clearDeviceRows();
     void refreshConfigurations();
+
+    void setBusy(bool busy);
+    void updateBusyState();
 
 private:
     Ui::IECDeviceManagerWidget* ui;
     QHash<IECDeviceConfiguration::DeviceId, IECDeviceRowWidget*> m_deviceRows;
 
+    QAction* m_ptrASCIIPrinterAction = nullptr;
+
     EmulatorController* m_ptrController = nullptr;
     EmulatorRequest::RequestId m_configurationRequestId = 0;
     bool m_bRefreshPending = false;
+    bool m_bBusy = false;
 
     EmulatorRequest::RequestId m_addRequestId = 0;
+    EmulatorRequest::RequestId m_removeRequestId = 0;
+    QHash<IECDeviceConfiguration::DeviceId, IECDeviceManager::ConfigurationPtr> m_configurations;
+    QHash<EmulatorRequest::RequestId, IECDeviceConfiguration::DeviceId> m_setConfigurationRequests;
+    QHash<IECDeviceConfiguration::DeviceId, bool> m_confirmedSetRequests;
 };

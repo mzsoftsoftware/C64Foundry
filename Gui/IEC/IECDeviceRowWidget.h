@@ -3,6 +3,7 @@
 #include <QWidget>
 
 #include "C64/IEC/IECDeviceConfiguration.h"
+#include "IECOperationStatusWidget.h"
 
 namespace Ui {
 class IECDeviceRowWidget;
@@ -17,9 +18,12 @@ public:
     explicit IECDeviceRowWidget(QWidget *parent = nullptr);
     virtual ~IECDeviceRowWidget();
 
+    void setOperationState(IECOperationStatusWidget::State state, const QString& message = QString());
     void setConfiguration(const IECDeviceConfiguration& configuration);
 
-    IECDeviceConfiguration::DeviceId deviceId() const;
+    void setBusy(bool busy);
+    bool isBusy() const                                                             { return m_bBusy; }
+    IECDeviceConfiguration::DeviceId deviceId() const                               { return m_deviceId; }
 
 signals:
     void enabledChanged(IECDeviceConfiguration::DeviceId deviceId, bool enabled);
@@ -36,4 +40,5 @@ protected:
 
 private:
     IECDeviceConfiguration::DeviceId m_deviceId = 0;
+    bool m_bBusy = false;
 };
