@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
+    <width>477</width>
     <height>300</height>
    </rect>
   </property>
@@ -17,9 +17,14 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
-      <widget class="QPushButton" name="pushButton_Power">
+      <widget class="QToolButton" name="toolButton_Power">
        <property name="text">
         <string>Power</string>
+       </property>
+       <property name="icon">
+        <iconset resource="../../Resources/C64Foundry.qrc">
+         <normaloff>:/Icons/PowerOff.svg</normaloff>
+         <normalon>:/Icons/PowerOn.svg</normalon>:/Icons/PowerOff.svg</iconset>
        </property>
        <property name="checkable">
         <bool>true</bool>
@@ -27,7 +32,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="pushButton_Pause">
+      <widget class="QToolButton" name="toolButton_Pause">
        <property name="enabled">
         <bool>false</bool>
        </property>
@@ -40,7 +45,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="pushButton_SoftReset">
+      <widget class="QToolButton" name="toolButton_SoftReset">
        <property name="enabled">
         <bool>false</bool>
        </property>
@@ -50,7 +55,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="pushButton_HardReset">
+      <widget class="QToolButton" name="toolButton_HardReset">
        <property name="enabled">
         <bool>false</bool>
        </property>
@@ -156,7 +161,7 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_3">
      <item>
-      <widget class="QPushButton" name="pushButton_LoadPRG">
+      <widget class="QToolButton" name="toolButton_LoadPRG">
        <property name="enabled">
         <bool>false</bool>
        </property>
@@ -169,6 +174,8 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../../Resources/C64Foundry.qrc"/>
+ </resources>
  <connections/>
 </ui>

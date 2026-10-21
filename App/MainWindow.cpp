@@ -42,6 +42,7 @@ bool MainWindow::initialize()
 
     m_ptrEmulatorController = new EmulatorController(this);
     ui->dockWidgetContents_EmulatorControl->setController(m_ptrEmulatorController);
+    ui->dockWidgetContents_IECControl->setController(m_ptrEmulatorController);
     connect(m_ptrEmulatorController, &EmulatorController::romSetLoaded, this, &MainWindow::romSetLoaded);
 
     m_ptrVideoController = new VideoController(m_ptrEmulatorController->machine(), this);
@@ -87,6 +88,7 @@ void MainWindow::setupDockWidgetsMenu()
     QAction* ptrSeparator = ui->menuView->actions().first();
 
     ui->menuView->insertAction(ptrSeparator, ui->dockWidget_EmulatorControl->toggleViewAction());
+    ui->menuView->insertAction(ptrSeparator, ui->dockWidget_IECControl->toggleViewAction());
     ui->menuView->insertAction(ptrSeparator, ui->dockWidget_Video->toggleViewAction());
     ui->menuView->insertAction(ptrSeparator, ui->dockWidget_VirtualKeyboard->toggleViewAction());
 
@@ -119,14 +121,17 @@ void MainWindow::restoreWindowLayout()
 void MainWindow::resetWindowLayout()
 {
     ui->dockWidget_EmulatorControl->setFloating(false);
+    ui->dockWidget_IECControl->setFloating(false);
     ui->dockWidget_Video->setFloating(false);
     ui->dockWidget_VirtualKeyboard->setFloating(false);
 
     addDockWidget(Qt::TopDockWidgetArea, ui->dockWidget_EmulatorControl);
+    splitDockWidget(ui->dockWidget_EmulatorControl, ui->dockWidget_IECControl, Qt::Horizontal);
     addDockWidget(Qt::RightDockWidgetArea, ui->dockWidget_Video);
     addDockWidget(Qt::BottomDockWidgetArea, ui->dockWidget_VirtualKeyboard);
 
     ui->dockWidget_EmulatorControl->show();
+    ui->dockWidget_IECControl->show();
     ui->dockWidget_Video->show();
     ui->dockWidget_VirtualKeyboard->show();
 }

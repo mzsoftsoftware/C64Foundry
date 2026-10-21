@@ -63,6 +63,18 @@
    </attribute>
    <widget class="C64KeyboardWidget" name="dockWidgetContents_VirtualKeyboard"/>
   </widget>
+  <widget class="QDockWidget" name="dockWidget_IECControl">
+   <property name="windowTitle">
+    <string>IEC Control</string>
+   </property>
+   <property name="dockLocation">
+    <enum>Qt::DockWidgetArea::TopDockWidgetArea</enum>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>4</number>
+   </attribute>
+   <widget class="IECDeviceManagerWidget" name="dockWidgetContents_IECControl"/>
+  </widget>
   <action name="actionResetWindowLayout">
    <property name="text">
     <string>Reset Window Layout</string>
@@ -86,6 +98,12 @@
    <class>C64KeyboardWidget</class>
    <extends>QWidget</extends>
    <header>Gui/Keyboard/C64KeyboardWidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>IECDeviceManagerWidget</class>
+   <extends>QWidget</extends>
+   <header>Gui/IEC/IECDeviceManagerWidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

@@ -23,35 +23,6 @@ EmulatorWorker::EmulatorWorker(IECBus* ptrIECBus, QObject* parent)
     m_ptrScheduler = new EmulationScheduler(m_ptrMachine);
     m_ptrIECDeviceManager = new IECDeviceManager(ptrIECBus);
 
-    // Vorläufige Standardkonfiguration, bis die Geräteverwaltung
-    // über die Anwendung konfiguriert werden kann.
-    const IECDeviceManager::DeviceId deviceId = m_ptrIECDeviceManager->addDevice(IECDeviceType::PrinterASCII);
-    if (deviceId != 0)
-    {
-        IECDeviceManager::ConfigurationPtr ptrConfiguration = m_ptrIECDeviceManager->configuration(deviceId);
-
-        if (!ptrConfiguration.isNull())
-        {
-            ptrConfiguration->setEnabled(true);
-
-            IECDevice* ptrRemovedDevice = nullptr;
-
-            if (m_ptrIECDeviceManager->setConfiguration(*ptrConfiguration, ptrRemovedDevice))
-            {
-                if (ptrRemovedDevice != nullptr)
-                {
-                    m_ptrScheduler->removeIECDevice(ptrRemovedDevice);
-                    delete ptrRemovedDevice;
-                }
-
-                IECDevice* ptrDevice = m_ptrIECDeviceManager->device(deviceId);
-
-                if (ptrDevice != nullptr)
-                    m_ptrScheduler->addIECDevice(ptrDevice);
-            }
-        }
-    }
-
     qDebug() << "EmulatorWorker: created";
 }
 

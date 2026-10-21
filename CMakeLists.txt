@@ -93,12 +93,24 @@ qt_add_executable(C64Foundry
     Configuration/C64KeyboardDefaults.h Configuration/C64KeyboardDefaults.cpp
 
     Gui/Emulator/EmulatorControlWidget.h Gui/Emulator/EmulatorControlWidget.cpp Gui/Emulator/EmulatorControlWidget.ui
+
     Gui/Keyboard/C64KeyboardWidget.h Gui/Keyboard/C64KeyboardWidget.cpp
+    Gui/Keyboard/C64KeyboardModifiers.h
+    Gui/Keyboard/C64KeyboardKeyLabel.h
+    Gui/Keyboard/C64KeyboardSymbol.h
+    Gui/Keyboard/C64KeyboardLayout.h Gui/Keyboard/C64KeyboardLayout.cpp
+    Gui/Keyboard/C64KeyboardKey.h Gui/Keyboard/C64KeyboardKey.cpp
+    Gui/Keyboard/C64KeyboardSymbolData.h Gui/Keyboard/C64KeyboardSymbolData.cpp
+    Gui/Keyboard/C64KeyboardSymbolPainter.h Gui/Keyboard/C64KeyboardSymbolPainter.cpp
+
     Gui/Video/VideoWindowWidget.h Gui/Video/VideoWindowWidget.cpp
+
+    Gui/IEC/IECDeviceManagerWidget.h Gui/IEC/IECDeviceManagerWidget.cpp Gui/IEC/IECDeviceManagerWidget.ui
+    Gui/IEC/IECDeviceRowWidget.h Gui/IEC/IECDeviceRowWidget.cpp Gui/IEC/IECDeviceRowWidget.ui
+    Gui/IEC/IECOperationStatusWidget.h Gui/IEC/IECOperationStatusWidget.cpp
 
     Emulator/EmulatorRequest.h
     Emulator/EmulatorResponse.h
-
 
     Emulator/EmulatorTypes.h
     Emulator/EmulationTime.h
@@ -111,13 +123,6 @@ qt_add_executable(C64Foundry
 
     Input/InputEvent.h
     Input/Keyboard/KeyboardController.h Input/Keyboard/KeyboardController.cpp
-    Gui/Keyboard/C64KeyboardModifiers.h
-    Gui/Keyboard/C64KeyboardKeyLabel.h
-    Gui/Keyboard/C64KeyboardSymbol.h
-    Gui/Keyboard/C64KeyboardLayout.h Gui/Keyboard/C64KeyboardLayout.cpp
-    Gui/Keyboard/C64KeyboardKey.h Gui/Keyboard/C64KeyboardKey.cpp
-    Gui/Keyboard/C64KeyboardSymbolData.h Gui/Keyboard/C64KeyboardSymbolData.cpp
-    Gui/Keyboard/C64KeyboardSymbolPainter.h Gui/Keyboard/C64KeyboardSymbolPainter.cpp
 
     Output/Video/VideoController.h Output/Video/VideoController.cpp
     Output/Video/VideoWorker.h Output/Video/VideoWorker.cpp
