@@ -32,8 +32,8 @@ signals:
 
 private slots:
     void on_toolButton_Power_toggled(bool checked);
-    void on_pushButton_Settings_clicked();
-    void on_pushButton_Remove_clicked();
+    void on_toolButton_Settings_clicked();
+    void on_toolButton_Remove_clicked();
 
 protected:
     Ui::IECDeviceRowWidget* ui;

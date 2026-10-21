@@ -200,6 +200,7 @@ void IECDeviceManagerWidget::setConfigurations(const QList<IECDeviceManager::Con
 
     m_configurations = newConfigurations;
     updateAddMenu();
+    updateBusyState();
 }
 
 void IECDeviceManagerWidget::onRequestDone(QSharedPointer<EmulatorResponse> response)
@@ -269,6 +270,7 @@ void IECDeviceManagerWidget::onRequestDone(QSharedPointer<EmulatorResponse> resp
             }
 
             refreshConfigurations();
+            updateBusyState();
         }
 
         return;
@@ -352,6 +354,7 @@ void IECDeviceManagerWidget::onDeviceEnabledChanged(IECDeviceConfiguration::Devi
     m_setConfigurationRequests.insert(requestId, deviceId);
     ptrRow->setBusy(true);
     ptrRow->setOperationState(IECOperationStatusWidget::State::Pending);
+    updateBusyState();
 }
 void IECDeviceManagerWidget::onDeviceRemoveRequested(IECDeviceConfiguration::DeviceId deviceId)
 {
@@ -416,14 +419,16 @@ void IECDeviceManagerWidget::setBusy(bool busy)
 void IECDeviceManagerWidget::updateBusyState()
 {
     const bool bDeviceOperationPending = !m_setConfigurationRequests.isEmpty() || !m_confirmedSetRequests.isEmpty();
-    ui->toolButton_Add->setEnabled(!m_bBusy && !bDeviceOperationPending && m_ptrController != nullptr);
-    ui->toolButton_Refresh->setEnabled(!m_bBusy && !bDeviceOperationPending && m_ptrController != nullptr);
+    const bool bBusy = m_bBusy || bDeviceOperationPending;
+
+    ui->toolButton_Add->setEnabled(!bBusy && m_ptrController != nullptr);
+    ui->toolButton_Refresh->setEnabled(!bBusy && m_ptrController != nullptr);
 
     for (IECDeviceRowWidget* ptrRow : m_deviceRows)
     {
         if (ptrRow == nullptr)
             continue;
 
-        ptrRow->setBusy(m_bBusy || m_setConfigurationRequests.values().contains(ptrRow->deviceId()));
+        ptrRow->setBusy(bBusy);
     }
 }

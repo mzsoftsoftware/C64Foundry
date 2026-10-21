@@ -54,10 +54,14 @@ void IECDeviceRowWidget::on_toolButton_Power_toggled(bool checked)
     if (m_bBusy)
         return;
 
+    {
+        QSignalBlocker blocker(ui->toolButton_Power);
+        ui->toolButton_Power->setChecked(!checked);
+    }
+
     emit enabledChanged(m_deviceId, checked);
 }
-
-void IECDeviceRowWidget::on_pushButton_Settings_clicked()
+void IECDeviceRowWidget::on_toolButton_Settings_clicked()
 {
     if (m_bBusy)
         return;
@@ -65,7 +69,7 @@ void IECDeviceRowWidget::on_pushButton_Settings_clicked()
     emit settingsRequested(m_deviceId);
 }
 
-void IECDeviceRowWidget::on_pushButton_Remove_clicked()
+void IECDeviceRowWidget::on_toolButton_Remove_clicked()
 {
     if (m_bBusy)
         return;
