@@ -419,6 +419,9 @@ QSharedPointer<EmulatorResponse> EmulatorWorker::processIECRequest(const Emulato
         response->setAvailableDeviceTypes(m_ptrIECDeviceManager->availableDeviceTypes());
         response->setAddableDeviceTypes(m_ptrIECDeviceManager->addableDeviceTypes());
 
+        for (IECDeviceType type : m_ptrIECDeviceManager->availableDeviceTypes())
+            response->setSupportedDeviceNumbers(type, m_ptrIECDeviceManager->supportedDeviceNumbers(type));
+
         result = EmulatorResponse::Result::Success;
         break;
     }

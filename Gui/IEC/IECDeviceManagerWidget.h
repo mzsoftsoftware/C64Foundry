@@ -76,4 +76,5 @@ private:
     QHash<IECDeviceConfiguration::DeviceId, IECDeviceManager::ConfigurationPtr> m_configurations;
     QHash<EmulatorRequest::RequestId, IECDeviceConfiguration::DeviceId> m_setConfigurationRequests;
     QHash<IECDeviceConfiguration::DeviceId, bool> m_confirmedSetRequests;
+    QHash<IECDeviceType, QList<quint8>> m_supportedDeviceNumbers;
 };

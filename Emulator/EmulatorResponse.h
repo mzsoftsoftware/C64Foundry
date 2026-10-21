@@ -2,6 +2,7 @@
 
 #include <QtGlobal>
 #include <QList>
+#include <QHash>
 #include <QSharedPointer>
 
 #include "EmulatorRequest.h"
@@ -60,20 +61,9 @@ public:
     const QList<IECDeviceType>& availableDeviceTypes() const { return m_availableDeviceTypes; }
     const QList<IECDeviceType>& addableDeviceTypes() const { return m_addableDeviceTypes; }
 
-    void setAvailableDeviceTypes(const QList<IECDeviceType>& types)
-    {
-        m_availableDeviceTypes = types;
-    }
-
-    void setAddableDeviceTypes(const QList<IECDeviceType>& types)
-    {
-        m_addableDeviceTypes = types;
-    }
-
-    void setDeviceId(IECDeviceConfiguration::DeviceId id)
-    {
-        m_deviceId = id;
-    }
+    void setAvailableDeviceTypes(const QList<IECDeviceType>& types)                     { m_availableDeviceTypes = types; }
+    void setAddableDeviceTypes(const QList<IECDeviceType>& types)                       { m_addableDeviceTypes = types; }
+    void setDeviceId(IECDeviceConfiguration::DeviceId id)                               { m_deviceId = id; }
 
     void setConfigurations(const QList<ConfigurationPtr>& configurations)
     {
@@ -85,15 +75,14 @@ public:
                 m_configurations.append(ConfigurationPtr(ptrConfiguration->clone()));
         }
     }
-
-    void setResult(Result result)
-    {
-        EmulatorResponse::setResult(result);
-    }
+    void setResult(Result result)                                                       { EmulatorResponse::setResult(result); }
+    const QHash<IECDeviceType, QList<quint8>>& supportedDeviceNumbers() const           { return m_supportedDeviceNumbers; }
+    void setSupportedDeviceNumbers(IECDeviceType type, const QList<quint8>& numbers)    { m_supportedDeviceNumbers.insert(type, numbers); }
 
 private:
     IECDeviceConfiguration::DeviceId m_deviceId = 0;
     QList<ConfigurationPtr> m_configurations;
     QList<IECDeviceType> m_availableDeviceTypes;
     QList<IECDeviceType> m_addableDeviceTypes;
+    QHash<IECDeviceType, QList<quint8>> m_supportedDeviceNumbers;
 };

@@ -289,6 +289,7 @@ void IECDeviceManagerWidget::onRequestDone(QSharedPointer<EmulatorResponse> resp
         {
             m_availableDeviceTypes = ptrResponse->availableDeviceTypes();
             m_addableDeviceTypes = ptrResponse->addableDeviceTypes();
+            m_supportedDeviceNumbers = ptrResponse->supportedDeviceNumbers();
 
             setConfigurations(ptrResponse->configurations());
 
@@ -396,6 +397,7 @@ void IECDeviceManagerWidget::clearDeviceRows()
     m_configurations.clear();
     m_setConfigurationRequests.clear();
     m_confirmedSetRequests.clear();
+    m_supportedDeviceNumbers.clear();
 
     updateAddMenu();
 }
