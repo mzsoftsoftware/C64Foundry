@@ -30,41 +30,41 @@ IECDeviceManagerWidget::~IECDeviceManagerWidget()
     delete ui;
 }
 
+QString IECDeviceManagerWidget::deviceTypeName(IECDeviceType type) const
+{
+    switch (type)
+    {
+    case IECDeviceType::PrinterASCII:
+        return tr("ASCII Printer");
+    }
+
+    return tr("Unknown Device");
+}
 void IECDeviceManagerWidget::setupAddMenu()
 {
     QMenu* ptrMenu = new QMenu(ui->toolButton_Add);
-
-    m_ptrASCIIPrinterAction = ptrMenu->addAction(tr("ASCII Printer"));
-    m_ptrASCIIPrinterAction->setData(static_cast<int>(IECDeviceType::PrinterASCII));
 
     ui->toolButton_Add->setMenu(ptrMenu);
     ui->toolButton_Add->setPopupMode(QToolButton::InstantPopup);
 
     connect(ptrMenu, &QMenu::triggered, this, &IECDeviceManagerWidget::onAddMenuTriggered);
-
-    updateAddMenu();
 }
 void IECDeviceManagerWidget::updateAddMenu()
 {
-    if (m_ptrASCIIPrinterAction == nullptr)
+    QMenu* ptrMenu = ui->toolButton_Add->menu();
+
+    if (ptrMenu == nullptr)
         return;
 
-    bool bNumber4Used = false;
-    bool bNumber5Used = false;
+    ptrMenu->clear();
 
-    for (const IECDeviceManager::ConfigurationPtr& ptrConfiguration : m_configurations)
+    for (IECDeviceType type : m_availableDeviceTypes)
     {
-        if (ptrConfiguration.isNull())
-            continue;
+        QAction* ptrAction = ptrMenu->addAction(deviceTypeName(type));
 
-        if (ptrConfiguration->deviceNumber() == 4)
-            bNumber4Used = true;
-
-        if (ptrConfiguration->deviceNumber() == 5)
-            bNumber5Used = true;
+        ptrAction->setData(static_cast<int>(type));
+        ptrAction->setEnabled(m_addableDeviceTypes.contains(type));
     }
-
-    m_ptrASCIIPrinterAction->setEnabled(m_ptrController != nullptr && (!bNumber4Used || !bNumber5Used));
 }
 void IECDeviceManagerWidget::onAddMenuTriggered(QAction* ptrAction)
 {
@@ -287,7 +287,12 @@ void IECDeviceManagerWidget::onRequestDone(QSharedPointer<EmulatorResponse> resp
 
         if (ptrResponse != nullptr)
         {
+            m_availableDeviceTypes = ptrResponse->availableDeviceTypes();
+            m_addableDeviceTypes = ptrResponse->addableDeviceTypes();
+
             setConfigurations(ptrResponse->configurations());
+
+            updateAddMenu();
 
             qDebug() << "IECDeviceManagerWidget: configurations received:" << ptrResponse->configurations().size();
         }
@@ -385,6 +390,8 @@ void IECDeviceManagerWidget::clearDeviceRows()
 {
     ui->listWidget_Devices->clear();
 
+    m_availableDeviceTypes.clear();
+    m_addableDeviceTypes.clear();
     m_deviceRows.clear();
     m_configurations.clear();
     m_setConfigurationRequests.clear();

@@ -49,6 +49,7 @@ private slots:
     void on_pushButton_Refresh_clicked();
 
 private:
+    QString deviceTypeName(IECDeviceType type) const;
     void setupAddMenu();
     void updateAddMenu();
 
@@ -62,12 +63,13 @@ private:
     Ui::IECDeviceManagerWidget* ui;
     QHash<IECDeviceConfiguration::DeviceId, IECDeviceRowWidget*> m_deviceRows;
 
-    QAction* m_ptrASCIIPrinterAction = nullptr;
-
     EmulatorController* m_ptrController = nullptr;
     EmulatorRequest::RequestId m_configurationRequestId = 0;
     bool m_bRefreshPending = false;
     bool m_bBusy = false;
+
+    QList<IECDeviceType> m_availableDeviceTypes;
+    QList<IECDeviceType> m_addableDeviceTypes;
 
     EmulatorRequest::RequestId m_addRequestId = 0;
     EmulatorRequest::RequestId m_removeRequestId = 0;

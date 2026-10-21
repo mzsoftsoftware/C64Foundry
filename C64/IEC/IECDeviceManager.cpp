@@ -118,7 +118,31 @@ IECDevice* IECDeviceManager::createDevice(const IECDeviceConfiguration& configur
     return nullptr;
 }
 
+QList<IECDeviceType> IECDeviceManager::addableDeviceTypes() const
+{
+    QList<IECDeviceType> result;
 
+    for (IECDeviceType type : availableDeviceTypes())
+    {
+        if (canAddDevice(type))
+            result.append(type);
+    }
+
+    return result;
+}
+bool IECDeviceManager::canAddDevice(IECDeviceType type) const
+{
+    if (!availableDeviceTypes().contains(type))
+        return false;
+
+    for (quint8 deviceNumber : supportedDeviceNumbers(type))
+    {
+        if (!isDeviceNumberReserved(deviceNumber))
+            return true;
+    }
+
+    return false;
+}
 IECDeviceManager::DeviceId IECDeviceManager::addDevice(IECDeviceType type)
 {
     const QList<quint8> numbers = supportedDeviceNumbers(type);

@@ -27,6 +27,8 @@ public:
     QList<ConfigurationPtr> configurations() const;
     ConfigurationPtr configuration(DeviceId id) const;
 
+    QList<IECDeviceType> addableDeviceTypes() const;
+    bool canAddDevice(IECDeviceType type) const;
     DeviceId addDevice(IECDeviceType type);
     bool removeDevice(DeviceId id, IECDevice*& ptrRemovedDevice);
     bool setConfiguration(const IECDeviceConfiguration& configuration, IECDevice*& ptrRemovedDevice);

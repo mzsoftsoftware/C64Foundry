@@ -57,6 +57,19 @@ public:
     IECDeviceConfiguration::DeviceId deviceId() const { return m_deviceId; }
     const QList<ConfigurationPtr>& configurations() const { return m_configurations; }
 
+    const QList<IECDeviceType>& availableDeviceTypes() const { return m_availableDeviceTypes; }
+    const QList<IECDeviceType>& addableDeviceTypes() const { return m_addableDeviceTypes; }
+
+    void setAvailableDeviceTypes(const QList<IECDeviceType>& types)
+    {
+        m_availableDeviceTypes = types;
+    }
+
+    void setAddableDeviceTypes(const QList<IECDeviceType>& types)
+    {
+        m_addableDeviceTypes = types;
+    }
+
     void setDeviceId(IECDeviceConfiguration::DeviceId id)
     {
         m_deviceId = id;
@@ -81,4 +94,6 @@ public:
 private:
     IECDeviceConfiguration::DeviceId m_deviceId = 0;
     QList<ConfigurationPtr> m_configurations;
+    QList<IECDeviceType> m_availableDeviceTypes;
+    QList<IECDeviceType> m_addableDeviceTypes;
 };

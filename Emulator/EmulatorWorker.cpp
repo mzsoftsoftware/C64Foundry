@@ -416,10 +416,12 @@ QSharedPointer<EmulatorResponse> EmulatorWorker::processIECRequest(const Emulato
     case EmulatorRequest::Type::GetIECConfigurations:
     {
         response->setConfigurations(m_ptrIECDeviceManager->configurations());
+        response->setAvailableDeviceTypes(m_ptrIECDeviceManager->availableDeviceTypes());
+        response->setAddableDeviceTypes(m_ptrIECDeviceManager->addableDeviceTypes());
+
         result = EmulatorResponse::Result::Success;
         break;
     }
-
     case EmulatorRequest::Type::AddIECDevice:
     {
         const EmulatorRequestAddIECDevice* ptrIECRequest = static_cast<const EmulatorRequestAddIECDevice*>(ptrRequest);
