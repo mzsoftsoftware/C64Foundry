@@ -25,6 +25,8 @@ public:
     bool isBusy() const                                                             { return m_bBusy; }
     IECDeviceConfiguration::DeviceId deviceId() const                               { return m_deviceId; }
 
+    void triggerActivity(int index = 0);
+
 signals:
     void enabledChanged(IECDeviceConfiguration::DeviceId deviceId, bool enabled);
     void settingsRequested(IECDeviceConfiguration::DeviceId deviceId);

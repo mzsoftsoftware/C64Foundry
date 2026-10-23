@@ -49,6 +49,11 @@ void IECDeviceRowWidget::setBusy(bool busy)
     ui->toolButton_Remove->setEnabled(!busy);
 }
 
+void IECDeviceRowWidget::triggerActivity(int index)
+{
+    ui->widget_ActivityLED->triggerActivity(index);
+}
+
 void IECDeviceRowWidget::on_toolButton_Power_toggled(bool checked)
 {
     if (m_bBusy)

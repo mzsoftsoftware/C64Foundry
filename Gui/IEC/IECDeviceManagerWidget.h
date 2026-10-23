@@ -49,6 +49,8 @@ private slots:
     void onDeviceSettingsRequested(IECDeviceConfiguration::DeviceId deviceId);
     void on_pushButton_Refresh_clicked();
 
+    void onPrinterOutputChanged(IECDeviceConfiguration::DeviceId deviceId, quint64 revision, QByteArray output);
+
 private:
     QString deviceTypeName(IECDeviceType type) const;
     void setupAddMenu();

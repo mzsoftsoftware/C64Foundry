@@ -108,6 +108,7 @@ void IECDeviceManagerWidget::setController(EmulatorController* ptrController)
 
     connect(m_ptrController, &EmulatorController::requestDone, this, &IECDeviceManagerWidget::onRequestDone);
     connect(m_ptrController, &EmulatorController::iecDeviceChanged, this, &IECDeviceManagerWidget::onIECDeviceChanged);
+    connect(m_ptrController, &EmulatorController::printerOutputChanged, this, &IECDeviceManagerWidget::onPrinterOutputChanged);
 
     refreshConfigurations();
 }
@@ -422,6 +423,21 @@ void IECDeviceManagerWidget::onDeviceSettingsRequested(IECDeviceConfiguration::D
 void IECDeviceManagerWidget::on_pushButton_Refresh_clicked()
 {
     refreshConfigurations();
+}
+
+void IECDeviceManagerWidget::onPrinterOutputChanged(IECDeviceConfiguration::DeviceId deviceId, quint64 revision, QByteArray output)
+{
+    Q_UNUSED(revision)
+
+    if (output.isEmpty())
+        return;
+
+    IECDeviceRowWidget* ptrRow = m_deviceRows.value(deviceId, nullptr);
+
+    if (ptrRow == nullptr)
+        return;
+
+    ptrRow->triggerActivity(0);
 }
 
 void IECDeviceManagerWidget::clearDeviceRows()

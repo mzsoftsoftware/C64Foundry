@@ -62,6 +62,9 @@
     </widget>
    </item>
    <item>
+    <widget class="IECActivityLEDWidget" name="widget_ActivityLED" native="true"/>
+   </item>
+   <item>
     <spacer name="horizontalSpacer">
      <property name="orientation">
       <enum>Qt::Orientation::Horizontal</enum>
@@ -98,6 +101,12 @@
    <class>IECOperationStatusWidget</class>
    <extends>QWidget</extends>
    <header>Gui/IEC/IECOperationStatusWidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>IECActivityLEDWidget</class>
+   <extends>QWidget</extends>
+   <header>Gui/IEC/IECActivityLEDWidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
