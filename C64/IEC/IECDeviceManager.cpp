@@ -112,7 +112,22 @@ IECDevice* IECDeviceManager::createDevice(const IECDeviceConfiguration& configur
     switch (configuration.type())
     {
     case IECDeviceType::PrinterASCII:
-        return new IECAsciiPrinter(m_ptrBus, configuration.deviceNumber());
+    {
+        const IECAsciiPrinterConfiguration* ptrConfiguration = dynamic_cast<const IECAsciiPrinterConfiguration*>(&configuration);
+
+        if (ptrConfiguration == nullptr)
+            return nullptr;
+
+        IECAsciiPrinter* ptrPrinter = new IECAsciiPrinter(m_ptrBus, configuration.deviceNumber());
+
+        if (!ptrPrinter->setConfiguration(*ptrConfiguration))
+        {
+            delete ptrPrinter;
+            return nullptr;
+        }
+
+        return ptrPrinter;
+    }
     }
 
     return nullptr;
@@ -203,6 +218,9 @@ bool IECDeviceManager::setConfiguration(const IECDeviceConfiguration& configurat
     if (ptrEntry == nullptr)
         return false;
 
+    if (ptrEntry->configuration->type() != configuration.type())
+        return false;
+
     const QList<quint8> supportedNumbers = supportedDeviceNumbers(configuration.type());
 
     if (!supportedNumbers.contains(configuration.deviceNumber()))
@@ -211,7 +229,6 @@ bool IECDeviceManager::setConfiguration(const IECDeviceConfiguration& configurat
     if (isDeviceNumberReserved(configuration.deviceNumber(), configuration.id()))
         return false;
 
-    // Die Geräte-ID bleibt erhalten, der Gerätetyp kann sich ändern.
     if (*ptrEntry->configuration == configuration)
         return true;
 
@@ -219,6 +236,52 @@ bool IECDeviceManager::setConfiguration(const IECDeviceConfiguration& configurat
 
     if (ptrNewConfiguration.isNull())
         return false;
+
+    const bool bRecreateDevice =
+        ptrEntry->configuration->deviceNumber() != configuration.deviceNumber() ||
+        ptrEntry->configuration->enabled() != configuration.enabled();
+
+    if (!bRecreateDevice)
+    {
+        if (ptrEntry->ptrDevice != nullptr)
+        {
+            switch (configuration.type())
+            {
+            case IECDeviceType::PrinterASCII:
+            {
+                IECAsciiPrinter* ptrPrinter = dynamic_cast<IECAsciiPrinter*>(ptrEntry->ptrDevice);
+                const IECAsciiPrinterConfiguration* ptrPrinterConfiguration = dynamic_cast<const IECAsciiPrinterConfiguration*>(&configuration);
+
+                if (ptrPrinter == nullptr || ptrPrinterConfiguration == nullptr)
+                    return false;
+
+                if (!ptrPrinter->setConfiguration(*ptrPrinterConfiguration))
+                    return false;
+
+                break;
+            }
+            }
+        }
+        else
+        {
+            // Auch ausgeschaltete Geräte müssen gültige Einstellungen besitzen.
+            switch (configuration.type())
+            {
+            case IECDeviceType::PrinterASCII:
+            {
+                const IECAsciiPrinterConfiguration* ptrPrinterConfiguration = dynamic_cast<const IECAsciiPrinterConfiguration*>(&configuration);
+
+                if (ptrPrinterConfiguration == nullptr || ptrPrinterConfiguration->lineWidth() < 1)
+                    return false;
+
+                break;
+            }
+            }
+        }
+
+        ptrEntry->configuration = ptrNewConfiguration;
+        return true;
+    }
 
     IECDevice* ptrNewDevice = nullptr;
 
@@ -229,15 +292,20 @@ bool IECDeviceManager::setConfiguration(const IECDeviceConfiguration& configurat
         if (ptrNewDevice == nullptr)
             return false;
     }
+    else if (configuration.type() == IECDeviceType::PrinterASCII)
+    {
+        const IECAsciiPrinterConfiguration* ptrPrinterConfiguration = dynamic_cast<const IECAsciiPrinterConfiguration*>(&configuration);
+
+        if (ptrPrinterConfiguration == nullptr || ptrPrinterConfiguration->lineWidth() < 1)
+            return false;
+    }
 
     ptrRemovedDevice = ptrEntry->ptrDevice;
-
     ptrEntry->ptrDevice = ptrNewDevice;
     ptrEntry->configuration = ptrNewConfiguration;
 
     return true;
 }
-
 
 IECDevice* IECDeviceManager::device(DeviceId id) const
 {

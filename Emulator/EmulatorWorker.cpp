@@ -457,12 +457,23 @@ QSharedPointer<EmulatorResponse> EmulatorWorker::processIECRequest(const Emulato
     {
         const EmulatorRequestSetIECConfiguration* ptrIECRequest = static_cast<const EmulatorRequestSetIECConfiguration*>(ptrRequest);
 
-        if (setIECDeviceConfiguration(ptrIECRequest->configuration()))
+        const IECDeviceConfiguration& requestedConfiguration = ptrIECRequest->configuration();
+        const IECDeviceManager::ConfigurationPtr ptrCurrentConfiguration = m_ptrIECDeviceManager->configuration(requestedConfiguration.id());
+
+        if (ptrCurrentConfiguration.isNull())
+            break;
+
+        const bool bConfigurationChanged = *ptrCurrentConfiguration != requestedConfiguration;
+
+        if (setIECDeviceConfiguration(requestedConfiguration))
         {
-            response->setDeviceId(ptrIECRequest->configuration().id());
+            response->setDeviceId(requestedConfiguration.id());
             result = EmulatorResponse::Result::Success;
-            publishIECDeviceEvent(EmulatorIECDeviceEvent::Type::ConfigurationChanged, ptrIECRequest->configuration().id());
+
+            if (bConfigurationChanged)
+                publishIECDeviceEvent(EmulatorIECDeviceEvent::Type::ConfigurationChanged, requestedConfiguration.id());
         }
+
         break;
     }
 
@@ -550,6 +561,7 @@ void EmulatorWorker::unregisterIECDevices()
 
 bool EmulatorWorker::setIECDeviceConfiguration(const IECDeviceConfiguration& configuration)
 {
+    IECDevice* ptrPreviousDevice = m_ptrIECDeviceManager->device(configuration.id());
     IECDevice* ptrRemovedDevice = nullptr;
 
     if (!m_ptrIECDeviceManager->setConfiguration(configuration, ptrRemovedDevice))
@@ -564,7 +576,7 @@ bool EmulatorWorker::setIECDeviceConfiguration(const IECDeviceConfiguration& con
 
     IECDevice* ptrDevice = m_ptrIECDeviceManager->device(configuration.id());
 
-    if (ptrDevice != nullptr)
+    if (ptrDevice != nullptr && ptrDevice != ptrPreviousDevice)
         m_ptrScheduler->addIECDevice(ptrDevice);
 
     return true;
