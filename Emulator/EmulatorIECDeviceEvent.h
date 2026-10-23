@@ -9,7 +9,8 @@ enum class Type
     Added,
     Removed,
     ConfigurationChanged,
-    Reset
+    Reset,
+    Restored
 };
 }
 

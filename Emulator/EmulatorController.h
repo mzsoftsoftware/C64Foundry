@@ -30,6 +30,7 @@ public:
 
     // Requests
     EmulatorRequest::RequestId request(EmulatorRequest* ptrRequest);
+    EmulatorRequest::RequestId restoreIECConfigurations(const QList<QSharedPointer<IECDeviceConfiguration>>& configurations);
 
 public slots:
     void loadROMSet(const C64ROMSet& romSet);

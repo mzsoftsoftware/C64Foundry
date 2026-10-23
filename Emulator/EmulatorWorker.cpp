@@ -175,6 +175,7 @@ bool EmulatorWorker::processNextRequest()
     case EmulatorRequest::Type::AddIECDevice:
     case EmulatorRequest::Type::RemoveIECDevice:
     case EmulatorRequest::Type::SetIECConfiguration:
+    case EmulatorRequest::Type::RestoreIECConfigurations:
         response = processIECRequest(ptrRequest);
         break;
 
@@ -398,6 +399,7 @@ EmulatorResponse::Result EmulatorWorker::processRequest(const EmulatorRequest* p
     case EmulatorRequest::Type::AddIECDevice:
     case EmulatorRequest::Type::RemoveIECDevice:
     case EmulatorRequest::Type::SetIECConfiguration:
+    case EmulatorRequest::Type::RestoreIECConfigurations:
         return EmulatorResponse::Result::InvalidParameter;
     }
 
@@ -473,6 +475,28 @@ QSharedPointer<EmulatorResponse> EmulatorWorker::processIECRequest(const Emulato
             if (bConfigurationChanged)
                 publishIECDeviceEvent(EmulatorIECDeviceEvent::Type::ConfigurationChanged, requestedConfiguration.id());
         }
+
+        break;
+    }
+
+    case EmulatorRequest::Type::RestoreIECConfigurations:
+    {
+        if (m_state != Emulator::State::PoweredOff)
+        {
+            result = EmulatorResponse::Result::InvalidState;
+            break;
+        }
+
+        const EmulatorRequestRestoreIECConfigurations* ptrIECRequest = static_cast<const EmulatorRequestRestoreIECConfigurations*>(ptrRequest);
+
+        if (!m_ptrIECDeviceManager->restoreConfigurations(ptrIECRequest->configurations()))
+            break;
+
+        registerIECDevices();
+
+        result = EmulatorResponse::Result::Success;
+
+        publishIECDeviceEvent(EmulatorIECDeviceEvent::Type::Restored, 0);
 
         break;
     }

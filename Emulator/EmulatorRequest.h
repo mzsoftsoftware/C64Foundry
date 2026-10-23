@@ -2,6 +2,7 @@
 
 #include <QByteArray>
 #include <QtGlobal>
+#include <QList>
 #include <QSharedPointer>
 
 #include "EmulatorTypes.h"
@@ -32,7 +33,8 @@ public:
         GetIECConfigurations,
         AddIECDevice,
         RemoveIECDevice,
-        SetIECConfiguration
+        SetIECConfiguration,
+        RestoreIECConfigurations
     };
 
     explicit EmulatorRequest(Type type)
@@ -234,4 +236,33 @@ public:
 
 private:
     QSharedPointer<IECDeviceConfiguration> m_configuration;
+};
+
+class EmulatorRequestRestoreIECConfigurations : public EmulatorRequest
+{
+public:
+    using ConfigurationPtr = QSharedPointer<IECDeviceConfiguration>;
+
+    explicit EmulatorRequestRestoreIECConfigurations(const QList<ConfigurationPtr>& configurations)
+        : EmulatorRequest(Type::RestoreIECConfigurations)
+    {
+        for (const ConfigurationPtr& ptrConfiguration : configurations)
+        {
+            if (ptrConfiguration.isNull())
+            {
+                m_configurations.append(ConfigurationPtr());
+                continue;
+            }
+
+            m_configurations.append(ConfigurationPtr(ptrConfiguration->clone()));
+        }
+    }
+
+    const QList<ConfigurationPtr>& configurations() const
+    {
+        return m_configurations;
+    }
+
+private:
+    QList<ConfigurationPtr> m_configurations;
 };

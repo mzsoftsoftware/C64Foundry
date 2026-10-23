@@ -343,6 +343,7 @@ void IECDeviceManagerWidget::onIECDeviceChanged(EmulatorIECDeviceEvent::Type typ
     case EmulatorIECDeviceEvent::Type::Added:
     case EmulatorIECDeviceEvent::Type::Removed:
     case EmulatorIECDeviceEvent::Type::ConfigurationChanged:
+    case EmulatorIECDeviceEvent::Type::Restored:
         refreshConfigurations();
         break;
 
