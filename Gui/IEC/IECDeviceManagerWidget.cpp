@@ -12,6 +12,8 @@
 #include "Emulator/EmulatorController.h"
 
 #include "IECDeviceRowWidget.h"
+#include "IECAsciiPrinterSettingsDialog.h"
+#include "C64/IEC/IECAsciiPrinterConfiguration.h"
 
 
 IECDeviceManagerWidget::IECDeviceManagerWidget(QWidget* parent)
@@ -157,7 +159,7 @@ void IECDeviceManagerWidget::setConfigurations(const QList<IECDeviceManager::Con
             ptrRow = new IECDeviceRowWidget();
 
             connect(ptrRow, &IECDeviceRowWidget::enabledChanged, this, &IECDeviceManagerWidget::onDeviceEnabledChanged);
-            connect(ptrRow, &IECDeviceRowWidget::settingsRequested, this, &IECDeviceManagerWidget::deviceSettingsRequested);
+            connect(ptrRow, &IECDeviceRowWidget::settingsRequested, this, &IECDeviceManagerWidget::onDeviceSettingsRequested);
             connect(ptrRow, &IECDeviceRowWidget::removeRequested, this, &IECDeviceManagerWidget::onDeviceRemoveRequested);
 
             ptrItem = new QListWidgetItem();
@@ -382,6 +384,59 @@ void IECDeviceManagerWidget::onDeviceRemoveRequested(IECDeviceConfiguration::Dev
     ui->widget_OperationStatus->setState(IECOperationStatusWidget::State::Pending);
 }
 
+void IECDeviceManagerWidget::onDeviceSettingsRequested(IECDeviceConfiguration::DeviceId deviceId)
+{
+    if (m_ptrController == nullptr || m_bBusy || !m_setConfigurationRequests.isEmpty() || !m_confirmedSetRequests.isEmpty())
+        return;
+
+    const IECDeviceManager::ConfigurationPtr ptrConfiguration = m_configurations.value(deviceId);
+
+    if (ptrConfiguration.isNull())
+        return;
+
+    switch (ptrConfiguration->type())
+    {
+    case IECDeviceType::PrinterASCII:
+    {
+        const IECAsciiPrinterConfiguration* ptrPrinterConfiguration = dynamic_cast<const IECAsciiPrinterConfiguration*>(ptrConfiguration.data());
+
+        if (ptrPrinterConfiguration == nullptr)
+            return;
+
+        IECAsciiPrinterSettingsDialog dialog(this);
+        dialog.setConfiguration(*ptrPrinterConfiguration, availableDeviceNumbers(ptrConfiguration->type(), deviceId));
+
+        if (dialog.exec() != QDialog::Accepted)
+            return;
+
+        const IECAsciiPrinterConfiguration updatedConfiguration = dialog.configuration();
+
+        if (updatedConfiguration == *ptrConfiguration)
+            return;
+
+        const EmulatorRequest::RequestId requestId = m_ptrController->request(new EmulatorRequestSetIECConfiguration(updatedConfiguration));
+
+        IECDeviceRowWidget* ptrRow = m_deviceRows.value(deviceId, nullptr);
+
+        if (requestId == 0)
+        {
+            if (ptrRow != nullptr)
+                ptrRow->setOperationState(IECOperationStatusWidget::State::Failed, tr("Could not submit IEC configuration request"));
+
+            return;
+        }
+
+        m_setConfigurationRequests.insert(requestId, deviceId);
+
+        if (ptrRow != nullptr)
+            ptrRow->setOperationState(IECOperationStatusWidget::State::Pending);
+
+        updateBusyState();
+        break;
+    }
+    }
+}
+
 void IECDeviceManagerWidget::on_pushButton_Refresh_clicked()
 {
     refreshConfigurations();
@@ -440,4 +495,33 @@ void IECDeviceManagerWidget::updateBusyState()
 
         ptrRow->setBusy(bBusy);
     }
+}
+
+QList<quint8> IECDeviceManagerWidget::availableDeviceNumbers(IECDeviceType type, IECDeviceConfiguration::DeviceId excludedId) const
+{
+    QList<quint8> result;
+
+    const QList<quint8> supportedNumbers = m_supportedDeviceNumbers.value(type);
+
+    for (quint8 deviceNumber : supportedNumbers)
+    {
+        bool bReserved = false;
+
+        for (const IECDeviceManager::ConfigurationPtr& ptrConfiguration : m_configurations)
+        {
+            if (ptrConfiguration.isNull() || ptrConfiguration->id() == excludedId)
+                continue;
+
+            if (ptrConfiguration->deviceNumber() == deviceNumber)
+            {
+                bReserved = true;
+                break;
+            }
+        }
+
+        if (!bReserved)
+            result.append(deviceNumber);
+    }
+
+    return result;
 }

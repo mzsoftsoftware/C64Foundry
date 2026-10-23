@@ -46,6 +46,7 @@ private slots:
     void onDeviceEnabledChanged(IECDeviceConfiguration::DeviceId deviceId, bool enabled);
     void onDeviceRemoveRequested(IECDeviceConfiguration::DeviceId deviceId);
 
+    void onDeviceSettingsRequested(IECDeviceConfiguration::DeviceId deviceId);
     void on_pushButton_Refresh_clicked();
 
 private:
@@ -58,6 +59,8 @@ private:
 
     void setBusy(bool busy);
     void updateBusyState();
+
+    QList<quint8> availableDeviceNumbers(IECDeviceType type, IECDeviceConfiguration::DeviceId excludedId) const;
 
 private:
     Ui::IECDeviceManagerWidget* ui;

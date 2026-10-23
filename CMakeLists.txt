@@ -108,6 +108,7 @@ qt_add_executable(C64Foundry
     Gui/IEC/IECDeviceManagerWidget.h Gui/IEC/IECDeviceManagerWidget.cpp Gui/IEC/IECDeviceManagerWidget.ui
     Gui/IEC/IECDeviceRowWidget.h Gui/IEC/IECDeviceRowWidget.cpp Gui/IEC/IECDeviceRowWidget.ui
     Gui/IEC/IECOperationStatusWidget.h Gui/IEC/IECOperationStatusWidget.cpp
+    Gui/IEC/IECAsciiPrinterSettingsDialog.h Gui/IEC/IECAsciiPrinterSettingsDialog.cpp Gui/IEC/IECAsciiPrinterSettingsDialog.ui
 
     Emulator/EmulatorRequest.h
     Emulator/EmulatorResponse.h
