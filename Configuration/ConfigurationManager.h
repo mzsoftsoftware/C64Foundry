@@ -4,6 +4,10 @@
 #include <QMap>
 #include <QString>
 #include <QStringList>
+#include <QList>
+#include <QSharedPointer>
+
+#include "C64/IEC/IECDeviceConfiguration.h"
 
 class C64Configuration;
 
@@ -18,6 +22,8 @@ public:
 
     // Initialization
     bool initialize();
+    bool save();
+    bool setIECConfigurations(const QList<QSharedPointer<IECDeviceConfiguration>>& configurations);
 
     // Getter
     QStringList configurationNames() const                                  { return m_qmapConfigurations.keys(); }

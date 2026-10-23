@@ -4,6 +4,8 @@
 #include "ConfigurationStorage.h"
 #include "ROMSetDetector.h"
 
+#include <QDebug>
+
 
 ConfigurationManager::ConfigurationManager(QObject* parent)
     : QObject(parent)
@@ -87,6 +89,47 @@ bool ConfigurationManager::initialize()
     qDeleteAll(m_qmapConfigurations);
     m_qmapConfigurations = configurations;
     m_ptrActiveConfiguration = ptrActiveConfiguration;
+
+    return true;
+}
+
+bool ConfigurationManager::save()
+{
+    if (m_ptrActiveConfiguration == nullptr)
+        return false;
+
+    ConfigurationStorage storage;
+
+    if (!storage.save(m_qmapConfigurations, m_ptrActiveConfiguration->name))
+    {
+        qWarning() << "ConfigurationManager: could not save configurations";
+        return false;
+    }
+
+    return true;
+}
+
+bool ConfigurationManager::setIECConfigurations(const QList<QSharedPointer<IECDeviceConfiguration>>& configurations)
+{
+    if (m_ptrActiveConfiguration == nullptr)
+        return false;
+
+    QList<QSharedPointer<IECDeviceConfiguration>> copiedConfigurations;
+
+    for (const QSharedPointer<IECDeviceConfiguration>& ptrConfiguration : configurations)
+    {
+        if (ptrConfiguration.isNull())
+            return false;
+
+        QSharedPointer<IECDeviceConfiguration> ptrCopy(ptrConfiguration->clone());
+
+        if (ptrCopy.isNull())
+            return false;
+
+        copiedConfigurations.append(ptrCopy);
+    }
+
+    m_ptrActiveConfiguration->iecDevices.swap(copiedConfigurations);
 
     return true;
 }
