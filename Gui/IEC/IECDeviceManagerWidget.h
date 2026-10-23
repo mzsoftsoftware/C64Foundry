@@ -61,6 +61,7 @@ private:
     void updateBusyState();
 
     QList<quint8> availableDeviceNumbers(IECDeviceType type, IECDeviceConfiguration::DeviceId excludedId) const;
+    bool submitConfigurationChange(const IECDeviceConfiguration& configuration);
 
 private:
     Ui::IECDeviceManagerWidget* ui;

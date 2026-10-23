@@ -196,7 +196,6 @@ void IECDeviceManagerWidget::setConfigurations(const QList<IECDeviceManager::Con
         {
             ptrRow->setOperationState(IECOperationStatusWidget::State::Success);
             m_confirmedSetRequests.remove(deviceId);
-            ptrRow->setBusy(false);
         }
     }
 
@@ -332,37 +331,16 @@ void IECDeviceManagerWidget::onIECDeviceChanged(EmulatorIECDeviceEvent::Type typ
 }
 void IECDeviceManagerWidget::onDeviceEnabledChanged(IECDeviceConfiguration::DeviceId deviceId, bool enabled)
 {
-    if (m_ptrController == nullptr)
-        return;
-
     const IECDeviceManager::ConfigurationPtr ptrConfiguration = m_configurations.value(deviceId);
-    IECDeviceRowWidget* ptrRow = m_deviceRows.value(deviceId, nullptr);
 
-    if (ptrConfiguration.isNull() || ptrRow == nullptr)
-        return;
-
-    if (ptrConfiguration->enabled() == enabled)
-        return;
-
-    // Keine zweite Anfrage für dasselbe Gerät zulassen.
-    if (m_setConfigurationRequests.values().contains(deviceId))
+    if (ptrConfiguration.isNull())
         return;
 
     QSharedPointer<IECDeviceConfiguration> ptrUpdatedConfiguration(ptrConfiguration->clone());
+
     ptrUpdatedConfiguration->setEnabled(enabled);
 
-    const EmulatorRequest::RequestId requestId = m_ptrController->request(new EmulatorRequestSetIECConfiguration(*ptrUpdatedConfiguration));
-
-    if (requestId == 0)
-    {
-        ptrRow->setOperationState(IECOperationStatusWidget::State::Failed, tr("Could not submit IEC configuration request"));
-        return;
-    }
-
-    m_setConfigurationRequests.insert(requestId, deviceId);
-    ptrRow->setBusy(true);
-    ptrRow->setOperationState(IECOperationStatusWidget::State::Pending);
-    updateBusyState();
+    submitConfigurationChange(*ptrUpdatedConfiguration);
 }
 void IECDeviceManagerWidget::onDeviceRemoveRequested(IECDeviceConfiguration::DeviceId deviceId)
 {
@@ -411,27 +389,7 @@ void IECDeviceManagerWidget::onDeviceSettingsRequested(IECDeviceConfiguration::D
 
         const IECAsciiPrinterConfiguration updatedConfiguration = dialog.configuration();
 
-        if (updatedConfiguration == *ptrConfiguration)
-            return;
-
-        const EmulatorRequest::RequestId requestId = m_ptrController->request(new EmulatorRequestSetIECConfiguration(updatedConfiguration));
-
-        IECDeviceRowWidget* ptrRow = m_deviceRows.value(deviceId, nullptr);
-
-        if (requestId == 0)
-        {
-            if (ptrRow != nullptr)
-                ptrRow->setOperationState(IECOperationStatusWidget::State::Failed, tr("Could not submit IEC configuration request"));
-
-            return;
-        }
-
-        m_setConfigurationRequests.insert(requestId, deviceId);
-
-        if (ptrRow != nullptr)
-            ptrRow->setOperationState(IECOperationStatusWidget::State::Pending);
-
-        updateBusyState();
+        submitConfigurationChange(updatedConfiguration);
         break;
     }
     }
@@ -524,4 +482,40 @@ QList<quint8> IECDeviceManagerWidget::availableDeviceNumbers(IECDeviceType type,
     }
 
     return result;
+}
+
+bool IECDeviceManagerWidget::submitConfigurationChange(const IECDeviceConfiguration& configuration)
+{
+    if (m_ptrController == nullptr)
+        return false;
+
+    const IECDeviceConfiguration::DeviceId deviceId = configuration.id();
+
+    IECDeviceRowWidget* ptrRow = m_deviceRows.value(deviceId, nullptr);
+    const IECDeviceManager::ConfigurationPtr ptrCurrentConfiguration = m_configurations.value(deviceId);
+
+    if (ptrRow == nullptr || ptrCurrentConfiguration.isNull())
+        return false;
+
+    if (configuration == *ptrCurrentConfiguration)
+        return false;
+
+    if (m_bBusy || !m_setConfigurationRequests.isEmpty() || !m_confirmedSetRequests.isEmpty())
+        return false;
+
+    const EmulatorRequest::RequestId requestId = m_ptrController->request(new EmulatorRequestSetIECConfiguration(configuration));
+
+    if (requestId == 0)
+    {
+        ptrRow->setOperationState(IECOperationStatusWidget::State::Failed, tr("Could not submit IEC configuration request"));
+        return false;
+    }
+
+    m_setConfigurationRequests.insert(requestId, deviceId);
+
+    ptrRow->setOperationState(IECOperationStatusWidget::State::Pending);
+
+    updateBusyState();
+
+    return true;
 }
