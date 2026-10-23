@@ -98,6 +98,8 @@ void IECDeviceManagerWidget::setController(EmulatorController* ptrController)
     m_ptrController = ptrController;
     m_configurationRequestId = 0;
     m_bRefreshPending = false;
+    m_bOperationRefreshPending = false;
+    m_bBusy = false;
 
     clearDeviceRows();
 
@@ -213,16 +215,15 @@ void IECDeviceManagerWidget::onRequestDone(QSharedPointer<EmulatorResponse> resp
     {
         m_addRequestId = 0;
 
-        setBusy(false);
-
         if (response->success())
         {
-            ui->widget_OperationStatus->setState(IECOperationStatusWidget::State::Success);
+            m_bOperationRefreshPending = true;
             refreshConfigurations();
         }
         else
         {
             ui->widget_OperationStatus->setState(IECOperationStatusWidget::State::Failed, tr("Could not add IEC device"));
+            setBusy(false);
         }
 
         return;
@@ -232,16 +233,15 @@ void IECDeviceManagerWidget::onRequestDone(QSharedPointer<EmulatorResponse> resp
     {
         m_removeRequestId = 0;
 
-        setBusy(false);
-
         if (response->success())
         {
-            ui->widget_OperationStatus->setState(IECOperationStatusWidget::State::Success);
+            m_bOperationRefreshPending = true;
             refreshConfigurations();
         }
         else
         {
             ui->widget_OperationStatus->setState(IECOperationStatusWidget::State::Failed, tr("Could not remove IEC device"));
+            setBusy(false);
         }
 
         return;
@@ -282,6 +282,8 @@ void IECDeviceManagerWidget::onRequestDone(QSharedPointer<EmulatorResponse> resp
 
     m_configurationRequestId = 0;
 
+    bool bRefreshSuccess = false;
+
     if (response->type() == EmulatorRequest::Type::GetIECConfigurations && response->success())
     {
         const EmulatorResponseIEC* ptrResponse = dynamic_cast<const EmulatorResponseIEC*>(response.data());
@@ -294,21 +296,42 @@ void IECDeviceManagerWidget::onRequestDone(QSharedPointer<EmulatorResponse> resp
 
             setConfigurations(ptrResponse->configurations());
 
-            updateAddMenu();
+            bRefreshSuccess = true;
 
             qDebug() << "IECDeviceManagerWidget: configurations received:" << ptrResponse->configurations().size();
         }
     }
-    else
+
+    if (!bRefreshSuccess)
     {
         qWarning() << "IECDeviceManagerWidget: failed to retrieve IEC configurations";
+
+        for (IECDeviceConfiguration::DeviceId deviceId : m_confirmedSetRequests.keys())
+        {
+            IECDeviceRowWidget* ptrRow = m_deviceRows.value(deviceId, nullptr);
+
+            if (ptrRow != nullptr)
+                ptrRow->setOperationState(IECOperationStatusWidget::State::Failed, tr("Could not refresh IEC device configuration"));
+        }
+
+        m_confirmedSetRequests.clear();
     }
 
     if (m_bRefreshPending)
     {
         m_bRefreshPending = false;
+
         refreshConfigurations();
+
+        // Der aktuelle Refresh kann älter als die bestätigte
+        // Add-/Remove-Operation sein. Auf den nächsten warten.
+        if (m_configurationRequestId != 0)
+            return;
     }
+
+    finishConfigurationRefresh(bRefreshSuccess);
+
+    updateBusyState();
 }
 
 void IECDeviceManagerWidget::onIECDeviceChanged(EmulatorIECDeviceEvent::Type type, IECDeviceConfiguration::DeviceId deviceId)
@@ -426,6 +449,25 @@ void IECDeviceManagerWidget::refreshConfigurations()
     }
 
     m_configurationRequestId = m_ptrController->request(new EmulatorRequestGetIECConfigurations());
+
+    if (m_configurationRequestId == 0)
+    {
+        qWarning() << "IECDeviceManagerWidget: could not submit configuration request";
+
+        for (IECDeviceConfiguration::DeviceId deviceId : m_confirmedSetRequests.keys())
+        {
+            IECDeviceRowWidget* ptrRow = m_deviceRows.value(deviceId, nullptr);
+
+            if (ptrRow != nullptr)
+                ptrRow->setOperationState(IECOperationStatusWidget::State::Failed, tr("Could not refresh IEC device configuration"));
+        }
+
+        m_confirmedSetRequests.clear();
+        m_bRefreshPending = false;
+
+        finishConfigurationRefresh(false);
+        updateBusyState();
+    }
 }
 
 void IECDeviceManagerWidget::setBusy(bool busy)
@@ -518,4 +560,19 @@ bool IECDeviceManagerWidget::submitConfigurationChange(const IECDeviceConfigurat
     updateBusyState();
 
     return true;
+}
+
+void IECDeviceManagerWidget::finishConfigurationRefresh(bool success)
+{
+    if (!m_bOperationRefreshPending)
+        return;
+
+    m_bOperationRefreshPending = false;
+
+    if (success)
+        ui->widget_OperationStatus->setState(IECOperationStatusWidget::State::Success);
+    else
+        ui->widget_OperationStatus->setState(IECOperationStatusWidget::State::Failed, tr("Could not refresh IEC devices"));
+
+    setBusy(false);
 }

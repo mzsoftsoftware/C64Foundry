@@ -62,6 +62,7 @@ private:
 
     QList<quint8> availableDeviceNumbers(IECDeviceType type, IECDeviceConfiguration::DeviceId excludedId) const;
     bool submitConfigurationChange(const IECDeviceConfiguration& configuration);
+    void finishConfigurationRefresh(bool success);
 
 private:
     Ui::IECDeviceManagerWidget* ui;
@@ -81,4 +82,6 @@ private:
     QHash<EmulatorRequest::RequestId, IECDeviceConfiguration::DeviceId> m_setConfigurationRequests;
     QHash<IECDeviceConfiguration::DeviceId, bool> m_confirmedSetRequests;
     QHash<IECDeviceType, QList<quint8>> m_supportedDeviceNumbers;
+
+    bool m_bOperationRefreshPending = false;
 };
