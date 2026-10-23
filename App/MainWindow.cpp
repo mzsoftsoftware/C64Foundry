@@ -41,6 +41,8 @@ bool MainWindow::initialize()
         return false;
 
     m_ptrEmulatorController = new EmulatorController(this);
+    connect(m_ptrEmulatorController, &EmulatorController::requestDone, this, &MainWindow::onIECConfigurationsRestored);
+
     ui->dockWidgetContents_EmulatorControl->setController(m_ptrEmulatorController);
     ui->dockWidgetContents_IECControl->setController(m_ptrEmulatorController);
     connect(m_ptrEmulatorController, &EmulatorController::romSetLoaded, this, &MainWindow::romSetLoaded);
@@ -61,8 +63,13 @@ bool MainWindow::initialize()
     setupDockWidgetsMenu();
     restoreWindowLayout();
 
-    m_ptrEmulatorController->loadROMSet(m_ptrConfigurationManager->activeConfiguration()->romSet);
+    m_restoreIECRequestId = m_ptrEmulatorController->restoreIECConfigurations(m_ptrConfigurationManager->activeConfiguration()->iecDevices);
 
+    if (m_restoreIECRequestId == 0)
+    {
+        QMessageBox::critical(this, tr("IEC configuration error"), tr("Could not submit the IEC configuration restore request."));
+        return false;
+    }
 
     C64PRGFile prgFile;
 
@@ -174,4 +181,33 @@ void MainWindow::closeEvent(QCloseEvent* ptrEvent)
 
     QApplication::quit();
     QMainWindow::closeEvent(ptrEvent);
+}
+
+void MainWindow::onIECConfigurationsRestored(QSharedPointer<EmulatorResponse> response)
+{
+    if (response.isNull())
+        return;
+
+    if (m_restoreIECRequestId == 0)
+        return;
+
+    if (response->id() != m_restoreIECRequestId)
+        return;
+
+    if (response->type() != EmulatorRequest::Type::RestoreIECConfigurations)
+        return;
+
+    m_restoreIECRequestId = 0;
+
+    if (!response->success())
+    {
+        QMessageBox::critical(this, tr("IEC configuration error"), tr("The saved IEC device configurations could not be restored."));
+
+        QApplication::quit();
+        return;
+    }
+
+    qDebug() << "MainWindow: IEC configurations restored successfully";
+
+    m_ptrEmulatorController->loadROMSet(m_ptrConfigurationManager->activeConfiguration()->romSet);
 }

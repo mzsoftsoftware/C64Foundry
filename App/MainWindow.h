@@ -1,6 +1,10 @@
 #pragma once
 
 #include <QMainWindow>
+#include <QSharedPointer>
+
+#include "Emulator/EmulatorRequest.h"
+#include "Emulator/EmulatorResponse.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -25,6 +29,7 @@ public:
     bool initialize();
 
 private slots:
+    void onIECConfigurationsRestored(QSharedPointer<EmulatorResponse> response);
     void romSetLoaded(bool bLoaded);
 
 protected:
@@ -47,5 +52,7 @@ private:
 
     KeyboardController* m_ptrKeyboardController = nullptr;
 
-    VideoController* m_ptrVideoController = nullptr;    
+    VideoController* m_ptrVideoController = nullptr;
+
+    EmulatorRequest::RequestId m_restoreIECRequestId = 0;
 };
