@@ -23,16 +23,17 @@ void IECAsciiPrinterSettingsDialog::setConfiguration(const IECAsciiPrinterConfig
     m_configuration = configuration;
 
     ui->comboBox_DeviceNumber->clear();
-
     for (quint8 deviceNumber : availableDeviceNumbers)
     {
         ui->comboBox_DeviceNumber->addItem(QStringLiteral("#%1").arg(deviceNumber), static_cast<int>(deviceNumber));
     }
 
     const int index = ui->comboBox_DeviceNumber->findData(static_cast<int>(configuration.deviceNumber()));
-
     if (index >= 0)
         ui->comboBox_DeviceNumber->setCurrentIndex(index);
+
+    ui->spinBox_LineWidth->setValue(configuration.lineWidth());
+    ui->checkBox_AutoWrap->setChecked(configuration.autoWrap());
 
     ui->buttonBox->button(QDialogButtonBox::Ok)->setEnabled(ui->comboBox_DeviceNumber->count() > 0);
 }
@@ -43,6 +44,9 @@ IECAsciiPrinterConfiguration IECAsciiPrinterSettingsDialog::configuration() cons
 
     if (ui->comboBox_DeviceNumber->currentIndex() >= 0)
         result.setDeviceNumber(static_cast<quint8>(ui->comboBox_DeviceNumber->currentData().toUInt()));
+
+    result.setLineWidth(ui->spinBox_LineWidth->value());
+    result.setAutoWrap(ui->checkBox_AutoWrap->isChecked());
 
     return result;
 }
