@@ -55,6 +55,117 @@ IECDeviceManager::ConfigurationPtr IECDeviceManager::configuration(DeviceId id) 
     return ConfigurationPtr(ptrEntry->configuration->clone());
 }
 
+bool IECDeviceManager::restoreConfigurations(const QList<ConfigurationPtr>& configurations)
+{
+    // Wiederherstellung ist nur für einen noch leeren Manager vorgesehen.
+    if (!m_devices.isEmpty())
+        return false;
+
+    QList<DeviceEntry> restoredDevices;
+    QList<DeviceId> usedIds;
+    QList<quint8> usedDeviceNumbers;
+
+    DeviceId highestId = 0;
+    bool bValid = true;
+
+    for (const ConfigurationPtr& ptrConfiguration : configurations)
+    {
+        if (ptrConfiguration.isNull())
+        {
+            bValid = false;
+            break;
+        }
+
+        const DeviceId id = ptrConfiguration->id();
+        const IECDeviceType type = ptrConfiguration->type();
+        const quint8 deviceNumber = ptrConfiguration->deviceNumber();
+
+        if (id == 0 || id == static_cast<DeviceId>(-1))
+        {
+            bValid = false;
+            break;
+        }
+
+        if (!availableDeviceTypes().contains(type))
+        {
+            bValid = false;
+            break;
+        }
+
+        if (!supportedDeviceNumbers(type).contains(deviceNumber))
+        {
+            bValid = false;
+            break;
+        }
+
+        if (usedIds.contains(id) || usedDeviceNumbers.contains(deviceNumber))
+        {
+            bValid = false;
+            break;
+        }
+
+        ConfigurationPtr ptrCopy(ptrConfiguration->clone());
+
+        if (ptrCopy.isNull())
+        {
+            bValid = false;
+            break;
+        }
+
+        // Gerätespezifische Einstellungen auch bei ausgeschalteten Geräten prüfen.
+        switch (type)
+        {
+        case IECDeviceType::PrinterASCII:
+        {
+            const IECAsciiPrinterConfiguration* ptrPrinterConfiguration = dynamic_cast<const IECAsciiPrinterConfiguration*>(ptrCopy.data());
+
+            if (ptrPrinterConfiguration == nullptr || ptrPrinterConfiguration->lineWidth() < 1)
+                bValid = false;
+
+            break;
+        }
+        }
+
+        if (!bValid)
+            break;
+
+        DeviceEntry entry;
+        entry.configuration = ptrCopy;
+
+        if (ptrCopy->enabled())
+        {
+            entry.ptrDevice = createDevice(*ptrCopy);
+
+            if (entry.ptrDevice == nullptr)
+            {
+                bValid = false;
+                break;
+            }
+        }
+
+        restoredDevices.append(entry);
+        usedIds.append(id);
+        usedDeviceNumbers.append(deviceNumber);
+
+        if (id > highestId)
+            highestId = id;
+    }
+
+    if (!bValid)
+    {
+        // Temporär erzeugte Geräte freigeben.
+        for (DeviceEntry& entry : restoredDevices)
+            delete entry.ptrDevice;
+
+        return false;
+    }
+
+    // Erst jetzt den geprüften Zustand übernehmen.
+    m_devices.swap(restoredDevices);
+    m_nextDeviceId = highestId + 1;
+
+    return true;
+}
 
 IECDeviceManager::DeviceEntry* IECDeviceManager::findEntry(DeviceId id)
 {
