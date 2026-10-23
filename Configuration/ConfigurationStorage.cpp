@@ -4,6 +4,7 @@
 #include <QStringList>
 
 #include "C64Configuration.h"
+#include "C64/IEC/IECAsciiPrinterConfiguration.h"
 
 
 bool ConfigurationStorage::load(QMap<QString, C64Configuration*>& configurations, QString& activeConfigurationName) const
@@ -36,6 +37,24 @@ bool ConfigurationStorage::load(QMap<QString, C64Configuration*>& configurations
         //
         settings.beginGroup(QStringLiteral("Keyboard"));
         if (!loadKeyboard(settings, ptrConfiguration->keyboard))
+        {
+            settings.endGroup();
+            settings.endGroup();
+            settings.endGroup();
+
+            delete ptrConfiguration;
+            qDeleteAll(configurations);
+            configurations.clear();
+
+            return false;
+        }
+        settings.endGroup();
+
+        //
+        // IEC devices
+        //
+        settings.beginGroup(QStringLiteral("IEC"));
+        if (!loadIECDevices(settings, ptrConfiguration->iecDevices))
         {
             settings.endGroup();
             settings.endGroup();
@@ -86,6 +105,13 @@ bool ConfigurationStorage::save(const QMap<QString, C64Configuration*>& configur
         //
         settings.beginGroup(QStringLiteral("Keyboard"));
         saveKeyboard(settings, ptrConfiguration->keyboard);
+        settings.endGroup();
+
+        //
+        // IEC devices
+        //
+        settings.beginGroup(QStringLiteral("IEC"));
+        saveIECDevices(settings, ptrConfiguration->iecDevices);
         settings.endGroup();
 
         settings.endGroup();
@@ -180,6 +206,117 @@ void ConfigurationStorage::saveKeyboard(QSettings& settings, const C64KeyboardCo
         settings.setValue(QStringLiteral("NativeScanCode"), mapping.nativeScanCode);
         settings.setValue(QStringLiteral("Keys"), keyNames);
         settings.setValue(QStringLiteral("Mode"), C64KeyboardConfiguration::mappingModeName(mapping.mode));
+    }
+
+    settings.endArray();
+}
+
+bool ConfigurationStorage::loadIECDevices(QSettings& settings, QList<QSharedPointer<IECDeviceConfiguration>>& devices) const
+{
+    QList<QSharedPointer<IECDeviceConfiguration>> loadedDevices;
+    QList<IECDeviceConfiguration::DeviceId> usedIds;
+    QList<quint8> usedDeviceNumbers;
+
+    const int deviceCount = settings.beginReadArray(QStringLiteral("Devices"));
+
+    for (int index = 0; index < deviceCount; ++index)
+    {
+        settings.setArrayIndex(index);
+
+        bool bIdValid = false;
+        bool bDeviceNumberValid = false;
+
+        const IECDeviceConfiguration::DeviceId id = settings.value(QStringLiteral("Id")).toULongLong(&bIdValid);
+        const uint deviceNumber = settings.value(QStringLiteral("DeviceNumber")).toUInt(&bDeviceNumberValid);
+        const QString typeName = settings.value(QStringLiteral("Type")).toString();
+
+        if (!bIdValid || id == 0 || !bDeviceNumberValid || deviceNumber > 255 || usedIds.contains(id) || usedDeviceNumbers.contains(static_cast<quint8>(deviceNumber)))
+        {
+            settings.endArray();
+            return false;
+        }
+
+        QSharedPointer<IECDeviceConfiguration> ptrConfiguration;
+
+        if (typeName == QStringLiteral("PrinterASCII"))
+        {
+            if (deviceNumber != 4 && deviceNumber != 5)
+            {
+                settings.endArray();
+                return false;
+            }
+
+            bool bLineWidthValid = false;
+            const int lineWidth = settings.value(QStringLiteral("LineWidth"), 80).toInt(&bLineWidthValid);
+
+            if (!bLineWidthValid || lineWidth < 1)
+            {
+                settings.endArray();
+                return false;
+            }
+
+            IECAsciiPrinterConfiguration* ptrPrinterConfiguration = new IECAsciiPrinterConfiguration();
+
+            ptrPrinterConfiguration->setLineWidth(lineWidth);
+            ptrPrinterConfiguration->setAutoWrap(settings.value(QStringLiteral("AutoWrap"), true).toBool());
+
+            ptrConfiguration.reset(ptrPrinterConfiguration);
+        }
+        else
+        {
+            settings.endArray();
+            return false;
+        }
+
+        ptrConfiguration->setId(id);
+        ptrConfiguration->setDeviceNumber(static_cast<quint8>(deviceNumber));
+        ptrConfiguration->setEnabled(settings.value(QStringLiteral("Enabled"), false).toBool());
+
+        loadedDevices.append(ptrConfiguration);
+        usedIds.append(id);
+        usedDeviceNumbers.append(static_cast<quint8>(deviceNumber));
+    }
+
+    settings.endArray();
+
+    devices = loadedDevices;
+
+    return true;
+}
+
+void ConfigurationStorage::saveIECDevices(QSettings& settings, const QList<QSharedPointer<IECDeviceConfiguration>>& devices) const
+{
+    settings.beginWriteArray(QStringLiteral("Devices"), devices.size());
+
+    for (int index = 0; index < devices.size(); ++index)
+    {
+        settings.setArrayIndex(index);
+
+        const QSharedPointer<IECDeviceConfiguration>& ptrConfiguration = devices[index];
+
+        if (ptrConfiguration.isNull())
+            continue;
+
+        settings.setValue(QStringLiteral("Id"), static_cast<qulonglong>(ptrConfiguration->id()));
+        settings.setValue(QStringLiteral("DeviceNumber"), static_cast<uint>(ptrConfiguration->deviceNumber()));
+        settings.setValue(QStringLiteral("Enabled"), ptrConfiguration->enabled());
+
+        switch (ptrConfiguration->type())
+        {
+        case IECDeviceType::PrinterASCII:
+        {
+            const IECAsciiPrinterConfiguration* ptrPrinterConfiguration = dynamic_cast<const IECAsciiPrinterConfiguration*>(ptrConfiguration.data());
+
+            if (ptrPrinterConfiguration == nullptr)
+                break;
+
+            settings.setValue(QStringLiteral("Type"), QStringLiteral("PrinterASCII"));
+            settings.setValue(QStringLiteral("LineWidth"), ptrPrinterConfiguration->lineWidth());
+            settings.setValue(QStringLiteral("AutoWrap"), ptrPrinterConfiguration->autoWrap());
+
+            break;
+        }
+        }
     }
 
     settings.endArray();
