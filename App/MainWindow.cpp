@@ -208,6 +208,6 @@ void MainWindow::onIECConfigurationsRestored(QSharedPointer<EmulatorResponse> re
     }
 
     qDebug() << "MainWindow: IEC configurations restored successfully";
-
+    m_ptrConfigurationManager->startIECSynchronization(m_ptrEmulatorController);
     m_ptrEmulatorController->loadROMSet(m_ptrConfigurationManager->activeConfiguration()->romSet);
 }

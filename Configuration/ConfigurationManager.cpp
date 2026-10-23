@@ -4,6 +4,8 @@
 #include "ConfigurationStorage.h"
 #include "ROMSetDetector.h"
 
+#include "Emulator/EmulatorController.h"
+
 #include <QDebug>
 
 
@@ -132,4 +134,95 @@ bool ConfigurationManager::setIECConfigurations(const QList<QSharedPointer<IECDe
     m_ptrActiveConfiguration->iecDevices.swap(copiedConfigurations);
 
     return true;
+}
+
+void ConfigurationManager::startIECSynchronization(EmulatorController* ptrController)
+{
+    if (ptrController == nullptr || m_ptrEmulatorController != nullptr)
+        return;
+
+    m_ptrEmulatorController = ptrController;
+
+    connect(m_ptrEmulatorController, &EmulatorController::iecDeviceChanged, this, &ConfigurationManager::onIECDeviceChanged);
+    connect(m_ptrEmulatorController, &EmulatorController::requestDone, this, &ConfigurationManager::onIECRequestDone);
+
+    qDebug() << "ConfigurationManager: IEC synchronization started";
+}
+void ConfigurationManager::onIECDeviceChanged(EmulatorIECDeviceEvent::Type type, IECDeviceConfiguration::DeviceId deviceId)
+{
+    Q_UNUSED(deviceId)
+
+    switch (type)
+    {
+    case EmulatorIECDeviceEvent::Type::Added:
+    case EmulatorIECDeviceEvent::Type::Removed:
+    case EmulatorIECDeviceEvent::Type::ConfigurationChanged:
+        requestIECConfigurations();
+        break;
+
+    case EmulatorIECDeviceEvent::Type::Reset:
+    case EmulatorIECDeviceEvent::Type::Restored:
+        break;
+    }
+}
+void ConfigurationManager::requestIECConfigurations()
+{
+    if (m_ptrEmulatorController == nullptr)
+        return;
+
+    if (m_iecConfigurationRequestId != 0)
+    {
+        m_bIECRefreshPending = true;
+        return;
+    }
+
+    m_iecConfigurationRequestId = m_ptrEmulatorController->request(new EmulatorRequestGetIECConfigurations());
+
+    if (m_iecConfigurationRequestId == 0)
+    {
+        qWarning() << "ConfigurationManager: could not request IEC configurations";
+        m_bIECRefreshPending = true;
+    }
+}
+void ConfigurationManager::onIECRequestDone(QSharedPointer<EmulatorResponse> response)
+{
+    if (response.isNull())
+        return;
+
+    if (m_iecConfigurationRequestId == 0 || response->id() != m_iecConfigurationRequestId)
+        return;
+
+    m_iecConfigurationRequestId = 0;
+
+    if (response->type() != EmulatorRequest::Type::GetIECConfigurations || !response->success())
+    {
+        qWarning() << "ConfigurationManager: could not retrieve IEC configurations";
+        m_bIECRefreshPending = true;
+        return;
+    }
+
+    const EmulatorResponseIEC* ptrIECResponse = dynamic_cast<const EmulatorResponseIEC*>(response.data());
+
+    if (ptrIECResponse == nullptr)
+    {
+        qWarning() << "ConfigurationManager: invalid IEC configuration response";
+        m_bIECRefreshPending = true;
+        return;
+    }
+
+    if (!setIECConfigurations(ptrIECResponse->configurations()))
+    {
+        qWarning() << "ConfigurationManager: could not update IEC configurations";
+        m_bIECRefreshPending = true;
+        return;
+    }
+
+    if (!save())
+        qWarning() << "ConfigurationManager: IEC configurations could not be persisted";
+
+    if (m_bIECRefreshPending)
+    {
+        m_bIECRefreshPending = false;
+        requestIECConfigurations();
+    }
 }
