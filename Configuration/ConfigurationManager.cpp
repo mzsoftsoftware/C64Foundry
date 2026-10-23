@@ -98,17 +98,32 @@ bool ConfigurationManager::initialize()
 bool ConfigurationManager::save()
 {
     if (m_ptrActiveConfiguration == nullptr)
-        return false;
-
-    ConfigurationStorage storage;
-
-    if (!storage.save(m_qmapConfigurations, m_ptrActiveConfiguration->name))
     {
-        qWarning() << "ConfigurationManager: could not save configurations";
+        qWarning() << "ConfigurationManager: no active configuration available";
+
+        if (!m_bSaveError)
+        {
+            m_bSaveError = true;
+            emit saveErrorChanged(true);
+        }
+
         return false;
     }
 
-    return true;
+    ConfigurationStorage storage;
+
+    const bool bSuccess = storage.save(m_qmapConfigurations, m_ptrActiveConfiguration->name);
+
+    if (!bSuccess)
+        qWarning() << "ConfigurationManager: could not save configurations";
+
+    if (m_bSaveError != !bSuccess)
+    {
+        m_bSaveError = !bSuccess;
+        emit saveErrorChanged(m_bSaveError);
+    }
+
+    return bSuccess;
 }
 
 bool ConfigurationManager::setIECConfigurations(const QList<QSharedPointer<IECDeviceConfiguration>>& configurations)

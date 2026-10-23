@@ -34,9 +34,11 @@ public:
     QStringList configurationNames() const                                  { return m_qmapConfigurations.keys(); }
     const C64Configuration* configuration(const QString& qstrName) const    { return m_qmapConfigurations.value(qstrName, nullptr); }
     const C64Configuration* activeConfiguration() const                     { return m_ptrActiveConfiguration; }
+    bool hasSaveError() const { return m_bSaveError; }
 
 signals:
     void configurationChanged();
+    void saveErrorChanged(bool bError);
 
 private slots:
     void onIECDeviceChanged(EmulatorIECDeviceEvent::Type type, IECDeviceConfiguration::DeviceId deviceId);
@@ -52,4 +54,6 @@ private:
     EmulatorController* m_ptrEmulatorController = nullptr;
     EmulatorRequest::RequestId m_iecConfigurationRequestId = 0;
     bool m_bIECRefreshPending = false;
+
+    bool m_bSaveError = false;
 };

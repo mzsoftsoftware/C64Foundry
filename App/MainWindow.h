@@ -31,9 +31,10 @@ public:
 private slots:
     void onIECConfigurationsRestored(QSharedPointer<EmulatorResponse> response);
     void romSetLoaded(bool bLoaded);
+    void onConfigurationSaveErrorChanged(bool bError);
 
 protected:
-    void closeEvent(QCloseEvent* ptrEvent) override;
+    void closeEvent(QCloseEvent* ptrEvent) override;    
 
 private:
     void setupDockWidgetsMenu();

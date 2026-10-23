@@ -36,6 +36,7 @@ bool MainWindow::initialize()
         QMessageBox::critical(this, tr("Configuration error"), tr("The configuration could not be initialized."));
         return false;
     }
+    connect(m_ptrConfigurationManager, &ConfigurationManager::saveErrorChanged, this, &MainWindow::onConfigurationSaveErrorChanged);
 
     if (!validateConfiguration())
         return false;
@@ -210,4 +211,12 @@ void MainWindow::onIECConfigurationsRestored(QSharedPointer<EmulatorResponse> re
     qDebug() << "MainWindow: IEC configurations restored successfully";
     m_ptrConfigurationManager->startIECSynchronization(m_ptrEmulatorController);
     m_ptrEmulatorController->loadROMSet(m_ptrConfigurationManager->activeConfiguration()->romSet);
+}
+
+void MainWindow::onConfigurationSaveErrorChanged(bool bError)
+{
+    if (!bError)
+        return;
+
+    QMessageBox::warning(this, tr("Configuration save error"), tr("The configuration could not be saved. Your changes are still active, but they may be lost when the application is restarted."));
 }
