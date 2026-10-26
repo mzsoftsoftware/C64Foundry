@@ -6,6 +6,7 @@
 
 #include "Emulator/EmulatorRequest.h"
 #include "Emulator/EmulatorResponse.h"
+#include "Emulator/EmulatorTypes.h"
 #include "Emulator/EmulatorIECDeviceEvent.h"
 #include "C64/IEC/IECDeviceManager.h"
 
@@ -29,11 +30,13 @@ public:
 private slots:
     void onRequestDone(QSharedPointer<EmulatorResponse> response);
     void onIECDeviceChanged(EmulatorIECDeviceEvent::Type type, IECDeviceConfiguration::DeviceId deviceId);
+    void onEmulatorStateChanged(Emulator::State state);
     void onPrinterOutputChanged(IECDeviceConfiguration::DeviceId deviceId, quint64 revision, QByteArray output);
 
 private:
     void refreshConfigurations();
     void updatePrinterTabs(const QList<IECDeviceManager::ConfigurationPtr>& configurations);
+    void updatePrinterPowerStates();
     void clearPrinterTabs();
 
 private:
@@ -41,6 +44,7 @@ private:
 
     EmulatorController* m_ptrController = nullptr;
     EmulatorRequest::RequestId m_configurationRequestId = 0;
+    Emulator::State m_emulatorState = Emulator::State::PoweredOff;
     bool m_bRefreshPending = false;
 
     QHash<IECDeviceConfiguration::DeviceId, IECDeviceManager::ConfigurationPtr> m_configurations;

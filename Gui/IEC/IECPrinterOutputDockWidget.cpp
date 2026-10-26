@@ -42,16 +42,13 @@ void IECPrinterOutputDockWidget::setController(EmulatorController* ptrController
     if (m_ptrController == nullptr)
         return;
 
-    connect(m_ptrController, &EmulatorController::requestDone,
-            this, &IECPrinterOutputDockWidget::onRequestDone);
-
-    connect(m_ptrController, &EmulatorController::iecDeviceChanged,
-            this, &IECPrinterOutputDockWidget::onIECDeviceChanged);
-
-    connect(m_ptrController, &EmulatorController::printerOutputChanged,
-            this, &IECPrinterOutputDockWidget::onPrinterOutputChanged);
+    connect(m_ptrController, &EmulatorController::requestDone, this, &IECPrinterOutputDockWidget::onRequestDone);
+    connect(m_ptrController, &EmulatorController::iecDeviceChanged, this, &IECPrinterOutputDockWidget::onIECDeviceChanged);
+    connect(m_ptrController, &EmulatorController::stateChanged, this, &IECPrinterOutputDockWidget::onEmulatorStateChanged);
+    connect(m_ptrController, &EmulatorController::printerOutputChanged, this, &IECPrinterOutputDockWidget::onPrinterOutputChanged);
 
     refreshConfigurations();
+    updatePrinterPowerStates();
 }
 
 void IECPrinterOutputDockWidget::refreshConfigurations()
@@ -227,6 +224,36 @@ void IECPrinterOutputDockWidget::updatePrinterTabs(
     }
 
     m_configurations = newConfigurations;
+    updatePrinterPowerStates();
+}
+
+void IECPrinterOutputDockWidget::onEmulatorStateChanged(Emulator::State state)
+{
+    m_emulatorState = state;
+    updatePrinterPowerStates();
+}
+
+void IECPrinterOutputDockWidget::updatePrinterPowerStates()
+{
+    const bool bEmulatorPowered = m_emulatorState != Emulator::State::PoweredOff;
+
+    QHash<IECDeviceConfiguration::DeviceId, IECAsciiPrinterOutputWidget*>::const_iterator it;
+
+    for (it = m_printerWidgets.constBegin(); it != m_printerWidgets.constEnd(); ++it)
+    {
+        const IECDeviceConfiguration::DeviceId deviceId = it.key();
+        IECAsciiPrinterOutputWidget* ptrWidget = it.value();
+
+        if (ptrWidget == nullptr)
+            continue;
+
+        const IECDeviceManager::ConfigurationPtr ptrConfiguration = m_configurations.value(deviceId);
+
+        if (ptrConfiguration.isNull())
+            continue;
+
+        ptrWidget->setPowered(bEmulatorPowered && ptrConfiguration->enabled());
+    }
 }
 
 void IECPrinterOutputDockWidget::clearPrinterTabs()

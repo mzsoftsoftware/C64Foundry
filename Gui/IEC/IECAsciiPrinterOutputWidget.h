@@ -16,6 +16,7 @@ public:
     virtual ~IECAsciiPrinterOutputWidget();
 
     void setPrinterName(const QString& name);
+    void setPowered(bool powered);
     void setOutput(const QByteArray& output);
 
 private:

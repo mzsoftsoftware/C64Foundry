@@ -8,6 +8,7 @@
 #include <QTextCharFormat>
 #include <QTextCursor>
 #include <QTextDocument>
+#include <QGraphicsOpacityEffect>
 
 
 IECAsciiPrinterOutputWidget::IECAsciiPrinterOutputWidget(QWidget* parent)
@@ -16,6 +17,9 @@ IECAsciiPrinterOutputWidget::IECAsciiPrinterOutputWidget(QWidget* parent)
 {
     ui->setupUi(this);
 
+    QGraphicsOpacityEffect* ptrPaperEffect = new QGraphicsOpacityEffect(ui->plainTextEdit_Paper);
+    ptrPaperEffect->setOpacity(1.0);
+    ui->plainTextEdit_Paper->setGraphicsEffect(ptrPaperEffect);
     ui->plainTextEdit_Paper->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
     ui->plainTextEdit_Paper->setStyleSheet("QPlainTextEdit { background-color: #D8D8D8; color: black; }");
 }
@@ -30,6 +34,13 @@ void IECAsciiPrinterOutputWidget::setPrinterName(const QString& name)
     ui->label_PrinterName->setText(name);
 }
 
+void IECAsciiPrinterOutputWidget::setPowered(bool powered)
+{
+    QGraphicsOpacityEffect* ptrEffect = qobject_cast<QGraphicsOpacityEffect*>(ui->plainTextEdit_Paper->graphicsEffect());
+    if (ptrEffect == nullptr)
+        return;
+    ptrEffect->setOpacity(powered ? 1.0 : 0.55);
+}
 
 void IECAsciiPrinterOutputWidget::setOutput(const QByteArray& output)
 {
