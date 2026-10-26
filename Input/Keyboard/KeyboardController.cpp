@@ -1,5 +1,7 @@
 #include "KeyboardController.h"
 
+#include <QApplication>
+#include <QWidget>
 #include <QEvent>
 #include <QKeyEvent>
 #include <QWindow>
@@ -141,6 +143,7 @@ void KeyboardController::resetKeyboardState()
     emit keyboardStateReset();
 }
 
+
 bool KeyboardController::eventFilter(QObject* ptrObject, QEvent* ptrEvent)
 {
     if (ptrEvent->type() == QEvent::ApplicationDeactivate)
@@ -148,36 +151,42 @@ bool KeyboardController::eventFilter(QObject* ptrObject, QEvent* ptrEvent)
         resetPhysicalKeyboardState();
         return false;
     }
-    if (ptrEvent->type() == QEvent::KeyPress ||
-        ptrEvent->type() == QEvent::KeyRelease)
+
+    if (ptrEvent->type() != QEvent::KeyPress &&
+        ptrEvent->type() != QEvent::KeyRelease)
     {
-        if (qobject_cast<QWindow*>(ptrObject) == nullptr)
-            return false;
-
-        QKeyEvent* ptrKeyEvent =
-            static_cast<QKeyEvent*>(ptrEvent);
-
-        if (ptrEvent->type() == QEvent::KeyPress)
-        {
-            keyPressed(
-                ptrKeyEvent->key(),
-                ptrKeyEvent->nativeScanCode(),
-                ptrKeyEvent->modifiers(),
-                ptrKeyEvent->isAutoRepeat());
-        }
-        else
-        {
-            keyReleased(
-                ptrKeyEvent->key(),
-                ptrKeyEvent->nativeScanCode(),
-                ptrKeyEvent->modifiers(),
-                ptrKeyEvent->isAutoRepeat());
-        }
-
-        return true;
+        return QObject::eventFilter(ptrObject, ptrEvent);
     }
 
-    return QObject::eventFilter(ptrObject, ptrEvent);
+    if (qobject_cast<QWindow*>(ptrObject) == nullptr)
+        return false;
+
+    if (QApplication::activeModalWidget() != nullptr)
+    {
+        resetPhysicalKeyboardState();
+        return false;
+    }
+
+    QKeyEvent* ptrKeyEvent = static_cast<QKeyEvent*>(ptrEvent);
+
+    if (ptrEvent->type() == QEvent::KeyPress)
+    {
+        keyPressed(
+            ptrKeyEvent->key(),
+            ptrKeyEvent->nativeScanCode(),
+            ptrKeyEvent->modifiers(),
+            ptrKeyEvent->isAutoRepeat());
+    }
+    else
+    {
+        keyReleased(
+            ptrKeyEvent->key(),
+            ptrKeyEvent->nativeScanCode(),
+            ptrKeyEvent->modifiers(),
+            ptrKeyEvent->isAutoRepeat());
+    }
+
+    return true;
 }
 
 void KeyboardController::pressKey(const C64Key key)
