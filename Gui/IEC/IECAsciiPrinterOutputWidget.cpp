@@ -9,6 +9,11 @@
 #include <QTextCursor>
 #include <QTextDocument>
 
+#include <QMessageBox>
+#include <QFileDialog>
+//#include <QFile>
+//#include <QPushButton>
+//#include <QCheckBox>
 
 IECAsciiPrinterOutputWidget::IECAsciiPrinterOutputWidget(QWidget* parent)
     : QWidget(parent)
@@ -83,3 +88,44 @@ void IECAsciiPrinterOutputWidget::setOutput(const QByteArray& output)
 
     ui->plainTextEdit_Paper->moveCursor(QTextCursor::End);
 }
+
+void IECAsciiPrinterOutputWidget::on_toolButton_Save_clicked()
+{
+    const QString fileName = QFileDialog::getSaveFileName(
+        this,
+        tr("Druckerausgabe speichern"),
+        QStringLiteral("printer-output.txt"),
+        tr("Textdateien (*.txt);;Alle Dateien (*)"));
+
+    if (fileName.isEmpty())
+        return;
+
+    QFile file(fileName);
+
+    if (!file.open(QIODevice::WriteOnly))
+    {
+        QMessageBox::critical(this, tr("Speichern fehlgeschlagen"),
+                              tr("Die Datei konnte nicht geöffnet werden:\n%1").arg(file.errorString()));
+        return;
+    }
+
+    const QByteArray output = ui->plainTextEdit_Paper->toPlainText().toLatin1();
+
+    if (file.write(output) != output.size() || !file.flush())
+    {
+        QMessageBox::critical(this, tr("Speichern fehlgeschlagen"),
+                              tr("Die Druckerausgabe konnte nicht vollständig geschrieben werden:\n%1").arg(file.errorString()));
+        return;
+    }
+
+    file.close();
+
+    if (ui->checkBox_AutoTearOffOnSave->isChecked())
+        on_toolButton_TearOff_clicked();
+}
+
+void IECAsciiPrinterOutputWidget::on_toolButton_TearOff_clicked()
+{
+
+}
+
