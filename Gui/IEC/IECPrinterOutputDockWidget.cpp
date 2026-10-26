@@ -125,21 +125,13 @@ void IECPrinterOutputDockWidget::onIECDeviceChanged(
     }
 }
 
-void IECPrinterOutputDockWidget::onPrinterOutputChanged(
-    IECDeviceConfiguration::DeviceId deviceId,
-    quint64 revision,
-    QByteArray output)
+void IECPrinterOutputDockWidget::onPrinterOutputChanged(IECDeviceConfiguration::DeviceId deviceId, quint64 revision, QByteArray output)
 {
     if (revision < m_printerRevisions.value(deviceId, 0))
         return;
 
     m_printerRevisions.insert(deviceId, revision);
     m_printerOutputs.insert(deviceId, output);
-
-    IECAsciiPrinterOutputWidget* ptrWidget = m_printerWidgets.value(deviceId, nullptr);
-
-    if (ptrWidget != nullptr)
-        ptrWidget->setOutput(output);
 }
 
 void IECPrinterOutputDockWidget::updatePrinterTabs(
@@ -213,6 +205,7 @@ void IECPrinterOutputDockWidget::updatePrinterTabs(
         if (ptrWidget == nullptr)
         {
             ptrWidget = new IECAsciiPrinterOutputWidget(ui->tabWidget_Printers);
+            ptrWidget->setController(m_ptrController, deviceId);
             m_printerWidgets.insert(deviceId, ptrWidget);
         }
 

@@ -1,6 +1,7 @@
 #include "IECAsciiPrinterOutputWidget.h"
 #include "ui_IECAsciiPrinterOutputWidget.h"
 
+
 #include <QFontDatabase>
 #include <QPlainTextEdit>
 #include <QTextBlock>
@@ -8,12 +9,11 @@
 #include <QTextCharFormat>
 #include <QTextCursor>
 #include <QTextDocument>
-
 #include <QMessageBox>
 #include <QFileDialog>
-//#include <QFile>
-//#include <QPushButton>
-//#include <QCheckBox>
+
+#include "Emulator/EmulatorController.h"
+
 
 IECAsciiPrinterOutputWidget::IECAsciiPrinterOutputWidget(QWidget* parent)
     : QWidget(parent)
@@ -28,6 +28,24 @@ IECAsciiPrinterOutputWidget::IECAsciiPrinterOutputWidget(QWidget* parent)
 IECAsciiPrinterOutputWidget::~IECAsciiPrinterOutputWidget()
 {
     delete ui;
+}
+
+void IECAsciiPrinterOutputWidget::setController(EmulatorController* ptrController, IECDeviceConfiguration::DeviceId deviceId)
+{
+    if (m_ptrController == ptrController && m_deviceId == deviceId)
+        return;
+
+    if (m_ptrController != nullptr)
+        disconnect(m_ptrController, nullptr, this, nullptr);
+
+    m_ptrController = ptrController;
+    m_deviceId = deviceId;
+    m_outputRevision = 0;
+
+    if (m_ptrController == nullptr)
+        return;
+
+    connect(m_ptrController, &EmulatorController::printerOutputChanged, this, &IECAsciiPrinterOutputWidget::onPrinterOutputChanged);
 }
 
 void IECAsciiPrinterOutputWidget::setPrinterName(const QString& name)
@@ -129,3 +147,14 @@ void IECAsciiPrinterOutputWidget::on_toolButton_TearOff_clicked()
 
 }
 
+void IECAsciiPrinterOutputWidget::onPrinterOutputChanged(IECDeviceConfiguration::DeviceId deviceId, quint64 revision, QByteArray output)
+{
+    if (deviceId != m_deviceId)
+        return;
+
+    if (revision < m_outputRevision)
+        return;
+
+    m_outputRevision = revision;
+    setOutput(output);
+}
