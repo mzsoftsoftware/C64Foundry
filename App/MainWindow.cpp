@@ -99,6 +99,7 @@ void MainWindow::setupDockWidgetsMenu()
     ui->menuView->insertAction(ptrSeparator, ui->dockWidget_IECControl->toggleViewAction());
     ui->menuView->insertAction(ptrSeparator, ui->dockWidget_Video->toggleViewAction());
     ui->menuView->insertAction(ptrSeparator, ui->dockWidget_VirtualKeyboard->toggleViewAction());
+    ui->menuView->insertAction(ptrSeparator, ui->dockWidget_PrinterOutput->toggleViewAction());
 
     connect(ui->actionResetWindowLayout, &QAction::triggered, this, &MainWindow::resetWindowLayout);
 }
@@ -132,16 +133,19 @@ void MainWindow::resetWindowLayout()
     ui->dockWidget_IECControl->setFloating(false);
     ui->dockWidget_Video->setFloating(false);
     ui->dockWidget_VirtualKeyboard->setFloating(false);
+    ui->dockWidget_PrinterOutput->setFloating(false);
 
     addDockWidget(Qt::TopDockWidgetArea, ui->dockWidget_EmulatorControl);
     splitDockWidget(ui->dockWidget_EmulatorControl, ui->dockWidget_IECControl, Qt::Horizontal);
     addDockWidget(Qt::RightDockWidgetArea, ui->dockWidget_Video);
     addDockWidget(Qt::BottomDockWidgetArea, ui->dockWidget_VirtualKeyboard);
+    splitDockWidget(ui->dockWidget_VirtualKeyboard, ui->dockWidget_PrinterOutput, Qt::Horizontal);
 
     ui->dockWidget_EmulatorControl->show();
     ui->dockWidget_IECControl->show();
     ui->dockWidget_Video->show();
     ui->dockWidget_VirtualKeyboard->show();
+    ui->dockWidget_PrinterOutput->show();
 }
 
 bool MainWindow::validateConfiguration()

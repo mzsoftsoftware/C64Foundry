@@ -110,6 +110,8 @@ qt_add_executable(C64Foundry
     Gui/IEC/IECActivityLEDWidget.h Gui/IEC/IECActivityLEDWidget.cpp
     Gui/IEC/IECOperationStatusWidget.h Gui/IEC/IECOperationStatusWidget.cpp
     Gui/IEC/IECAsciiPrinterSettingsDialog.h Gui/IEC/IECAsciiPrinterSettingsDialog.cpp Gui/IEC/IECAsciiPrinterSettingsDialog.ui
+    Gui/IEC/IECPrinterOutputDockWidget.h Gui/IEC/IECPrinterOutputDockWidget.cpp Gui/IEC/IECPrinterOutputDockWidget.ui
+    Gui/IEC/IECAsciiPrinterOutputWidget.h Gui/IEC/IECAsciiPrinterOutputWidget.cpp Gui/IEC/IECAsciiPrinterOutputWidget.ui
 
     Emulator/EmulatorRequest.h
     Emulator/EmulatorResponse.h
@@ -133,8 +135,6 @@ qt_add_executable(C64Foundry
     Storage/PRG/C64PRGFile.h Storage/PRG/C64PRGFile.cpp
 
     Resources/C64Foundry.qrc
-    Gui/IEC/IECAsciiPrinterOutputWidget.h Gui/IEC/IECAsciiPrinterOutputWidget.cpp Gui/IEC/IECAsciiPrinterOutputWidget.ui
-    Gui/IEC/IECPrinterOutputDockWidget.h Gui/IEC/IECPrinterOutputDockWidget.cpp Gui/IEC/IECPrinterOutputDockWidget.ui
 )
 
 target_include_directories(C64Foundry
