@@ -46,6 +46,7 @@ bool MainWindow::initialize()
 
     ui->dockWidgetContents_EmulatorControl->setController(m_ptrEmulatorController);
     ui->dockWidgetContents_IECControl->setController(m_ptrEmulatorController);
+    ui->dockWidgetContents_PrinterOutput->setController(m_ptrEmulatorController);
     connect(m_ptrEmulatorController, &EmulatorController::romSetLoaded, this, &MainWindow::romSetLoaded);
 
     m_ptrVideoController = new VideoController(m_ptrEmulatorController->machine(), this);

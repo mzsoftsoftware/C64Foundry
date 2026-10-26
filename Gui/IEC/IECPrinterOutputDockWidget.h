@@ -3,13 +3,11 @@
 #include <QWidget>
 #include <QHash>
 #include <QByteArray>
-#include <QSharedPointer>
 
 #include "Emulator/EmulatorRequest.h"
 #include "Emulator/EmulatorResponse.h"
 #include "Emulator/EmulatorIECDeviceEvent.h"
 #include "C64/IEC/IECDeviceManager.h"
-
 
     class EmulatorController;
 class IECAsciiPrinterOutputWidget;
@@ -17,7 +15,6 @@ class IECAsciiPrinterOutputWidget;
 namespace Ui {
 class IECPrinterOutputDockWidget;
 }
-
 
 class IECPrinterOutputDockWidget : public QWidget
 {
@@ -30,10 +27,9 @@ public:
     void setController(EmulatorController* ptrController);
 
 private slots:
-    //comented out because implementation is missing
-    //void onRequestDone(QSharedPointer<EmulatorResponse> response);
-    //void onIECDeviceChanged(EmulatorIECDeviceEvent::Type type, IECDeviceConfiguration::DeviceId deviceId);
-    //void onPrinterOutputChanged(IECDeviceConfiguration::DeviceId deviceId, quint64 revision, QByteArray output);
+    void onRequestDone(QSharedPointer<EmulatorResponse> response);
+    void onIECDeviceChanged(EmulatorIECDeviceEvent::Type type, IECDeviceConfiguration::DeviceId deviceId);
+    void onPrinterOutputChanged(IECDeviceConfiguration::DeviceId deviceId, quint64 revision, QByteArray output);
 
 private:
     void refreshConfigurations();
