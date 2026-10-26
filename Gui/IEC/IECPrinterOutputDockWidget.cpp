@@ -36,15 +36,12 @@ void IECPrinterOutputDockWidget::setController(EmulatorController* ptrController
 
     clearPrinterTabs();
     m_configurations.clear();
-    m_printerOutputs.clear();
-    m_printerRevisions.clear();
 
     if (m_ptrController == nullptr)
         return;
 
     connect(m_ptrController, &EmulatorController::requestDone, this, &IECPrinterOutputDockWidget::onRequestDone);
     connect(m_ptrController, &EmulatorController::iecDeviceChanged, this, &IECPrinterOutputDockWidget::onIECDeviceChanged);
-    connect(m_ptrController, &EmulatorController::printerOutputChanged, this, &IECPrinterOutputDockWidget::onPrinterOutputChanged);
 
     refreshConfigurations();
 }
@@ -125,15 +122,6 @@ void IECPrinterOutputDockWidget::onIECDeviceChanged(
     }
 }
 
-void IECPrinterOutputDockWidget::onPrinterOutputChanged(IECDeviceConfiguration::DeviceId deviceId, quint64 revision, QByteArray output)
-{
-    if (revision < m_printerRevisions.value(deviceId, 0))
-        return;
-
-    m_printerRevisions.insert(deviceId, revision);
-    m_printerOutputs.insert(deviceId, output);
-}
-
 void IECPrinterOutputDockWidget::updatePrinterTabs(
     const QList<IECDeviceManager::ConfigurationPtr>& configurations)
 {
@@ -145,14 +133,6 @@ void IECPrinterOutputDockWidget::updatePrinterTabs(
         if (ptrConfiguration.isNull())
             continue;
 
-        const IECDeviceManager::ConfigurationPtr ptrOldConfiguration = m_configurations.value(ptrConfiguration->id());
-        if (!ptrOldConfiguration.isNull()
-            && !ptrOldConfiguration->enabled()
-            && ptrConfiguration->enabled())
-        {
-            m_printerOutputs.remove(ptrConfiguration->id());
-            m_printerRevisions.remove(ptrConfiguration->id());
-        }
         newConfigurations.insert(ptrConfiguration->id(), ptrConfiguration);
 
         if (ptrConfiguration->type() != IECDeviceType::PrinterASCII || !ptrConfiguration->enabled())
@@ -186,14 +166,6 @@ void IECPrinterOutputDockWidget::updatePrinterTabs(
             ui->tabWidget_Printers->removeTab(tabIndex);
 
         delete ptrWidget;
-
-        // Ausgabe nur bei tatsächlich entferntem Gerät oder geändertem Gerätetyp löschen.
-        if (ptrConfiguration.isNull()
-            || ptrConfiguration->type() != IECDeviceType::PrinterASCII)
-        {
-            m_printerOutputs.remove(deviceId);
-            m_printerRevisions.remove(deviceId);
-        }
     }
 
     // Vorhandene Tabs aktualisieren und neue Tabs erzeugen.
@@ -213,7 +185,6 @@ void IECPrinterOutputDockWidget::updatePrinterTabs(
                                         .arg(ptrConfiguration->deviceNumber());
 
         ptrWidget->setPrinterName(printerName);
-        ptrWidget->setOutput(m_printerOutputs.value(deviceId));
 
         // Bestehenden Tab entfernen und an der sortierten Position wieder einsetzen.
         const int oldIndex = ui->tabWidget_Printers->indexOf(ptrWidget);

@@ -21,7 +21,6 @@ public:
 
     void setController(EmulatorController* ptrController, IECDeviceConfiguration::DeviceId deviceId);
     void setPrinterName(const QString& name);
-    void setOutput(const QByteArray& output);
 
 private slots:
     void on_toolButton_Save_clicked();

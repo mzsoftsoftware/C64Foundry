@@ -30,7 +30,6 @@ public:
 private slots:
     void onRequestDone(QSharedPointer<EmulatorResponse> response);
     void onIECDeviceChanged(EmulatorIECDeviceEvent::Type type, IECDeviceConfiguration::DeviceId deviceId);
-    void onPrinterOutputChanged(IECDeviceConfiguration::DeviceId deviceId, quint64 revision, QByteArray output);
 
 private:
     void refreshConfigurations();
@@ -46,6 +45,4 @@ private:
 
     QHash<IECDeviceConfiguration::DeviceId, IECDeviceManager::ConfigurationPtr> m_configurations;
     QHash<IECDeviceConfiguration::DeviceId, IECAsciiPrinterOutputWidget*> m_printerWidgets;
-    QHash<IECDeviceConfiguration::DeviceId, QByteArray> m_printerOutputs;
-    QHash<IECDeviceConfiguration::DeviceId, quint64> m_printerRevisions;
 };
