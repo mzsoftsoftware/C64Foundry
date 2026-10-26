@@ -133,6 +133,8 @@ qt_add_executable(C64Foundry
     Storage/PRG/C64PRGFile.h Storage/PRG/C64PRGFile.cpp
 
     Resources/C64Foundry.qrc
+    Gui/IEC/IECAsciiPrinterOutputWidget.h Gui/IEC/IECAsciiPrinterOutputWidget.cpp Gui/IEC/IECAsciiPrinterOutputWidget.ui
+    Gui/IEC/IECPrinterOutputDockWidget.h Gui/IEC/IECPrinterOutputDockWidget.cpp Gui/IEC/IECPrinterOutputDockWidget.ui
 )
 
 target_include_directories(C64Foundry

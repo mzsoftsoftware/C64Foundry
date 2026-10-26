@@ -75,6 +75,18 @@
    </attribute>
    <widget class="IECDeviceManagerWidget" name="dockWidgetContents_IECControl"/>
   </widget>
+  <widget class="QDockWidget" name="dockWidget_PrinterOutput">
+   <property name="windowTitle">
+    <string>Printer Output</string>
+   </property>
+   <property name="dockLocation">
+    <enum>Qt::DockWidgetArea::BottomDockWidgetArea</enum>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>8</number>
+   </attribute>
+   <widget class="IECPrinterOutputDockWidget" name="dockWidgetContents_PrinterOutput"/>
+  </widget>
   <action name="actionResetWindowLayout">
    <property name="text">
     <string>Reset Window Layout</string>
@@ -104,6 +116,12 @@
    <class>IECDeviceManagerWidget</class>
    <extends>QWidget</extends>
    <header>Gui/IEC/IECDeviceManagerWidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>IECPrinterOutputDockWidget</class>
+   <extends>QWidget</extends>
+   <header>Gui/IEC/IECPrinterOutputDockWidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
