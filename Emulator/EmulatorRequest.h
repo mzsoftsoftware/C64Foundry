@@ -34,7 +34,8 @@ public:
         AddIECDevice,
         RemoveIECDevice,
         SetIECConfiguration,
-        RestoreIECConfigurations
+        RestoreIECConfigurations,
+        TearOffIECPrinter
     };
 
     explicit EmulatorRequest(Type type)
@@ -265,4 +266,19 @@ public:
 
 private:
     QList<ConfigurationPtr> m_configurations;
+};
+
+class EmulatorRequestTearOffIECPrinter : public EmulatorRequest
+{
+public:
+    explicit EmulatorRequestTearOffIECPrinter(IECDeviceConfiguration::DeviceId deviceId)
+        : EmulatorRequest(Type::TearOffIECPrinter)
+        , m_deviceId(deviceId)
+    {
+    }
+
+    IECDeviceConfiguration::DeviceId deviceId() const { return m_deviceId; }
+
+private:
+    IECDeviceConfiguration::DeviceId m_deviceId;
 };

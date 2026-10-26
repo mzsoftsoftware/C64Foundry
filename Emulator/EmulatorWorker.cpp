@@ -176,6 +176,7 @@ bool EmulatorWorker::processNextRequest()
     case EmulatorRequest::Type::RemoveIECDevice:
     case EmulatorRequest::Type::SetIECConfiguration:
     case EmulatorRequest::Type::RestoreIECConfigurations:
+    case EmulatorRequest::Type::TearOffIECPrinter:
         response = processIECRequest(ptrRequest);
         break;
 
@@ -400,6 +401,7 @@ EmulatorResponse::Result EmulatorWorker::processRequest(const EmulatorRequest* p
     case EmulatorRequest::Type::RemoveIECDevice:
     case EmulatorRequest::Type::SetIECConfiguration:
     case EmulatorRequest::Type::RestoreIECConfigurations:
+    case EmulatorRequest::Type::TearOffIECPrinter:
         return EmulatorResponse::Result::InvalidParameter;
     }
 
@@ -498,6 +500,24 @@ QSharedPointer<EmulatorResponse> EmulatorWorker::processIECRequest(const Emulato
 
         publishIECDeviceEvent(EmulatorIECDeviceEvent::Type::Restored, 0);
 
+        break;
+    }
+
+    case EmulatorRequest::Type::TearOffIECPrinter:
+    {
+        const EmulatorRequestTearOffIECPrinter* ptrIECRequest =
+            static_cast<const EmulatorRequestTearOffIECPrinter*>(ptrRequest);
+
+        IECPrinter* ptrPrinter = dynamic_cast<IECPrinter*>(
+            m_ptrIECDeviceManager->device(ptrIECRequest->deviceId()));
+
+        if (ptrPrinter == nullptr)
+            break;
+
+        ptrPrinter->tearOff();
+
+        response->setDeviceId(ptrIECRequest->deviceId());
+        result = EmulatorResponse::Result::Success;
         break;
     }
 

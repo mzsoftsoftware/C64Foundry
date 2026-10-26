@@ -35,7 +35,6 @@ void IECPrinterOutputDockWidget::setController(EmulatorController* ptrController
     m_bRefreshPending = false;
 
     clearPrinterTabs();
-    m_configurations.clear();
 
     if (m_ptrController == nullptr)
         return;
@@ -197,8 +196,6 @@ void IECPrinterOutputDockWidget::updatePrinterTabs(
             ptrWidget,
             tr("IEC #%1").arg(ptrConfiguration->deviceNumber()));
     }
-
-    m_configurations = newConfigurations;
 }
 
 void IECPrinterOutputDockWidget::clearPrinterTabs()

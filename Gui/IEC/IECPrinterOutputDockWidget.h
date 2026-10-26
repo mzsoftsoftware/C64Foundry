@@ -10,7 +10,7 @@
 #include "Emulator/EmulatorIECDeviceEvent.h"
 #include "C64/IEC/IECDeviceManager.h"
 
-    class EmulatorController;
+class EmulatorController;
 class IECAsciiPrinterOutputWidget;
 
 namespace Ui {
@@ -43,6 +43,5 @@ private:
     EmulatorRequest::RequestId m_configurationRequestId = 0;
     bool m_bRefreshPending = false;
 
-    QHash<IECDeviceConfiguration::DeviceId, IECDeviceManager::ConfigurationPtr> m_configurations;
     QHash<IECDeviceConfiguration::DeviceId, IECAsciiPrinterOutputWidget*> m_printerWidgets;
 };

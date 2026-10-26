@@ -90,7 +90,10 @@ void IECAsciiPrinterOutputWidget::on_toolButton_Save_clicked()
 
 void IECAsciiPrinterOutputWidget::on_toolButton_TearOff_clicked()
 {
+    if (m_ptrController == nullptr || m_deviceId == 0)
+        return;
 
+    m_ptrController->request(new EmulatorRequestTearOffIECPrinter(m_deviceId));
 }
 
 void IECAsciiPrinterOutputWidget::onPrinterOutputChanged(IECDeviceConfiguration::DeviceId deviceId, quint64 revision, QByteArray output)
