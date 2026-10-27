@@ -136,6 +136,7 @@ qt_add_executable(C64Foundry
 
     Resources/C64Foundry.qrc
     Gui/IEC/IECFoundryDiskRowWidget.h Gui/IEC/IECFoundryDiskRowWidget.cpp Gui/IEC/IECFoundryDiskRowWidget.ui
+    Gui/IEC/IECDeviceRowWidget.h
 )
 
 target_include_directories(C64Foundry
