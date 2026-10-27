@@ -6,17 +6,17 @@
 #include "IECOperationStatusWidget.h"
 
 namespace Ui {
-class IECDeviceRowWidget;
+class IECAsciiPrinterRowWidget;
 }
 
 
-class IECDeviceRowWidget : public QWidget
+class IECAsciiPrinterRowWidget : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit IECDeviceRowWidget(QWidget *parent = nullptr);
-    virtual ~IECDeviceRowWidget();
+    explicit IECAsciiPrinterRowWidget(QWidget *parent = nullptr);
+    virtual ~IECAsciiPrinterRowWidget();
 
     void setOperationState(IECOperationStatusWidget::State state, const QString& message = QString());
     void setConfiguration(const IECDeviceConfiguration& configuration);
@@ -38,7 +38,7 @@ private slots:
     void on_toolButton_Remove_clicked();
 
 protected:
-    Ui::IECDeviceRowWidget* ui;
+    Ui::IECAsciiPrinterRowWidget* ui;
 
 private:
     IECDeviceConfiguration::DeviceId m_deviceId = 0;

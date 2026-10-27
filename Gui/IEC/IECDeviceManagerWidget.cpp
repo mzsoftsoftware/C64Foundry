@@ -154,16 +154,16 @@ void IECDeviceManagerWidget::setConfigurations(const QList<IECDeviceManager::Con
         const IECDeviceManager::ConfigurationPtr& ptrConfiguration = sortedConfigurations[index];
         const IECDeviceConfiguration::DeviceId deviceId = ptrConfiguration->id();
 
-        IECDeviceRowWidget* ptrRow = m_deviceRows.value(deviceId, nullptr);
+        IECAsciiPrinterRowWidget* ptrRow = m_deviceRows.value(deviceId, nullptr);
         QListWidgetItem* ptrItem = nullptr;
 
         if (ptrRow == nullptr)
         {
-            ptrRow = new IECDeviceRowWidget();
+            ptrRow = new IECAsciiPrinterRowWidget();
 
-            connect(ptrRow, &IECDeviceRowWidget::enabledChanged, this, &IECDeviceManagerWidget::onDeviceEnabledChanged);
-            connect(ptrRow, &IECDeviceRowWidget::settingsRequested, this, &IECDeviceManagerWidget::onDeviceSettingsRequested);
-            connect(ptrRow, &IECDeviceRowWidget::removeRequested, this, &IECDeviceManagerWidget::onDeviceRemoveRequested);
+            connect(ptrRow, &IECAsciiPrinterRowWidget::enabledChanged, this, &IECDeviceManagerWidget::onDeviceEnabledChanged);
+            connect(ptrRow, &IECAsciiPrinterRowWidget::settingsRequested, this, &IECDeviceManagerWidget::onDeviceSettingsRequested);
+            connect(ptrRow, &IECAsciiPrinterRowWidget::removeRequested, this, &IECDeviceManagerWidget::onDeviceRemoveRequested);
 
             ptrItem = new QListWidgetItem();
             ptrItem->setData(Qt::UserRole, QVariant::fromValue(deviceId));
@@ -252,7 +252,7 @@ void IECDeviceManagerWidget::onRequestDone(QSharedPointer<EmulatorResponse> resp
     {
         const IECDeviceConfiguration::DeviceId deviceId = m_setConfigurationRequests.take(response->id());
 
-        IECDeviceRowWidget* ptrRow = m_deviceRows.value(deviceId, nullptr);
+        IECAsciiPrinterRowWidget* ptrRow = m_deviceRows.value(deviceId, nullptr);
 
         if (response->success())
         {
@@ -309,7 +309,7 @@ void IECDeviceManagerWidget::onRequestDone(QSharedPointer<EmulatorResponse> resp
 
         for (IECDeviceConfiguration::DeviceId deviceId : m_confirmedSetRequests.keys())
         {
-            IECDeviceRowWidget* ptrRow = m_deviceRows.value(deviceId, nullptr);
+            IECAsciiPrinterRowWidget* ptrRow = m_deviceRows.value(deviceId, nullptr);
 
             if (ptrRow != nullptr)
                 ptrRow->setOperationState(IECOperationStatusWidget::State::Failed, tr("Could not refresh IEC device configuration"));
@@ -432,7 +432,7 @@ void IECDeviceManagerWidget::onPrinterOutputChanged(IECDeviceConfiguration::Devi
     if (output.isEmpty())
         return;
 
-    IECDeviceRowWidget* ptrRow = m_deviceRows.value(deviceId, nullptr);
+    IECAsciiPrinterRowWidget* ptrRow = m_deviceRows.value(deviceId, nullptr);
 
     if (ptrRow == nullptr)
         return;
@@ -473,7 +473,7 @@ void IECDeviceManagerWidget::refreshConfigurations()
 
         for (IECDeviceConfiguration::DeviceId deviceId : m_confirmedSetRequests.keys())
         {
-            IECDeviceRowWidget* ptrRow = m_deviceRows.value(deviceId, nullptr);
+            IECAsciiPrinterRowWidget* ptrRow = m_deviceRows.value(deviceId, nullptr);
 
             if (ptrRow != nullptr)
                 ptrRow->setOperationState(IECOperationStatusWidget::State::Failed, tr("Could not refresh IEC device configuration"));
@@ -505,7 +505,7 @@ void IECDeviceManagerWidget::updateBusyState()
     ui->toolButton_Add->setEnabled(!bBusy && m_ptrController != nullptr);
     ui->toolButton_Refresh->setEnabled(!bBusy && m_ptrController != nullptr);
 
-    for (IECDeviceRowWidget* ptrRow : m_deviceRows)
+    for (IECAsciiPrinterRowWidget* ptrRow : m_deviceRows)
     {
         if (ptrRow == nullptr)
             continue;
@@ -550,7 +550,7 @@ bool IECDeviceManagerWidget::submitConfigurationChange(const IECDeviceConfigurat
 
     const IECDeviceConfiguration::DeviceId deviceId = configuration.id();
 
-    IECDeviceRowWidget* ptrRow = m_deviceRows.value(deviceId, nullptr);
+    IECAsciiPrinterRowWidget* ptrRow = m_deviceRows.value(deviceId, nullptr);
     const IECDeviceManager::ConfigurationPtr ptrCurrentConfiguration = m_configurations.value(deviceId);
 
     if (ptrRow == nullptr || ptrCurrentConfiguration.isNull())

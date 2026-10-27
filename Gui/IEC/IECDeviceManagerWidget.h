@@ -12,7 +12,7 @@
 
 class QAction;
 class EmulatorController;
-class IECDeviceRowWidget;
+class IECAsciiPrinterRowWidget;
 
 
 namespace Ui {
@@ -68,7 +68,7 @@ private:
 
 private:
     Ui::IECDeviceManagerWidget* ui;
-    QHash<IECDeviceConfiguration::DeviceId, IECDeviceRowWidget*> m_deviceRows;
+    QHash<IECDeviceConfiguration::DeviceId, IECAsciiPrinterRowWidget*> m_deviceRows;
 
     EmulatorController* m_ptrController = nullptr;
     EmulatorRequest::RequestId m_configurationRequestId = 0;

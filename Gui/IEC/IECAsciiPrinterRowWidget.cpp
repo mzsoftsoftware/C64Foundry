@@ -3,24 +3,24 @@
 
 #include <QSignalBlocker>
 
-IECDeviceRowWidget::IECDeviceRowWidget(QWidget* parent)
+IECAsciiPrinterRowWidget::IECAsciiPrinterRowWidget(QWidget* parent)
     : QWidget(parent)
-    , ui(new Ui::IECDeviceRowWidget)
+    , ui(new Ui::IECAsciiPrinterRowWidget)
 {
     ui->setupUi(this);
 }
 
-IECDeviceRowWidget::~IECDeviceRowWidget()
+IECAsciiPrinterRowWidget::~IECAsciiPrinterRowWidget()
 {
     delete ui;
 }
 
-void IECDeviceRowWidget::setOperationState(IECOperationStatusWidget::State state, const QString& message)
+void IECAsciiPrinterRowWidget::setOperationState(IECOperationStatusWidget::State state, const QString& message)
 {
     ui->widget_OperationStatus->setState(state, message);
 }
 
-void IECDeviceRowWidget::setConfiguration(const IECDeviceConfiguration& configuration)
+void IECAsciiPrinterRowWidget::setConfiguration(const IECDeviceConfiguration& configuration)
 {
     m_deviceId = configuration.id();
 
@@ -37,7 +37,7 @@ void IECDeviceRowWidget::setConfiguration(const IECDeviceConfiguration& configur
     }
 }
 
-void IECDeviceRowWidget::setBusy(bool busy)
+void IECAsciiPrinterRowWidget::setBusy(bool busy)
 {
     if (m_bBusy == busy)
         return;
@@ -49,12 +49,12 @@ void IECDeviceRowWidget::setBusy(bool busy)
     ui->toolButton_Remove->setEnabled(!busy);
 }
 
-void IECDeviceRowWidget::triggerActivity(int index)
+void IECAsciiPrinterRowWidget::triggerActivity(int index)
 {
     ui->widget_ActivityLED->triggerActivity(index);
 }
 
-void IECDeviceRowWidget::on_toolButton_Power_toggled(bool checked)
+void IECAsciiPrinterRowWidget::on_toolButton_Power_toggled(bool checked)
 {
     if (m_bBusy)
         return;
@@ -66,7 +66,7 @@ void IECDeviceRowWidget::on_toolButton_Power_toggled(bool checked)
 
     emit enabledChanged(m_deviceId, checked);
 }
-void IECDeviceRowWidget::on_toolButton_Settings_clicked()
+void IECAsciiPrinterRowWidget::on_toolButton_Settings_clicked()
 {
     if (m_bBusy)
         return;
@@ -74,7 +74,7 @@ void IECDeviceRowWidget::on_toolButton_Settings_clicked()
     emit settingsRequested(m_deviceId);
 }
 
-void IECDeviceRowWidget::on_toolButton_Remove_clicked()
+void IECAsciiPrinterRowWidget::on_toolButton_Remove_clicked()
 {
     if (m_bBusy)
         return;
