@@ -11,7 +11,7 @@
 
 #include "Emulator/EmulatorController.h"
 
-#include "IECDeviceRowWidget.h"
+#include "IECAsciiPrinterRowWidget.h"
 #include "IECAsciiPrinterSettingsDialog.h"
 #include "C64/IEC/IECAsciiPrinterConfiguration.h"
 

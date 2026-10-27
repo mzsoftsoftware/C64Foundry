@@ -106,7 +106,7 @@ qt_add_executable(C64Foundry
     Gui/Video/VideoWindowWidget.h Gui/Video/VideoWindowWidget.cpp
 
     Gui/IEC/IECDeviceManagerWidget.h Gui/IEC/IECDeviceManagerWidget.cpp Gui/IEC/IECDeviceManagerWidget.ui
-    Gui/IEC/IECDeviceRowWidget.h Gui/IEC/IECDeviceRowWidget.cpp Gui/IEC/IECDeviceRowWidget.ui
+    Gui/IEC/IECAsciiPrinterRowWidget.h Gui/IEC/IECAsciiPrinterRowWidget.cpp Gui/IEC/IECAsciiPrinterRowWidget.ui
     Gui/IEC/IECActivityLEDWidget.h Gui/IEC/IECActivityLEDWidget.cpp
     Gui/IEC/IECOperationStatusWidget.h Gui/IEC/IECOperationStatusWidget.cpp
     Gui/IEC/IECAsciiPrinterSettingsDialog.h Gui/IEC/IECAsciiPrinterSettingsDialog.cpp Gui/IEC/IECAsciiPrinterSettingsDialog.ui
@@ -135,6 +135,7 @@ qt_add_executable(C64Foundry
     Storage/PRG/C64PRGFile.h Storage/PRG/C64PRGFile.cpp
 
     Resources/C64Foundry.qrc
+    Gui/IEC/IECFoundryDiskRowWidget.h Gui/IEC/IECFoundryDiskRowWidget.cpp Gui/IEC/IECFoundryDiskRowWidget.ui
 )
 
 target_include_directories(C64Foundry

@@ -1,5 +1,5 @@
-#include "IECDeviceRowWidget.h"
-#include "ui_IECDeviceRowWidget.h"
+#include "IECAsciiPrinterRowWidget.h"
+#include "ui_IECAsciiPrinterRowWidget.h"
 
 #include <QSignalBlocker>
 
