@@ -1,9 +1,14 @@
+
 #include "IECAsciiPrinterRowWidget.h"
 #include "ui_IECAsciiPrinterRowWidget.h"
 
+#include <QByteArray>
+#include <QDialog>
 #include <QSignalBlocker>
 
 #include "Emulator/EmulatorController.h"
+#include "Emulator/EmulatorResponse.h"
+#include "Gui/IEC/IECAsciiPrinterSettingsDialog.h"
 
 
 IECAsciiPrinterRowWidget::IECAsciiPrinterRowWidget(QWidget* parent)
@@ -20,48 +25,49 @@ IECAsciiPrinterRowWidget::~IECAsciiPrinterRowWidget()
 
 void IECAsciiPrinterRowWidget::setController(EmulatorController* ptrController)
 {
-    Q_ASSERT(ptrController);
-    Q_ASSERT(!m_ptrController);
+    IECDeviceRowWidget::setController(ptrController);
 
-    m_ptrController = ptrController;
-
-    connect(m_ptrController, &EmulatorController::requestDone, this, &IECAsciiPrinterRowWidget::onRequestDone);
-    connect(m_ptrController, &EmulatorController::iecDeviceChanged, this, &IECAsciiPrinterRowWidget::onIECDeviceChanged);
-    connect(m_ptrController, &EmulatorController::printerOutputChanged, this, &IECAsciiPrinterRowWidget::onPrinterOutputChanged);
+    connect(ptrController, &EmulatorController::printerOutputChanged, this, &IECAsciiPrinterRowWidget::onPrinterOutputChanged);
 }
 
-void IECAsciiPrinterRowWidget::setOperationState(IECOperationStatusWidget::State state, const QString& message)
+void IECAsciiPrinterRowWidget::applyConfiguration(
+    const IECDeviceConfiguration& configuration)
 {
-    ui->widget_OperationStatus->setState(state, message);
-}
-
-void IECAsciiPrinterRowWidget::setConfiguration(const IECDeviceConfiguration& configuration)
-{
-    m_deviceId = configuration.id();
-
-    QSignalBlocker blocker(ui->toolButton_Power);
-
-    ui->toolButton_Power->setChecked(configuration.enabled());
-    ui->label_DeviceNumber->setText(QStringLiteral("#%1").arg(configuration.deviceNumber()));
-
-    switch (configuration.type())
-    {
-    case IECDeviceType::PrinterASCII:
-        ui->label_DeviceType->setText(tr("ASCII Printer"));
-        break;
-    }
-}
-
-void IECAsciiPrinterRowWidget::setBusy(bool busy)
-{
-    if (m_bBusy == busy)
+    if (configuration.type() != IECDeviceType::PrinterASCII)
         return;
 
-    m_bBusy = busy;
+    const IECAsciiPrinterConfiguration* ptrPrinterConfiguration =
+        dynamic_cast<const IECAsciiPrinterConfiguration*>(&configuration);
 
-    ui->toolButton_Power->setEnabled(!busy);
-    ui->toolButton_Settings->setEnabled(!busy);
-    ui->toolButton_Remove->setEnabled(!busy);
+    if (ptrPrinterConfiguration == nullptr)
+        return;
+
+    setPowerButtonChecked(ptrPrinterConfiguration->enabled());
+
+    ui->label_DeviceNumber->setText(
+        QStringLiteral("#%1").arg(ptrPrinterConfiguration->deviceNumber()));
+
+    ui->label_DeviceType->setText(tr("ASCII Printer"));
+}
+
+void IECAsciiPrinterRowWidget::setPowerButtonChecked(bool checked)
+{
+    const QSignalBlocker blocker(ui->toolButton_Power);
+    ui->toolButton_Power->setChecked(checked);
+}
+
+void IECAsciiPrinterRowWidget::setControlsEnabled(bool enabled)
+{
+    ui->toolButton_Power->setEnabled(enabled);
+    ui->toolButton_Settings->setEnabled(enabled);
+    ui->toolButton_Remove->setEnabled(enabled);
+}
+
+void IECAsciiPrinterRowWidget::setOperationState(
+    IECOperationStatusWidget::State state,
+    const QString& message)
+{
+    ui->widget_OperationStatus->setState(state, message);
 }
 
 void IECAsciiPrinterRowWidget::triggerActivity(int index)
@@ -71,28 +77,78 @@ void IECAsciiPrinterRowWidget::triggerActivity(int index)
 
 void IECAsciiPrinterRowWidget::on_toolButton_Power_toggled(bool checked)
 {
-    if (m_bBusy)
-        return;
-
-    {
-        QSignalBlocker blocker(ui->toolButton_Power);
-        ui->toolButton_Power->setChecked(!checked);
-    }
-
-    emit enabledChanged(m_deviceId, checked);
+    requestPowerChange(checked);
 }
+
 void IECAsciiPrinterRowWidget::on_toolButton_Settings_clicked()
 {
-    if (m_bBusy)
-        return;
-
-    emit settingsRequested(m_deviceId);
+    requestSettings();
 }
 
 void IECAsciiPrinterRowWidget::on_toolButton_Remove_clicked()
 {
-    if (m_bBusy)
+    requestRemove();
+}
+
+void IECAsciiPrinterRowWidget::openSettingsDialog(
+    const EmulatorResponseIEC* ptrResponse)
+{
+    showSettingsDialog(ptrResponse);
+}
+
+void IECAsciiPrinterRowWidget::showSettingsDialog(
+    const EmulatorResponseIEC* ptrResponse)
+{
+    if (ptrResponse == nullptr || configuration() == nullptr)
+    {
+        setOperationState(IECOperationStatusWidget::State::Failed,
+                          tr("Invalid IEC configuration"));
+        return;
+    }
+
+    const IECAsciiPrinterConfiguration* ptrPrinterConfiguration =
+        dynamic_cast<const IECAsciiPrinterConfiguration*>(configuration());
+
+    if (ptrPrinterConfiguration == nullptr)
+    {
+        setOperationState(IECOperationStatusWidget::State::Failed,
+                          tr("Invalid ASCII printer configuration"));
+        return;
+    }
+
+    QList<quint8> availableDeviceNumbers =
+        ptrResponse->supportedDeviceNumbers().value(IECDeviceType::PrinterASCII);
+
+    const quint8 currentDeviceNumber = ptrPrinterConfiguration->deviceNumber();
+
+    if (!availableDeviceNumbers.contains(currentDeviceNumber))
+        availableDeviceNumbers.append(currentDeviceNumber);
+
+    IECAsciiPrinterSettingsDialog dialog(this);
+    dialog.setConfiguration(*ptrPrinterConfiguration, availableDeviceNumbers);
+
+    if (dialog.exec() != QDialog::Accepted)
+    {
+        setOperationState(IECOperationStatusWidget::State::Idle);
+        return;
+    }
+
+    const IECAsciiPrinterConfiguration updatedConfiguration =
+        dialog.configuration();
+
+    requestSetConfiguration(updatedConfiguration);
+}
+
+void IECAsciiPrinterRowWidget::onPrinterOutputChanged(
+    IECDeviceConfiguration::DeviceId deviceId,
+    quint64 revision,
+    QByteArray output)
+{
+    Q_UNUSED(revision)
+    Q_UNUSED(output)
+
+    if (deviceId != this->deviceId())
         return;
 
-    emit removeRequested(m_deviceId);
+    triggerActivity();
 }

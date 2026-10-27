@@ -1,11 +1,16 @@
 #pragma once
 
+#include <QSharedPointer>
 #include <QWidget>
 
 #include "IECOperationStatusWidget.h"
 #include "C64/IEC/IECDeviceConfiguration.h"
+#include "Emulator/EmulatorRequest.h"
+#include "Emulator/EmulatorResponse.h"
+#include "Emulator/EmulatorIECDeviceEvent.h"
 
 class EmulatorController;
+class EmulatorResponseIEC;
 
 
 class IECDeviceRowWidget : public QWidget
@@ -16,15 +21,49 @@ public:
     explicit IECDeviceRowWidget(QWidget* parent = nullptr);
     virtual ~IECDeviceRowWidget();
 
-    virtual void setController(EmulatorController* ptrController) = 0;
-    virtual void setConfiguration(const IECDeviceConfiguration& configuration) = 0;
+    void setController(EmulatorController* ptrController);
+    void setConfiguration(const IECDeviceConfiguration& configuration);
+    void setBusy(bool busy);
+
+    IECDeviceConfiguration::DeviceId deviceId() const;
+    const IECDeviceConfiguration* configuration() const;
+
+protected:
+    enum class RequestPurpose
+    {
+        None,
+        SetConfiguration,
+        LoadSettings,
+        Remove
+    };
+
+    void requestPowerChange(bool enabled);
+    void requestSettings();
+    void requestRemove();
+    void requestSetConfiguration(const IECDeviceConfiguration& configuration);
+
     virtual void setOperationState(IECOperationStatusWidget::State state, const QString& message = QString()) = 0;
-    virtual void setBusy(bool busy) = 0;
+    virtual void applyConfiguration(const IECDeviceConfiguration& configuration) = 0;
+    virtual void setPowerButtonChecked(bool checked) = 0;
+    virtual void setControlsEnabled(bool enabled) = 0;
+    virtual void openSettingsDialog(const EmulatorResponseIEC* ptrResponse) = 0;
 
-    virtual IECDeviceConfiguration::DeviceId deviceId() const = 0;
+private slots:
+    void onRequestDone(QSharedPointer<EmulatorResponse> response);
+    void onIECDeviceChanged(EmulatorIECDeviceEvent::Type type,
+                            IECDeviceConfiguration::DeviceId deviceId);
 
-signals:
-    void enabledChanged(IECDeviceConfiguration::DeviceId deviceId, bool enabled);
-    void settingsRequested(IECDeviceConfiguration::DeviceId deviceId);
-    void removeRequested(IECDeviceConfiguration::DeviceId deviceId);
+protected:
+    EmulatorController* m_ptrController = nullptr;
+    bool m_bBusy = false;
+
+private:
+    bool submitRequest(EmulatorRequest* ptrRequest, RequestPurpose purpose);
+    void finishRequest();
+
+    QSharedPointer<IECDeviceConfiguration> m_ptrConfiguration;
+    QSharedPointer<IECDeviceConfiguration> m_ptrPendingConfiguration;
+
+    EmulatorRequest::RequestId m_requestId = 0;
+    RequestPurpose m_requestPurpose = RequestPurpose::None;
 };
