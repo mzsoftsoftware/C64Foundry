@@ -1,7 +1,7 @@
 #include "IECDevice.h"
 
 
-IECDevice::IECDevice(const quint8 deviceNumber, IECBus* ptrBus)
+IECDevice::IECDevice(IECBus* ptrBus, const quint8 deviceNumber)
     : m_deviceNumber(deviceNumber)
     , m_ptrBus(ptrBus)
 {

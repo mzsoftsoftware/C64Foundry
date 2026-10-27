@@ -38,7 +38,7 @@ public:
         bool eoi = false;
     };
 
-    explicit IECProtocol(quint8 deviceNumber, IECBus* ptrBus, IECBus::ParticipantId participantId);
+    explicit IECProtocol(IECBus* ptrBus, quint8 deviceNumber, IECBus::ParticipantId participantId);
 
     quint8 deviceNumber() const             { return m_deviceNumber; }
     State state() const                     { return m_state; }

@@ -8,7 +8,7 @@
 class IECDevice
 {
 public:
-    explicit IECDevice(quint8 deviceNumber, IECBus* ptrBus);
+    explicit IECDevice(IECBus* ptrBus, quint8 deviceNumber);
     virtual ~IECDevice();
 
     quint8 deviceNumber() const                     { return m_deviceNumber; }

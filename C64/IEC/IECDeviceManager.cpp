@@ -3,6 +3,9 @@
 #include "IECAsciiPrinter.h"
 #include "IECAsciiPrinterConfiguration.h"
 
+#include "IECFoundryDisk.h"
+#include "IECFoundryDiskConfiguration.h"
+
 
 IECDeviceManager::IECDeviceManager(IECBus* ptrBus)
     : m_ptrBus(ptrBus)
@@ -28,6 +31,8 @@ QList<quint8> IECDeviceManager::supportedDeviceNumbers(IECDeviceType type) const
     {
     case IECDeviceType::PrinterASCII:
         return { 4, 5 };
+    case IECDeviceType::FoundryDisk:
+        return { 8, 9, 10, 11 };
     }
 
     return {};
@@ -124,6 +129,15 @@ bool IECDeviceManager::restoreConfigurations(const QList<ConfigurationPtr>& conf
 
             break;
         }
+        case IECDeviceType::FoundryDisk:
+        {
+            const IECFoundryDiskConfiguration* ptrDiskConfiguration = dynamic_cast<const IECFoundryDiskConfiguration*>(ptrCopy.data());
+
+            if (ptrDiskConfiguration == nullptr)
+                bValid = false;
+
+            break;
+        }
         }
 
         if (!bValid)
@@ -209,6 +223,8 @@ IECDeviceManager::ConfigurationPtr IECDeviceManager::createConfiguration(IECDevi
     {
     case IECDeviceType::PrinterASCII:
         return ConfigurationPtr(new IECAsciiPrinterConfiguration());
+    case IECDeviceType::FoundryDisk:
+        return ConfigurationPtr(new IECFoundryDiskConfiguration());
     }
 
     return ConfigurationPtr();
@@ -238,6 +254,23 @@ IECDevice* IECDeviceManager::createDevice(const IECDeviceConfiguration& configur
         }
 
         return ptrPrinter;
+    }
+    case IECDeviceType::FoundryDisk:
+    {
+        const IECFoundryDiskConfiguration* ptrConfiguration = dynamic_cast<const IECFoundryDiskConfiguration*>(&configuration);
+
+        if (ptrConfiguration == nullptr)
+            return nullptr;
+
+        IECFoundryDisk* ptrDisk = new IECFoundryDisk(m_ptrBus, configuration.deviceNumber());
+
+        if (!ptrDisk->setConfiguration(*ptrConfiguration))
+        {
+            delete ptrDisk;
+            return nullptr;
+        }
+
+        return ptrDisk;
     }
     }
 
@@ -371,6 +404,19 @@ bool IECDeviceManager::setConfiguration(const IECDeviceConfiguration& configurat
 
                 break;
             }
+            case IECDeviceType::FoundryDisk:
+            {
+                IECFoundryDisk* ptrDisk = dynamic_cast<IECFoundryDisk*>(ptrEntry->ptrDevice);
+                const IECFoundryDiskConfiguration* ptrDiskConfiguration = dynamic_cast<const IECFoundryDiskConfiguration*>(&configuration);
+
+                if (ptrDisk == nullptr || ptrDiskConfiguration == nullptr)
+                    return false;
+
+                if (!ptrDisk->setConfiguration(*ptrDiskConfiguration))
+                    return false;
+
+                break;
+            }
             }
         }
         else
@@ -383,6 +429,15 @@ bool IECDeviceManager::setConfiguration(const IECDeviceConfiguration& configurat
                 const IECAsciiPrinterConfiguration* ptrPrinterConfiguration = dynamic_cast<const IECAsciiPrinterConfiguration*>(&configuration);
 
                 if (ptrPrinterConfiguration == nullptr || ptrPrinterConfiguration->lineWidth() < 1)
+                    return false;
+
+                break;
+            }
+            case IECDeviceType::FoundryDisk:
+            {
+                const IECFoundryDiskConfiguration* ptrDiskConfiguration = dynamic_cast<const IECFoundryDiskConfiguration*>(&configuration);
+
+                if (ptrDiskConfiguration == nullptr)
                     return false;
 
                 break;

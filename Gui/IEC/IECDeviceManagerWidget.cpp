@@ -10,8 +10,8 @@
 #include <QVariant>
 
 #include "Emulator/EmulatorController.h"
-#include "IECDeviceRowWidget.h"
 #include "IECAsciiPrinterRowWidget.h"
+#include "IECFoundryDiskRowWidget.h"
 
 
 IECDeviceManagerWidget::IECDeviceManagerWidget(QWidget* parent)
@@ -79,6 +79,8 @@ QString IECDeviceManagerWidget::deviceTypeName(IECDeviceType type) const
     {
     case IECDeviceType::PrinterASCII:
         return tr("ASCII Printer");
+    case IECDeviceType::FoundryDisk:
+        return tr("Foundry Disk");
     }
 
     return tr("Unknown Device");
@@ -264,6 +266,9 @@ IECDeviceRowWidget* IECDeviceManagerWidget::createDeviceRow(IECDeviceType type)
     {
     case IECDeviceType::PrinterASCII:
         ptrRow = new IECAsciiPrinterRowWidget();
+        break;
+    case IECDeviceType::FoundryDisk:
+        ptrRow = new IECFoundryDiskRowWidget();
         break;
     }
 

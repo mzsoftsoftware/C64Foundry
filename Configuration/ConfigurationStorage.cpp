@@ -5,6 +5,7 @@
 
 #include "C64Configuration.h"
 #include "C64/IEC/IECAsciiPrinterConfiguration.h"
+#include "C64/IEC/IECFoundryDiskConfiguration.h"
 
 
 bool ConfigurationStorage::load(QMap<QString, C64Configuration*>& configurations, QString& activeConfigurationName) const
@@ -313,6 +314,17 @@ void ConfigurationStorage::saveIECDevices(QSettings& settings, const QList<QShar
             settings.setValue(QStringLiteral("Type"), QStringLiteral("PrinterASCII"));
             settings.setValue(QStringLiteral("LineWidth"), ptrPrinterConfiguration->lineWidth());
             settings.setValue(QStringLiteral("AutoWrap"), ptrPrinterConfiguration->autoWrap());
+
+            break;
+        }
+        case IECDeviceType::FoundryDisk:
+        {
+            const IECFoundryDiskConfiguration* ptrDiskConfiguration = dynamic_cast<const IECFoundryDiskConfiguration*>(ptrConfiguration.data());
+
+            if (ptrDiskConfiguration == nullptr)
+                break;
+
+            settings.setValue(QStringLiteral("Type"), QStringLiteral("FoundryDisk"));
 
             break;
         }

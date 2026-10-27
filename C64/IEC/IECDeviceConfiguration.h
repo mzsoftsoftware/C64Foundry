@@ -6,7 +6,8 @@
 
 enum class IECDeviceType
 {
-    PrinterASCII
+    PrinterASCII,
+    FoundryDisk
 };
 
 

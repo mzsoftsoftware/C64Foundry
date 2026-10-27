@@ -62,6 +62,9 @@ add_library(C64FoundryCore STATIC
     C64/IEC/IECAsciiPrinter.h C64/IEC/IECAsciiPrinter.cpp
     C64/IEC/IECAsciiPrinterConfiguration.h
 
+    C64/IEC/IECFoundryDisk.h C64/IEC/IECFoundryDisk.cpp
+    C64/IEC/IECFoundryDiskConfiguration.h
+
 )
 
 target_include_directories(C64FoundryCore
@@ -106,10 +109,14 @@ qt_add_executable(C64Foundry
     Gui/Video/VideoWindowWidget.h Gui/Video/VideoWindowWidget.cpp
 
     Gui/IEC/IECDeviceManagerWidget.h Gui/IEC/IECDeviceManagerWidget.cpp Gui/IEC/IECDeviceManagerWidget.ui
+    Gui/IEC/IECDeviceRowWidget.h Gui/IEC/IECDeviceRowWidget.cpp
     Gui/IEC/IECAsciiPrinterRowWidget.h Gui/IEC/IECAsciiPrinterRowWidget.cpp Gui/IEC/IECAsciiPrinterRowWidget.ui
+    Gui/IEC/IECFoundryDiskRowWidget.h Gui/IEC/IECFoundryDiskRowWidget.cpp Gui/IEC/IECFoundryDiskRowWidget.ui
     Gui/IEC/IECActivityLEDWidget.h Gui/IEC/IECActivityLEDWidget.cpp
     Gui/IEC/IECOperationStatusWidget.h Gui/IEC/IECOperationStatusWidget.cpp
     Gui/IEC/IECAsciiPrinterSettingsDialog.h Gui/IEC/IECAsciiPrinterSettingsDialog.cpp Gui/IEC/IECAsciiPrinterSettingsDialog.ui
+    Gui/IEC/IECFoundryDiskSettingsDialog.h Gui/IEC/IECFoundryDiskSettingsDialog.cpp Gui/IEC/IECFoundryDiskSettingsDialog.ui
+
     Gui/IEC/IECPrinterOutputDockWidget.h Gui/IEC/IECPrinterOutputDockWidget.cpp Gui/IEC/IECPrinterOutputDockWidget.ui
     Gui/IEC/IECAsciiPrinterOutputWidget.h Gui/IEC/IECAsciiPrinterOutputWidget.cpp Gui/IEC/IECAsciiPrinterOutputWidget.ui
 
@@ -135,9 +142,6 @@ qt_add_executable(C64Foundry
     Storage/PRG/C64PRGFile.h Storage/PRG/C64PRGFile.cpp
 
     Resources/C64Foundry.qrc
-    Gui/IEC/IECFoundryDiskRowWidget.h Gui/IEC/IECFoundryDiskRowWidget.cpp Gui/IEC/IECFoundryDiskRowWidget.ui
-    Gui/IEC/IECDeviceRowWidget.h
-    Gui/IEC/IECDeviceRowWidget.cpp
 )
 
 target_include_directories(C64Foundry

@@ -1,7 +1,7 @@
 #include "IECProtocol.h"
 
 
-IECProtocol::IECProtocol(const quint8 deviceNumber, IECBus* ptrBus, const IECBus::ParticipantId participantId)
+IECProtocol::IECProtocol(IECBus* ptrBus, const quint8 deviceNumber, const IECBus::ParticipantId participantId)
     : m_deviceNumber(deviceNumber)
     , m_ptrBus(ptrBus)
     , m_participantId(participantId)

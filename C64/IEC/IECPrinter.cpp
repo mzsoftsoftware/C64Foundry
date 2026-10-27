@@ -1,8 +1,8 @@
 #include "IECPrinter.h"
 
 
-IECPrinter::IECPrinter(const quint8 deviceNumber, IECBus* ptrBus)
-    : IECDevice(deviceNumber, ptrBus)
+IECPrinter::IECPrinter(IECBus* ptrBus, const quint8 deviceNumber)
+    : IECDevice(ptrBus, deviceNumber)
 {
 }
 

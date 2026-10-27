@@ -2,9 +2,10 @@
 
 #include "IECPrinter.h"
 #include "IECProtocol.h"
-#include "IECAsciiPrinterConfiguration.h"
 
 #include <QList>
+
+class IECAsciiPrinterConfiguration;
 
 
 class IECAsciiPrinter : public IECPrinter

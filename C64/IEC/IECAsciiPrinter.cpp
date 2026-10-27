@@ -1,9 +1,11 @@
 #include "IECAsciiPrinter.h"
 
+#include "IECAsciiPrinterConfiguration.h"
+
 
 IECAsciiPrinter::IECAsciiPrinter(IECBus* ptrBus, const quint8 deviceNumber)
-    : IECPrinter(deviceNumber, ptrBus)
-    , m_protocol(deviceNumber, iecBus(), participantId())
+    : IECPrinter(ptrBus, deviceNumber)
+    , m_protocol(iecBus(), deviceNumber, participantId())
 {
 }
 

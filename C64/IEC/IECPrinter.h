@@ -8,7 +8,7 @@
 class IECPrinter : public IECDevice
 {
 public:
-    explicit IECPrinter(quint8 deviceNumber, IECBus* ptrBus);
+    explicit IECPrinter(IECBus* ptrBus, quint8 deviceNumber);
     virtual ~IECPrinter();
 
     bool hasOutput() const;
