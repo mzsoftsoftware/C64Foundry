@@ -4,7 +4,9 @@
 #include <QStringList>
 
 #include "C64Configuration.h"
+#include "C64/IEC/IECAsciiPrinter.h"
 #include "C64/IEC/IECAsciiPrinterConfiguration.h"
+#include "C64/IEC/IECFoundryDisk.h"
 #include "C64/IEC/IECFoundryDiskConfiguration.h"
 
 
@@ -241,7 +243,7 @@ bool ConfigurationStorage::loadIECDevices(QSettings& settings, QList<QSharedPoin
 
         if (typeName == QStringLiteral("PrinterASCII"))
         {
-            if (deviceNumber != 4 && deviceNumber != 5)
+            if (!IECAsciiPrinter::supportedDeviceNumbers().contains(static_cast<quint8>(deviceNumber)))
             {
                 settings.endArray();
                 return false;
@@ -262,6 +264,18 @@ bool ConfigurationStorage::loadIECDevices(QSettings& settings, QList<QSharedPoin
             ptrPrinterConfiguration->setAutoWrap(settings.value(QStringLiteral("AutoWrap"), true).toBool());
 
             ptrConfiguration.reset(ptrPrinterConfiguration);
+        }
+        else if (typeName == QStringLiteral("FoundryDisk"))
+        {
+            if (!IECFoundryDisk::supportedDeviceNumbers().contains(static_cast<quint8>(deviceNumber)))
+            {
+                settings.endArray();
+                return false;
+            }
+
+            IECFoundryDiskConfiguration* ptrDiskConfiguration = new IECFoundryDiskConfiguration();
+
+            ptrConfiguration.reset(ptrDiskConfiguration);
         }
         else
         {

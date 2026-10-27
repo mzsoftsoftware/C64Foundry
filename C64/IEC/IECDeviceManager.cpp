@@ -21,7 +21,7 @@ IECDeviceManager::~IECDeviceManager()
 
 QList<IECDeviceType> IECDeviceManager::availableDeviceTypes() const
 {
-    return { IECDeviceType::PrinterASCII };
+    return { IECDeviceType::PrinterASCII, IECDeviceType::FoundryDisk };
 }
 
 

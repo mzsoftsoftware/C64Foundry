@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
+    <width>498</width>
     <height>300</height>
    </rect>
   </property>
@@ -14,6 +14,18 @@
    <string>Form</string>
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
    <item>
     <widget class="QToolButton" name="toolButton_Power">
      <property name="toolTip">
@@ -68,8 +80,19 @@
    </item>
    <item>
     <widget class="QLCDNumber" name="lcdNumber_TrackSector">
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>20</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
      <property name="frameShape">
-      <enum>QFrame::Shape::StyledPanel</enum>
+      <enum>QFrame::Shape::NoFrame</enum>
      </property>
      <property name="smallDecimalPoint">
       <bool>false</bool>
@@ -81,7 +104,7 @@
       <enum>QLCDNumber::Mode::Dec</enum>
      </property>
      <property name="segmentStyle">
-      <enum>QLCDNumber::SegmentStyle::Filled</enum>
+      <enum>QLCDNumber::SegmentStyle::Flat</enum>
      </property>
      <property name="value" stdset="0">
       <double>99.989999999999995</double>
