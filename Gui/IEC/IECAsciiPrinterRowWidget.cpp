@@ -3,8 +3,11 @@
 
 #include <QSignalBlocker>
 
+#include "Emulator/EmulatorController.h"
+
+
 IECAsciiPrinterRowWidget::IECAsciiPrinterRowWidget(QWidget* parent)
-    : QWidget(parent)
+    : IECDeviceRowWidget(parent)
     , ui(new Ui::IECAsciiPrinterRowWidget)
 {
     ui->setupUi(this);
@@ -13,6 +16,18 @@ IECAsciiPrinterRowWidget::IECAsciiPrinterRowWidget(QWidget* parent)
 IECAsciiPrinterRowWidget::~IECAsciiPrinterRowWidget()
 {
     delete ui;
+}
+
+void IECAsciiPrinterRowWidget::setController(EmulatorController* ptrController)
+{
+    Q_ASSERT(ptrController);
+    Q_ASSERT(!m_ptrController);
+
+    m_ptrController = ptrController;
+
+    connect(m_ptrController, &EmulatorController::requestDone, this, &IECAsciiPrinterRowWidget::onRequestDone);
+    connect(m_ptrController, &EmulatorController::iecDeviceChanged, this, &IECAsciiPrinterRowWidget::onIECDeviceChanged);
+    connect(m_ptrController, &EmulatorController::printerOutputChanged, this, &IECAsciiPrinterRowWidget::onPrinterOutputChanged);
 }
 
 void IECAsciiPrinterRowWidget::setOperationState(IECOperationStatusWidget::State state, const QString& message)
