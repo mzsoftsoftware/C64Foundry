@@ -12,7 +12,7 @@ IECFoundryDisk::~IECFoundryDisk()
 {
 }
 
-QList<quint8> IECFoundryDisk::supportedDeviceNumbers() const
+QList<quint8> IECFoundryDisk::supportedDeviceNumbers()
 {
     return { 8, 9, 10, 11 };
 }

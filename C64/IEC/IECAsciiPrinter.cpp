@@ -13,7 +13,7 @@ IECAsciiPrinter::~IECAsciiPrinter()
 {
 }
 
-QList<quint8> IECAsciiPrinter::supportedDeviceNumbers() const
+QList<quint8> IECAsciiPrinter::supportedDeviceNumbers()
 {
     return { 4, 5 };
 }

@@ -12,7 +12,6 @@ public:
     virtual ~IECDevice();
 
     quint8 deviceNumber() const                     { return m_deviceNumber; }
-    virtual QList<quint8> supportedDeviceNumbers() const = 0;
 
     virtual void reset() = 0;
     virtual void clock() = 0;

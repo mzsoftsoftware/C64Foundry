@@ -30,14 +30,14 @@ QList<quint8> IECDeviceManager::supportedDeviceNumbers(IECDeviceType type) const
     switch (type)
     {
     case IECDeviceType::PrinterASCII:
-        return { 4, 5 };
+        return IECAsciiPrinter::supportedDeviceNumbers();
+
     case IECDeviceType::FoundryDisk:
-        return { 8, 9, 10, 11 };
+        return IECFoundryDisk::supportedDeviceNumbers();
     }
 
     return {};
 }
-
 
 QList<IECDeviceManager::ConfigurationPtr> IECDeviceManager::configurations() const
 {

@@ -11,10 +11,10 @@ class IECAsciiPrinterConfiguration;
 class IECAsciiPrinter : public IECPrinter
 {
 public:
+    static QList<quint8> supportedDeviceNumbers();
+
     explicit IECAsciiPrinter(IECBus* ptrBus, quint8 deviceNumber = 4);
     virtual ~IECAsciiPrinter();
-
-    QList<quint8> supportedDeviceNumbers() const override;
 
     bool setConfiguration(const IECAsciiPrinterConfiguration& configuration);
 
