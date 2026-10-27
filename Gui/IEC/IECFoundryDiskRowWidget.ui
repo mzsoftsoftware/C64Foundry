@@ -67,13 +67,50 @@
     <widget class="IECActivityLEDWidget" name="widget_ActivityLED" native="true"/>
    </item>
    <item>
+    <widget class="QLCDNumber" name="lcdNumber_TrackSector">
+     <property name="frameShape">
+      <enum>QFrame::Shape::StyledPanel</enum>
+     </property>
+     <property name="smallDecimalPoint">
+      <bool>false</bool>
+     </property>
+     <property name="digitCount">
+      <number>5</number>
+     </property>
+     <property name="mode">
+      <enum>QLCDNumber::Mode::Dec</enum>
+     </property>
+     <property name="segmentStyle">
+      <enum>QLCDNumber::SegmentStyle::Filled</enum>
+     </property>
+     <property name="value" stdset="0">
+      <double>99.989999999999995</double>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QToolButton" name="toolButton_DiskName">
+     <property name="font">
+      <font>
+       <family>Monospace</family>
+      </font>
+     </property>
+     <property name="text">
+      <string>0123456789ABCDEF XX YY</string>
+     </property>
+     <property name="toolButtonStyle">
+      <enum>Qt::ToolButtonStyle::ToolButtonTextOnly</enum>
+     </property>
+    </widget>
+   </item>
+   <item>
     <spacer name="horizontalSpacer">
      <property name="orientation">
       <enum>Qt::Orientation::Horizontal</enum>
      </property>
      <property name="sizeHint" stdset="0">
       <size>
-       <width>156</width>
+       <width>0</width>
        <height>20</height>
       </size>
      </property>
