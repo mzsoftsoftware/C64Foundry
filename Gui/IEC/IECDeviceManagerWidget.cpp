@@ -147,13 +147,19 @@ void IECDeviceManagerWidget::refreshConfigurations()
     if (m_configurationRequestId == 0)
     {
         qWarning() << "IECDeviceManagerWidget: could not submit configuration request";
+
         ui->widget_OperationStatus->setState(
             IECOperationStatusWidget::State::Failed,
             tr("Could not refresh IEC devices"));
 
         ui->toolButton_Add->setEnabled(m_ptrController != nullptr && m_addRequestId == 0);
         ui->toolButton_Refresh->setEnabled(m_ptrController != nullptr && m_addRequestId == 0);
+        return;
     }
+
+    ui->toolButton_Add->setEnabled(false);
+    ui->toolButton_Refresh->setEnabled(false);
+    ui->widget_OperationStatus->setState(IECOperationStatusWidget::State::Pending);
 }
 
 void IECDeviceManagerWidget::onRequestDone(QSharedPointer<EmulatorResponse> response)

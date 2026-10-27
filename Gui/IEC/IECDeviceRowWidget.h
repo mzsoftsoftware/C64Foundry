@@ -37,6 +37,7 @@ protected:
         Remove
     };
 
+    virtual void onControllerSet();
     void requestPowerChange(bool enabled);
     void requestSettings();
     void requestRemove();

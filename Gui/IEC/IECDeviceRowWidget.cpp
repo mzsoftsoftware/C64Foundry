@@ -19,16 +19,12 @@ void IECDeviceRowWidget::setController(EmulatorController* ptrController)
     Q_ASSERT(ptrController != nullptr);
     Q_ASSERT(m_ptrController == nullptr);
 
-    if (ptrController == nullptr || m_ptrController != nullptr)
-        return;
-
     m_ptrController = ptrController;
 
-    connect(m_ptrController, &EmulatorController::requestDone,
-            this, &IECDeviceRowWidget::onRequestDone);
+    connect(m_ptrController, &EmulatorController::requestDone, this, &IECDeviceRowWidget::onRequestDone);
+    connect(m_ptrController, &EmulatorController::iecDeviceChanged, this, &IECDeviceRowWidget::onIECDeviceChanged);
 
-    connect(m_ptrController, &EmulatorController::iecDeviceChanged,
-            this, &IECDeviceRowWidget::onIECDeviceChanged);
+    onControllerSet();
 }
 
 void IECDeviceRowWidget::setConfiguration(const IECDeviceConfiguration& configuration)
@@ -214,4 +210,8 @@ void IECDeviceRowWidget::onIECDeviceChanged(
 
     // Die IECDeviceManagerWidget aktualisiert die Konfigurationen zentral.
     // Hier darf bei ConfigurationChanged kein Einstellungsdialog aufgehen.
+}
+
+void IECDeviceRowWidget::onControllerSet()
+{
 }

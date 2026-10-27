@@ -23,11 +23,9 @@ IECAsciiPrinterRowWidget::~IECAsciiPrinterRowWidget()
     delete ui;
 }
 
-void IECAsciiPrinterRowWidget::setController(EmulatorController* ptrController)
+void IECAsciiPrinterRowWidget::onControllerSet()
 {
-    IECDeviceRowWidget::setController(ptrController);
-
-    connect(ptrController, &EmulatorController::printerOutputChanged, this, &IECAsciiPrinterRowWidget::onPrinterOutputChanged);
+    connect(m_ptrController, &EmulatorController::printerOutputChanged, this, &IECAsciiPrinterRowWidget::onPrinterOutputChanged);
 }
 
 void IECAsciiPrinterRowWidget::applyConfiguration(

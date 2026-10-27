@@ -16,10 +16,10 @@ public:
     explicit IECAsciiPrinterRowWidget(QWidget* parent = nullptr);
     virtual ~IECAsciiPrinterRowWidget();
 
-    void setController(EmulatorController* ptrController);
     void triggerActivity(int index = 0);
 
 protected:
+    void onControllerSet() override;
     void setOperationState(IECOperationStatusWidget::State state, const QString& message = QString()) override;
     void applyConfiguration(const IECDeviceConfiguration& configuration) override;
     void setPowerButtonChecked(bool checked) override;
