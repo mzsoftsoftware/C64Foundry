@@ -287,7 +287,9 @@ void IECDeviceManagerWidget::setConfigurations(
 
         while (insertIndex < sortedConfigurations.size() &&
                sortedConfigurations[insertIndex]->deviceNumber() <= ptrConfiguration->deviceNumber())
+        {
             ++insertIndex;
+        }
 
         sortedConfigurations.insert(insertIndex, ptrConfiguration);
     }
@@ -306,13 +308,25 @@ void IECDeviceManagerWidget::setConfigurations(
         if (activeIds.contains(deviceId))
             continue;
 
-        m_deviceRows.remove(deviceId);
+        IECDeviceRowWidget* ptrRow = m_deviceRows.take(deviceId);
+
+        if (ptrRow == nullptr)
+        {
+            ptrRow = qobject_cast<IECDeviceRowWidget*>(
+                ui->listWidget_Devices->itemWidget(ptrItem));
+        }
+
+        if (ptrRow != nullptr)
+            delete ptrRow;
+
         delete ui->listWidget_Devices->takeItem(index);
     }
 
     for (qsizetype index = 0; index < sortedConfigurations.size(); ++index)
     {
-        const IECDeviceManager::ConfigurationPtr& ptrConfiguration = sortedConfigurations[index];
+        const IECDeviceManager::ConfigurationPtr& ptrConfiguration =
+            sortedConfigurations[index];
+
         const IECDeviceConfiguration::DeviceId deviceId = ptrConfiguration->id();
 
         IECDeviceRowWidget* ptrRow = m_deviceRows.value(deviceId, nullptr);
@@ -329,6 +343,44 @@ void IECDeviceManagerWidget::setConfigurations(
             }
         }
 
+        if (ptrRow != nullptr && ptrItem == nullptr)
+        {
+            qWarning() << "IECDeviceManagerWidget: row exists without list item"
+                       << deviceId;
+
+            m_deviceRows.remove(deviceId);
+            delete ptrRow;
+            ptrRow = nullptr;
+        }
+
+        if (ptrRow == nullptr && ptrItem != nullptr)
+        {
+            ptrRow = qobject_cast<IECDeviceRowWidget*>(
+                ui->listWidget_Devices->itemWidget(ptrItem));
+
+            if (ptrRow != nullptr)
+            {
+                m_deviceRows.insert(deviceId, ptrRow);
+            }
+            else
+            {
+                qWarning() << "IECDeviceManagerWidget: list item has no valid device row"
+                           << deviceId;
+
+                QWidget* ptrWidget = ui->listWidget_Devices->itemWidget(ptrItem);
+
+                if (ptrWidget != nullptr)
+                {
+                    ui->listWidget_Devices->removeItemWidget(ptrItem);
+                    delete ptrWidget;
+                }
+
+                const int itemIndex = ui->listWidget_Devices->row(ptrItem);
+                delete ui->listWidget_Devices->takeItem(itemIndex);
+                ptrItem = nullptr;
+            }
+        }
+
         if (ptrRow == nullptr)
         {
             ptrRow = createDeviceRow(ptrConfiguration->type());
@@ -340,15 +392,18 @@ void IECDeviceManagerWidget::setConfigurations(
                 continue;
             }
 
-            ptrItem = new QListWidgetItem();
-            ptrItem->setData(Qt::UserRole, QVariant::fromValue(deviceId));
+            if (ptrItem == nullptr)
+            {
+                ptrItem = new QListWidgetItem();
+                ptrItem->setData(Qt::UserRole, QVariant::fromValue(deviceId));
 
-            ui->listWidget_Devices->insertItem(static_cast<int>(index), ptrItem);
+                ui->listWidget_Devices->insertItem(static_cast<int>(index), ptrItem);
+            }
+
             ui->listWidget_Devices->setItemWidget(ptrItem, ptrRow);
-
             m_deviceRows.insert(deviceId, ptrRow);
         }
-        else if (ptrItem != nullptr)
+        else
         {
             const int currentIndex = ui->listWidget_Devices->row(ptrItem);
 
