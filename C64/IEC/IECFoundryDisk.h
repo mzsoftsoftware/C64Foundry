@@ -16,7 +16,7 @@ public:
     void reset() override;
     void clock() override;
 
-    bool setConfiguration(const IECFoundryDiskConfiguration& configuration);
+    bool setConfiguration(const IECFoundryDiskConfiguration& configuration, QString* errorMessage = nullptr);
 
 private:
     IECFoundryDrive* m_ptrDrive = nullptr;

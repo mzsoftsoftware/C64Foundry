@@ -111,20 +111,63 @@ bool IECFoundryDrive::hasDisk(quint8 deviceNumber) const
     return ptrState != nullptr && ptrState->ptrDisk != nullptr;
 }
 
-bool IECFoundryDrive::insertImage(quint8 deviceNumber, const QString& fileName)
+bool IECFoundryDrive::insertImage(quint8 deviceNumber, const QString& fileName, QString* errorMessage)
 {
     DriveState* ptrState = m_drives.value(deviceNumber, nullptr);
-    if (ptrState == nullptr || ptrState->ptrDisk == nullptr || fileName.isEmpty())
+
+    if (ptrState == nullptr || ptrState->ptrDisk == nullptr)
         return false;
-    if (ptrState->imageFileName == fileName && !ptrState->imageData.isNull())
+
+    if (errorMessage != nullptr)
+        errorMessage->clear();
+
+    // Ein bereits geladenes Image wird immer zuerst ausgeworfen.
+    if (hasImage(deviceNumber))
+    {
+        QString saveError;
+
+        if (ptrState->imageModified && !saveImage(deviceNumber, &saveError))
+        {
+            if (errorMessage != nullptr)
+                *errorMessage = saveError;
+        }
+
+        ejectImage(deviceNumber);
+    }
+
+    // Ein leerer Pfad bedeutet: nur auswerfen.
+    if (fileName.isEmpty())
         return true;
 
     QFile file(fileName);
+
     if (!file.open(QIODevice::ReadOnly))
-        return false;
+    {
+        if (errorMessage != nullptr)
+        {
+            if (!errorMessage->isEmpty())
+                *errorMessage += QChar('\n');
+
+            *errorMessage += QStringLiteral("Image konnte nicht geöffnet werden: %1\n%2").arg(fileName, file.errorString());
+        }
+
+        return true;
+    }
+
     const QByteArray imageData = file.readAll();
+
     if (file.error() != QFileDevice::NoError)
-        return false;
+    {
+        if (errorMessage != nullptr)
+        {
+            if (!errorMessage->isEmpty())
+                *errorMessage += QChar('\n');
+
+            *errorMessage += QStringLiteral("Fehler beim Lesen des Images: %1\n%2").arg(fileName, file.errorString());
+        }
+
+        return true;
+    }
 
     ptrState->imageFileName = fileName;
     ptrState->imageData = imageData;
@@ -132,8 +175,10 @@ bool IECFoundryDrive::insertImage(quint8 deviceNumber, const QString& fileName)
 
     return true;
 }
-bool IECFoundryDrive::ejectImage(quint8 deviceNumber)
+bool IECFoundryDrive::ejectImage(quint8 deviceNumber, QString* errorMessage)
 {
+    Q_UNUSED(errorMessage);
+
     DriveState* ptrState = m_drives.value(deviceNumber, nullptr);
 
     if (ptrState == nullptr || ptrState->ptrDisk == nullptr)
@@ -145,26 +190,44 @@ bool IECFoundryDrive::ejectImage(quint8 deviceNumber)
 
     return true;
 }
-bool IECFoundryDrive::saveImage(quint8 deviceNumber)
+bool IECFoundryDrive::saveImage(quint8 deviceNumber, QString* errorMessage)
 {
     DriveState* ptrState = m_drives.value(deviceNumber, nullptr);
 
-    if (ptrState == nullptr || ptrState->ptrDisk == nullptr ||
-        ptrState->imageFileName.isEmpty() || ptrState->imageData.isNull())
+    if (ptrState == nullptr || ptrState->ptrDisk == nullptr || ptrState->imageFileName.isEmpty() || ptrState->imageData.isNull())
     {
+        if (errorMessage != nullptr)
+            *errorMessage = QStringLiteral("Es ist kein Image zum Speichern geladen.");
+
         return false;
     }
 
     QSaveFile file(ptrState->imageFileName);
+
     if (!file.open(QIODevice::WriteOnly))
+    {
+        if (errorMessage != nullptr)
+            *errorMessage = QStringLiteral("Image konnte nicht zum Schreiben geöffnet werden: %1\n%2").arg(ptrState->imageFileName, file.errorString());
+
         return false;
+    }
+
     if (file.write(ptrState->imageData) != ptrState->imageData.size())
     {
+        if (errorMessage != nullptr)
+            *errorMessage = QStringLiteral("Fehler beim Schreiben des Images: %1\n%2").arg(ptrState->imageFileName, file.errorString());
+
         file.cancelWriting();
         return false;
     }
+
     if (!file.commit())
+    {
+        if (errorMessage != nullptr)
+            *errorMessage = QStringLiteral("Image konnte nicht gespeichert werden: %1\n%2").arg(ptrState->imageFileName, file.errorString());
+
         return false;
+    }
 
     ptrState->imageModified = false;
     return true;
