@@ -3,8 +3,9 @@
 #include "IECFoundryDiskConfiguration.h"
 
 
-IECFoundryDisk::IECFoundryDisk(IECBus* ptrBus, quint8 deviceNumber)
+IECFoundryDisk::IECFoundryDisk(IECBus* ptrBus, IECFoundryDrive* ptrDrive, quint8 deviceNumber)
     : IECDevice(ptrBus, deviceNumber)
+    , m_ptrDrive(ptrDrive)
 {
 }
 

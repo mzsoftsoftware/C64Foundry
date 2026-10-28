@@ -1,74 +1,40 @@
 #pragma once
 
 #include <QByteArray>
+#include <QHash>
 #include <QString>
 #include <QtGlobal>
+
+class IECFoundryDisk;
 
 
 class IECFoundryDrive
 {
 public:
-    enum class State
-    {
-        Empty,
-        Ready,
-        Modified,
-        Error
-    };
-
-    enum class Error
-    {
-        None,
-        FileNotFound,
-        FileOpenFailed,
-        InvalidImage,
-        UnsupportedImage,
-        InvalidTrack,
-        InvalidSector,
-        WriteFailed
-    };
-
     explicit IECFoundryDrive();
     virtual ~IECFoundryDrive();
 
     IECFoundryDrive(const IECFoundryDrive&) = delete;
     IECFoundryDrive& operator=(const IECFoundryDrive&) = delete;
 
-    State state() const;
-    Error error() const;
+    bool registerDisk(IECFoundryDisk* ptrDisk);
+    void unregisterDisk(IECFoundryDisk* ptrDisk);
 
-    bool hasImage() const;
-    bool isModified() const;
+    int diskCount() const;
+    bool hasDisk(quint8 deviceNumber) const;
 
-    QString imageFileName() const;
-    QString imageName() const;
+    bool insertImage(quint8 deviceNumber, const QString& fileName);
+    bool ejectImage(quint8 deviceNumber);
+    bool saveImage(quint8 deviceNumber);
 
-    qint32 trackCount() const;
-    qint32 imageSize() const;
+    bool hasImage(quint8 deviceNumber) const;
+    QString imageFileName(quint8 deviceNumber) const;
 
-    bool insertImage(const QString& fileName);
-    bool ejectImage();
-    bool saveImage();
-
-    bool readSector(quint8 track, quint8 sector, QByteArray& data) const;
-    bool writeSector(quint8 track, quint8 sector, const QByteArray& data);
-
-    static quint8 sectorsOnTrack(quint8 track);
-    static qint32 sectorOffset(quint8 track, quint8 sector);
+    bool readSector(quint8 deviceNumber, quint8 track, quint8 sector, QByteArray& data);
+    bool writeSector(quint8 deviceNumber, quint8 track, quint8 sector, const QByteArray& data);
 
 private:
-    bool setError(Error error) const;
-    void clearError() const;
-    void resetImage();
+    struct DriveState;
 
-    State m_state = State::Empty;
-    mutable Error m_error = Error::None;
-
-    QString m_imageFileName;
-    QString m_imageName;
-
-    QByteArray m_imageData;
-
-    qint32 m_trackCount = 0;
-    bool m_hasErrorBytes = false;
+    QHash<quint8, DriveState*> m_drives;
 };
