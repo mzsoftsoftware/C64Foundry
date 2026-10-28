@@ -113,6 +113,18 @@ void IECAsciiPrinterRowWidget::showSettingsDialog(
 
     const quint8 currentDeviceNumber = ptrPrinterConfiguration->deviceNumber();
 
+    for (const QSharedPointer<IECDeviceConfiguration>& ptrOtherConfiguration :
+         ptrResponse->configurations())
+    {
+        if (ptrOtherConfiguration.isNull() ||
+            ptrOtherConfiguration->id() == ptrPrinterConfiguration->id())
+        {
+            continue;
+        }
+
+        availableDeviceNumbers.removeAll(ptrOtherConfiguration->deviceNumber());
+    }
+
     if (!availableDeviceNumbers.contains(currentDeviceNumber))
         availableDeviceNumbers.append(currentDeviceNumber);
 

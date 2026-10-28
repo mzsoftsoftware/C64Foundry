@@ -127,6 +127,18 @@ void IECFoundryDiskRowWidget::showSettingsDialog(
 
     const quint8 currentDeviceNumber = ptrDiskConfiguration->deviceNumber();
 
+    for (const QSharedPointer<IECDeviceConfiguration>& ptrOtherConfiguration :
+         ptrResponse->configurations())
+    {
+        if (ptrOtherConfiguration.isNull() ||
+            ptrOtherConfiguration->id() == ptrDiskConfiguration->id())
+        {
+            continue;
+        }
+
+        availableDeviceNumbers.removeAll(ptrOtherConfiguration->deviceNumber());
+    }
+
     if (!availableDeviceNumbers.contains(currentDeviceNumber))
         availableDeviceNumbers.append(currentDeviceNumber);
 

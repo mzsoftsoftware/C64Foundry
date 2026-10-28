@@ -278,6 +278,7 @@ IECDeviceRowWidget* IECDeviceManagerWidget::createDeviceRow(IECDeviceType type)
     return ptrRow;
 }
 
+
 void IECDeviceManagerWidget::setConfigurations(
     const QList<IECDeviceManager::ConfigurationPtr>& configurations)
 {
@@ -299,128 +300,43 @@ void IECDeviceManagerWidget::setConfigurations(
         sortedConfigurations.insert(insertIndex, ptrConfiguration);
     }
 
-    QHash<IECDeviceConfiguration::DeviceId, bool> activeIds;
-
-    for (const IECDeviceManager::ConfigurationPtr& ptrConfiguration : sortedConfigurations)
-        activeIds.insert(ptrConfiguration->id(), true);
-
     for (int index = ui->listWidget_Devices->count() - 1; index >= 0; --index)
     {
         QListWidgetItem* ptrItem = ui->listWidget_Devices->item(index);
-        const IECDeviceConfiguration::DeviceId deviceId =
-            ptrItem->data(Qt::UserRole).toULongLong();
+        QWidget* ptrWidget = ui->listWidget_Devices->itemWidget(ptrItem);
 
-        if (activeIds.contains(deviceId))
-            continue;
-
-        IECDeviceRowWidget* ptrRow = m_deviceRows.take(deviceId);
-
-        if (ptrRow == nullptr)
+        if (ptrWidget != nullptr)
         {
-            ptrRow = qobject_cast<IECDeviceRowWidget*>(
-                ui->listWidget_Devices->itemWidget(ptrItem));
+            ui->listWidget_Devices->removeItemWidget(ptrItem);
+            delete ptrWidget;
         }
-
-        if (ptrRow != nullptr)
-            delete ptrRow;
 
         delete ui->listWidget_Devices->takeItem(index);
     }
 
-    for (qsizetype index = 0; index < sortedConfigurations.size(); ++index)
+    m_deviceRows.clear();
+
+    for (const IECDeviceManager::ConfigurationPtr& ptrConfiguration : sortedConfigurations)
     {
-        const IECDeviceManager::ConfigurationPtr& ptrConfiguration =
-            sortedConfigurations[index];
-
-        const IECDeviceConfiguration::DeviceId deviceId = ptrConfiguration->id();
-
-        IECDeviceRowWidget* ptrRow = m_deviceRows.value(deviceId, nullptr);
-        QListWidgetItem* ptrItem = nullptr;
-
-        for (int itemIndex = 0; itemIndex < ui->listWidget_Devices->count(); ++itemIndex)
-        {
-            QListWidgetItem* ptrCandidate = ui->listWidget_Devices->item(itemIndex);
-
-            if (ptrCandidate->data(Qt::UserRole).toULongLong() == deviceId)
-            {
-                ptrItem = ptrCandidate;
-                break;
-            }
-        }
-
-        if (ptrRow != nullptr && ptrItem == nullptr)
-        {
-            qWarning() << "IECDeviceManagerWidget: row exists without list item"
-                       << deviceId;
-
-            m_deviceRows.remove(deviceId);
-            delete ptrRow;
-            ptrRow = nullptr;
-        }
-
-        if (ptrRow == nullptr && ptrItem != nullptr)
-        {
-            ptrRow = qobject_cast<IECDeviceRowWidget*>(
-                ui->listWidget_Devices->itemWidget(ptrItem));
-
-            if (ptrRow != nullptr)
-            {
-                m_deviceRows.insert(deviceId, ptrRow);
-            }
-            else
-            {
-                qWarning() << "IECDeviceManagerWidget: list item has no valid device row"
-                           << deviceId;
-
-                QWidget* ptrWidget = ui->listWidget_Devices->itemWidget(ptrItem);
-
-                if (ptrWidget != nullptr)
-                {
-                    ui->listWidget_Devices->removeItemWidget(ptrItem);
-                    delete ptrWidget;
-                }
-
-                const int itemIndex = ui->listWidget_Devices->row(ptrItem);
-                delete ui->listWidget_Devices->takeItem(itemIndex);
-                ptrItem = nullptr;
-            }
-        }
+        IECDeviceRowWidget* ptrRow = createDeviceRow(ptrConfiguration->type());
 
         if (ptrRow == nullptr)
         {
-            ptrRow = createDeviceRow(ptrConfiguration->type());
-
-            if (ptrRow == nullptr)
-            {
-                qWarning() << "IECDeviceManagerWidget: unsupported device type"
-                           << static_cast<int>(ptrConfiguration->type());
-                continue;
-            }
-
-            if (ptrItem == nullptr)
-            {
-                ptrItem = new QListWidgetItem();
-                ptrItem->setData(Qt::UserRole, QVariant::fromValue(deviceId));
-
-                ui->listWidget_Devices->insertItem(static_cast<int>(index), ptrItem);
-            }
-
-            ui->listWidget_Devices->setItemWidget(ptrItem, ptrRow);
-            m_deviceRows.insert(deviceId, ptrRow);
-        }
-        else
-        {
-            const int currentIndex = ui->listWidget_Devices->row(ptrItem);
-
-            if (currentIndex != static_cast<int>(index))
-            {
-                ptrItem = ui->listWidget_Devices->takeItem(currentIndex);
-                ui->listWidget_Devices->insertItem(static_cast<int>(index), ptrItem);
-            }
+            qWarning() << "IECDeviceManagerWidget: unsupported device type"
+                       << static_cast<int>(ptrConfiguration->type());
+            continue;
         }
 
         ptrRow->setConfiguration(*ptrConfiguration);
+
+        QListWidgetItem* ptrItem = new QListWidgetItem();
+        ptrItem->setData(Qt::UserRole, QVariant::fromValue(ptrConfiguration->id()));
+
+        ui->listWidget_Devices->addItem(ptrItem);
+        ui->listWidget_Devices->setItemWidget(ptrItem, ptrRow);
         ptrItem->setSizeHint(ptrRow->sizeHint());
+
+        m_deviceRows.insert(ptrConfiguration->id(), ptrRow);
     }
 }
 
