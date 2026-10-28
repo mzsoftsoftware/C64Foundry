@@ -18,8 +18,11 @@ public:
         return new IECFoundryDiskConfiguration(*this);
     }
 
-    QString imageFileName() const { return m_imageFileName; }
-    void setImageFileName(const QString& fileName) { m_imageFileName = fileName; }
+    QString imageFileName() const                   { return m_qstrImageFileName; }
+    void setImageFileName(const QString& fileName)  { m_qstrImageFileName = fileName; }
+
+    bool saveCurrentDiskOnExit() const              { return m_bSaveCurrentDiskOnExit; }
+    void setSaveCurrentDiskOnExit(bool enabled)     { m_bSaveCurrentDiskOnExit = enabled; }
 
 protected:
     bool equals(const IECDeviceConfiguration& other) const override
@@ -32,9 +35,15 @@ protected:
         if (ptrOther == nullptr)
             return false;
 
-        return m_imageFileName == ptrOther->m_imageFileName;
+        if(m_qstrImageFileName != ptrOther->m_qstrImageFileName)
+            return false;
+        if(m_bSaveCurrentDiskOnExit != ptrOther->m_bSaveCurrentDiskOnExit)
+            return false;
+
+        return true;
     }
 
 private:
-    QString m_imageFileName;
+    QString m_qstrImageFileName;
+    bool m_bSaveCurrentDiskOnExit = false;
 };
