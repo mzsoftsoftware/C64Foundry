@@ -62,6 +62,7 @@ add_library(C64FoundryCore STATIC
     C64/IEC/IECAsciiPrinter.h C64/IEC/IECAsciiPrinter.cpp
     C64/IEC/IECAsciiPrinterConfiguration.h
 
+    C64/IEC/IECFoundryDrive.h C64/IEC/IECFoundryDrive.cpp
     C64/IEC/IECFoundryDisk.h C64/IEC/IECFoundryDisk.cpp
     C64/IEC/IECFoundryDiskConfiguration.h
 
