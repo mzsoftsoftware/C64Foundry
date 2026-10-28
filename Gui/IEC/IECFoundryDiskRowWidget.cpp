@@ -43,6 +43,20 @@ void IECFoundryDiskRowWidget::applyConfiguration(const IECDeviceConfiguration& c
     setPowerButtonChecked(ptrDiskConfiguration->enabled());
     setDeviceNumberLabel(ui->label_DeviceNumber, ptrDiskConfiguration->deviceNumber());
     ui->label_DeviceType->setText(tr("Foundry Disk"));
+
+    const QString fileName = ptrDiskConfiguration->imageFileName();
+    if (fileName.isEmpty())
+    {
+        ui->toolButton_DiskName->setText(tr("No disk"));
+        ui->toolButton_DiskName->setToolTip(QString());
+    }
+    else
+    {
+        const QFileInfo fileInfo(fileName);
+        ui->toolButton_DiskName->setText(fileInfo.fileName());
+        ui->toolButton_DiskName->setToolTip(fileName);
+    }
+    ui->toolButton_Eject->setEnabled(!fileName.isEmpty() && !m_bBusy);
 }
 
 void IECFoundryDiskRowWidget::setPowerButtonChecked(bool checked)
@@ -73,14 +87,38 @@ void IECFoundryDiskRowWidget::on_toolButton_Power_toggled(bool checked)
     requestPowerChange(checked);
 }
 
+
 void IECFoundryDiskRowWidget::on_toolButton_Disk_clicked()
 {
-    // Einlegen eines Disk-Images wird im nächsten Schritt implementiert.
+    if (configuration() == nullptr)
+        return;
+
+    const QString fileName = QFileDialog::getOpenFileName(this, tr("Insert Disk Image"), QString(), tr("Disk Images (*);;All Files (*)"));
+    if (fileName.isEmpty())
+        return;
+
+    const IECFoundryDiskConfiguration* ptrDiskConfiguration = dynamic_cast<const IECFoundryDiskConfiguration*>(configuration());
+    if (ptrDiskConfiguration == nullptr)
+        return;
+
+    IECFoundryDiskConfiguration updatedConfiguration = *ptrDiskConfiguration;
+    updatedConfiguration.setImageFileName(fileName);
+
+    requestSetConfiguration(updatedConfiguration);
 }
+
 
 void IECFoundryDiskRowWidget::on_toolButton_Eject_clicked()
 {
-    // Auswerfen einer Disk wird im nächsten Schritt implementiert.
+    const IECFoundryDiskConfiguration* ptrDiskConfiguration = dynamic_cast<const IECFoundryDiskConfiguration*>(configuration());
+
+    if (ptrDiskConfiguration == nullptr || ptrDiskConfiguration->imageFileName().isEmpty())
+        return;
+
+    IECFoundryDiskConfiguration updatedConfiguration = *ptrDiskConfiguration;
+    updatedConfiguration.setImageFileName(QString());
+
+    requestSetConfiguration(updatedConfiguration);
 }
 
 void IECFoundryDiskRowWidget::on_toolButton_DiskName_clicked()

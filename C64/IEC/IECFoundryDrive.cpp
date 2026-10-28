@@ -1,7 +1,7 @@
 #include "IECFoundryDrive.h"
 
 #include <QFile>
-#include <QFileInfo>
+#include <QSaveFile>
 
 #include "IECFoundryDisk.h"
 
@@ -11,7 +11,6 @@ struct IECFoundryDrive::DriveState
     IECFoundryDisk* ptrDisk = nullptr;
     QString imageFileName;
     QByteArray imageData;
-    bool imageHasErrorBytes = false;
     bool imageModified = false;
 };
 int IECFoundryDrive::sectorsOnTrack(int track)
@@ -114,18 +113,99 @@ bool IECFoundryDrive::hasDisk(quint8 deviceNumber) const
 
 bool IECFoundryDrive::insertImage(quint8 deviceNumber, const QString& fileName)
 {
-    Q_UNUSED(deviceNumber);
-    Q_UNUSED(fileName);
-    return false;
+    DriveState* ptrState = m_drives.value(deviceNumber, nullptr);
+    if (ptrState == nullptr || ptrState->ptrDisk == nullptr || fileName.isEmpty())
+        return false;
+    if (ptrState->imageFileName == fileName && !ptrState->imageData.isNull())
+        return true;
+
+    QFile file(fileName);
+    if (!file.open(QIODevice::ReadOnly))
+        return false;
+    const QByteArray imageData = file.readAll();
+    if (file.error() != QFileDevice::NoError)
+        return false;
+
+    ptrState->imageFileName = fileName;
+    ptrState->imageData = imageData;
+    ptrState->imageModified = false;
+
+    return true;
 }
 bool IECFoundryDrive::ejectImage(quint8 deviceNumber)
 {
-    Q_UNUSED(deviceNumber);
-    return false;
+    DriveState* ptrState = m_drives.value(deviceNumber, nullptr);
+
+    if (ptrState == nullptr || ptrState->ptrDisk == nullptr)
+        return false;
+
+    ptrState->imageFileName.clear();
+    ptrState->imageData.clear();
+    ptrState->imageModified = false;
+
+    return true;
 }
 bool IECFoundryDrive::saveImage(quint8 deviceNumber)
 {
+    DriveState* ptrState = m_drives.value(deviceNumber, nullptr);
+
+    if (ptrState == nullptr || ptrState->ptrDisk == nullptr ||
+        ptrState->imageFileName.isEmpty() || ptrState->imageData.isNull())
+    {
+        return false;
+    }
+
+    QSaveFile file(ptrState->imageFileName);
+    if (!file.open(QIODevice::WriteOnly))
+        return false;
+    if (file.write(ptrState->imageData) != ptrState->imageData.size())
+    {
+        file.cancelWriting();
+        return false;
+    }
+    if (!file.commit())
+        return false;
+
+    ptrState->imageModified = false;
+    return true;
+}
+
+bool IECFoundryDrive::hasImage(quint8 deviceNumber) const
+{
+    const DriveState* ptrState = m_drives.value(deviceNumber, nullptr);
+
+    return ptrState != nullptr &&
+           ptrState->ptrDisk != nullptr &&
+           !ptrState->imageFileName.isEmpty() &&
+           !ptrState->imageData.isNull();
+}
+QString IECFoundryDrive::imageFileName(quint8 deviceNumber) const
+{
+    const DriveState* ptrState = m_drives.value(deviceNumber, nullptr);
+
+    if (ptrState == nullptr || ptrState->ptrDisk == nullptr)
+        return QString();
+
+    return ptrState->imageFileName;
+}
+
+bool IECFoundryDrive::readSector(quint8 deviceNumber, quint8 track, quint8 sector, QByteArray& data)
+{
     Q_UNUSED(deviceNumber);
+    Q_UNUSED(track);
+    Q_UNUSED(sector);
+    Q_UNUSED(data);
+
     return false;
 }
 
+
+bool IECFoundryDrive::writeSector(quint8 deviceNumber, quint8 track, quint8 sector, const QByteArray& data)
+{
+    Q_UNUSED(deviceNumber);
+    Q_UNUSED(track);
+    Q_UNUSED(sector);
+    Q_UNUSED(data);
+
+    return false;
+}
