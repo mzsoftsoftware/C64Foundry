@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>ASCII Printer Settings</string>
+   <string>Foundry Disk Settings</string>
   </property>
   <layout class="QFormLayout" name="formLayout">
    <item row="0" column="0">

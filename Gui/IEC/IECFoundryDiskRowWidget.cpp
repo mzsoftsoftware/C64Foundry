@@ -4,14 +4,19 @@
 #include <QDialog>
 #include <QSignalBlocker>
 
+#include "C64/IEC/IECFoundryDiskConfiguration.h"
 #include "Emulator/EmulatorController.h"
 #include "Emulator/EmulatorResponse.h"
+#include "Gui/IEC/IECFoundryDiskSettingsDialog.h"
+
 
 IECFoundryDiskRowWidget::IECFoundryDiskRowWidget(QWidget* parent)
     : IECDeviceRowWidget(parent)
     , ui(new Ui::IECFoundryDiskRowWidget)
 {
     ui->setupUi(this);
+
+    ui->widget_ActivityLED->setLEDCount(2);
 }
 
 IECFoundryDiskRowWidget::~IECFoundryDiskRowWidget()
@@ -24,13 +29,18 @@ void IECFoundryDiskRowWidget::onControllerSet()
     // Hier kommen später laufwerksspezifische Controller-Signale hinzu.
 }
 
-void IECFoundryDiskRowWidget::applyConfiguration(
-    const IECDeviceConfiguration& configuration)
+void IECFoundryDiskRowWidget::applyConfiguration(const IECDeviceConfiguration& configuration)
 {
-    Q_UNUSED(configuration)
+    if (configuration.type() != IECDeviceType::FoundryDisk)
+        return;
 
-    // Die konkrete Laufwerkskonfiguration wird ergänzt, sobald
-    // IECDeviceType und die passende Konfigurationsklasse existieren.
+    const IECFoundryDiskConfiguration* ptrDiskConfiguration = dynamic_cast<const IECFoundryDiskConfiguration*>(&configuration);
+    if (ptrDiskConfiguration == nullptr)
+        return;
+
+    setPowerButtonChecked(ptrDiskConfiguration->enabled());
+    setDeviceNumberLabel(ui->label_DeviceNumber, ptrDiskConfiguration->deviceNumber());
+    ui->label_DeviceType->setText(tr("Foundry Disk"));
 }
 
 void IECFoundryDiskRowWidget::setPowerButtonChecked(bool checked)
@@ -95,7 +105,42 @@ void IECFoundryDiskRowWidget::openSettingsDialog(
 void IECFoundryDiskRowWidget::showSettingsDialog(
     const EmulatorResponseIEC* ptrResponse)
 {
-    Q_UNUSED(ptrResponse)
+    if (ptrResponse == nullptr || configuration() == nullptr)
+    {
+        setOperationState(IECOperationStatusWidget::State::Failed,
+                          tr("Invalid IEC configuration"));
+        return;
+    }
 
-    // Der Einstellungsdialog benötigt zuerst die Laufwerkskonfiguration.
+    const IECFoundryDiskConfiguration* ptrDiskConfiguration =
+        dynamic_cast<const IECFoundryDiskConfiguration*>(configuration());
+
+    if (ptrDiskConfiguration == nullptr)
+    {
+        setOperationState(IECOperationStatusWidget::State::Failed,
+                          tr("Invalid Foundry Disk configuration"));
+        return;
+    }
+
+    QList<quint8> availableDeviceNumbers =
+        ptrResponse->supportedDeviceNumbers().value(IECDeviceType::FoundryDisk);
+
+    const quint8 currentDeviceNumber = ptrDiskConfiguration->deviceNumber();
+
+    if (!availableDeviceNumbers.contains(currentDeviceNumber))
+        availableDeviceNumbers.append(currentDeviceNumber);
+
+    IECFoundryDiskSettingsDialog dialog(this);
+    dialog.setConfiguration(*ptrDiskConfiguration, availableDeviceNumbers);
+
+    if (dialog.exec() != QDialog::Accepted)
+    {
+        setOperationState(IECOperationStatusWidget::State::Idle);
+        return;
+    }
+
+    const IECFoundryDiskConfiguration updatedConfiguration =
+        dialog.configuration();
+
+    requestSetConfiguration(updatedConfiguration);
 }

@@ -49,7 +49,11 @@
     </layout>
    </item>
    <item>
-    <widget class="QListWidget" name="listWidget_Devices"/>
+    <widget class="QListWidget" name="listWidget_Devices">
+     <property name="horizontalScrollBarPolicy">
+      <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOff</enum>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>

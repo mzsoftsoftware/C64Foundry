@@ -1,6 +1,8 @@
 #include "IECDeviceRowWidget.h"
 
 #include <QSignalBlocker>
+#include <QFont>
+#include <QLabel>
 
 #include "Emulator/EmulatorController.h"
 
@@ -121,6 +123,21 @@ void IECDeviceRowWidget::requestSetConfiguration(
     {
         m_ptrPendingConfiguration.clear();
     }
+}
+
+void IECDeviceRowWidget::setDeviceNumberLabel(
+    QLabel* ptrLabel, quint8 deviceNumber)
+{
+    if (ptrLabel == nullptr)
+        return;
+
+    QFont font = ptrLabel->font();
+    font.setStyleHint(QFont::Monospace);
+    font.setFamily(QStringLiteral("Monospace"));
+    ptrLabel->setFont(font);
+
+    ptrLabel->setText(
+        QStringLiteral("#%1").arg(deviceNumber, 2, 10, QChar('0')));
 }
 
 void IECDeviceRowWidget::finishRequest()

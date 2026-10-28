@@ -9,6 +9,8 @@
 #include "Emulator/EmulatorResponse.h"
 #include "Emulator/EmulatorIECDeviceEvent.h"
 
+class QLabel;
+
 class EmulatorController;
 class EmulatorResponseIEC;
 
@@ -42,6 +44,7 @@ protected:
     void requestSettings();
     void requestRemove();
     void requestSetConfiguration(const IECDeviceConfiguration& configuration);
+    void setDeviceNumberLabel(QLabel* ptrLabel, quint8 deviceNumber);
 
     virtual void setOperationState(IECOperationStatusWidget::State state, const QString& message = QString()) = 0;
     virtual void applyConfiguration(const IECDeviceConfiguration& configuration) = 0;

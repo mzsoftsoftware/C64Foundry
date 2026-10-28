@@ -28,23 +28,17 @@ void IECAsciiPrinterRowWidget::onControllerSet()
     connect(m_ptrController, &EmulatorController::printerOutputChanged, this, &IECAsciiPrinterRowWidget::onPrinterOutputChanged);
 }
 
-void IECAsciiPrinterRowWidget::applyConfiguration(
-    const IECDeviceConfiguration& configuration)
+void IECAsciiPrinterRowWidget::applyConfiguration(const IECDeviceConfiguration& configuration)
 {
     if (configuration.type() != IECDeviceType::PrinterASCII)
         return;
 
-    const IECAsciiPrinterConfiguration* ptrPrinterConfiguration =
-        dynamic_cast<const IECAsciiPrinterConfiguration*>(&configuration);
-
+    const IECAsciiPrinterConfiguration* ptrPrinterConfiguration = dynamic_cast<const IECAsciiPrinterConfiguration*>(&configuration);
     if (ptrPrinterConfiguration == nullptr)
         return;
 
-    setPowerButtonChecked(ptrPrinterConfiguration->enabled());
-
-    ui->label_DeviceNumber->setText(
-        QStringLiteral("#%1").arg(ptrPrinterConfiguration->deviceNumber()));
-
+    setPowerButtonChecked(ptrPrinterConfiguration->enabled());    
+    setDeviceNumberLabel(ui->label_DeviceNumber, ptrPrinterConfiguration->deviceNumber());
     ui->label_DeviceType->setText(tr("ASCII Printer"));
 }
 
