@@ -73,22 +73,6 @@ bool MainWindow::initialize()
         return false;
     }
 
-    C64PRGFile prgFile;
-
-    if (prgFile.load(QStringLiteral("/tmp/BasicSys.prg")))
-    {
-        qDebug() << "PRG load address:" << Qt::hex << prgFile.loadAddress();
-        qDebug() << "PRG data size:" << Qt::dec << prgFile.data().size();
-        qDebug() << "BASIC detected:" << prgFile.isBasicProgram();
-
-        if (prgFile.isBasicProgram())
-            qDebug() << "BASIC end address:" << Qt::hex << prgFile.basicEndAddress();
-    }
-    else
-    {
-        qWarning() << "PRG loading failed:" << prgFile.errorString();
-    }
-
     return true;
 }
 
