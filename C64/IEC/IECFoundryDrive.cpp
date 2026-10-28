@@ -53,15 +53,16 @@ void IECFoundryDrive::unregisterDisk(IECFoundryDisk* ptrDisk)
 {
     Q_ASSERT(ptrDisk);
 
-    DriveState* ptrState = m_drives.value(ptrDisk->deviceNumber(), nullptr);
+    const quint8 deviceNumber = ptrDisk->deviceNumber();
+    DriveState* ptrState = m_drives.value(deviceNumber, nullptr);
     if (ptrState == nullptr)
         return;
 
     if (ptrState->ptrDisk != ptrDisk)
         return;
 
-    // Den Laufwerkszustand behalten, aber die aktive IEC-Disk lösen.
-    ptrState->ptrDisk = nullptr;
+    m_drives.remove(deviceNumber);
+    delete ptrState;
 }
 
 
@@ -82,3 +83,21 @@ bool IECFoundryDrive::hasDisk(quint8 deviceNumber) const
     const DriveState* ptrState = m_drives.value(deviceNumber, nullptr);
     return ptrState != nullptr && ptrState->ptrDisk != nullptr;
 }
+
+bool IECFoundryDrive::insertImage(quint8 deviceNumber, const QString& fileName)
+{
+    Q_UNUSED(deviceNumber);
+    Q_UNUSED(fileName);
+    return false;
+}
+bool IECFoundryDrive::ejectImage(quint8 deviceNumber)
+{
+    Q_UNUSED(deviceNumber);
+    return false;
+}
+bool IECFoundryDrive::saveImage(quint8 deviceNumber)
+{
+    Q_UNUSED(deviceNumber);
+    return false;
+}
+

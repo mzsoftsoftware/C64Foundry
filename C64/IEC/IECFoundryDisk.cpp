@@ -22,11 +22,20 @@ QList<quint8> IECFoundryDisk::supportedDeviceNumbers()
 
 bool IECFoundryDisk::setConfiguration(const IECFoundryDiskConfiguration& configuration)
 {
+    Q_ASSERT(m_ptrDrive);
+
     if (configuration.type() != IECDeviceType::FoundryDisk)
         return false;
 
     if (configuration.deviceNumber() != deviceNumber())
         return false;
+
+    const QString& fileName = configuration.imageFileName();
+    if (!fileName.isEmpty())
+    {
+        if (!m_ptrDrive->insertImage(deviceNumber(), fileName))
+            return false;
+    }
 
     return true;
 }

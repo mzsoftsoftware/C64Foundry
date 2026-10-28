@@ -2,6 +2,8 @@
 
 #include "IECDeviceConfiguration.h"
 
+#include <QString>
+
 
 class IECFoundryDiskConfiguration : public IECDeviceConfiguration
 {
@@ -16,6 +18,9 @@ public:
         return new IECFoundryDiskConfiguration(*this);
     }
 
+    QString imageFileName() const { return m_imageFileName; }
+    void setImageFileName(const QString& fileName) { m_imageFileName = fileName; }
+
 protected:
     bool equals(const IECDeviceConfiguration& other) const override
     {
@@ -27,8 +32,9 @@ protected:
         if (ptrOther == nullptr)
             return false;
 
-        return true;
+        return m_imageFileName == ptrOther->m_imageFileName;
     }
 
 private:
+    QString m_imageFileName;
 };
