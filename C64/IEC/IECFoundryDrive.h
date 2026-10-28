@@ -34,6 +34,10 @@ public:
     bool writeSector(quint8 deviceNumber, quint8 track, quint8 sector, const QByteArray& data);
 
 private:
+    int sectorsOnTrack(int track);
+    int sectorOffset(int track, int sector);
+
+private:
     struct DriveState;
 
     QHash<quint8, DriveState*> m_drives;

@@ -9,7 +9,35 @@
 struct IECFoundryDrive::DriveState
 {
     IECFoundryDisk* ptrDisk = nullptr;
+    QString imageFileName;
+    QByteArray imageData;
+    bool imageHasErrorBytes = false;
+    bool imageModified = false;
 };
+int IECFoundryDrive::sectorsOnTrack(int track)
+{
+    if (track < 1 || track > 35)
+        return 0;
+    if (track <= 17)
+        return 21;
+    if (track <= 24)
+        return 19;
+    if (track <= 30)
+        return 18;
+    return 17;
+}
+int IECFoundryDrive::sectorOffset(int track, int sector)
+{
+    if (track < 1 || track > 35)
+        return -1;
+    const int sectors = sectorsOnTrack(track);
+    if (sector < 0 || sector >= sectors)
+        return -1;
+    int offset = 0;
+    for (int currentTrack = 1; currentTrack < track; ++currentTrack)
+        offset += sectorsOnTrack(currentTrack);
+    return (offset + sector) * 256;
+}
 
 IECFoundryDrive::IECFoundryDrive()
 {

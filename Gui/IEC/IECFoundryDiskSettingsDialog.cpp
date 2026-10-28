@@ -27,10 +27,11 @@ void IECFoundryDiskSettingsDialog::setConfiguration(const IECFoundryDiskConfigur
     {
         ui->comboBox_DeviceNumber->addItem(QStringLiteral("#%1").arg(deviceNumber), static_cast<int>(deviceNumber));
     }
-
     const int index = ui->comboBox_DeviceNumber->findData(static_cast<int>(configuration.deviceNumber()));
     if (index >= 0)
         ui->comboBox_DeviceNumber->setCurrentIndex(index);
+
+    ui->checkBox_SaveCurrentDiskOnExit->setChecked(configuration.saveCurrentDiskOnExit());
 
     ui->buttonBox->button(QDialogButtonBox::Ok)->setEnabled(ui->comboBox_DeviceNumber->count() > 0);
 }
@@ -41,6 +42,8 @@ IECFoundryDiskConfiguration IECFoundryDiskSettingsDialog::configuration() const
 
     if (ui->comboBox_DeviceNumber->currentIndex() >= 0)
         result.setDeviceNumber(static_cast<quint8>(ui->comboBox_DeviceNumber->currentData().toUInt()));
+
+    result.setSaveCurrentDiskOnExit(ui->checkBox_SaveCurrentDiskOnExit->isChecked());
 
     return result;
 }

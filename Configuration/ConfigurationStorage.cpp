@@ -274,7 +274,12 @@ bool ConfigurationStorage::loadIECDevices(QSettings& settings, QList<QSharedPoin
             }
 
             IECFoundryDiskConfiguration* ptrDiskConfiguration = new IECFoundryDiskConfiguration();
-
+            const bool saveCurrentDiskOnExit = settings.value(QStringLiteral("SaveCurrentDiskOnExit"), false).toBool();
+            ptrDiskConfiguration->setSaveCurrentDiskOnExit(saveCurrentDiskOnExit);
+            if (saveCurrentDiskOnExit)
+            {
+                ptrDiskConfiguration->setImageFileName(settings.value(QStringLiteral("ImageFileName")).toString());
+            }
             ptrConfiguration.reset(ptrDiskConfiguration);
         }
         else
@@ -339,7 +344,14 @@ void ConfigurationStorage::saveIECDevices(QSettings& settings, const QList<QShar
                 break;
 
             settings.setValue(QStringLiteral("Type"), QStringLiteral("FoundryDisk"));
-
+            const bool saveCurrentDiskOnExit = ptrDiskConfiguration->saveCurrentDiskOnExit();
+            settings.setValue(QStringLiteral("SaveCurrentDiskOnExit"), saveCurrentDiskOnExit);
+            // Alte Image-Pfade bei deaktivierter Option ausdrücklich entfernen.
+            settings.remove(QStringLiteral("ImageFileName"));
+            if (saveCurrentDiskOnExit && !ptrDiskConfiguration->imageFileName().isEmpty())
+            {
+                settings.setValue(QStringLiteral("ImageFileName"), ptrDiskConfiguration->imageFileName());
+            }
             break;
         }
         }

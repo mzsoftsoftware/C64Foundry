@@ -3,6 +3,8 @@
 
 #include <QDialog>
 #include <QSignalBlocker>
+#include <QFileDialog>
+#include <QFileInfo>
 
 #include "C64/IEC/IECFoundryDiskConfiguration.h"
 #include "Emulator/EmulatorController.h"
