@@ -34,7 +34,7 @@ public:
     bool canAddDevice(IECDeviceType type) const;
     DeviceId addDevice(IECDeviceType type);
     bool removeDevice(DeviceId id, IECDevice*& ptrRemovedDevice);
-    bool setConfiguration(const IECDeviceConfiguration& configuration, IECDevice*& ptrRemovedDevice);
+    bool setConfiguration(const IECDeviceConfiguration& configuration, IECDevice*& ptrRemovedDevice, QString* operationMessage = nullptr);
 
     IECDevice* device(DeviceId id) const;
 
@@ -53,7 +53,7 @@ private:
     bool isDeviceNumberReserved(quint8 deviceNumber, DeviceId excludedId = 0) const;
 
     ConfigurationPtr createConfiguration(IECDeviceType type) const;
-    IECDevice* createDevice(const IECDeviceConfiguration& configuration) const;
+    IECDevice* createDevice(const IECDeviceConfiguration& configuration, QString* operationMessage = nullptr) const;
 
 private:
     IECBus* m_ptrBus = nullptr;

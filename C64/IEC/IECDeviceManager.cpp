@@ -232,7 +232,7 @@ IECDeviceManager::ConfigurationPtr IECDeviceManager::createConfiguration(IECDevi
 }
 
 
-IECDevice* IECDeviceManager::createDevice(const IECDeviceConfiguration& configuration) const
+IECDevice* IECDeviceManager::createDevice(const IECDeviceConfiguration& configuration, QString* operationMessage) const
 {
     if (m_ptrBus == nullptr)
         return nullptr;
@@ -265,7 +265,7 @@ IECDevice* IECDeviceManager::createDevice(const IECDeviceConfiguration& configur
 
         IECFoundryDisk* ptrDisk = new IECFoundryDisk(m_ptrBus, m_ptrFoundryDrive, configuration.deviceNumber());
 
-        if (!ptrDisk->setConfiguration(*ptrConfiguration))
+        if (!ptrDisk->setConfiguration(*ptrConfiguration, operationMessage))
         {
             delete ptrDisk;
             return nullptr;
@@ -354,8 +354,11 @@ bool IECDeviceManager::removeDevice(DeviceId id, IECDevice*& ptrRemovedDevice)
 }
 
 
-bool IECDeviceManager::setConfiguration(const IECDeviceConfiguration& configuration, IECDevice*& ptrRemovedDevice)
+bool IECDeviceManager::setConfiguration(const IECDeviceConfiguration& configuration, IECDevice*& ptrRemovedDevice, QString* operationMessage)
 {
+    if (operationMessage != nullptr)
+        operationMessage->clear();
+
     ptrRemovedDevice = nullptr;
 
     DeviceEntry* ptrEntry = findEntry(configuration.id());
@@ -413,7 +416,7 @@ bool IECDeviceManager::setConfiguration(const IECDeviceConfiguration& configurat
                 if (ptrDisk == nullptr || ptrDiskConfiguration == nullptr)
                     return false;
 
-                if (!ptrDisk->setConfiguration(*ptrDiskConfiguration))
+                if (!ptrDisk->setConfiguration(*ptrDiskConfiguration, operationMessage))
                     return false;
 
                 break;

@@ -3,6 +3,7 @@
 #include <QSignalBlocker>
 #include <QFont>
 #include <QLabel>
+#include <QMessageBox>
 
 #include "Emulator/EmulatorController.h"
 
@@ -151,6 +152,12 @@ void IECDeviceRowWidget::onRequestDone(QSharedPointer<EmulatorResponse> response
 {
     if (response.isNull() || m_requestId == 0 || response->id() != m_requestId)
         return;
+
+    const EmulatorResponseIEC* ptrIECResponse = dynamic_cast<const EmulatorResponseIEC*>(response.data());
+    if (ptrIECResponse != nullptr && !ptrIECResponse->message().isEmpty())
+    {
+        QMessageBox::warning(this, tr("IEC device warning"), ptrIECResponse->message());
+    }
 
     const RequestPurpose purpose = m_requestPurpose;
 

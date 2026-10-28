@@ -55,7 +55,7 @@ private:
 
     void registerIECDevices();
     void unregisterIECDevices();
-    bool setIECDeviceConfiguration(const IECDeviceConfiguration& configuration);
+    bool setIECDeviceConfiguration(const IECDeviceConfiguration& configuration, QString* operationMessage = nullptr);
     bool removeIECDevice(IECDeviceConfiguration::DeviceId id);
 
     void invalidatePrinterOutputRevision(IECDeviceConfiguration::DeviceId deviceId);

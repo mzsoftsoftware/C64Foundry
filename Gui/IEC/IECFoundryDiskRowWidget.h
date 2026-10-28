@@ -15,6 +15,8 @@ public:
     explicit IECFoundryDiskRowWidget(QWidget* parent = nullptr);
     ~IECFoundryDiskRowWidget() override;
 
+    void setImageLoaded(bool loaded);
+
 protected:
     void onControllerSet() override;
     void setOperationState(IECOperationStatusWidget::State state, const QString& message = QString()) override;
@@ -34,5 +36,7 @@ private slots:
 private:
     void showSettingsDialog(const EmulatorResponseIEC* ptrResponse);
 
+private:
     Ui::IECFoundryDiskRowWidget* ui = nullptr;
+    bool m_bImageLoaded = false;
 };

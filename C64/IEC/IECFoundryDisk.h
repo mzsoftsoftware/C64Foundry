@@ -13,10 +13,12 @@ public:
     explicit IECFoundryDisk(IECBus* ptrBus, IECFoundryDrive* ptrDrive, quint8 deviceNumber = 8);
     virtual ~IECFoundryDisk();
 
+    bool setConfiguration(const IECFoundryDiskConfiguration& configuration, QString* errorMessage = nullptr);
+    bool hasImage() const;
+
     void reset() override;
     void clock() override;
 
-    bool setConfiguration(const IECFoundryDiskConfiguration& configuration, QString* errorMessage = nullptr);
 
 private:
     IECFoundryDrive* m_ptrDrive = nullptr;

@@ -9,6 +9,7 @@
 
 #include "C64/IEC/IECDeviceManager.h"
 #include "C64/IEC/IECFoundryDrive.h"
+#include "C64/IEC/IECFoundryDisk.h"
 #include "C64/IEC/IECDevice.h"
 #include "C64/IEC/IECPrinter.h"
 
@@ -424,6 +425,18 @@ QSharedPointer<EmulatorResponse> EmulatorWorker::processIECRequest(const Emulato
     case EmulatorRequest::Type::GetIECConfigurations:
     {
         response->setConfigurations(m_ptrIECDeviceManager->configurations());
+
+        for (const IECDeviceManager::ConfigurationPtr& ptrConfiguration : m_ptrIECDeviceManager->configurations())
+        {
+            if (ptrConfiguration.isNull() || ptrConfiguration->type() != IECDeviceType::FoundryDisk)
+            {
+                continue;
+            }
+
+            IECFoundryDisk* ptrDisk = dynamic_cast<IECFoundryDisk*>(m_ptrIECDeviceManager->device(ptrConfiguration->id()));
+            response->setDiskImageLoaded(ptrConfiguration->id(), ptrDisk != nullptr && ptrDisk->hasImage());
+        }
+
         response->setAvailableDeviceTypes(m_ptrIECDeviceManager->availableDeviceTypes());
         response->setAddableDeviceTypes(m_ptrIECDeviceManager->addableDeviceTypes());
 
@@ -473,13 +486,22 @@ QSharedPointer<EmulatorResponse> EmulatorWorker::processIECRequest(const Emulato
 
         const bool bConfigurationChanged = *ptrCurrentConfiguration != requestedConfiguration;
 
-        if (setIECDeviceConfiguration(requestedConfiguration))
+        QString operationMessage;
+        if (setIECDeviceConfiguration(requestedConfiguration, &operationMessage))
         {
             response->setDeviceId(requestedConfiguration.id());
+            response->setMessage(operationMessage);
+
+            IECFoundryDisk* ptrDisk = dynamic_cast<IECFoundryDisk*>(m_ptrIECDeviceManager->device(requestedConfiguration.id()));
+            if (ptrDisk != nullptr)
+            {
+                response->setDiskImageLoaded(requestedConfiguration.id(), ptrDisk->hasImage());
+            }
+
             result = EmulatorResponse::Result::Success;
 
             if (bConfigurationChanged)
-                publishIECDeviceEvent(EmulatorIECDeviceEvent::Type::ConfigurationChanged, requestedConfiguration.id());
+                publishIECDeviceEvent(EmulatorIECDeviceEvent::Type::ConfigurationChanged, requestedConfiguration.id());            
         }
 
         break;
@@ -607,12 +629,12 @@ void EmulatorWorker::unregisterIECDevices()
     }
 }
 
-bool EmulatorWorker::setIECDeviceConfiguration(const IECDeviceConfiguration& configuration)
+bool EmulatorWorker::setIECDeviceConfiguration(const IECDeviceConfiguration& configuration, QString* operationMessage)
 {
     IECDevice* ptrPreviousDevice = m_ptrIECDeviceManager->device(configuration.id());
     IECDevice* ptrRemovedDevice = nullptr;
 
-    if (!m_ptrIECDeviceManager->setConfiguration(configuration, ptrRemovedDevice))
+    if (!m_ptrIECDeviceManager->setConfiguration(configuration, ptrRemovedDevice, operationMessage))
         return false;
 
     if (ptrRemovedDevice != nullptr)

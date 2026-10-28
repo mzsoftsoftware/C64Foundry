@@ -4,6 +4,11 @@
 #include "IECFoundryDrive.h"
 
 
+QList<quint8> IECFoundryDisk::supportedDeviceNumbers()
+{
+    return { 8, 9, 10, 11 };
+}
+
 IECFoundryDisk::IECFoundryDisk(IECBus* ptrBus, IECFoundryDrive* ptrDrive, quint8 deviceNumber)
     : IECDevice(ptrBus, deviceNumber)
     , m_ptrDrive(ptrDrive)
@@ -14,12 +19,6 @@ IECFoundryDisk::~IECFoundryDisk()
 {
     m_ptrDrive->unregisterDisk(this);
 }
-
-QList<quint8> IECFoundryDisk::supportedDeviceNumbers()
-{
-    return { 8, 9, 10, 11 };
-}
-
 
 bool IECFoundryDisk::setConfiguration(const IECFoundryDiskConfiguration& configuration, QString* errorMessage)
 {
@@ -32,6 +31,11 @@ bool IECFoundryDisk::setConfiguration(const IECFoundryDiskConfiguration& configu
         return false;
 
     return m_ptrDrive->insertImage(deviceNumber(), configuration.imageFileName(), errorMessage);
+}
+
+bool IECFoundryDisk::hasImage() const
+{
+    return m_ptrDrive != nullptr && m_ptrDrive->hasImage(deviceNumber());
 }
 
 void IECFoundryDisk::reset()

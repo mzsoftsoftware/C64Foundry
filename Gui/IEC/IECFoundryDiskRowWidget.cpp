@@ -26,6 +26,14 @@ IECFoundryDiskRowWidget::~IECFoundryDiskRowWidget()
     delete ui;
 }
 
+void IECFoundryDiskRowWidget::setImageLoaded(bool loaded)
+{
+    m_bImageLoaded = loaded;
+
+    if (configuration() != nullptr)
+        applyConfiguration(*configuration());
+}
+
 void IECFoundryDiskRowWidget::onControllerSet()
 {
     // Hier kommen später laufwerksspezifische Controller-Signale hinzu.
@@ -48,15 +56,28 @@ void IECFoundryDiskRowWidget::applyConfiguration(const IECDeviceConfiguration& c
     if (fileName.isEmpty())
     {
         ui->toolButton_DiskName->setText(tr("No disk"));
-        ui->toolButton_DiskName->setToolTip(QString());
+        ui->toolButton_DiskName->setToolTip(tr("No disk image configured"));
     }
     else
     {
         const QFileInfo fileInfo(fileName);
-        ui->toolButton_DiskName->setText(fileInfo.fileName());
-        ui->toolButton_DiskName->setToolTip(fileName);
+
+        QString displayName = fileInfo.fileName();
+
+        if (!m_bImageLoaded)
+            displayName += tr(" (not loaded)");
+
+        ui->toolButton_DiskName->setText(displayName);
+
+        ui->toolButton_DiskName->setToolTip(
+            QStringLiteral("%1\n%2")
+                .arg(fileName,
+                     m_bImageLoaded
+                         ? tr("Image loaded")
+                         : tr("Image configured, but not loaded")));
     }
-    ui->toolButton_Eject->setEnabled(!fileName.isEmpty() && !m_bBusy);
+
+    ui->toolButton_Eject->setEnabled(m_bImageLoaded && !m_bBusy);
 }
 
 void IECFoundryDiskRowWidget::setPowerButtonChecked(bool checked)

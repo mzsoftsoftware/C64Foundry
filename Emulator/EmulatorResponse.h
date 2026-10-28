@@ -79,10 +79,17 @@ public:
     const QHash<IECDeviceType, QList<quint8>>& supportedDeviceNumbers() const           { return m_supportedDeviceNumbers; }
     void setSupportedDeviceNumbers(IECDeviceType type, const QList<quint8>& numbers)    { m_supportedDeviceNumbers.insert(type, numbers); }
 
+    const QString& message() const                                                      { return m_message; }
+    void setMessage(const QString& message)                                             { m_message = message; }
+    const QHash<IECDeviceConfiguration::DeviceId, bool>& diskImageLoaded() const        { return m_diskImageLoaded; }
+    void setDiskImageLoaded(IECDeviceConfiguration::DeviceId deviceId, bool loaded)     { m_diskImageLoaded.insert(deviceId, loaded);
+    }
 private:
     IECDeviceConfiguration::DeviceId m_deviceId = 0;
     QList<ConfigurationPtr> m_configurations;
     QList<IECDeviceType> m_availableDeviceTypes;
     QList<IECDeviceType> m_addableDeviceTypes;
     QHash<IECDeviceType, QList<quint8>> m_supportedDeviceNumbers;
+    QString m_message;
+    QHash<IECDeviceConfiguration::DeviceId, bool> m_diskImageLoaded;
 };

@@ -209,7 +209,7 @@ void IECDeviceManagerWidget::onRequestDone(QSharedPointer<EmulatorResponse> resp
             m_availableDeviceTypes = ptrResponse->availableDeviceTypes();
             m_addableDeviceTypes = ptrResponse->addableDeviceTypes();
 
-            setConfigurations(ptrResponse->configurations());
+            setConfigurations(ptrResponse->configurations(), ptrResponse->diskImageLoaded());
             updateAddMenu();
 
             bSuccess = true;
@@ -278,9 +278,7 @@ IECDeviceRowWidget* IECDeviceManagerWidget::createDeviceRow(IECDeviceType type)
     return ptrRow;
 }
 
-
-void IECDeviceManagerWidget::setConfigurations(
-    const QList<IECDeviceManager::ConfigurationPtr>& configurations)
+void IECDeviceManagerWidget::setConfigurations(const QList<IECDeviceManager::ConfigurationPtr>& configurations, const QHash<IECDeviceConfiguration::DeviceId, bool>& diskImageLoaded)
 {
     QList<IECDeviceManager::ConfigurationPtr> sortedConfigurations;
 
@@ -328,6 +326,11 @@ void IECDeviceManagerWidget::setConfigurations(
         }
 
         ptrRow->setConfiguration(*ptrConfiguration);
+        IECFoundryDiskRowWidget* ptrDiskRow = dynamic_cast<IECFoundryDiskRowWidget*>(ptrRow);
+        if (ptrDiskRow != nullptr)
+        {
+            ptrDiskRow->setImageLoaded(diskImageLoaded.value(ptrConfiguration->id(), false));
+        }
 
         QListWidgetItem* ptrItem = new QListWidgetItem();
         ptrItem->setData(Qt::UserRole, QVariant::fromValue(ptrConfiguration->id()));

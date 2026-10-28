@@ -37,7 +37,7 @@ private:
     void setupAddMenu();
     void updateAddMenu();
     void refreshConfigurations();
-    void setConfigurations(const QList<IECDeviceManager::ConfigurationPtr>& configurations);
+    void setConfigurations(const QList<IECDeviceManager::ConfigurationPtr>& configurations, const QHash<IECDeviceConfiguration::DeviceId, bool>& diskImageLoaded);
     void clearDeviceRows();
     void clearDeviceList();
     IECDeviceRowWidget* createDeviceRow(IECDeviceType type);
