@@ -39,6 +39,7 @@ private:
     void refreshConfigurations();
     void setConfigurations(const QList<IECDeviceManager::ConfigurationPtr>& configurations);
     void clearDeviceRows();
+    void clearDeviceList();
     IECDeviceRowWidget* createDeviceRow(IECDeviceType type);
     QString deviceTypeName(IECDeviceType type) const;
 

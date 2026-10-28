@@ -342,10 +342,28 @@ void IECDeviceManagerWidget::setConfigurations(
 
 void IECDeviceManagerWidget::clearDeviceRows()
 {
-    ui->listWidget_Devices->clear();
-    m_deviceRows.clear();
+    clearDeviceList();
+
     m_availableDeviceTypes.clear();
     m_addableDeviceTypes.clear();
 
     updateAddMenu();
+}
+
+void IECDeviceManagerWidget::clearDeviceList()
+{
+    for (int index = ui->listWidget_Devices->count() - 1; index >= 0; --index)
+    {
+        QListWidgetItem* ptrItem = ui->listWidget_Devices->item(index);
+        QWidget* ptrWidget = ui->listWidget_Devices->itemWidget(ptrItem);
+
+        ui->listWidget_Devices->removeItemWidget(ptrItem);
+
+        delete ui->listWidget_Devices->takeItem(index);
+
+        if (ptrWidget != nullptr)
+            delete ptrWidget;
+    }
+
+    m_deviceRows.clear();
 }
