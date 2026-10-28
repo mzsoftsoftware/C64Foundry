@@ -8,6 +8,7 @@
 #include "C64/C64Timing.h"
 
 #include "C64/IEC/IECDeviceManager.h"
+#include "C64/IEC/IECFoundryDrive.h"
 #include "C64/IEC/IECDevice.h"
 #include "C64/IEC/IECPrinter.h"
 
@@ -21,7 +22,9 @@ EmulatorWorker::EmulatorWorker(IECBus* ptrIECBus, QObject* parent)
     m_ptrMachine->setIECBus(ptrIECBus);
 
     m_ptrScheduler = new EmulationScheduler(m_ptrMachine);
-    m_ptrIECDeviceManager = new IECDeviceManager(ptrIECBus);
+    m_ptrFoundryDrive = new IECFoundryDrive();
+    m_ptrIECDeviceManager = new IECDeviceManager(ptrIECBus, m_ptrFoundryDrive);
+
 
     qDebug() << "EmulatorWorker: created";
 }
@@ -36,6 +39,7 @@ EmulatorWorker::~EmulatorWorker()
     unregisterIECDevices();
 
     delete m_ptrIECDeviceManager;
+    delete m_ptrFoundryDrive;
     delete m_ptrScheduler;
     delete m_ptrMachine;
 

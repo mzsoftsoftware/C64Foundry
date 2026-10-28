@@ -3,15 +3,16 @@
 #include "IECAsciiPrinter.h"
 #include "IECAsciiPrinterConfiguration.h"
 
+#include "IECFoundryDrive.h"
 #include "IECFoundryDisk.h"
 #include "IECFoundryDiskConfiguration.h"
 
 
-IECDeviceManager::IECDeviceManager(IECBus* ptrBus)
+IECDeviceManager::IECDeviceManager(IECBus* ptrBus, IECFoundryDrive* ptrFoundryDrive)
     : m_ptrBus(ptrBus)
+    , m_ptrFoundryDrive(ptrFoundryDrive)
 {
 }
-
 IECDeviceManager::~IECDeviceManager()
 {
     for (DeviceEntry& entry : m_devices)
@@ -262,7 +263,7 @@ IECDevice* IECDeviceManager::createDevice(const IECDeviceConfiguration& configur
         if (ptrConfiguration == nullptr)
             return nullptr;
 
-        IECFoundryDisk* ptrDisk = new IECFoundryDisk(m_ptrBus, configuration.deviceNumber());
+        IECFoundryDisk* ptrDisk = new IECFoundryDisk(m_ptrBus, m_ptrFoundryDrive, configuration.deviceNumber());
 
         if (!ptrDisk->setConfiguration(*ptrConfiguration))
         {

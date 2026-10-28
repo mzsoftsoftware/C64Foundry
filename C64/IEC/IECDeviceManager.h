@@ -4,9 +4,11 @@
 #include <QSharedPointer>
 #include <QtGlobal>
 
-#include "IECDevice.h"
 #include "IECDeviceConfiguration.h"
-#include "IECBus.h"
+
+class IECBus;
+class IECDevice;
+class IECFoundryDrive;
 
 
 class IECDeviceManager
@@ -15,8 +17,8 @@ public:
     using DeviceId = IECDeviceConfiguration::DeviceId;
     using ConfigurationPtr = QSharedPointer<IECDeviceConfiguration>;
 
-    explicit IECDeviceManager(IECBus* ptrBus);
-    ~IECDeviceManager();
+    explicit IECDeviceManager(IECBus* ptrBus, IECFoundryDrive* ptrFoundryDrive);
+    virtual ~IECDeviceManager();
 
     IECDeviceManager(const IECDeviceManager&) = delete;
     IECDeviceManager& operator=(const IECDeviceManager&) = delete;
@@ -53,7 +55,10 @@ private:
     ConfigurationPtr createConfiguration(IECDeviceType type) const;
     IECDevice* createDevice(const IECDeviceConfiguration& configuration) const;
 
+private:
     IECBus* m_ptrBus = nullptr;
+    IECFoundryDrive* m_ptrFoundryDrive = nullptr;
+
     QList<DeviceEntry> m_devices;
     DeviceId m_nextDeviceId = 1;
 };

@@ -17,6 +17,7 @@
 class C64Machine;
 class IECBus;
 class IECDeviceManager;
+class IECFoundryDrive;
 
 
 class EmulatorWorker : public QObject
@@ -67,6 +68,7 @@ private:
     C64Machine* m_ptrMachine = nullptr;
     EmulationScheduler* m_ptrScheduler = nullptr;
     IECDeviceManager* m_ptrIECDeviceManager = nullptr;
+    IECFoundryDrive* m_ptrFoundryDrive = nullptr;
 
     QHash<IECDeviceConfiguration::DeviceId, quint64> m_printerOutputRevisions;
 

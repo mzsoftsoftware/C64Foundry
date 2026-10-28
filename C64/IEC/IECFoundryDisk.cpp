@@ -1,16 +1,18 @@
 #include "IECFoundryDisk.h"
 
 #include "IECFoundryDiskConfiguration.h"
+#include "IECFoundryDrive.h"
 
 
 IECFoundryDisk::IECFoundryDisk(IECBus* ptrBus, IECFoundryDrive* ptrDrive, quint8 deviceNumber)
     : IECDevice(ptrBus, deviceNumber)
     , m_ptrDrive(ptrDrive)
 {
+    m_ptrDrive->registerDisk(this);
 }
-
 IECFoundryDisk::~IECFoundryDisk()
 {
+    m_ptrDrive->unregisterDisk(this);
 }
 
 QList<quint8> IECFoundryDisk::supportedDeviceNumbers()
