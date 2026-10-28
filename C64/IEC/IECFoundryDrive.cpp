@@ -122,18 +122,9 @@ bool IECFoundryDrive::insertImage(quint8 deviceNumber, const QString& fileName, 
         errorMessage->clear();
 
     // Ein bereits geladenes Image wird immer zuerst ausgeworfen.
+    // Das Speichern übernimmt ausschließlich ejectImage().
     if (hasImage(deviceNumber))
-    {
-        QString saveError;
-
-        if (ptrState->imageModified && !saveImage(deviceNumber, &saveError))
-        {
-            if (errorMessage != nullptr)
-                *errorMessage = saveError;
-        }
-
-        ejectImage(deviceNumber);
-    }
+        ejectImage(deviceNumber, errorMessage);
 
     // Ein leerer Pfad bedeutet: nur auswerfen.
     if (fileName.isEmpty())
@@ -177,13 +168,19 @@ bool IECFoundryDrive::insertImage(quint8 deviceNumber, const QString& fileName, 
 }
 bool IECFoundryDrive::ejectImage(quint8 deviceNumber, QString* errorMessage)
 {
-    Q_UNUSED(errorMessage);
-
     DriveState* ptrState = m_drives.value(deviceNumber, nullptr);
 
     if (ptrState == nullptr || ptrState->ptrDisk == nullptr)
         return false;
 
+    if (errorMessage != nullptr)
+        errorMessage->clear();
+
+    // Ein geändertes Image wird vor dem Auswerfen gespeichert.
+    if (ptrState->imageModified)
+        saveImage(deviceNumber, errorMessage);
+
+    // Auch bei einem Speicherfehler wird das Image ausgeworfen.
     ptrState->imageFileName.clear();
     ptrState->imageData.clear();
     ptrState->imageModified = false;
