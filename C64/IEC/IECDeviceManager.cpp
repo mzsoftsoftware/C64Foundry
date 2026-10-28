@@ -457,7 +457,7 @@ bool IECDeviceManager::setConfiguration(const IECDeviceConfiguration& configurat
 
     if (configuration.enabled())
     {
-        ptrNewDevice = createDevice(configuration);
+        ptrNewDevice = createDevice(configuration, operationMessage);
 
         if (ptrNewDevice == nullptr)
             return false;

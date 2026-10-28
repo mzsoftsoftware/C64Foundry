@@ -90,7 +90,7 @@ void IECFoundryDiskRowWidget::setControlsEnabled(bool enabled)
 {
     ui->toolButton_Power->setEnabled(enabled);
     ui->toolButton_Disk->setEnabled(enabled);
-    ui->toolButton_Eject->setEnabled(enabled);
+    ui->toolButton_Eject->setEnabled(enabled && m_bImageLoaded);
     ui->toolButton_DiskName->setEnabled(enabled);
     ui->toolButton_Settings->setEnabled(enabled);
     ui->toolButton_Remove->setEnabled(enabled);
@@ -131,6 +131,9 @@ void IECFoundryDiskRowWidget::on_toolButton_Disk_clicked()
 
 void IECFoundryDiskRowWidget::on_toolButton_Eject_clicked()
 {
+    if (!m_bImageLoaded)
+        return;
+
     const IECFoundryDiskConfiguration* ptrDiskConfiguration = dynamic_cast<const IECFoundryDiskConfiguration*>(configuration());
 
     if (ptrDiskConfiguration == nullptr || ptrDiskConfiguration->imageFileName().isEmpty())
