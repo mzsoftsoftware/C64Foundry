@@ -84,6 +84,8 @@ private:
     bool lineHigh(IECBus::Line line) const;
     void setLineLow(IECBus::Line line, bool low);
 
+    void resetSendDiagnostics();
+
 private:
     static constexpr quint32 EOI_TIMEOUT_CYCLES = 200;
     static constexpr quint32 EOI_ACK_CYCLES = 80;
@@ -121,4 +123,10 @@ private:
     QByteArray m_transmitData;
     qsizetype m_transmitIndex = 0;
     quint8 m_transmitBit = 0;
+
+    // Diagnose eines länger andauernden Stillstands beim Senden.
+    quint32 m_sendNoProgressCycles = 0;
+    SendPhase m_lastDiagnosticPhase = SendPhase::WaitReady;
+    qsizetype m_lastDiagnosticIndex = -1;
+    quint8 m_lastDiagnosticBit = 255;
 };

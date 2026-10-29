@@ -36,6 +36,8 @@ void IECProtocol::reset()
     m_transmitIndex = 0;
     m_transmitBit = 0;
     m_sendPhase = SendPhase::WaitReady;
+
+    resetSendDiagnostics();
 }
 
 void IECProtocol::clock()
@@ -228,6 +230,8 @@ void IECProtocol::processAttention()
     m_transmitIndex = 0;
     m_transmitBit = 0;
     m_sendPhase = SendPhase::WaitReady;
+
+    resetSendDiagnostics();
 }
 
 void IECProtocol::processReceivedByte(const quint8 value, const bool attention)
@@ -370,11 +374,48 @@ bool IECProtocol::startSending(const QByteArray& data)
     m_sendPhase = SendPhase::WaitTalkTurnaround;
     m_stateCycles = 0;
 
+    resetSendDiagnostics();
+
     return true;
 }
 
 void IECProtocol::clockSend()
 {
+    // Fortschritt liegt vor, sobald sich Phase, Byte oder Bit ändern.
+    if (m_sendPhase != m_lastDiagnosticPhase ||
+        m_transmitIndex != m_lastDiagnosticIndex ||
+        m_transmitBit != m_lastDiagnosticBit)
+    {
+        m_sendNoProgressCycles = 0;
+        m_lastDiagnosticPhase = m_sendPhase;
+        m_lastDiagnosticIndex = m_transmitIndex;
+        m_lastDiagnosticBit = m_transmitBit;
+    }
+    else
+    {
+        ++m_sendNoProgressCycles;
+
+        if (m_sendNoProgressCycles >= 1000000U)
+        {
+            quint8 value = 0;
+
+            if (m_transmitIndex >= 0 && m_transmitIndex < m_transmitData.size())
+                value = static_cast<quint8>(m_transmitData.at(m_transmitIndex));
+
+            qDebug() << "IEC TX no progress:"
+                     << "phase:" << static_cast<int>(m_sendPhase)
+                     << "index:" << m_transmitIndex
+                     << "value:" << value
+                     << "bit:" << m_transmitBit
+                     << "stateCycles:" << m_stateCycles
+                     << "CLK:" << lineHigh(IECBus::Line::CLK)
+                     << "DATA:" << lineHigh(IECBus::Line::DATA)
+                     << "ATN:" << lineHigh(IECBus::Line::ATN);
+
+            m_sendNoProgressCycles = 0;
+        }
+    }
+
     switch (m_sendPhase)
     {
     case SendPhase::WaitReady:
@@ -631,4 +672,14 @@ void IECProtocol::finishSending()
     m_stateCycles = 0;
 
     m_state = State::Idle;
+
+    resetSendDiagnostics();
+}
+
+void IECProtocol::resetSendDiagnostics()
+{
+    m_sendNoProgressCycles = 0;
+    m_lastDiagnosticPhase = m_sendPhase;
+    m_lastDiagnosticIndex = m_transmitIndex;
+    m_lastDiagnosticBit = m_transmitBit;
 }
