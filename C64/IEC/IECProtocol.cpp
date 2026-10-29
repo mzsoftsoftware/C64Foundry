@@ -498,14 +498,38 @@ void IECProtocol::clockSend()
             }
         }
         break;
+
     case SendPhase::WaitTalkTurnaround:
-        // Der C64 wird vom Talker zum Listener:
-        // CLK wird freigegeben, DATA bleibt Low.
-        if (lineHigh(IECBus::Line::CLK) && !lineHigh(IECBus::Line::DATA))
+        // Der C64 gibt CLK frei, während DATA noch Low ist.
+        // DATA kann dabei weiterhin durch das Laufwerk selbst
+        // auf Low gehalten werden.
+        if (lineHigh(IECBus::Line::CLK))
         {
-            // Das Laufwerk übernimmt CLK und gibt DATA frei.
-            setLineLow(IECBus::Line::CLK, true);
+            m_sendPhase = SendPhase::WaitTalkAttentionRelease;
+            m_stateCycles = 0;
+        }
+        break;
+
+    case SendPhase::WaitTalkAttentionRelease:
+        // Dem C64 Zeit geben, DATA als Listener zu übernehmen,
+        // bevor das Laufwerk seine eigene DATA-Bestätigung freigibt.
+        if (m_stateCycles >= TALK_ATTENTION_RELEASE_CYCLES)
+        {
             setLineLow(IECBus::Line::DATA, false);
+            setLineLow(IECBus::Line::CLK, true);
+
+            m_sendPhase = SendPhase::WaitTalkAcknowledgeHold;
+            m_stateCycles = 0;
+        }
+        break;
+
+    case SendPhase::WaitTalkAcknowledgeHold:
+        // Das Laufwerk hält CLK mindestens 80 µs auf Low.
+        // Danach gibt es CLK frei, damit der C64 als Listener
+        // seine Bereitschaft durch DATA High signalisieren kann.
+        if (m_stateCycles >= TALK_ATTENTION_ACK_HOLD_CYCLES)
+        {
+            setLineLow(IECBus::Line::CLK, false);
 
             m_sendPhase = SendPhase::WaitTalkListenerReady;
             m_stateCycles = 0;
@@ -513,10 +537,12 @@ void IECProtocol::clockSend()
         break;
 
     case SendPhase::WaitTalkListenerReady:
-        // Der C64 gibt DATA frei, nachdem das Laufwerk
-        // den Rollenwechsel durch CLK Low bestätigt hat.
+        // Erst nach der Freigabe von CLK kann der C64 DATA
+        // freigeben. Anschließend startet die Datenübertragung.
         if (lineHigh(IECBus::Line::DATA))
+        {
             prepareTransmitByte();
+        }
         break;
     }
 }

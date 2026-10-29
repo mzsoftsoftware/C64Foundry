@@ -23,9 +23,12 @@ public:
         WaitEOIRelease,
         Send
     };
+
     enum class SendPhase
     {
         WaitTalkTurnaround,
+        WaitTalkAttentionRelease,
+        WaitTalkAcknowledgeHold,
         WaitTalkListenerReady,
         WaitReady,
         WaitEOIStart,
@@ -86,6 +89,8 @@ private:
     static constexpr quint32 EOI_ACK_CYCLES = 80;
     static constexpr quint32 BYTE_ACK_CYCLES = 100;
     static constexpr quint32 SEND_PHASE_CYCLES = 1;
+    static constexpr quint32 TALK_ATTENTION_RELEASE_CYCLES = 30;
+    static constexpr quint32 TALK_ATTENTION_ACK_HOLD_CYCLES = 80;
 
     quint8 m_deviceNumber = 0;
     IECBus* m_ptrBus = nullptr;

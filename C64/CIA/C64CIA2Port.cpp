@@ -27,6 +27,7 @@ void C64CIA2Port::setIECBus(IECBus* ptrIECBus)
         m_participantId = m_ptrIECBus->addParticipant();
 }
 
+
 quint8 C64CIA2Port::portAInputs(quint8 portBOutput) const
 {
     Q_UNUSED(portBOutput);
@@ -36,15 +37,33 @@ quint8 C64CIA2Port::portAInputs(quint8 portBOutput) const
     if (!m_ptrIECBus)
         return inputs;
 
-    //
-    // PA2 = IEC CLK IN
-    // PA3 = IEC DATA IN
-    //
-    if (!m_ptrIECBus->lineHigh(IECBus::Line::CLK))
+    const bool clockHigh = m_ptrIECBus->lineHigh(IECBus::Line::CLK);
+    const bool dataHigh = m_ptrIECBus->lineHigh(IECBus::Line::DATA);
+
+    if (!clockHigh)
         inputs &= static_cast<quint8>(~0x40);
 
-    if (!m_ptrIECBus->lineHigh(IECBus::Line::DATA))
+    if (!dataHigh)
         inputs &= static_cast<quint8>(~0x80);
+
+    // Temporäre Diagnose: Nur während CLK Low protokollieren,
+    // und höchstens die ersten 10 Lesezugriffe ausgeben.
+    static quint32 lowClockReadCount = 0;
+
+    if (!clockHigh)
+    {
+        ++lowClockReadCount;
+
+        if (lowClockReadCount <= 10
+            || lowClockReadCount % 1000 == 0)
+        {
+            qDebug() << "CIA2 IEC input sampled:"
+                     << "count:" << lowClockReadCount
+                     << "inputs:" << Qt::hex << inputs
+                     << "CLK high:" << clockHigh
+                     << "DATA high:" << dataHigh;
+        }
+    }
 
     return inputs;
 }
