@@ -373,7 +373,7 @@ bool IECProtocol::startSending(const QByteArray& data)
              << "DATA high:" << lineHigh(IECBus::Line::DATA);
 
     m_state = State::Send;
-    m_sendPhase = SendPhase::WaitReady;
+    m_sendPhase = SendPhase::WaitTalkTurnaround;
     m_stateCycles = 0;
 
     qDebug() << "IEC send started:"
@@ -497,6 +497,26 @@ void IECProtocol::clockSend()
                 m_stateCycles = 0;
             }
         }
+        break;
+    case SendPhase::WaitTalkTurnaround:
+        // Der C64 wird vom Talker zum Listener:
+        // CLK wird freigegeben, DATA bleibt Low.
+        if (lineHigh(IECBus::Line::CLK) && !lineHigh(IECBus::Line::DATA))
+        {
+            // Das Laufwerk übernimmt CLK und gibt DATA frei.
+            setLineLow(IECBus::Line::CLK, true);
+            setLineLow(IECBus::Line::DATA, false);
+
+            m_sendPhase = SendPhase::WaitTalkListenerReady;
+            m_stateCycles = 0;
+        }
+        break;
+
+    case SendPhase::WaitTalkListenerReady:
+        // Der C64 gibt DATA frei, nachdem das Laufwerk
+        // den Rollenwechsel durch CLK Low bestätigt hat.
+        if (lineHigh(IECBus::Line::DATA))
+            prepareTransmitByte();
         break;
     }
 }

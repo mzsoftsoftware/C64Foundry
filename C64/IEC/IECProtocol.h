@@ -25,6 +25,8 @@ public:
     };
     enum class SendPhase
     {
+        WaitTalkTurnaround,
+        WaitTalkListenerReady,
         WaitReady,
         WaitEOIStart,
         WaitEOIAcknowledge,
