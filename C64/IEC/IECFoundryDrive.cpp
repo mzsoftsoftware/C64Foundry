@@ -38,7 +38,7 @@ int IECFoundryDrive::sectorOffset(int track, int sector)
         offset += sectorsOnTrack(currentTrack);
     return (offset + sector) * 256;
 }
-static bool appendBasicLine(QByteArray& program, quint16& address, quint16 lineNumber, const QByteArray& content)
+bool IECFoundryDrive::appendBasicLine(QByteArray& program, quint16& address, quint16 lineNumber, const QByteArray& content)
 {
     const quint32 nextAddress = static_cast<quint32>(address) + 2U + 2U + static_cast<quint32>(content.size()) + 1U;
 
@@ -276,16 +276,28 @@ bool IECFoundryDrive::readSector(const quint8 deviceNumber, const quint8 track, 
 
     const DriveState* ptrState = m_drives.value(deviceNumber, nullptr);
     if (ptrState == nullptr || ptrState->ptrDisk == nullptr)
+    {
+        m_lastError = QStringLiteral("Das Laufwerk ist nicht vorhanden.");
         return false;
+    }
     if (ptrState->imageFileName.isEmpty() || ptrState->imageData.isNull())
+    {
+        m_lastError = QStringLiteral("Es ist kein Disketten-Image geladen.");
         return false;
+    }
 
     const int offset = sectorOffset(track, sector);
     if (offset < 0)
+    {
+        m_lastError = QStringLiteral("Ungültiger Track oder Sektor.");
         return false;
+    }
     constexpr int SECTOR_SIZE = 256;
     if (offset + SECTOR_SIZE > ptrState->imageData.size())
+    {
+        m_lastError = QStringLiteral("Der Sektor liegt außerhalb des Disketten-Images.");
         return false;
+    }
 
     data = ptrState->imageData.mid(offset, SECTOR_SIZE);
     return data.size() == SECTOR_SIZE;

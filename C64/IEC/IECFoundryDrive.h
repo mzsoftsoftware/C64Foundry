@@ -38,9 +38,11 @@ public:
 private:
     int sectorsOnTrack(int track);
     int sectorOffset(int track, int sector);
+    bool appendBasicLine(QByteArray& program, quint16& address, quint16 lineNumber, const QByteArray& content);
 
 private:
     struct DriveState;
-
     QHash<quint8, DriveState*> m_drives;
+
+    QString m_lastError;
 };
