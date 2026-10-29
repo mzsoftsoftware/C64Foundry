@@ -1,5 +1,7 @@
 #include "IECProtocol.h"
 
+#include <QDebug>
+
 
 IECProtocol::IECProtocol(IECBus* ptrBus, const quint8 deviceNumber, const IECBus::ParticipantId participantId)
     : m_deviceNumber(deviceNumber)
@@ -423,6 +425,24 @@ void IECProtocol::clockSend()
         const quint8 value = static_cast<quint8>(m_transmitData.at(m_transmitIndex));
         const bool bitHigh = (value & static_cast<quint8>(1U << m_transmitBit)) != 0;
 
+        if (m_transmitBit == 0)
+        {
+            qDebug() << "IEC TX byte:"
+                     << "index:" << m_transmitIndex
+                     << "value:" << static_cast<quint8>(m_transmitData.at(m_transmitIndex))
+                     << "CLK:" << lineHigh(IECBus::Line::CLK)
+                     << "DATA:" << lineHigh(IECBus::Line::DATA);
+        }
+        if (m_transmitIndex == 2)
+        {
+            qDebug() << "IEC TX byte 2 bit:"
+                     << m_transmitBit
+                     << "value:" << value
+                     << "bitHigh:" << bitHigh
+                     << "CLK:" << lineHigh(IECBus::Line::CLK)
+                     << "DATA:" << lineHigh(IECBus::Line::DATA);
+        }
+
         setLineLow(IECBus::Line::DATA, !bitHigh);
         setLineLow(IECBus::Line::CLK, true);
 
@@ -444,6 +464,20 @@ void IECProtocol::clockSend()
         // Der Listener darf CLK vorübergehend auf Low halten.
         // Erst wenn CLK tatsächlich High ist, beginnt die
         // Mindestdauer der High-Phase.
+        if (m_transmitIndex == 2 && !lineHigh(IECBus::Line::CLK))
+        {
+            static quint8 lastLoggedBit = 255;
+
+            if (lastLoggedBit != m_transmitBit)
+            {
+                qDebug() << "IEC TX byte 2 waiting for CLK high:"
+                         << "bit:" << m_transmitBit
+                         << "CLK:" << lineHigh(IECBus::Line::CLK)
+                         << "DATA:" << lineHigh(IECBus::Line::DATA);
+
+                lastLoggedBit = m_transmitBit;
+            }
+        }
         if (!lineHigh(IECBus::Line::CLK))
         {
             m_stateCycles = 0;
@@ -470,8 +504,27 @@ void IECProtocol::clockSend()
         break;
 
     case SendPhase::WaitByteAcknowledge:
+        if (m_transmitIndex == 0)
+        {
+            static bool acknowledgeWaitingLogged = false;
+
+            if (!acknowledgeWaitingLogged)
+            {
+                qDebug() << "IEC TX waiting for ACK:"
+                         << "CLK:" << lineHigh(IECBus::Line::CLK)
+                         << "DATA:" << lineHigh(IECBus::Line::DATA);
+
+                acknowledgeWaitingLogged = true;
+            }
+        }
+
         if (!lineHigh(IECBus::Line::DATA))
         {
+            qDebug() << "IEC TX ACK received:"
+                     << "index:" << m_transmitIndex
+                     << "CLK:" << lineHigh(IECBus::Line::CLK)
+                     << "DATA:" << lineHigh(IECBus::Line::DATA);
+
             setLineLow(IECBus::Line::CLK, false);
             m_sendPhase = SendPhase::WaitAcknowledgeRelease;
             m_stateCycles = 0;
@@ -481,6 +534,11 @@ void IECProtocol::clockSend()
     case SendPhase::WaitAcknowledgeRelease:
         if (lineHigh(IECBus::Line::DATA))
         {
+            qDebug() << "IEC TX ACK released:"
+                     << "index:" << m_transmitIndex
+                     << "CLK:" << lineHigh(IECBus::Line::CLK)
+                     << "DATA:" << lineHigh(IECBus::Line::DATA);
+
             if (m_transmitIndex + 1 >= m_transmitData.size())
             {
                 finishSending();
