@@ -8,9 +8,6 @@ IECDevice::IECDevice(IECBus* ptrBus, const quint8 deviceNumber)
     , m_ptrBus(ptrBus)
 {
     if (m_ptrBus != nullptr)
-        m_participantId = m_ptrBus->addParticipant();
-
-    if (m_ptrBus != nullptr)
     {
         m_participantId = m_ptrBus->addParticipant();
 
