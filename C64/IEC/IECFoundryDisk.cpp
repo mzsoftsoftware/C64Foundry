@@ -30,7 +30,12 @@ bool IECFoundryDisk::setConfiguration(const IECFoundryDiskConfiguration& configu
     if (configuration.deviceNumber() != deviceNumber())
         return false;
 
-    return m_ptrDrive->insertImage(deviceNumber(), configuration.imageFileName(), errorMessage);
+    const bool success = m_ptrDrive->insertImage(deviceNumber(), configuration.imageFileName());
+
+    if (!success && errorMessage != nullptr)
+        *errorMessage = m_ptrDrive->lastError();
+
+    return success;
 }
 
 bool IECFoundryDisk::hasImage() const

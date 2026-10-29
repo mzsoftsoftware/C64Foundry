@@ -43,7 +43,10 @@ bool IECFoundryDrive::appendBasicLine(QByteArray& program, quint16& address, qui
     const quint32 nextAddress = static_cast<quint32>(address) + 2U + 2U + static_cast<quint32>(content.size()) + 1U;
 
     if (nextAddress > 0xFFFFU)
+    {
+        m_qstrLastError = QStringLiteral("Das Directory ist zu groß für ein BASIC-Programm.");
         return false;
+    }
 
     program.append(static_cast<char>(nextAddress & 0xFFU));
     program.append(static_cast<char>((nextAddress >> 8) & 0xFFU));
@@ -132,20 +135,21 @@ bool IECFoundryDrive::hasDisk(quint8 deviceNumber) const
     return ptrState != nullptr && ptrState->ptrDisk != nullptr;
 }
 
-bool IECFoundryDrive::insertImage(quint8 deviceNumber, const QString& fileName, QString* errorMessage)
+bool IECFoundryDrive::insertImage(quint8 deviceNumber, const QString& fileName)
 {
+    m_qstrLastError.clear();
     DriveState* ptrState = m_drives.value(deviceNumber, nullptr);
 
     if (ptrState == nullptr || ptrState->ptrDisk == nullptr)
+    {
+        m_qstrLastError = QStringLiteral("Das Laufwerk ist nicht vorhanden.");
         return false;
-
-    if (errorMessage != nullptr)
-        errorMessage->clear();
+    }
 
     // Ein bereits geladenes Image wird immer zuerst ausgeworfen.
     // Das Speichern übernimmt ausschließlich ejectImage().
     if (hasImage(deviceNumber))
-        ejectImage(deviceNumber, errorMessage);
+        ejectImage(deviceNumber);
 
     // Ein leerer Pfad bedeutet: nur auswerfen.
     if (fileName.isEmpty())
@@ -155,30 +159,16 @@ bool IECFoundryDrive::insertImage(quint8 deviceNumber, const QString& fileName, 
 
     if (!file.open(QIODevice::ReadOnly))
     {
-        if (errorMessage != nullptr)
-        {
-            if (!errorMessage->isEmpty())
-                *errorMessage += QChar('\n');
-
-            *errorMessage += QStringLiteral("Image konnte nicht geöffnet werden: %1\n%2").arg(fileName, file.errorString());
-        }
-
-        return true;
+        m_qstrLastError = QStringLiteral("Image konnte nicht geöffnet werden: %1\n%2").arg(fileName, file.errorString());
+        return false;
     }
 
     const QByteArray imageData = file.readAll();
 
     if (file.error() != QFileDevice::NoError)
     {
-        if (errorMessage != nullptr)
-        {
-            if (!errorMessage->isEmpty())
-                *errorMessage += QChar('\n');
-
-            *errorMessage += QStringLiteral("Fehler beim Lesen des Images: %1\n%2").arg(fileName, file.errorString());
-        }
-
-        return true;
+        m_qstrLastError = QStringLiteral("Fehler beim Lesen des Images: %1\n%2").arg(fileName, file.errorString());
+        return false;
     }
 
     ptrState->imageFileName = fileName;
@@ -187,19 +177,20 @@ bool IECFoundryDrive::insertImage(quint8 deviceNumber, const QString& fileName, 
 
     return true;
 }
-bool IECFoundryDrive::ejectImage(quint8 deviceNumber, QString* errorMessage)
+bool IECFoundryDrive::ejectImage(quint8 deviceNumber)
 {
+    m_qstrLastError.clear();
     DriveState* ptrState = m_drives.value(deviceNumber, nullptr);
 
     if (ptrState == nullptr || ptrState->ptrDisk == nullptr)
+    {
+        m_qstrLastError = QStringLiteral("Das Laufwerk ist nicht vorhanden.");
         return false;
-
-    if (errorMessage != nullptr)
-        errorMessage->clear();
+    }
 
     // Ein geändertes Image wird vor dem Auswerfen gespeichert.
-    if (ptrState->imageModified)
-        saveImage(deviceNumber, errorMessage);
+    if (ptrState->imageModified && !saveImageInternal(deviceNumber))
+        return false;
 
     // Auch bei einem Speicherfehler wird das Image ausgeworfen.
     ptrState->imageFileName.clear();
@@ -208,15 +199,18 @@ bool IECFoundryDrive::ejectImage(quint8 deviceNumber, QString* errorMessage)
 
     return true;
 }
-bool IECFoundryDrive::saveImage(quint8 deviceNumber, QString* errorMessage)
+bool IECFoundryDrive::saveImage(quint8 deviceNumber)
+{
+    m_qstrLastError.clear();
+    return saveImageInternal(deviceNumber);
+}
+bool IECFoundryDrive::saveImageInternal(quint8 deviceNumber)
 {
     DriveState* ptrState = m_drives.value(deviceNumber, nullptr);
 
     if (ptrState == nullptr || ptrState->ptrDisk == nullptr || ptrState->imageFileName.isEmpty() || ptrState->imageData.isNull())
     {
-        if (errorMessage != nullptr)
-            *errorMessage = QStringLiteral("Es ist kein Image zum Speichern geladen.");
-
+        m_qstrLastError = QStringLiteral("Es ist kein Image zum Speichern geladen.");
         return false;
     }
 
@@ -224,26 +218,20 @@ bool IECFoundryDrive::saveImage(quint8 deviceNumber, QString* errorMessage)
 
     if (!file.open(QIODevice::WriteOnly))
     {
-        if (errorMessage != nullptr)
-            *errorMessage = QStringLiteral("Image konnte nicht zum Schreiben geöffnet werden: %1\n%2").arg(ptrState->imageFileName, file.errorString());
-
+        m_qstrLastError = QStringLiteral("Image konnte nicht zum Schreiben geöffnet werden: %1\n%2").arg(ptrState->imageFileName, file.errorString());
         return false;
     }
 
     if (file.write(ptrState->imageData) != ptrState->imageData.size())
     {
-        if (errorMessage != nullptr)
-            *errorMessage = QStringLiteral("Fehler beim Schreiben des Images: %1\n%2").arg(ptrState->imageFileName, file.errorString());
-
+        m_qstrLastError = QStringLiteral("Fehler beim Schreiben des Images: %1\n%2").arg(ptrState->imageFileName, file.errorString());
         file.cancelWriting();
         return false;
     }
 
     if (!file.commit())
     {
-        if (errorMessage != nullptr)
-            *errorMessage = QStringLiteral("Image konnte nicht gespeichert werden: %1\n%2").arg(ptrState->imageFileName, file.errorString());
-
+        m_qstrLastError = QStringLiteral("Image konnte nicht gespeichert werden: %1\n%2").arg(ptrState->imageFileName, file.errorString());
         return false;
     }
 
@@ -272,35 +260,43 @@ QString IECFoundryDrive::imageFileName(quint8 deviceNumber) const
 
 bool IECFoundryDrive::readSector(const quint8 deviceNumber, const quint8 track, const quint8 sector, QByteArray& data)
 {
+    m_qstrLastError.clear();
     data.clear();
 
     const DriveState* ptrState = m_drives.value(deviceNumber, nullptr);
     if (ptrState == nullptr || ptrState->ptrDisk == nullptr)
     {
-        m_lastError = QStringLiteral("Das Laufwerk ist nicht vorhanden.");
+        m_qstrLastError = QStringLiteral("Das Laufwerk ist nicht vorhanden.");
         return false;
     }
     if (ptrState->imageFileName.isEmpty() || ptrState->imageData.isNull())
     {
-        m_lastError = QStringLiteral("Es ist kein Disketten-Image geladen.");
+        m_qstrLastError = QStringLiteral("Es ist kein Disketten-Image geladen.");
         return false;
     }
 
     const int offset = sectorOffset(track, sector);
     if (offset < 0)
     {
-        m_lastError = QStringLiteral("Ungültiger Track oder Sektor.");
+        m_qstrLastError = QStringLiteral("Ungültiger Track oder Sektor.");
         return false;
     }
     constexpr int SECTOR_SIZE = 256;
     if (offset + SECTOR_SIZE > ptrState->imageData.size())
     {
-        m_lastError = QStringLiteral("Der Sektor liegt außerhalb des Disketten-Images.");
+        m_qstrLastError = QStringLiteral("Der Sektor liegt außerhalb des Disketten-Images.");
         return false;
     }
 
     data = ptrState->imageData.mid(offset, SECTOR_SIZE);
-    return data.size() == SECTOR_SIZE;
+    if (data.size() != SECTOR_SIZE)
+    {
+        data.clear();
+        m_qstrLastError = QStringLiteral("Der Sektor konnte nicht vollständig gelesen werden.");
+        return false;
+    }
+
+    return true;
 }
 
 bool IECFoundryDrive::writeSector(quint8 deviceNumber, quint8 track, quint8 sector, const QByteArray& data)
@@ -310,27 +306,30 @@ bool IECFoundryDrive::writeSector(quint8 deviceNumber, quint8 track, quint8 sect
     Q_UNUSED(sector);
     Q_UNUSED(data);
 
+    m_qstrLastError.clear();
+    m_qstrLastError = QStringLiteral("Das Schreiben von Sektoren ist noch nicht implementiert.");
+
     return false;
 }
 
-bool IECFoundryDrive::createDirectoryProgram(const quint8 deviceNumber, QByteArray& program, QString* errorMessage)
+bool IECFoundryDrive::createDirectoryProgram(const quint8 deviceNumber, QByteArray& program)
 {
+    m_qstrLastError.clear();
     program.clear();
 
-    if (errorMessage != nullptr)
-        errorMessage->clear();
     if (!hasImage(deviceNumber))
     {
-        if (errorMessage != nullptr)
-            *errorMessage = QStringLiteral("Kein Disketten-Image geladen.");
+        m_qstrLastError = QStringLiteral("Kein Disketten-Image geladen.");
         return false;
     }
 
     QByteArray bam;
     if (!readSector(deviceNumber, 18, 0, bam) || bam.size() != 256)
+        return false;
+
+    if (bam.size() != 256)
     {
-        if (errorMessage != nullptr)
-            *errorMessage = QStringLiteral("Der BAM-Sektor der Diskette konnte nicht gelesen werden.");
+        m_qstrLastError = QStringLiteral("Der BAM-Sektor der Diskette hat eine ungültige Größe.");
         return false;
     }
 
@@ -354,8 +353,6 @@ bool IECFoundryDrive::createDirectoryProgram(const quint8 deviceNumber, QByteArr
     header.append(bam.mid(164, 2));
     if (!appendBasicLine(program, address, 0, header))
     {
-        if (errorMessage != nullptr)
-            *errorMessage = QStringLiteral("Das Directory ist zu groß für ein BASIC-Programm.");
         program.clear();
         return false;
     }
@@ -368,8 +365,7 @@ bool IECFoundryDrive::createDirectoryProgram(const quint8 deviceNumber, QByteArr
         const quint16 sectorKey = static_cast<quint16>((static_cast<quint16>(track) << 8) | sector);
         if (visitedSectors.contains(sectorKey))
         {
-            if (errorMessage != nullptr)
-                *errorMessage = QStringLiteral("Die Directory-Sektorkette enthält einen Zyklus.");
+            m_qstrLastError = QStringLiteral("Die Directory-Sektorkette enthält einen Zyklus.");
             program.clear();
             return false;
         }
@@ -378,8 +374,6 @@ bool IECFoundryDrive::createDirectoryProgram(const quint8 deviceNumber, QByteArr
         QByteArray directorySector;
         if (!readSector(deviceNumber, track, sector, directorySector) || directorySector.size() != 256)
         {
-            if (errorMessage != nullptr)
-                *errorMessage = QStringLiteral("Ein Directory-Sektor konnte nicht gelesen werden.");
             program.clear();
             return false;
         }
@@ -432,8 +426,6 @@ bool IECFoundryDrive::createDirectoryProgram(const quint8 deviceNumber, QByteArr
 
             if (!appendBasicLine(program, address, blocks, line))
             {
-                if (errorMessage != nullptr)
-                    *errorMessage = QStringLiteral("Das Directory ist zu groß für ein BASIC-Programm.");
                 program.clear();
                 return false;
             }
@@ -453,8 +445,6 @@ bool IECFoundryDrive::createDirectoryProgram(const quint8 deviceNumber, QByteArr
     const QByteArray freeBlocksLine = QByteArrayLiteral("BLOCKS FREE.");
     if (!appendBasicLine(program, address, freeBlocks, freeBlocksLine))
     {
-        if (errorMessage != nullptr)
-            *errorMessage = QStringLiteral("Das Directory ist zu groß für ein BASIC-Programm.");
         program.clear();
         return false;
     }
