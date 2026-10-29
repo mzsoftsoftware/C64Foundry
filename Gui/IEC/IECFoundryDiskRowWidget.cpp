@@ -5,6 +5,8 @@
 #include <QSignalBlocker>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QSettings>
+#include <QDir>
 
 #include "C64/IEC/IECFoundryDiskConfiguration.h"
 #include "Emulator/EmulatorController.h"
@@ -109,15 +111,19 @@ void IECFoundryDiskRowWidget::on_toolButton_Power_toggled(bool checked)
 }
 
 
+
 void IECFoundryDiskRowWidget::on_toolButton_Disk_clicked()
 {
     if (configuration() == nullptr)
         return;
 
-    const QString fileName = QFileDialog::getOpenFileName(this, tr("Insert Disk Image"), QString(), tr("Disk Images (*);;All Files (*)"));
+    QSettings settings;
+    const QString lastDirectory = settings.value(QStringLiteral("FileDialogs/LastD64Directory"), QDir::homePath()).toString();
+    const QString fileName = QFileDialog::getOpenFileName(this, tr("Insert Disk Image"), lastDirectory, tr("D64 Disk Images (*.d64);;All Files (*)"));
     if (fileName.isEmpty())
         return;
 
+    settings.setValue(QStringLiteral("FileDialogs/LastD64Directory"), QFileInfo(fileName).absolutePath());
     const IECFoundryDiskConfiguration* ptrDiskConfiguration = dynamic_cast<const IECFoundryDiskConfiguration*>(configuration());
     if (ptrDiskConfiguration == nullptr)
         return;
@@ -127,6 +133,7 @@ void IECFoundryDiskRowWidget::on_toolButton_Disk_clicked()
 
     requestSetConfiguration(updatedConfiguration);
 }
+
 
 
 void IECFoundryDiskRowWidget::on_toolButton_Eject_clicked()

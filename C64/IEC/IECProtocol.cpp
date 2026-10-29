@@ -1,5 +1,7 @@
 #include "IECProtocol.h"
 
+#include <QDebug>
+
 
 IECProtocol::IECProtocol(IECBus* ptrBus, const quint8 deviceNumber, const IECBus::ParticipantId participantId)
     : m_deviceNumber(deviceNumber)
@@ -368,6 +370,11 @@ bool IECProtocol::startSending(const QByteArray& data)
     m_sendPhase = SendPhase::WaitReady;
     m_stateCycles = 0;
 
+    qDebug() << "IEC send started:"
+             << "bytes:" << m_transmitData.size()
+             << "CLK high:" << lineHigh(IECBus::Line::CLK)
+             << "DATA high:" << lineHigh(IECBus::Line::DATA)
+             << "ATN high:" << lineHigh(IECBus::Line::ATN);
     return true;
 }
 
@@ -379,6 +386,12 @@ void IECProtocol::clockSend()
         setLineLow(IECBus::Line::CLK, false);
         setLineLow(IECBus::Line::DATA, false);
 
+        if (m_stateCycles == 1)
+        {
+            qDebug() << "IEC send WaitReady:"
+                     << "CLK high:" << lineHigh(IECBus::Line::CLK)
+                     << "DATA high:" << lineHigh(IECBus::Line::DATA);
+        }
         if (lineHigh(IECBus::Line::CLK) && lineHigh(IECBus::Line::DATA))
         {
             if (m_stateCycles >= 2)

@@ -3,6 +3,8 @@
 #include "IECFoundryDiskConfiguration.h"
 #include "IECFoundryDrive.h"
 
+#include <QDebug>
+
 
 QList<quint8> IECFoundryDisk::supportedDeviceNumbers()
 {
@@ -94,6 +96,11 @@ void IECFoundryDisk::processReceivedBytes()
 void IECFoundryDisk::finishListen()
 {
     m_requestedFileName = m_listenFileName;
+    qDebug() << "IEC disk UNLISTEN"
+             << "device:" << deviceNumber()
+             << "filename bytes:" << m_requestedFileName.toHex()
+             << "filename:" << m_requestedFileName;
+
     m_listenFileName.clear();
 }
 
@@ -101,33 +108,55 @@ void IECFoundryDisk::startRequestedTransfer()
 {
     m_pendingTalk = false;
 
+    qDebug() << "IEC disk TALK"
+             << "device:" << deviceNumber()
+             << "filename:" << m_requestedFileName.toHex()
+             << "has image:" << (m_ptrDrive != nullptr && m_ptrDrive->hasImage(deviceNumber()))
+             << "mode:" << static_cast<int>(m_protocol.mode())
+             << "ATN high:" << lineHigh(IECBus::Line::ATN);
+
     if (m_ptrDrive == nullptr || !m_ptrDrive->hasImage(deviceNumber()))
+    {
+        qDebug() << "IEC disk: no image available";
         return;
+    }
 
     QByteArray transferData;
 
-    // LOAD "$",8 fordert das Directory als BASIC-Programm an.
     if (m_requestedFileName == QByteArrayLiteral("$"))
     {
         if (!m_ptrDrive->createDirectoryProgram(deviceNumber(), transferData))
+        {
+            qDebug() << "IEC disk: directory creation failed:" << m_ptrDrive->lastError();
             return;
+        }
     }
     else
     {
         if (!m_ptrDrive->readFile(deviceNumber(), m_requestedFileName, transferData))
+        {
+            qDebug() << "IEC disk: file read failed:" << m_ptrDrive->lastError();
             return;
+        }
     }
 
+    qDebug() << "IEC disk: transfer data size:" << transferData.size();
+
     if (transferData.isEmpty())
+    {
+        qDebug() << "IEC disk: transfer data is empty";
         return;
+    }
 
     if (!m_protocol.startSending(transferData))
     {
-        // Falls das Protokoll in diesem Takt noch nicht senden kann,
-        // wird der Versuch im nächsten Takt wiederholt.
+        qDebug() << "IEC disk: startSending failed"
+                 << "mode:" << static_cast<int>(m_protocol.mode());
+
         m_pendingTalk = true;
         return;
     }
 
+    qDebug() << "IEC disk: startSending accepted";
     m_requestedFileName.clear();
 }
