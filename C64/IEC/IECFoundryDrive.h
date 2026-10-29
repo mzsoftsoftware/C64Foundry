@@ -33,6 +33,8 @@ public:
     bool readSector(quint8 deviceNumber, quint8 track, quint8 sector, QByteArray& data);
     bool writeSector(quint8 deviceNumber, quint8 track, quint8 sector, const QByteArray& data);
 
+    bool createDirectoryProgram(quint8 deviceNumber, QByteArray& program, QString* errorMessage = nullptr);
+
 private:
     int sectorsOnTrack(int track);
     int sectorOffset(int track, int sector);
