@@ -61,6 +61,14 @@ bool IECFoundryDrive::appendBasicLine(QByteArray& program, quint16& address, qui
 
     return true;
 }
+QByteArray IECFoundryDrive::normalizeDiskFileName(QByteArray fileName)
+{
+    while (!fileName.isEmpty() && (static_cast<quint8>(fileName.back()) == 0xA0 || fileName.back() == ' '))
+    {
+        fileName.chop(1);
+    }
+    return fileName.toUpper();
+}
 
 IECFoundryDrive::IECFoundryDrive()
 {
@@ -452,6 +460,146 @@ bool IECFoundryDrive::createDirectoryProgram(const quint8 deviceNumber, QByteArr
     // Ende des BASIC-Programms: Nullzeiger.
     program.append('\0');
     program.append('\0');
+
+    return true;
+}
+
+bool IECFoundryDrive::readFile(const quint8 deviceNumber, const QByteArray& fileName, QByteArray& data)
+{
+    m_qstrLastError.clear();
+    data.clear();
+
+    if (!hasImage(deviceNumber))
+    {
+        m_qstrLastError = QStringLiteral("Kein Disketten-Image geladen.");
+        return false;
+    }
+    const QByteArray requestedName = normalizeDiskFileName(fileName);
+    if (requestedName.isEmpty())
+    {
+        m_qstrLastError = QStringLiteral("Es wurde kein Dateiname angegeben.");
+        return false;
+    }
+
+    QByteArray directorySector;
+    if (!readSector(deviceNumber, 18, 1, directorySector))
+        return false;
+
+    quint8 directoryTrack = 18;
+    quint8 directorySectorNumber = 1;
+    quint8 fileTrack = 0;
+    quint8 fileSectorNumber = 0;
+    bool fileFound = false;
+    QSet<quint16> visitedDirectorySectors;
+
+    while (directoryTrack != 0)
+    {
+        const quint16 sectorKey = static_cast<quint16>((static_cast<quint16>(directoryTrack) << 8) | directorySectorNumber);
+        if (visitedDirectorySectors.contains(sectorKey))
+        {
+            m_qstrLastError = QStringLiteral("Die Directory-Sektorkette enthält einen Zyklus.");
+            return false;
+        }
+
+        visitedDirectorySectors.insert(sectorKey);
+        if (!readSector(deviceNumber, directoryTrack, directorySectorNumber, directorySector))
+            return false;
+
+        for (int entryOffset = 2; entryOffset + 31 < directorySector.size(); entryOffset += 32)
+        {
+            const quint8 fileType = static_cast<quint8>(directorySector.at(entryOffset));
+
+            // Ungenutzte Directory-Einträge überspringen.
+            if ((fileType & 0x07U) == 0)
+                continue;
+            // Für LOAD unterstützen wir PRG-Dateien.
+            if ((fileType & 0x07U) != 2)
+                continue;
+
+            const QByteArray entryName = normalizeDiskFileName(directorySector.mid(entryOffset + 3, 16));
+            bool matches = entryName == requestedName;
+
+            // Ein abschließendes * erlaubt die übliche Präfixsuche.
+            if (!matches && requestedName.endsWith('*'))
+            {
+                const QByteArray prefix = requestedName.left(requestedName.size() - 1);
+                matches = entryName.startsWith(prefix);
+            }
+
+            if (!matches)
+                continue;
+
+            fileTrack = static_cast<quint8>(directorySector.at(entryOffset + 1));
+            fileSectorNumber = static_cast<quint8>(directorySector.at(entryOffset + 2));
+            fileFound = true;
+            break;
+        }
+
+        if (fileFound)
+            break;
+
+        directoryTrack = static_cast<quint8>(directorySector.at(0));
+        directorySectorNumber = static_cast<quint8>(directorySector.at(1));
+    }
+
+    if (!fileFound)
+    {
+        m_qstrLastError = QStringLiteral("PRG-Datei nicht gefunden: %1").arg(QString::fromLatin1(requestedName));
+        return false;
+    }
+
+    QSet<quint16> visitedFileSectors;
+    while (fileTrack != 0)
+    {
+        const quint16 sectorKey = static_cast<quint16>((static_cast<quint16>(fileTrack) << 8) | fileSectorNumber);
+        if (visitedFileSectors.contains(sectorKey))
+        {
+            data.clear();
+            m_qstrLastError = QStringLiteral("Die Dateisektorkette enthält einen Zyklus.");
+            return false;
+        }
+
+        visitedFileSectors.insert(sectorKey);
+        QByteArray fileSectorData;
+        if (!readSector(deviceNumber, fileTrack, fileSectorNumber, fileSectorData))
+        {
+            data.clear();
+            return false;
+        }
+
+        const quint8 nextTrack = static_cast<quint8>(fileSectorData.at(0));
+        const quint8 nextSector = static_cast<quint8>(fileSectorData.at(1));
+        if (nextTrack != 0)
+        {
+            // Bei normalen Sektoren sind die ersten zwei Bytes
+            // für den Verweis auf den Folgesektor reserviert.
+            data.append(fileSectorData.constData() + 2, 254);
+        }
+        else
+        {
+            // Im letzten Sektor gibt Byte 1 die Position des
+            // letzten verwendeten Bytes einschließlich der
+            // beiden Link-Bytes an.
+            const int payloadSize = static_cast<int>(nextSector) - 1;
+            if (payloadSize < 0 || payloadSize > 254)
+            {
+                data.clear();
+                m_qstrLastError = QStringLiteral("Der letzte Dateisektor enthält eine ungültige Länge.");
+                return false;
+            }
+            data.append(fileSectorData.constData() + 2, payloadSize);
+        }
+
+        fileTrack = nextTrack;
+        fileSectorNumber = nextSector;
+    }
+
+    if (data.size() < 2)
+    {
+        data.clear();
+        m_qstrLastError = QStringLiteral("Die PRG-Datei enthält keine vollständige Ladeadresse.");
+        return false;
+    }
 
     return true;
 }

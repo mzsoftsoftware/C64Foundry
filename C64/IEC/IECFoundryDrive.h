@@ -36,11 +36,13 @@ public:
     bool writeSector(quint8 deviceNumber, quint8 track, quint8 sector, const QByteArray& data);
 
     bool createDirectoryProgram(quint8 deviceNumber, QByteArray& program);
+    bool readFile(quint8 deviceNumber, const QByteArray& fileName, QByteArray& data);
 
 private:
     int sectorsOnTrack(int track);
     int sectorOffset(int track, int sector);
     bool appendBasicLine(QByteArray& program, quint16& address, quint16 lineNumber, const QByteArray& content);
+    QByteArray normalizeDiskFileName(QByteArray fileName);
     bool saveImageInternal(quint8 deviceNumber);
 
 private:
