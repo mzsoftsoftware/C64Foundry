@@ -1,5 +1,7 @@
 #include "C64CIA2Port.h"
 
+#include <QDebug>
+
 
 C64CIA2Port::C64CIA2Port()
 {
@@ -74,6 +76,23 @@ void C64CIA2Port::portAOutputChanged(quint8 portA, quint8 dataDirectionA)
     const bool clockLow = (dataDirectionA & 0x10) && (portA & 0x10);
     const bool dataLow = (dataDirectionA & 0x20) && (portA & 0x20);
     const bool attentionLow = (dataDirectionA & 0x08) && (portA & 0x08);
+
+    static quint8 previousPortA = 0xFF;
+    static quint8 previousDataDirectionA = 0xFF;
+
+    if (portA != previousPortA || dataDirectionA != previousDataDirectionA)
+    {
+        qDebug() << "CIA2 IEC outputs:"
+                 << "PRA:" << Qt::hex << portA
+                 << "DDRA:" << Qt::hex << dataDirectionA
+                 << "CLK low:" << clockLow
+                 << "DATA low:" << dataLow
+                 << "ATN low:" << attentionLow;
+
+        previousPortA = portA;
+        previousDataDirectionA = dataDirectionA;
+    }
+
     m_ptrIECBus->setLineLow(m_participantId, IECBus::Line::CLK, clockLow);
     m_ptrIECBus->setLineLow(m_participantId, IECBus::Line::DATA, dataLow);
     m_ptrIECBus->setLineLow(m_participantId, IECBus::Line::ATN, attentionLow);

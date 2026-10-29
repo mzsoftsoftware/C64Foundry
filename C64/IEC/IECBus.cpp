@@ -49,6 +49,16 @@ bool IECBus::setLineLow(const ParticipantId participant, const Line line, const 
     if (it.value() == previousState)
         return true;
 
+    if (it.value() != previousState)
+    {
+        qDebug() << "IEC line changed:"
+                 << "participant:" << participant
+                 << "line:" << static_cast<int>(line)
+                 << "low:" << low;
+
+        updateLineStates();
+    }
+
     updateLineStates();
 
     return true;

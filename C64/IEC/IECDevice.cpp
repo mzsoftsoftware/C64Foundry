@@ -1,5 +1,7 @@
 #include "IECDevice.h"
 
+#include <QDebug>
+
 
 IECDevice::IECDevice(IECBus* ptrBus, const quint8 deviceNumber)
     : m_deviceNumber(deviceNumber)
@@ -7,6 +9,15 @@ IECDevice::IECDevice(IECBus* ptrBus, const quint8 deviceNumber)
 {
     if (m_ptrBus != nullptr)
         m_participantId = m_ptrBus->addParticipant();
+
+    if (m_ptrBus != nullptr)
+    {
+        m_participantId = m_ptrBus->addParticipant();
+
+        qDebug() << "IEC device registered:"
+                 << "device number:" << m_deviceNumber
+                 << "participant ID:" << m_participantId;
+    }
 }
 
 IECDevice::~IECDevice()
