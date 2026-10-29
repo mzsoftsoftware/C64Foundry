@@ -381,7 +381,6 @@ void IECProtocol::clockSend()
 
         if (lineHigh(IECBus::Line::CLK) && lineHigh(IECBus::Line::DATA))
         {
-            ++m_stateCycles;
             if (m_stateCycles >= 2)
                 prepareTransmitByte();
         }
@@ -395,7 +394,6 @@ void IECProtocol::clockSend()
         setLineLow(IECBus::Line::CLK, false);
         setLineLow(IECBus::Line::DATA, false);
 
-        ++m_stateCycles;
         if (m_stateCycles >= EOI_TIMEOUT_CYCLES)
         {
             m_sendPhase = SendPhase::WaitEOIAcknowledge;
@@ -434,8 +432,6 @@ void IECProtocol::clockSend()
     }
 
     case SendPhase::WaitClockLow:
-        ++m_stateCycles;
-
         if (m_stateCycles >= SEND_PHASE_CYCLES)
         {
             setLineLow(IECBus::Line::CLK, false);
@@ -445,11 +441,10 @@ void IECProtocol::clockSend()
         break;
 
     case SendPhase::WaitClockHigh:
-        ++m_stateCycles;
-
         if (m_stateCycles >= SEND_PHASE_CYCLES)
         {
             setLineLow(IECBus::Line::CLK, true);
+
             if (m_transmitBit < 7)
             {
                 ++m_transmitBit;
@@ -458,9 +453,9 @@ void IECProtocol::clockSend()
             else
             {
                 setLineLow(IECBus::Line::DATA, false);
-
                 m_sendPhase = SendPhase::WaitByteAcknowledge;
             }
+
             m_stateCycles = 0;
         }
         break;
