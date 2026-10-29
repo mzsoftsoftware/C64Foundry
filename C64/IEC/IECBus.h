@@ -27,8 +27,6 @@ public:
     bool setLineLow(ParticipantId participant, Line line, bool low);
     bool lineHigh(Line line) const;
 
-    void dumpLineStates() const;
-
 private:
     static quint8 lineMask(Line line);
     void updateLineStates();

@@ -1,7 +1,5 @@
 #include "IECProtocol.h"
 
-#include <QDebug>
-
 
 IECProtocol::IECProtocol(IECBus* ptrBus, const quint8 deviceNumber, const IECBus::ParticipantId participantId)
     : m_deviceNumber(deviceNumber)
@@ -366,21 +364,10 @@ bool IECProtocol::startSending(const QByteArray& data)
 
     releaseBus();
 
-    m_ptrBus->dumpLineStates();
-
-    qDebug() << "IEC bus after release:"
-             << "CLK high:" << lineHigh(IECBus::Line::CLK)
-             << "DATA high:" << lineHigh(IECBus::Line::DATA);
-
     m_state = State::Send;
     m_sendPhase = SendPhase::WaitTalkTurnaround;
     m_stateCycles = 0;
 
-    qDebug() << "IEC send started:"
-             << "bytes:" << m_transmitData.size()
-             << "CLK high:" << lineHigh(IECBus::Line::CLK)
-             << "DATA high:" << lineHigh(IECBus::Line::DATA)
-             << "ATN high:" << lineHigh(IECBus::Line::ATN);
     return true;
 }
 
@@ -445,7 +432,7 @@ void IECProtocol::clockSend()
     }
 
     case SendPhase::WaitClockLow:
-        if (m_stateCycles >= SEND_PHASE_CYCLES)
+        if (m_stateCycles >= SEND_BIT_LOW_CYCLES)
         {
             setLineLow(IECBus::Line::CLK, false);
             m_sendPhase = SendPhase::WaitClockHigh;
@@ -454,7 +441,16 @@ void IECProtocol::clockSend()
         break;
 
     case SendPhase::WaitClockHigh:
-        if (m_stateCycles >= SEND_PHASE_CYCLES)
+        // Der Listener darf CLK vorübergehend auf Low halten.
+        // Erst wenn CLK tatsächlich High ist, beginnt die
+        // Mindestdauer der High-Phase.
+        if (!lineHigh(IECBus::Line::CLK))
+        {
+            m_stateCycles = 0;
+            break;
+        }
+
+        if (m_stateCycles >= SEND_BIT_HIGH_CYCLES)
         {
             setLineLow(IECBus::Line::CLK, true);
 

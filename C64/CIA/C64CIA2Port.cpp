@@ -46,25 +46,6 @@ quint8 C64CIA2Port::portAInputs(quint8 portBOutput) const
     if (!dataHigh)
         inputs &= static_cast<quint8>(~0x80);
 
-    // Temporäre Diagnose: Nur während CLK Low protokollieren,
-    // und höchstens die ersten 10 Lesezugriffe ausgeben.
-    static quint32 lowClockReadCount = 0;
-
-    if (!clockHigh)
-    {
-        ++lowClockReadCount;
-
-        if (lowClockReadCount <= 10
-            || lowClockReadCount % 1000 == 0)
-        {
-            qDebug() << "CIA2 IEC input sampled:"
-                     << "count:" << lowClockReadCount
-                     << "inputs:" << Qt::hex << inputs
-                     << "CLK high:" << clockHigh
-                     << "DATA high:" << dataHigh;
-        }
-    }
-
     return inputs;
 }
 
@@ -96,32 +77,7 @@ void C64CIA2Port::portAOutputChanged(quint8 portA, quint8 dataDirectionA)
     const bool dataLow = (dataDirectionA & 0x20) && (portA & 0x20);
     const bool attentionLow = (dataDirectionA & 0x08) && (portA & 0x08);
 
-    static quint8 previousPortA = 0xFF;
-    static quint8 previousDataDirectionA = 0xFF;
-
-    if (portA != previousPortA || dataDirectionA != previousDataDirectionA)
-    {
-        qDebug() << "CIA2 IEC outputs:"
-                 << "PRA:" << Qt::hex << portA
-                 << "DDRA:" << Qt::hex << dataDirectionA
-                 << "CLK low:" << clockLow
-                 << "DATA low:" << dataLow
-                 << "ATN low:" << attentionLow;
-
-        previousPortA = portA;
-        previousDataDirectionA = dataDirectionA;
-    }
-
     m_ptrIECBus->setLineLow(m_participantId, IECBus::Line::CLK, clockLow);
     m_ptrIECBus->setLineLow(m_participantId, IECBus::Line::DATA, dataLow);
     m_ptrIECBus->setLineLow(m_participantId, IECBus::Line::ATN, attentionLow);
-
-    static quint8 previousOutputs = 0xFF;
-
-    const quint8 outputs = portA & 0x38;
-
-    if (outputs != previousOutputs)
-    {
-        previousOutputs = outputs;
-    }
 }

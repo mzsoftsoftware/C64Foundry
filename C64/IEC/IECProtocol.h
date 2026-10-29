@@ -88,7 +88,8 @@ private:
     static constexpr quint32 EOI_TIMEOUT_CYCLES = 200;
     static constexpr quint32 EOI_ACK_CYCLES = 80;
     static constexpr quint32 BYTE_ACK_CYCLES = 100;
-    static constexpr quint32 SEND_PHASE_CYCLES = 1;
+    static constexpr quint32 SEND_BIT_LOW_CYCLES = 60;
+    static constexpr quint32 SEND_BIT_HIGH_CYCLES = 60;
     static constexpr quint32 TALK_ATTENTION_RELEASE_CYCLES = 30;
     static constexpr quint32 TALK_ATTENTION_ACK_HOLD_CYCLES = 80;
 
