@@ -466,24 +466,6 @@ void IECProtocol::clockSend()
         const quint8 value = static_cast<quint8>(m_transmitData.at(m_transmitIndex));
         const bool bitHigh = (value & static_cast<quint8>(1U << m_transmitBit)) != 0;
 
-        if (m_transmitBit == 0)
-        {
-            qDebug() << "IEC TX byte:"
-                     << "index:" << m_transmitIndex
-                     << "value:" << static_cast<quint8>(m_transmitData.at(m_transmitIndex))
-                     << "CLK:" << lineHigh(IECBus::Line::CLK)
-                     << "DATA:" << lineHigh(IECBus::Line::DATA);
-        }
-        if (m_transmitIndex == 2)
-        {
-            qDebug() << "IEC TX byte 2 bit:"
-                     << m_transmitBit
-                     << "value:" << value
-                     << "bitHigh:" << bitHigh
-                     << "CLK:" << lineHigh(IECBus::Line::CLK)
-                     << "DATA:" << lineHigh(IECBus::Line::DATA);
-        }
-
         setLineLow(IECBus::Line::DATA, !bitHigh);
         setLineLow(IECBus::Line::CLK, true);
 
@@ -527,6 +509,14 @@ void IECProtocol::clockSend()
 
         if (m_stateCycles >= SEND_BIT_HIGH_CYCLES)
         {
+            qDebug() << "IEC TX bit completed:"
+                     << "index:" << m_transmitIndex
+                     << "value:" << static_cast<quint8>(m_transmitData.at(m_transmitIndex))
+                     << "bit:" << m_transmitBit
+                     << "bitHigh:" << ((static_cast<quint8>(m_transmitData.at(m_transmitIndex)) & static_cast<quint8>(1U << m_transmitBit)) != 0)
+                     << "CLK:" << lineHigh(IECBus::Line::CLK)
+                     << "DATA:" << lineHigh(IECBus::Line::DATA);
+
             setLineLow(IECBus::Line::CLK, true);
 
             if (m_transmitBit < 7)
