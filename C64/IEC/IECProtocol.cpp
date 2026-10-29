@@ -29,6 +29,11 @@ void IECProtocol::reset()
 
     m_previousAttentionHigh = lineHigh(IECBus::Line::ATN);
     m_previousClockHigh = lineHigh(IECBus::Line::CLK);
+
+    m_transmitData.clear();
+    m_transmitIndex = 0;
+    m_transmitBit = 0;
+    m_sendPhase = SendPhase::WaitReady;
 }
 
 void IECProtocol::clock()
@@ -193,7 +198,7 @@ void IECProtocol::clock()
         break;
 
     case State::Send:
-        // TALK-Betrieb wird später implementiert.
+        clockSend();
         break;
     }
 
@@ -216,6 +221,11 @@ void IECProtocol::processAttention()
     // Alle Listener bestätigen ATN zunächst
     // durch DATA Low.
     setLineLow(IECBus::Line::DATA, true);
+
+    m_transmitData.clear();
+    m_transmitIndex = 0;
+    m_transmitBit = 0;
+    m_sendPhase = SendPhase::WaitReady;
 }
 
 void IECProtocol::processReceivedByte(const quint8 value, const bool attention)
@@ -338,4 +348,179 @@ void IECProtocol::setLineLow(const IECBus::Line line, const bool low)
         return;
 
     m_ptrBus->setLineLow(m_participantId, line, low);
+}
+
+bool IECProtocol::startSending(const QByteArray& data)
+{
+    if (m_ptrBus == nullptr || m_mode != Mode::Talk || data.isEmpty())
+        return false;
+
+    if (m_state == State::Send || !lineHigh(IECBus::Line::ATN))
+        return false;
+
+    m_transmitData = data;
+    m_transmitIndex = 0;
+    m_transmitBit = 0;
+
+    releaseBus();
+
+    m_state = State::Send;
+    m_sendPhase = SendPhase::WaitReady;
+    m_stateCycles = 0;
+
+    return true;
+}
+
+void IECProtocol::clockSend()
+{
+    switch (m_sendPhase)
+    {
+    case SendPhase::WaitReady:
+        setLineLow(IECBus::Line::CLK, false);
+        setLineLow(IECBus::Line::DATA, false);
+
+        if (lineHigh(IECBus::Line::CLK) && lineHigh(IECBus::Line::DATA))
+        {
+            ++m_stateCycles;
+            if (m_stateCycles >= 2)
+                prepareTransmitByte();
+        }
+        else
+        {
+            m_stateCycles = 0;
+        }
+        break;
+
+    case SendPhase::WaitEOIStart:
+        setLineLow(IECBus::Line::CLK, false);
+        setLineLow(IECBus::Line::DATA, false);
+
+        ++m_stateCycles;
+        if (m_stateCycles >= EOI_TIMEOUT_CYCLES)
+        {
+            m_sendPhase = SendPhase::WaitEOIAcknowledge;
+            m_stateCycles = 0;
+        }
+        break;
+
+    case SendPhase::WaitEOIAcknowledge:
+        if (!lineHigh(IECBus::Line::DATA))
+        {
+            m_sendPhase = SendPhase::WaitEOIRelease;
+            m_stateCycles = 0;
+        }
+        break;
+
+    case SendPhase::WaitEOIRelease:
+        if (lineHigh(IECBus::Line::DATA))
+        {
+            m_transmitBit = 0;
+            m_sendPhase = SendPhase::DriveBit;
+            m_stateCycles = 0;
+        }
+        break;
+
+    case SendPhase::DriveBit:
+    {
+        const quint8 value = static_cast<quint8>(m_transmitData.at(m_transmitIndex));
+        const bool bitHigh = (value & static_cast<quint8>(1U << m_transmitBit)) != 0;
+
+        setLineLow(IECBus::Line::DATA, !bitHigh);
+        setLineLow(IECBus::Line::CLK, true);
+
+        m_sendPhase = SendPhase::WaitClockLow;
+        m_stateCycles = 0;
+        break;
+    }
+
+    case SendPhase::WaitClockLow:
+        ++m_stateCycles;
+
+        if (m_stateCycles >= SEND_PHASE_CYCLES)
+        {
+            setLineLow(IECBus::Line::CLK, false);
+            m_sendPhase = SendPhase::WaitClockHigh;
+            m_stateCycles = 0;
+        }
+        break;
+
+    case SendPhase::WaitClockHigh:
+        ++m_stateCycles;
+
+        if (m_stateCycles >= SEND_PHASE_CYCLES)
+        {
+            setLineLow(IECBus::Line::CLK, true);
+            if (m_transmitBit < 7)
+            {
+                ++m_transmitBit;
+                m_sendPhase = SendPhase::DriveBit;
+            }
+            else
+            {
+                setLineLow(IECBus::Line::DATA, false);
+
+                m_sendPhase = SendPhase::WaitByteAcknowledge;
+            }
+            m_stateCycles = 0;
+        }
+        break;
+
+    case SendPhase::WaitByteAcknowledge:
+        if (!lineHigh(IECBus::Line::DATA))
+        {
+            setLineLow(IECBus::Line::CLK, false);
+            m_sendPhase = SendPhase::WaitAcknowledgeRelease;
+            m_stateCycles = 0;
+        }
+        break;
+
+    case SendPhase::WaitAcknowledgeRelease:
+        if (lineHigh(IECBus::Line::DATA))
+        {
+            if (m_transmitIndex + 1 >= m_transmitData.size())
+            {
+                finishSending();
+            }
+            else
+            {
+                ++m_transmitIndex;
+                m_transmitBit = 0;
+                m_sendPhase = SendPhase::WaitReady;
+                m_stateCycles = 0;
+            }
+        }
+        break;
+    }
+}
+
+void IECProtocol::prepareTransmitByte()
+{
+    m_transmitBit = 0;
+    m_stateCycles = 0;
+
+    const qsizetype lastIndex = m_transmitData.size() - 1;
+
+    if (m_transmitIndex == lastIndex)
+    {
+        // EOI wird vor dem letzten Byte signalisiert.
+        setLineLow(IECBus::Line::CLK, false);
+        setLineLow(IECBus::Line::DATA, false);
+        m_sendPhase = SendPhase::WaitEOIStart;
+    }
+    else
+    {
+        m_sendPhase = SendPhase::DriveBit;
+    }
+}
+
+void IECProtocol::finishSending()
+{
+    releaseBus();
+
+    m_transmitData.clear();
+    m_transmitIndex = 0;
+    m_transmitBit = 0;
+    m_stateCycles = 0;
+
+    m_state = State::Idle;
 }

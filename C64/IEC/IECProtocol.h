@@ -23,6 +23,18 @@ public:
         WaitEOIRelease,
         Send
     };
+    enum class SendPhase
+    {
+        WaitReady,
+        WaitEOIStart,
+        WaitEOIAcknowledge,
+        WaitEOIRelease,
+        DriveBit,
+        WaitClockLow,
+        WaitClockHigh,
+        WaitByteAcknowledge,
+        WaitAcknowledgeRelease
+    };
 
     enum class Mode
     {
@@ -52,11 +64,17 @@ public:
     ReceivedByte takeReceivedByte();
     bool takeListenEnded();
 
+    bool startSending(const QByteArray& data);
+
 private:
     void processAttention();
     void processReceivedByte(quint8 value, bool attention);
     void beginNextByte();
     void releaseBus();
+
+    void clockSend();
+    void prepareTransmitByte();
+    void finishSending();
 
     bool lineHigh(IECBus::Line line) const;
     void setLineLow(IECBus::Line line, bool low);
@@ -65,6 +83,7 @@ private:
     static constexpr quint32 EOI_TIMEOUT_CYCLES = 200;
     static constexpr quint32 EOI_ACK_CYCLES = 80;
     static constexpr quint32 BYTE_ACK_CYCLES = 100;
+    static constexpr quint32 SEND_PHASE_CYCLES = 1;
 
     quint8 m_deviceNumber = 0;
     IECBus* m_ptrBus = nullptr;
@@ -89,4 +108,9 @@ private:
     bool m_attentionClockLowSeen = false;
 
     QQueue<ReceivedByte> m_receivedBytes;
+
+    SendPhase m_sendPhase = SendPhase::WaitReady;
+    QByteArray m_transmitData;
+    qsizetype m_transmitIndex = 0;
+    quint8 m_transmitBit = 0;
 };
