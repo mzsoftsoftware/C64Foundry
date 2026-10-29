@@ -1,5 +1,7 @@
 #include "IECBus.h"
 
+#include <QDebug>
+
 
 IECBus::IECBus()
 {
@@ -88,4 +90,20 @@ quint8 IECBus::lineMask(const Line line)
     }
 
     return 0x00;
+}
+
+void IECBus::dumpLineStates() const
+{
+    qDebug() << "IEC bus participants:";
+
+    for (QHash<ParticipantId, quint8>::const_iterator it = m_participants.cbegin(); it != m_participants.cend(); ++it)
+    {
+        const quint8 state = it.value();
+
+        qDebug() << "Participant:" << it.key()
+                 << "CLK low:" << ((state & lineMask(Line::CLK)) != 0)
+                 << "DATA low:" << ((state & lineMask(Line::DATA)) != 0)
+                 << "ATN low:" << ((state & lineMask(Line::ATN)) != 0)
+                 << "RESET low:" << ((state & lineMask(Line::RESET)) != 0);
+    }
 }
