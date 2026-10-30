@@ -139,4 +139,7 @@ private:
     QByteArray m_transmitData;
     qsizetype m_transmitIndex = 0;
     quint8 m_transmitBit = 0;
+
+    bool m_previousSendClockHigh = true;
+    quint8 m_transmitClockRiseCount = 0;
 };

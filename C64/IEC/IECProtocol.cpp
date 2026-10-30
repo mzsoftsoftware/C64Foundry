@@ -364,6 +364,9 @@ bool IECProtocol::startSending(const QByteArray& data)
     m_transmitIndex = 0;
     m_transmitBit = 0;
 
+    m_previousSendClockHigh = lineHigh(IECBus::Line::CLK);
+    m_transmitClockRiseCount = 0;
+
     releaseBus();
 
     m_state = State::Send;
@@ -375,6 +378,25 @@ bool IECProtocol::startSending(const QByteArray& data)
 
 void IECProtocol::clockSend()
 {
+    const bool sendClockHigh = lineHigh(IECBus::Line::CLK);
+
+    if (m_transmitIndex == 0 &&
+        m_sendPhase == SendPhase::WaitClockHigh &&
+        m_transmitClockRiseCount < 8 &&
+        !m_previousSendClockHigh &&
+        sendClockHigh)
+    {
+        ++m_transmitClockRiseCount;
+
+        qDebug() << "IEC TX CLK rising:"
+                 << "edge:" << m_transmitClockRiseCount
+                 << "bit:" << m_transmitBit
+                 << "DATA high:" << lineHigh(IECBus::Line::DATA)
+                 << "ATN high:" << lineHigh(IECBus::Line::ATN);
+    }
+
+    m_previousSendClockHigh = sendClockHigh;
+
     switch (m_sendPhase)
     {
     case SendPhase::WaitReady:
