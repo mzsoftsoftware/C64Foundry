@@ -1929,7 +1929,25 @@ quint8 MOS6510::read(const quint16 address)
         m_ptrBus->readCycle(address);
         return value;
     }
-    return m_ptrBus->read(address);
+
+    const quint8 value = m_ptrBus->read(address);
+    if (address == 0xDD00)
+    {
+        static quint16 iecReadCount = 0;
+
+        if (iecReadCount < 256)
+        {
+            ++iecReadCount;
+
+            qDebug() << "CPU IEC read:"
+                     << "cycle:" << m_cycles
+                     << "PC:" << Qt::hex << m_programCounter
+                     << "address:" << Qt::hex << address
+                     << "value:" << Qt::hex << value;
+        }
+    }
+
+    return value;
 }
 void MOS6510::write(const quint16 address, const quint8 value)
 {
@@ -1974,6 +1992,15 @@ void MOS6510::write(const quint16 address, const quint8 value)
         m_ptrBus->setCpuPortLines(portPins());
         m_ptrBus->writeCycle(address);
         return;
+    }
+
+    if (address == 0xDD00)
+    {
+        qDebug() << "CPU IEC write:"
+                 << "cycle:" << m_cycles
+                 << "PC:" << Qt::hex << m_programCounter
+                 << "address:" << Qt::hex << address
+                 << "value:" << Qt::hex << value;
     }
     m_ptrBus->write(address, value);
 }

@@ -51,13 +51,24 @@ quint8 C64CIA2Port::portAInputs(quint8 portBOutput) const
     if (!dataHigh)
         inputs &= static_cast<quint8>(~0x80);
 
-    if (m_portAReadLogCount < 64)
+    const bool attentionHigh = m_ptrIECBus->lineHigh(IECBus::Line::ATN);
+    //
+    // Log CIA2 Port A reads during the IEC data phase.
+    // Reset the counter while ATN is active.
+    //
+    if (!attentionHigh)
+    {
+        m_portAReadLogCount = 0;
+    }
+    else if (m_portAReadLogCount < 256)
     {
         ++m_portAReadLogCount;
 
         qDebug() << "CIA2 IEC Port A read:"
+                 << "read:" << m_portAReadLogCount
                  << "CLK high:" << clockHigh
                  << "DATA high:" << dataHigh
+                 << "ATN high:" << attentionHigh
                  << "inputs:" << Qt::hex << inputs;
     }
 
