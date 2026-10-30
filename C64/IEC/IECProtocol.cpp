@@ -548,7 +548,7 @@ void IECProtocol::clockSend()
             {
                 finishSending();
             }
-            else
+            else if (m_stateCycles >= BETWEEN_BYTES_CYCLES)
             {
                 ++m_transmitIndex;
                 m_transmitBit = 0;

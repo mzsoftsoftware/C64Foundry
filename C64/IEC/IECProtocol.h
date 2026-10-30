@@ -94,6 +94,7 @@ private:
     static constexpr quint32 SEND_BIT_HIGH_CYCLES = 60;
     static constexpr quint32 TALK_ATTENTION_RELEASE_CYCLES = 30;
     static constexpr quint32 TALK_ATTENTION_ACK_HOLD_CYCLES = 80;
+    static constexpr quint32 BETWEEN_BYTES_CYCLES = 103;
 
     quint8 m_deviceNumber = 0;
     IECBus* m_ptrBus = nullptr;
