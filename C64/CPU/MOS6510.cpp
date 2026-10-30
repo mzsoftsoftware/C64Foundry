@@ -1933,16 +1933,19 @@ quint8 MOS6510::read(const quint16 address)
     const quint8 value = m_ptrBus->read(address);
     if (address == 0xDD00)
     {
-        static quint16 iecReadCount = 0;
+        static quint16 lastPC = 0xFFFF;
+        static quint8 lastValue = 0xFF;
+        static quint8 logCount = 0;
 
-        if (iecReadCount < 256)
+        if ((m_programCounter != lastPC || value != lastValue) && logCount < 32)
         {
-            ++iecReadCount;
+            ++logCount;
+            lastPC = m_programCounter;
+            lastValue = value;
 
             qDebug() << "CPU IEC read:"
                      << "cycle:" << m_cycles
                      << "PC:" << Qt::hex << m_programCounter
-                     << "address:" << Qt::hex << address
                      << "value:" << Qt::hex << value;
         }
     }
@@ -1996,11 +1999,17 @@ void MOS6510::write(const quint16 address, const quint8 value)
 
     if (address == 0xDD00)
     {
-        qDebug() << "CPU IEC write:"
-                 << "cycle:" << m_cycles
-                 << "PC:" << Qt::hex << m_programCounter
-                 << "address:" << Qt::hex << address
-                 << "value:" << Qt::hex << value;
+        static quint8 logCount = 0;
+
+        if (logCount < 16)
+        {
+            ++logCount;
+
+            qDebug() << "CPU IEC write:"
+                     << "cycle:" << m_cycles
+                     << "PC:" << Qt::hex << m_programCounter
+                     << "value:" << Qt::hex << value;
+        }
     }
     m_ptrBus->write(address, value);
 }
