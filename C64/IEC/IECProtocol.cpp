@@ -460,10 +460,21 @@ void IECProtocol::clockSend()
             m_sendPhase = SendPhase::WaitEOIRelease;
             m_stateCycles = 0;
         }
+        else if (m_stateCycles >= FRAME_HANDSHAKE_TIMEOUT_CYCLES)
+        {
+            qWarning() << "IEC TX timeout waiting for EOI acknowledge:"
+                       << "index:" << m_transmitIndex;
+
+            finishSending();
+        }
         break;
 
     case SendPhase::WaitEOIRelease:
-        if (lineHigh(IECBus::Line::DATA))
+        // Der C64 muss die EOI-Antwort mindestens 60 µs halten.
+        // Erst nach Ablauf dieser Zeit und Freigabe von DATA
+        // darf das erste Datenbit beginnen.
+        if (lineHigh(IECBus::Line::DATA) &&
+            m_stateCycles >= SEND_EOI_RESPONSE_HOLD_CYCLES)
         {
             m_transmitBit = 0;
             m_sendPhase = SendPhase::DriveBit;
@@ -485,7 +496,7 @@ void IECProtocol::clockSend()
     }
 
     case SendPhase::WaitClockLow:
-        if (m_stateCycles >= SEND_BIT_LOW_CYCLES)
+        if (m_stateCycles >= SEND_BIT_SETUP_CYCLES)
         {
             setLineLow(IECBus::Line::CLK, false);
             m_sendPhase = SendPhase::WaitClockHigh;
@@ -495,15 +506,14 @@ void IECProtocol::clockSend()
 
     case SendPhase::WaitClockHigh:
         // Der Listener darf CLK vorübergehend auf Low halten.
-        // Erst wenn CLK tatsächlich High ist, beginnt die
-        // Mindestdauer der High-Phase.
+        // Die Datenhaltezeit beginnt erst, wenn CLK tatsächlich High ist.
         if (!lineHigh(IECBus::Line::CLK))
         {
             m_stateCycles = 0;
             break;
         }
 
-        if (m_stateCycles >= SEND_BIT_HIGH_CYCLES)
+        if (m_stateCycles >= SEND_DATA_VALID_CYCLES)
         {
             setLineLow(IECBus::Line::CLK, true);
 
@@ -524,6 +534,7 @@ void IECProtocol::clockSend()
                          << "DATA:" << lineHigh(IECBus::Line::DATA)
                          << "ATN:" << lineHigh(IECBus::Line::ATN);
             }
+
             m_stateCycles = 0;
         }
         break;
@@ -535,7 +546,27 @@ void IECProtocol::clockSend()
                      << "index:" << m_transmitIndex
                      << "cycles:" << m_stateCycles;
 
+            m_sendPhase = SendPhase::WaitAcknowledgeHold;
+            m_stateCycles = 0;
+        }
+        else if (m_stateCycles >= FRAME_HANDSHAKE_TIMEOUT_CYCLES)
+        {
+            qWarning() << "IEC TX timeout waiting for byte ACK:"
+                       << "index:" << m_transmitIndex
+                       << "value:" << static_cast<quint8>(m_transmitData.at(m_transmitIndex));
+
+            finishSending();
+        }
+        break;
+
+    case SendPhase::WaitAcknowledgeHold:
+        // Ein externes Gerät als Talker muss das Byte-ACK
+        // mindestens 60 µs berücksichtigen.
+        // CLK bleibt währenddessen Low.
+        if (m_stateCycles >= SEND_BYTE_ACK_HOLD_CYCLES)
+        {
             setLineLow(IECBus::Line::CLK, false);
+
             m_sendPhase = SendPhase::WaitAcknowledgeRelease;
             m_stateCycles = 0;
         }
@@ -548,13 +579,25 @@ void IECProtocol::clockSend()
             {
                 finishSending();
             }
-            else if (m_stateCycles >= BETWEEN_BYTES_CYCLES)
+            else
             {
-                ++m_transmitIndex;
-                m_transmitBit = 0;
-                m_sendPhase = SendPhase::WaitReady;
+                m_sendPhase = SendPhase::WaitBetweenBytes;
                 m_stateCycles = 0;
             }
+        }
+        break;
+
+    case SendPhase::WaitBetweenBytes:
+        setLineLow(IECBus::Line::CLK, false);
+        setLineLow(IECBus::Line::DATA, false);
+
+        // T_BB beginnt erst nach Freigabe des ACKs.
+        if (m_stateCycles >= BETWEEN_BYTES_CYCLES)
+        {
+            ++m_transmitIndex;
+            m_transmitBit = 0;
+            m_sendPhase = SendPhase::WaitReady;
+            m_stateCycles = 0;
         }
         break;
 

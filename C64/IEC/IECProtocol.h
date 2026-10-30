@@ -38,7 +38,9 @@ public:
         WaitClockLow,
         WaitClockHigh,
         WaitByteAcknowledge,
-        WaitAcknowledgeRelease
+        WaitAcknowledgeHold,
+        WaitAcknowledgeRelease,
+        WaitBetweenBytes
     };
 
     enum class Mode
@@ -87,14 +89,30 @@ private:
     void resetSendDiagnostics();
 
 private:
-    static constexpr quint32 EOI_TIMEOUT_CYCLES = 200;
-    static constexpr quint32 EOI_ACK_CYCLES = 80;
+private:
+    // IEC timing values in C64 clock cycles.
+    // Values are rounded up to satisfy PAL and NTSC.
+
+    // Listener receiving from an external talker.
+    static constexpr quint32 EOI_TIMEOUT_CYCLES = 205;
+    static constexpr quint32 EOI_ACK_CYCLES = 82;
     static constexpr quint32 BYTE_ACK_CYCLES = 100;
-    static constexpr quint32 SEND_BIT_LOW_CYCLES = 60;
-    static constexpr quint32 SEND_BIT_HIGH_CYCLES = 60;
-    static constexpr quint32 TALK_ATTENTION_RELEASE_CYCLES = 30;
-    static constexpr quint32 TALK_ATTENTION_ACK_HOLD_CYCLES = 80;
+
+    // External talker transmitting to the C64.
+    static constexpr quint32 SEND_BIT_SETUP_CYCLES = 21;
+    static constexpr quint32 SEND_DATA_VALID_CYCLES = 62;
+    static constexpr quint32 SEND_BYTE_ACK_HOLD_CYCLES = 62;
+
+    // EOI response by the C64 listener.
+    static constexpr quint32 SEND_EOI_RESPONSE_HOLD_CYCLES = 62;
+
+    // Handshake timing.
     static constexpr quint32 BETWEEN_BYTES_CYCLES = 103;
+    static constexpr quint32 FRAME_HANDSHAKE_TIMEOUT_CYCLES = 1023;
+
+    // Talk attention turnaround.
+    static constexpr quint32 TALK_ATTENTION_RELEASE_CYCLES = 31;
+    static constexpr quint32 TALK_ATTENTION_ACK_HOLD_CYCLES = 82;
 
     quint8 m_deviceNumber = 0;
     IECBus* m_ptrBus = nullptr;
