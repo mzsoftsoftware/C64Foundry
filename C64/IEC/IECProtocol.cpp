@@ -502,22 +502,20 @@ void IECProtocol::clockSend()
                      << "cycles:" << m_stateCycles
                      << "CLK:" << lineHigh(IECBus::Line::CLK)
                      << "DATA:" << lineHigh(IECBus::Line::DATA);
+
             setLineLow(IECBus::Line::CLK, true);
 
             if (m_transmitBit < 7)
             {
-                setLineLow(IECBus::Line::CLK, true);
-
                 ++m_transmitBit;
                 m_sendPhase = SendPhase::DriveBit;
             }
             else
             {
-                setLineLow(IECBus::Line::CLK, false);
                 setLineLow(IECBus::Line::DATA, false);
-
                 m_sendPhase = SendPhase::WaitByteAcknowledge;
             }
+
             m_stateCycles = 0;
         }
         break;
