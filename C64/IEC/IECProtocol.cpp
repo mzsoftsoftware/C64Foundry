@@ -462,13 +462,14 @@ void IECProtocol::clockSend()
 
         if (m_transmitIndex == 0)
         {
-            qDebug() << "IEC DISK TX:"
-                     << "device:" << m_deviceNumber
-                     << "byte:" << Qt::hex << value
+            qDebug() << "IEC TX: bit setup"
+                     << "index:" << m_transmitIndex
+                     << "value:" << Qt::hex << value
                      << "bit:" << m_transmitBit
                      << "bitHigh:" << bitHigh
-                     << "DATA high:" << lineHigh(IECBus::Line::DATA)
-                     << "CLK high:" << lineHigh(IECBus::Line::CLK);
+                     << "cycles:" << m_stateCycles
+                     << "CLK:" << lineHigh(IECBus::Line::CLK)
+                     << "DATA:" << lineHigh(IECBus::Line::DATA);
         }
 
         m_sendPhase = SendPhase::WaitClockLow;
@@ -496,9 +497,10 @@ void IECProtocol::clockSend()
 
         if (m_stateCycles >= SEND_DATA_VALID_CYCLES)
         {
-            qDebug() << "IEC TX: byte bits complete"
+            qDebug() << "IEC TX: bit phase complete"
                      << "index:" << m_transmitIndex
-                     << "value:" << static_cast<quint8>(m_transmitData.at(m_transmitIndex))
+                     << "value:" << Qt::hex << static_cast<quint8>(m_transmitData.at(m_transmitIndex))
+                     << "bit:" << m_transmitBit
                      << "cycles:" << m_stateCycles
                      << "CLK:" << lineHigh(IECBus::Line::CLK)
                      << "DATA:" << lineHigh(IECBus::Line::DATA);
@@ -538,6 +540,8 @@ void IECProtocol::clockSend()
         {
             qDebug() << "IEC TX: byte ACK detected"
                      << "index:" << m_transmitIndex
+                     << "value:" << Qt::hex << static_cast<quint8>(m_transmitData.at(m_transmitIndex))
+                     << "lastBit:" << m_transmitBit
                      << "cycles:" << m_stateCycles
                      << "CLK:" << lineHigh(IECBus::Line::CLK)
                      << "DATA:" << lineHigh(IECBus::Line::DATA);
@@ -550,6 +554,7 @@ void IECProtocol::clockSend()
             qWarning() << "IEC TX timeout waiting for byte ACK:"
                        << "index:" << m_transmitIndex
                        << "value:" << static_cast<quint8>(m_transmitData.at(m_transmitIndex))
+                       << "lastBit:" << m_transmitBit
                        << "cycles:" << m_stateCycles
                        << "CLK:" << lineHigh(IECBus::Line::CLK)
                        << "DATA:" << lineHigh(IECBus::Line::DATA);
@@ -566,6 +571,8 @@ void IECProtocol::clockSend()
         {
             qDebug() << "IEC TX: ACK hold complete"
                      << "index:" << m_transmitIndex
+                     << "value:" << Qt::hex << static_cast<quint8>(m_transmitData.at(m_transmitIndex))
+                     << "lastBit:" << m_transmitBit
                      << "cycles:" << m_stateCycles
                      << "CLK:" << lineHigh(IECBus::Line::CLK)
                      << "DATA:" << lineHigh(IECBus::Line::DATA);
@@ -582,6 +589,8 @@ void IECProtocol::clockSend()
         {
             qDebug() << "IEC TX: ACK released"
                      << "index:" << m_transmitIndex
+                     << "value:" << Qt::hex << static_cast<quint8>(m_transmitData.at(m_transmitIndex))
+                     << "lastBit:" << m_transmitBit
                      << "cycles:" << m_stateCycles
                      << "CLK:" << lineHigh(IECBus::Line::CLK)
                      << "DATA:" << lineHigh(IECBus::Line::DATA);
@@ -677,6 +686,16 @@ void IECProtocol::prepareTransmitByte()
 {
     m_transmitBit = 0;
     m_stateCycles = 0;
+
+    const quint8 value = static_cast<quint8>(m_transmitData.at(m_transmitIndex));
+
+    qDebug() << "IEC TX: byte start"
+             << "index:" << m_transmitIndex
+             << "value:" << Qt::hex << value
+             << "size:" << m_transmitData.size()
+             << "last:" << (m_transmitIndex == m_transmitData.size() - 1)
+             << "CLK:" << lineHigh(IECBus::Line::CLK)
+             << "DATA:" << lineHigh(IECBus::Line::DATA);
 
     const qsizetype lastIndex = m_transmitData.size() - 1;
 
