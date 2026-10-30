@@ -143,13 +143,6 @@ quint8 C64Bus::read(const quint16 address)
                     // CIA 2: $DD00-$DDFF
                     //
                     value = m_ptrCIA2->readRegister(address);
-                    if ((address & 0x0F) == 0 && (value & 0xC0) == 0x40)
-                    {
-                        qDebug().nospace()
-                        << "C64Bus: CIA2 $DD00 read while CLK LOW / DATA HIGH"
-                        << " address=$" << Qt::hex << address
-                        << " value=$" << value;
-                    }
                     break;
 
                 case 0x0200:
@@ -284,23 +277,7 @@ void C64Bus::write(const quint16 address, const quint8 value)
             //
             // CIA 2: $DD00-$DDFF
             //
-            if ((address & 0x0F) == 0x00 || (address & 0x0F) == 0x02)
-            {
-                qDebug().nospace()
-                << "CIA2 register write: address=$"
-                << Qt::hex << address
-                << " value=$" << value;
-            }
-
             m_ptrCIA2->writeRegister(address, value);
-
-            if ((address & 0x0F) == 0x00 || (address & 0x0F) == 0x02)
-            {
-                qDebug().nospace()
-                << "CIA2 register state: portAOutput=$"
-                << Qt::hex << m_ptrCIA2->portAOutput()
-                << " portAPins=$" << m_ptrCIA2->portAPins();
-            }
             break;
 
         case 0x0200:
