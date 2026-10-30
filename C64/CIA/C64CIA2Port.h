@@ -22,4 +22,8 @@ public:
 private:
     IECBus* m_ptrIECBus = nullptr;
     IECBus::ParticipantId m_participantId = 0;
+
+    mutable bool m_hasPreviousSample = false;
+    mutable bool m_previousSampleClockHigh = true;
+    mutable bool m_previousSampleDataHigh = true;
 };

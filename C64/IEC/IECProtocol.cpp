@@ -381,6 +381,8 @@ bool IECProtocol::startSending(const QByteArray& data)
 
 void IECProtocol::clockSend()
 {
+    const SendPhase previousPhase = m_sendPhase;
+
     // Fortschritt liegt vor, sobald sich Phase, Byte oder Bit ändern.
     if (m_sendPhase != m_lastDiagnosticPhase ||
         m_transmitIndex != m_lastDiagnosticIndex ||
@@ -421,6 +423,14 @@ void IECProtocol::clockSend()
     case SendPhase::WaitReady:
         setLineLow(IECBus::Line::CLK, false);
         setLineLow(IECBus::Line::DATA, false);
+
+        if (m_stateCycles == 1)
+        {
+            qDebug() << "IEC TX WaitReady:"
+                     << "index:" << m_transmitIndex
+                     << "CLK:" << lineHigh(IECBus::Line::CLK)
+                     << "DATA:" << lineHigh(IECBus::Line::DATA);
+        }
 
         if (lineHigh(IECBus::Line::CLK) && lineHigh(IECBus::Line::DATA))
         {
@@ -506,25 +516,25 @@ void IECProtocol::clockSend()
             {
                 setLineLow(IECBus::Line::DATA, false);
                 m_sendPhase = SendPhase::WaitByteAcknowledge;
-            }
 
+                qDebug() << "IEC TX waiting for byte ACK:"
+                         << "index:" << m_transmitIndex
+                         << "value:" << static_cast<quint8>(m_transmitData.at(m_transmitIndex))
+                         << "CLK:" << lineHigh(IECBus::Line::CLK)
+                         << "DATA:" << lineHigh(IECBus::Line::DATA)
+                         << "ATN:" << lineHigh(IECBus::Line::ATN);
+            }
             m_stateCycles = 0;
         }
         break;
 
     case SendPhase::WaitByteAcknowledge:
-        if (m_transmitIndex == 0)
-        {
-            static bool acknowledgeWaitingLogged = false;
-
-            if (!acknowledgeWaitingLogged)
-            {
-                acknowledgeWaitingLogged = true;
-            }
-        }
-
         if (!lineHigh(IECBus::Line::DATA))
         {
+            qDebug() << "IEC TX byte ACK received:"
+                     << "index:" << m_transmitIndex
+                     << "cycles:" << m_stateCycles;
+
             setLineLow(IECBus::Line::CLK, false);
             m_sendPhase = SendPhase::WaitAcknowledgeRelease;
             m_stateCycles = 0;
@@ -593,6 +603,23 @@ void IECProtocol::clockSend()
             prepareTransmitByte();
         }
         break;
+    }
+    if (m_sendPhase != previousPhase)
+    {
+        quint8 value = 0;
+
+        if (m_transmitIndex >= 0 && m_transmitIndex < m_transmitData.size())
+            value = static_cast<quint8>(m_transmitData.at(m_transmitIndex));
+
+        qDebug() << "IEC TX phase:"
+                 << "from:" << static_cast<int>(previousPhase)
+                 << "to:" << static_cast<int>(m_sendPhase)
+                 << "index:" << m_transmitIndex
+                 << "value:" << Qt::hex << value
+                 << "bit:" << m_transmitBit
+                 << "CLK:" << lineHigh(IECBus::Line::CLK)
+                 << "DATA:" << lineHigh(IECBus::Line::DATA)
+                 << "ATN:" << lineHigh(IECBus::Line::ATN);
     }
 }
 

@@ -51,6 +51,20 @@ quint8 C64CIA2Port::portAInputs(quint8 portBOutput) const
     if (!dataHigh)
         inputs &= static_cast<quint8>(~0x80);
 
+    if (!m_hasPreviousSample ||
+        clockHigh != m_previousSampleClockHigh ||
+        dataHigh != m_previousSampleDataHigh)
+    {
+        qDebug() << "CIA2 IEC input sample:"
+                 << "CLK high:" << clockHigh
+                 << "DATA high:" << dataHigh
+                 << "PA input:" << Qt::hex << inputs;
+
+        m_previousSampleClockHigh = clockHigh;
+        m_previousSampleDataHigh = dataHigh;
+        m_hasPreviousSample = true;
+    }
+
     return inputs;
 }
 

@@ -356,7 +356,7 @@ bool IECFoundryDrive::createDirectoryProgram(const quint8 deviceNumber, QByteArr
     header.append(diskName);
     header.append('"');
     header.append(' ');
-    header.append(bam.mid(161, 2));
+    header.append(bam.mid(162, 2));
     header.append(' ');
     header.append(bam.mid(164, 2));
     if (!appendBasicLine(program, address, 0, header))
