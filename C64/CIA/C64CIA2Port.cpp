@@ -51,6 +51,16 @@ quint8 C64CIA2Port::portAInputs(quint8 portBOutput) const
     if (!dataHigh)
         inputs &= static_cast<quint8>(~0x80);
 
+    if (m_portAReadLogCount < 64)
+    {
+        ++m_portAReadLogCount;
+
+        qDebug() << "CIA2 IEC Port A read:"
+                 << "CLK high:" << clockHigh
+                 << "DATA high:" << dataHigh
+                 << "inputs:" << Qt::hex << inputs;
+    }
+
     return inputs;
 }
 

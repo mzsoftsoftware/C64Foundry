@@ -22,4 +22,6 @@ public:
 private:
     IECBus* m_ptrIECBus = nullptr;
     IECBus::ParticipantId m_participantId = 0;
+
+    mutable quint8 m_portAReadLogCount = 0;
 };
