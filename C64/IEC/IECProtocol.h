@@ -86,9 +86,6 @@ private:
     bool lineHigh(IECBus::Line line) const;
     void setLineLow(IECBus::Line line, bool low);
 
-    void resetSendDiagnostics();
-
-private:
 private:
     // IEC timing values in C64 clock cycles.
     // Values are rounded up to satisfy PAL and NTSC.
@@ -142,10 +139,4 @@ private:
     QByteArray m_transmitData;
     qsizetype m_transmitIndex = 0;
     quint8 m_transmitBit = 0;
-
-    // Diagnose eines länger andauernden Stillstands beim Senden.
-    quint32 m_sendNoProgressCycles = 0;
-    SendPhase m_lastDiagnosticPhase = SendPhase::WaitReady;
-    qsizetype m_lastDiagnosticIndex = -1;
-    quint8 m_lastDiagnosticBit = 255;
 };

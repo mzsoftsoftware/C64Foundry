@@ -51,20 +51,6 @@ quint8 C64CIA2Port::portAInputs(quint8 portBOutput) const
     if (!dataHigh)
         inputs &= static_cast<quint8>(~0x80);
 
-    if (!m_hasPreviousSample ||
-        clockHigh != m_previousSampleClockHigh ||
-        dataHigh != m_previousSampleDataHigh)
-    {
-        qDebug() << "CIA2 IEC input sample:"
-                 << "CLK high:" << clockHigh
-                 << "DATA high:" << dataHigh
-                 << "PA input:" << Qt::hex << inputs;
-
-        m_previousSampleClockHigh = clockHigh;
-        m_previousSampleDataHigh = dataHigh;
-        m_hasPreviousSample = true;
-    }
-
     return inputs;
 }
 
@@ -85,7 +71,7 @@ void C64CIA2Port::portAOutputChanged(quint8 portA, quint8 dataDirectionA)
     //
     // PA4 = IEC CLK OUT
     // PA5 = IEC DATA OUT
-    // PA6 = IEC ATN OUT
+    // PA3 = IEC ATN OUT
     //
     // Output signals are inverted:
     // CIA output high pulls the IEC line low.
@@ -96,22 +82,20 @@ void C64CIA2Port::portAOutputChanged(quint8 portA, quint8 dataDirectionA)
     const bool dataLow = (dataDirectionA & 0x20) && (portA & 0x20);
     const bool attentionLow = (dataDirectionA & 0x08) && (portA & 0x08);
 
-    static bool previousDataLow = false;
-    static bool previousClockLow = false;
+    const bool busClockHigh = m_ptrIECBus->lineHigh(IECBus::Line::CLK);
+    const bool busAttentionHigh = m_ptrIECBus->lineHigh(IECBus::Line::ATN);
 
-    if (dataLow != previousDataLow || clockLow != previousClockLow)
+    //
+    // Diagnose CIA2 output changes only during the byte-ACK window:
+    // CLK is held LOW by the talker and ATN is released.
+    //
+    if (!busClockHigh && busAttentionHigh)
     {
-        qDebug() << "CIA2 IEC outputs:"
+        qDebug() << "CIA2 IEC ACK window:"
                  << "PA:" << Qt::hex << portA
                  << "DDRA:" << Qt::hex << dataDirectionA
                  << "CLK low:" << clockLow
-                 << "DATA low:" << dataLow
-                 << "ATN low:" << attentionLow
-                 << "bus CLK high:" << m_ptrIECBus->lineHigh(IECBus::Line::CLK)
-                 << "bus DATA high:" << m_ptrIECBus->lineHigh(IECBus::Line::DATA);
-
-        previousDataLow = dataLow;
-        previousClockLow = clockLow;
+                 << "DATA low:" << dataLow;
     }
 
     m_ptrIECBus->setLineLow(m_participantId, IECBus::Line::CLK, clockLow);
