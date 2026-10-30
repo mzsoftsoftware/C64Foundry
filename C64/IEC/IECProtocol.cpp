@@ -396,7 +396,7 @@ void IECProtocol::clockSend()
 
         if (lineHigh(IECBus::Line::CLK) && lineHigh(IECBus::Line::DATA))
         {
-            if (m_stateCycles >= 2)
+            if (m_stateCycles >= TALK_LISTENER_READY_DELAY_CYCLES)
             {
                 qDebug() << "IEC TX: ready"
                          << "index:" << m_transmitIndex
