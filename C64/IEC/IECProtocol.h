@@ -30,6 +30,7 @@ public:
         WaitTalkAttentionRelease,
         WaitTalkAcknowledgeHold,
         WaitTalkListenerReady,
+        WaitInitialDataStart,
         WaitReady,
         WaitEOIStart,
         WaitEOIAcknowledge,
@@ -37,6 +38,7 @@ public:
         DriveBit,
         WaitClockLow,
         WaitClockHigh,
+        WaitFinalBitClockHold,
         WaitByteAcknowledge,
         WaitAcknowledgeHold,
         WaitAcknowledgeRelease,
@@ -94,9 +96,11 @@ private:
     static constexpr quint32 EOI_TIMEOUT_CYCLES = 205;
     static constexpr quint32 EOI_ACK_CYCLES = 82;
     static constexpr quint32 BYTE_ACK_CYCLES = 100;
+    static constexpr quint32 TALK_LISTENER_READY_DELAY_CYCLES = 62;
 
     // External talker transmitting to the C64.
     static constexpr quint32 SEND_BIT_SETUP_CYCLES = 21;
+    static constexpr quint32 SEND_FINAL_BIT_CLOCK_HOLD_CYCLES = 62;
     static constexpr quint32 SEND_DATA_VALID_CYCLES = 62;
     static constexpr quint32 SEND_BYTE_ACK_HOLD_CYCLES = 62;
 

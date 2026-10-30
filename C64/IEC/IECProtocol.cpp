@@ -513,9 +513,22 @@ void IECProtocol::clockSend()
             else
             {
                 setLineLow(IECBus::Line::DATA, false);
-                m_sendPhase = SendPhase::WaitByteAcknowledge;
+                m_sendPhase = SendPhase::WaitFinalBitClockHold;
             }
 
+            m_stateCycles = 0;
+        }
+        break;
+
+    case SendPhase::WaitFinalBitClockHold:
+        // Nach dem achten Bit muss CLK zunächst Low bleiben.
+        // Anschließend gibt das Laufwerk CLK frei, damit
+        // der C64 den Byteabschluss und sein ACK ausführen kann.
+        if (m_stateCycles >= SEND_FINAL_BIT_CLOCK_HOLD_CYCLES)
+        {
+            setLineLow(IECBus::Line::CLK, false);
+
+            m_sendPhase = SendPhase::WaitByteAcknowledge;
             m_stateCycles = 0;
         }
         break;
@@ -643,12 +656,19 @@ void IECProtocol::clockSend()
         break;
 
     case SendPhase::WaitTalkListenerReady:
-        // Erst nach der Freigabe von CLK kann der C64 DATA
-        // freigeben. Anschließend startet die Datenübertragung.
+        // Der C64 gibt DATA frei, bevor seine EOI-Prüfung
+        // vollständig abgeschlossen ist.
+        // Wir warten deshalb noch, bevor das erste Datenbit beginnt.
         if (lineHigh(IECBus::Line::DATA))
         {
-            prepareTransmitByte();
+            m_sendPhase = SendPhase::WaitInitialDataStart;
+            m_stateCycles = 0;
         }
+        break;
+
+    case SendPhase::WaitInitialDataStart:
+        if (m_stateCycles >= TALK_LISTENER_READY_DELAY_CYCLES)
+            prepareTransmitByte();
         break;
     }
 }
