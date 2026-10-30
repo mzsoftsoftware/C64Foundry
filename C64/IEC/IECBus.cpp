@@ -1,5 +1,7 @@
 #include "IECBus.h"
 
+#include <QDebug>
+
 
 IECBus::IECBus()
 {
@@ -28,6 +30,7 @@ bool IECBus::removeParticipant(const ParticipantId participant)
     return true;
 }
 
+
 bool IECBus::setLineLow(const ParticipantId participant, const Line line, const bool low)
 {
     QHash<ParticipantId, quint8>::iterator it = m_participants.find(participant);
@@ -37,18 +40,28 @@ bool IECBus::setLineLow(const ParticipantId participant, const Line line, const 
 
     const quint8 mask = lineMask(line);
     const quint8 previousState = it.value();
+    const bool previousLineHigh = lineHigh(line);
 
     if (low)
         it.value() |= mask;
     else
         it.value() &= static_cast<quint8>(~mask);
 
-    // Keine Änderung: Der effektive Buszustand bleibt gleich.
     if (it.value() == previousState)
         return true;
 
-    if (it.value() != previousState)
-        updateLineStates();
+    updateLineStates();
+
+    const bool currentLineHigh = lineHigh(line);
+
+    if (line == Line::DATA && previousLineHigh != currentLineHigh)
+    {
+        qDebug() << "IEC DATA edge:"
+                 << "participant:" << participant
+                 << "requestedLow:" << low
+                 << "previousHigh:" << previousLineHigh
+                 << "currentHigh:" << currentLineHigh;
+    }
 
     return true;
 }

@@ -23,8 +23,13 @@ void C64CIA2Port::setIECBus(IECBus* ptrIECBus)
     m_ptrIECBus = ptrIECBus;
     m_participantId = 0;
 
+
     if (m_ptrIECBus != nullptr)
+    {
         m_participantId = m_ptrIECBus->addParticipant();
+
+        qDebug() << "CIA2 IEC participant:" << m_participantId;
+    }
 }
 
 
