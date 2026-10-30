@@ -1932,35 +1932,18 @@ quint8 MOS6510::read(const quint16 address)
 
     const quint8 value = m_ptrBus->read(address);
 
-    if (address == 0xDD00 &&
-        m_programCounter >= 0xEE5A &&
-        m_programCounter <= 0xEE75)
+    if (address == 0xDD00 || address == 0xDD02)
     {
-        static quint8 logCount = 0;
+        static quint16 logCount = 0;
 
-        if (logCount < 40)
+        if (logCount < 500)
         {
             ++logCount;
 
-            qDebug() << "CPU IEC RX:"
+            qDebug() << "CPU CIA2 READ:"
                      << "cycle:" << m_cycles
                      << "PC:" << Qt::hex << m_programCounter
-                     << "value:" << Qt::hex << value;
-        }
-    }
-    if (address == 0xDD00 &&
-        m_programCounter >= 0xEE76 &&
-        m_programCounter <= 0xEEA5)
-    {
-        static quint8 logCount = 0;
-
-        if (logCount < 30)
-        {
-            ++logCount;
-
-            qDebug() << "CPU IEC RX END:"
-                     << "cycle:" << m_cycles
-                     << "PC:" << Qt::hex << m_programCounter
+                     << "register:" << Qt::hex << address
                      << "value:" << Qt::hex << value;
         }
     }
@@ -2012,43 +1995,20 @@ void MOS6510::write(const quint16 address, const quint8 value)
         return;
     }
 
-    if ((address == 0xDD00 || address == 0xDD02) && m_iecDebugAckWindow)
+    if (address == 0xDD00 || address == 0xDD02)
     {
-        static quint16 loggedPCs[8] = {};
-        static quint8 logCount = 0;
+        static quint16 logCount = 0;
 
-        bool alreadyLogged = false;
-
-        for (quint8 index = 0; index < logCount; ++index)
+        if (logCount < 500)
         {
-            if (loggedPCs[index] == m_programCounter)
-            {
-                alreadyLogged = true;
-                break;
-            }
-        }
-
-        if (!alreadyLogged && logCount < 8)
-        {
-            loggedPCs[logCount] = m_programCounter;
             ++logCount;
 
-            qDebug() << "CPU IEC ACK write:"
+            qDebug() << "CPU CIA2 WRITE:"
                      << "cycle:" << m_cycles
                      << "PC:" << Qt::hex << m_programCounter
                      << "register:" << Qt::hex << address
                      << "value:" << Qt::hex << value;
         }
-    }
-    if (address == 0xDD00 &&
-        m_programCounter >= 0xEE76 &&
-        m_programCounter <= 0xEEA5)
-    {
-        qDebug() << "CPU IEC RX END WRITE:"
-                 << "cycle:" << m_cycles
-                 << "PC:" << Qt::hex << m_programCounter
-                 << "register:" << address
-                 << "value:" << value;
     }
 
     m_ptrBus->write(address, value);

@@ -397,7 +397,15 @@ void IECProtocol::clockSend()
         if (lineHigh(IECBus::Line::CLK) && lineHigh(IECBus::Line::DATA))
         {
             if (m_stateCycles >= 2)
+            {
+                qDebug() << "IEC TX: ready"
+                         << "index:" << m_transmitIndex
+                         << "cycles:" << m_stateCycles
+                         << "CLK:" << lineHigh(IECBus::Line::CLK)
+                         << "DATA:" << lineHigh(IECBus::Line::DATA);
+
                 prepareTransmitByte();
+            }
         }
         else
         {
@@ -452,6 +460,17 @@ void IECProtocol::clockSend()
         setLineLow(IECBus::Line::DATA, !bitHigh);
         setLineLow(IECBus::Line::CLK, true);
 
+        if (m_transmitIndex == 0)
+        {
+            qDebug() << "IEC DISK TX:"
+                     << "device:" << m_deviceNumber
+                     << "byte:" << Qt::hex << value
+                     << "bit:" << m_transmitBit
+                     << "bitHigh:" << bitHigh
+                     << "DATA high:" << lineHigh(IECBus::Line::DATA)
+                     << "CLK high:" << lineHigh(IECBus::Line::CLK);
+        }
+
         m_sendPhase = SendPhase::WaitClockLow;
         m_stateCycles = 0;
         break;
@@ -477,19 +496,28 @@ void IECProtocol::clockSend()
 
         if (m_stateCycles >= SEND_DATA_VALID_CYCLES)
         {
+            qDebug() << "IEC TX: byte bits complete"
+                     << "index:" << m_transmitIndex
+                     << "value:" << static_cast<quint8>(m_transmitData.at(m_transmitIndex))
+                     << "cycles:" << m_stateCycles
+                     << "CLK:" << lineHigh(IECBus::Line::CLK)
+                     << "DATA:" << lineHigh(IECBus::Line::DATA);
             setLineLow(IECBus::Line::CLK, true);
 
             if (m_transmitBit < 7)
             {
+                setLineLow(IECBus::Line::CLK, true);
+
                 ++m_transmitBit;
                 m_sendPhase = SendPhase::DriveBit;
             }
             else
             {
+                setLineLow(IECBus::Line::CLK, false);
                 setLineLow(IECBus::Line::DATA, false);
+
                 m_sendPhase = SendPhase::WaitByteAcknowledge;
             }
-
             m_stateCycles = 0;
         }
         break;
@@ -497,6 +525,12 @@ void IECProtocol::clockSend()
     case SendPhase::WaitByteAcknowledge:
         if (!lineHigh(IECBus::Line::DATA))
         {
+            qDebug() << "IEC TX: byte ACK detected"
+                     << "index:" << m_transmitIndex
+                     << "cycles:" << m_stateCycles
+                     << "CLK:" << lineHigh(IECBus::Line::CLK)
+                     << "DATA:" << lineHigh(IECBus::Line::DATA);
+
             m_sendPhase = SendPhase::WaitAcknowledgeHold;
             m_stateCycles = 0;
         }
@@ -504,7 +538,10 @@ void IECProtocol::clockSend()
         {
             qWarning() << "IEC TX timeout waiting for byte ACK:"
                        << "index:" << m_transmitIndex
-                       << "value:" << static_cast<quint8>(m_transmitData.at(m_transmitIndex));
+                       << "value:" << static_cast<quint8>(m_transmitData.at(m_transmitIndex))
+                       << "cycles:" << m_stateCycles
+                       << "CLK:" << lineHigh(IECBus::Line::CLK)
+                       << "DATA:" << lineHigh(IECBus::Line::DATA);
 
             finishSending();
         }
@@ -516,6 +553,12 @@ void IECProtocol::clockSend()
         // CLK bleibt währenddessen Low.
         if (m_stateCycles >= SEND_BYTE_ACK_HOLD_CYCLES)
         {
+            qDebug() << "IEC TX: ACK hold complete"
+                     << "index:" << m_transmitIndex
+                     << "cycles:" << m_stateCycles
+                     << "CLK:" << lineHigh(IECBus::Line::CLK)
+                     << "DATA:" << lineHigh(IECBus::Line::DATA);
+
             setLineLow(IECBus::Line::CLK, false);
 
             m_sendPhase = SendPhase::WaitAcknowledgeRelease;
@@ -526,6 +569,12 @@ void IECProtocol::clockSend()
     case SendPhase::WaitAcknowledgeRelease:
         if (lineHigh(IECBus::Line::DATA))
         {
+            qDebug() << "IEC TX: ACK released"
+                     << "index:" << m_transmitIndex
+                     << "cycles:" << m_stateCycles
+                     << "CLK:" << lineHigh(IECBus::Line::CLK)
+                     << "DATA:" << lineHigh(IECBus::Line::DATA);
+
             if (m_transmitIndex + 1 >= m_transmitData.size())
             {
                 finishSending();
@@ -545,6 +594,12 @@ void IECProtocol::clockSend()
         // T_BB beginnt erst nach Freigabe des ACKs.
         if (m_stateCycles >= BETWEEN_BYTES_CYCLES)
         {
+            qDebug() << "IEC TX: next byte"
+                     << "old index:" << m_transmitIndex
+                     << "cycles:" << m_stateCycles
+                     << "CLK:" << lineHigh(IECBus::Line::CLK)
+                     << "DATA:" << lineHigh(IECBus::Line::DATA);
+
             ++m_transmitIndex;
             m_transmitBit = 0;
             m_sendPhase = SendPhase::WaitReady;

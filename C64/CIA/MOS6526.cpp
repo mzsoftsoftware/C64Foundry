@@ -20,7 +20,22 @@ quint8 MOS6526::readRegister(const quint8 address)
     case 0x00:
     {
         const quint8 inputs = m_ptrPort ? m_ptrPort->portAInputs(portBOutput()) : m_portAInputs;
-        return (m_portA & m_dataDirectionA) | (inputs & ~m_dataDirectionA);
+        const quint8 value = (m_portA & m_dataDirectionA) | (inputs & static_cast<quint8>(~m_dataDirectionA));
+
+        static quint8 previousValue = 0x00;
+
+        if (value != previousValue)
+        {
+            previousValue = value;
+
+            qDebug() << "CIA2 PRA READ:"
+                     << "PA:" << Qt::hex << m_portA
+                     << "DDRA:" << Qt::hex << m_dataDirectionA
+                     << "inputs:" << Qt::hex << inputs
+                     << "result:" << Qt::hex << value;
+        }
+
+        return value;
     }
 
     case 0x01:
