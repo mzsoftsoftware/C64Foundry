@@ -514,21 +514,26 @@ void IECProtocol::clockSend()
             }
             else
             {
-                setLineLow(IECBus::Line::DATA, false);
-                m_sendPhase = SendPhase::WaitFinalBitClockHold;
+                m_sendPhase = SendPhase::WaitFinalBitDataHold;
             }
 
             m_stateCycles = 0;
         }
         break;
 
-    case SendPhase::WaitFinalBitClockHold:
-        // Nach dem achten Bit muss CLK zunächst Low bleiben.
-        // Anschließend gibt das Laufwerk CLK frei, damit
-        // der C64 den Byteabschluss und sein ACK ausführen kann.
-        if (m_stateCycles >= SEND_FINAL_BIT_CLOCK_HOLD_CYCLES)
+    case SendPhase::WaitFinalBitDataHold:
+        // Nach der achten steigenden CLK-Flanke ist das letzte
+        // Datenbit übertragen. CLK bleibt Low, während DATA
+        // zunächst noch den Zustand des letzten Bits behält.
+        //
+        // Dadurch erhält der C64 Zeit, den Byteabschluss zu
+        // erkennen und sein ACK über DATA zu signalisieren.
+        //
+        // Erst danach gibt das Laufwerk DATA frei. Ein bereits
+        // aktives ACK des C64 bleibt dadurch auf der Leitung Low.
+        if (m_stateCycles >= SEND_FINAL_BIT_DATA_HOLD_CYCLES)
         {
-            setLineLow(IECBus::Line::CLK, false);
+            setLineLow(IECBus::Line::DATA, false);
 
             m_sendPhase = SendPhase::WaitByteAcknowledge;
             m_stateCycles = 0;
@@ -553,7 +558,7 @@ void IECProtocol::clockSend()
         {
             qWarning() << "IEC TX timeout waiting for byte ACK:"
                        << "index:" << m_transmitIndex
-                       << "value:" << static_cast<quint8>(m_transmitData.at(m_transmitIndex))
+                       << "value:" << Qt::hex << static_cast<quint8>(m_transmitData.at(m_transmitIndex))
                        << "lastBit:" << m_transmitBit
                        << "cycles:" << m_stateCycles
                        << "CLK:" << lineHigh(IECBus::Line::CLK)

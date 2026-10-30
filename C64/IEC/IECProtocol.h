@@ -38,7 +38,7 @@ public:
         DriveBit,
         WaitClockLow,
         WaitClockHigh,
-        WaitFinalBitClockHold,
+        WaitFinalBitDataHold,
         WaitByteAcknowledge,
         WaitAcknowledgeHold,
         WaitAcknowledgeRelease,
@@ -100,7 +100,7 @@ private:
 
     // External talker transmitting to the C64.
     static constexpr quint32 SEND_BIT_SETUP_CYCLES = 21;
-    static constexpr quint32 SEND_FINAL_BIT_CLOCK_HOLD_CYCLES = 62;
+    static constexpr quint32 SEND_FINAL_BIT_DATA_HOLD_CYCLES = 62;
     static constexpr quint32 SEND_DATA_VALID_CYCLES = 62;
     static constexpr quint32 SEND_BYTE_ACK_HOLD_CYCLES = 62;
 
