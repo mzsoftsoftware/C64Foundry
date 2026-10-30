@@ -132,6 +132,11 @@ void IECProtocol::clock()
 
             if (m_receivedBits == 8)
             {
+                qDebug() << "IEC RX byte complete:"
+                         << "value:" << Qt::hex << m_receivedByte
+                         << "ATN high:" << attentionHigh
+                         << "CLK high:" << clockHigh;
+
                 m_state = State::WaitByteEnd;
                 m_stateCycles = 0;
             }
@@ -146,6 +151,11 @@ void IECProtocol::clock()
             processReceivedByte(m_receivedByte, !attentionHigh);
 
             setLineLow(IECBus::Line::DATA, true);
+
+            qDebug() << "IEC RX byte ACK:"
+                     << "value:" << Qt::hex << m_receivedByte
+                     << "CLK high:" << lineHigh(IECBus::Line::CLK)
+                     << "DATA high:" << lineHigh(IECBus::Line::DATA);
 
             m_state = State::Acknowledge;
             m_stateCycles = 0;
@@ -378,25 +388,6 @@ bool IECProtocol::startSending(const QByteArray& data)
 
 void IECProtocol::clockSend()
 {
-    const bool sendClockHigh = lineHigh(IECBus::Line::CLK);
-
-    if (m_transmitIndex == 0 &&
-        m_sendPhase == SendPhase::WaitClockHigh &&
-        m_transmitClockRiseCount < 8 &&
-        !m_previousSendClockHigh &&
-        sendClockHigh)
-    {
-        ++m_transmitClockRiseCount;
-
-        qDebug() << "IEC TX CLK rising:"
-                 << "edge:" << m_transmitClockRiseCount
-                 << "bit:" << m_transmitBit
-                 << "DATA high:" << lineHigh(IECBus::Line::DATA)
-                 << "ATN high:" << lineHigh(IECBus::Line::ATN);
-    }
-
-    m_previousSendClockHigh = sendClockHigh;
-
     switch (m_sendPhase)
     {
     case SendPhase::WaitReady:
@@ -504,22 +495,8 @@ void IECProtocol::clockSend()
         break;
 
     case SendPhase::WaitByteAcknowledge:
-        if (m_stateCycles == 1)
-        {
-            qDebug() << "IEC TX ACK wait started:"
-                     << "index:" << m_transmitIndex
-                     << "CLK high:" << lineHigh(IECBus::Line::CLK)
-                     << "DATA high:" << lineHigh(IECBus::Line::DATA)
-                     << "ATN high:" << lineHigh(IECBus::Line::ATN);
-        }
-
         if (!lineHigh(IECBus::Line::DATA))
         {
-            qDebug() << "IEC TX ACK detected:"
-                     << "index:" << m_transmitIndex
-                     << "cycle:" << m_stateCycles
-                     << "CLK high:" << lineHigh(IECBus::Line::CLK);
-
             m_sendPhase = SendPhase::WaitAcknowledgeHold;
             m_stateCycles = 0;
         }

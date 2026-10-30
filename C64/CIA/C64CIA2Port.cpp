@@ -51,27 +51,6 @@ quint8 C64CIA2Port::portAInputs(quint8 portBOutput) const
     if (!dataHigh)
         inputs &= static_cast<quint8>(~0x80);
 
-    const bool attentionHigh = m_ptrIECBus->lineHigh(IECBus::Line::ATN);
-    //
-    // Log CIA2 Port A reads during the IEC data phase.
-    // Reset the counter while ATN is active.
-    //
-    if (!attentionHigh)
-    {
-        m_portAReadLogCount = 0;
-    }
-    else if (m_portAReadLogCount < 256)
-    {
-        ++m_portAReadLogCount;
-
-        qDebug() << "CIA2 IEC Port A read:"
-                 << "read:" << m_portAReadLogCount
-                 << "CLK high:" << clockHigh
-                 << "DATA high:" << dataHigh
-                 << "ATN high:" << attentionHigh
-                 << "inputs:" << Qt::hex << inputs;
-    }
-
     return inputs;
 }
 
@@ -102,22 +81,6 @@ void C64CIA2Port::portAOutputChanged(quint8 portA, quint8 dataDirectionA)
     const bool clockLow = (dataDirectionA & 0x10) && (portA & 0x10);
     const bool dataLow = (dataDirectionA & 0x20) && (portA & 0x20);
     const bool attentionLow = (dataDirectionA & 0x08) && (portA & 0x08);
-
-    const bool busClockHigh = m_ptrIECBus->lineHigh(IECBus::Line::CLK);
-    const bool busAttentionHigh = m_ptrIECBus->lineHigh(IECBus::Line::ATN);
-
-    //
-    // Diagnose CIA2 output changes only during the byte-ACK window:
-    // CLK is held LOW by the talker and ATN is released.
-    //
-    if (!busClockHigh && busAttentionHigh)
-    {
-        qDebug() << "CIA2 IEC ACK window:"
-                 << "PA:" << Qt::hex << portA
-                 << "DDRA:" << Qt::hex << dataDirectionA
-                 << "CLK low:" << clockLow
-                 << "DATA low:" << dataLow;
-    }
 
     m_ptrIECBus->setLineLow(m_participantId, IECBus::Line::CLK, clockLow);
     m_ptrIECBus->setLineLow(m_participantId, IECBus::Line::DATA, dataLow);

@@ -40,7 +40,6 @@ bool IECBus::setLineLow(const ParticipantId participant, const Line line, const 
 
     const quint8 mask = lineMask(line);
     const quint8 previousState = it.value();
-    const bool previousLineHigh = lineHigh(line);
 
     if (low)
         it.value() |= mask;
@@ -51,17 +50,6 @@ bool IECBus::setLineLow(const ParticipantId participant, const Line line, const 
         return true;
 
     updateLineStates();
-
-    const bool currentLineHigh = lineHigh(line);
-
-    if (line == Line::DATA && previousLineHigh != currentLineHigh)
-    {
-        qDebug() << "IEC DATA edge:"
-                 << "participant:" << participant
-                 << "requestedLow:" << low
-                 << "previousHigh:" << previousLineHigh
-                 << "currentHigh:" << currentLineHigh;
-    }
 
     return true;
 }
