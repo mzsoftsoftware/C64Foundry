@@ -436,6 +436,11 @@ void IECProtocol::clockSend()
 
         if (m_stateCycles >= EOI_TIMEOUT_CYCLES)
         {
+            qDebug() << "IEC TX: EOI pause complete"
+                     << "cycles:" << m_stateCycles
+                     << "CLK:" << lineHigh(IECBus::Line::CLK)
+                     << "DATA:" << lineHigh(IECBus::Line::DATA);
+
             m_sendPhase = SendPhase::WaitEOIAcknowledge;
             m_stateCycles = 0;
         }
@@ -444,13 +449,23 @@ void IECProtocol::clockSend()
     case SendPhase::WaitEOIAcknowledge:
         if (!lineHigh(IECBus::Line::DATA))
         {
+            qDebug() << "IEC TX: EOI acknowledge detected"
+                     << "index:" << m_transmitIndex
+                     << "cycles:" << m_stateCycles
+                     << "CLK:" << lineHigh(IECBus::Line::CLK)
+                     << "DATA:" << lineHigh(IECBus::Line::DATA);
+
             m_sendPhase = SendPhase::WaitEOIRelease;
             m_stateCycles = 0;
         }
         else if (m_stateCycles >= FRAME_HANDSHAKE_TIMEOUT_CYCLES)
         {
-            qWarning() << "IEC TX timeout waiting for EOI acknowledge:"
-                       << "index:" << m_transmitIndex;
+            qWarning() << "IEC TX: EOI acknowledge timeout"
+                       << "index:" << m_transmitIndex
+                       << "cycles:" << m_stateCycles
+                       << "CLK:" << lineHigh(IECBus::Line::CLK)
+                       << "DATA:" << lineHigh(IECBus::Line::DATA)
+                       << "participant:" << m_participantId;
 
             finishSending();
         }
