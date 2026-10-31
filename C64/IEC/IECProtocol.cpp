@@ -96,9 +96,16 @@ void IECProtocol::clock()
 
     case State::WaitFirstClockLow:
         // EOI wird vor dem ersten Datenbit erkannt.
-        // EOI gilt nur während der Datenphase.
+        // EOI gilt nur während der Datenphase.        
         if (attentionHigh && m_mode == Mode::Listen && clockHigh && m_stateCycles >= EOI_TIMEOUT_CYCLES)
         {
+            qDebug() << "IEC RX: EOI detected"
+                     << "mode:" << static_cast<int>(m_mode)
+                     << "ATN high:" << attentionHigh
+                     << "CLK high:" << clockHigh
+                     << "DATA high before ACK:" << lineHigh(IECBus::Line::DATA)
+                     << "cycles:" << m_stateCycles;
+
             setLineLow(IECBus::Line::DATA, true);
 
             m_endOfInformation = true;
@@ -186,10 +193,20 @@ void IECProtocol::clock()
         }
         break;
 
+
     case State::AcknowledgeEOI:
         if (m_stateCycles >= EOI_ACK_CYCLES)
         {
+            qDebug() << "IEC RX: EOI acknowledge complete"
+                     << "cycles:" << m_stateCycles
+                     << "CLK high:" << lineHigh(IECBus::Line::CLK)
+                     << "DATA high before release:" << lineHigh(IECBus::Line::DATA);
+
             setLineLow(IECBus::Line::DATA, false);
+
+            qDebug() << "IEC RX: EOI DATA released"
+                     << "CLK high:" << lineHigh(IECBus::Line::CLK)
+                     << "DATA high after release:" << lineHigh(IECBus::Line::DATA);
 
             m_state = State::WaitEOIRelease;
             m_stateCycles = 0;
