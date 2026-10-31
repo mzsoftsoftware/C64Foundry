@@ -441,11 +441,8 @@ void IECProtocol::clockSend()
         setLineLow(IECBus::Line::CLK, false);
         setLineLow(IECBus::Line::DATA, false);
 
-        if (!lineHigh(IECBus::Line::CLK) || !lineHigh(IECBus::Line::DATA))
-        {
-            m_stateCycles = 0;
+        if (!lineHigh(IECBus::Line::CLK))
             break;
-        }
 
         if (m_stateCycles >= EOI_TIMEOUT_CYCLES)
         {
@@ -485,11 +482,11 @@ void IECProtocol::clockSend()
         break;
 
     case SendPhase::WaitEOIRelease:
-        // Der C64 muss die EOI-Antwort mindestens 60 µs halten.
-        // Erst nach Ablauf dieser Zeit und Freigabe von DATA
-        // darf das erste Datenbit beginnen.
-        if (lineHigh(IECBus::Line::DATA) &&
-            m_stateCycles >= SEND_EOI_RESPONSE_HOLD_CYCLES)
+        // Der Listener hält DATA während seiner EOI-Bestätigung
+        // mindestens 60 µs auf Low. Sobald DATA wieder High ist,
+        // beginnt der Talker innerhalb der zulässigen Antwortzeit
+        // mit dem letzten Byte.
+        if (lineHigh(IECBus::Line::DATA))
         {
             m_transmitBit = 0;
             m_sendPhase = SendPhase::DriveBit;
@@ -651,8 +648,21 @@ void IECProtocol::clockSend()
             }
             else
             {
-                m_sendPhase = SendPhase::WaitBetweenBytes;
-                m_stateCycles = 0;
+                ++m_transmitIndex;
+                m_transmitBit = 0;
+
+                if (m_transmitIndex == m_transmitData.size() - 1)
+                {
+                    // Das letzte Byte beginnt mit der EOI-Sequenz.
+                    // Die EOI-Frist startet direkt nach Freigabe des
+                    // vorherigen Byte-ACKs.
+                    prepareTransmitByte();
+                }
+                else
+                {
+                    m_sendPhase = SendPhase::WaitBetweenBytes;
+                    m_stateCycles = 0;
+                }
             }
         }
         break;
@@ -751,10 +761,17 @@ void IECProtocol::prepareTransmitByte()
 
     if (m_transmitIndex == lastIndex)
     {
-        // EOI wird vor dem letzten Byte signalisiert.
         setLineLow(IECBus::Line::CLK, false);
         setLineLow(IECBus::Line::DATA, false);
+
         m_sendPhase = SendPhase::WaitEOIStart;
+
+        qDebug() << "IEC TX: EOI start"
+                 << "index:" << m_transmitIndex
+                 << "cycles:" << m_stateCycles
+                 << "CLK:" << lineHigh(IECBus::Line::CLK)
+                 << "DATA:" << lineHigh(IECBus::Line::DATA)
+                 << "participant:" << m_participantId;
     }
     else
     {

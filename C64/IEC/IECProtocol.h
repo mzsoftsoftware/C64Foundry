@@ -104,9 +104,6 @@ private:
     static constexpr quint32 SEND_DATA_VALID_CYCLES = 62;
     static constexpr quint32 SEND_BYTE_ACK_HOLD_CYCLES = 62;
 
-    // EOI response by the C64 listener.
-    static constexpr quint32 SEND_EOI_RESPONSE_HOLD_CYCLES = 82;
-
     // Handshake timing.
     static constexpr quint32 BETWEEN_BYTES_CYCLES = 103;
     static constexpr quint32 FRAME_HANDSHAKE_TIMEOUT_CYCLES = 1023;
