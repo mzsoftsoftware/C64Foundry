@@ -61,17 +61,13 @@ void IECProtocol::clock()
 
     ++m_stateCycles;
 
-    if (m_mode == Mode::Listen &&
-        attentionHigh &&
-        clockHigh &&
-        m_stateCycles == 1)
+    if (m_deviceNumber == 8 && m_state == State::WaitFirstClockLow)
     {
-        qDebug() << "IEC RX: listener active"
-                 << "device:" << m_deviceNumber
-                 << "participant:" << m_participantId
-                 << "state:" << static_cast<int>(m_state)
-                 << "mode:" << static_cast<int>(m_mode);
+        qDebug() << "IEC RX: waiting first clock low"
+                 << "mode:" << static_cast<int>(m_mode)
+                 << "cycles:" << m_stateCycles;
     }
+
     switch (m_state)
     {
     case State::Idle:
@@ -444,6 +440,12 @@ void IECProtocol::clockSend()
     case SendPhase::WaitEOIStart:
         setLineLow(IECBus::Line::CLK, false);
         setLineLow(IECBus::Line::DATA, false);
+
+        if (!lineHigh(IECBus::Line::CLK) || !lineHigh(IECBus::Line::DATA))
+        {
+            m_stateCycles = 0;
+            break;
+        }
 
         if (m_stateCycles >= EOI_TIMEOUT_CYCLES)
         {
