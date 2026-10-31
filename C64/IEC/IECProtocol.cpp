@@ -401,7 +401,11 @@ bool IECProtocol::startSending(const QByteArray& data)
     m_previousSendClockHigh = lineHigh(IECBus::Line::CLK);
     m_transmitClockRiseCount = 0;
 
-    releaseBus();
+    // Während des TALK-Turnarounds hält das Laufwerk DATA zunächst
+    // weiterhin Low. CLK wird freigegeben, damit der C64 die
+    // Übergabe durch seine CLK-Freigabe einleiten kann.
+    setLineLow(IECBus::Line::DATA, true);
+    setLineLow(IECBus::Line::CLK, false);
 
     m_state = State::Send;
     m_sendPhase = SendPhase::WaitTalkTurnaround;
@@ -442,15 +446,13 @@ void IECProtocol::clockSend()
         setLineLow(IECBus::Line::DATA, false);
 
         if (!lineHigh(IECBus::Line::CLK))
+        {
+            m_stateCycles = 0;
             break;
+        }
 
         if (m_stateCycles >= EOI_TIMEOUT_CYCLES)
         {
-            qDebug() << "IEC TX: EOI pause complete"
-                     << "cycles:" << m_stateCycles
-                     << "CLK:" << lineHigh(IECBus::Line::CLK)
-                     << "DATA:" << lineHigh(IECBus::Line::DATA);
-
             m_sendPhase = SendPhase::WaitEOIAcknowledge;
             m_stateCycles = 0;
         }
@@ -688,50 +690,55 @@ void IECProtocol::clockSend()
         break;
 
     case SendPhase::WaitTalkTurnaround:
-        // Der C64 gibt CLK frei, während DATA noch Low ist.
-        // DATA kann dabei weiterhin durch das Laufwerk selbst
-        // auf Low gehalten werden.
+        // Der C64 leitet den Rollenwechsel ein, indem er CLK freigibt.
+        // Das Laufwerk hält DATA bis zu diesem Zeitpunkt weiterhin Low.
         if (lineHigh(IECBus::Line::CLK))
         {
-            m_sendPhase = SendPhase::WaitTalkAttentionRelease;
-            m_stateCycles = 0;
-        }
-        break;
-
-    case SendPhase::WaitTalkAttentionRelease:
-        // Dem C64 Zeit geben, DATA als Listener zu übernehmen,
-        // bevor das Laufwerk seine eigene DATA-Bestätigung freigibt.
-        if (m_stateCycles >= TALK_ATTENTION_RELEASE_CYCLES)
-        {
-            setLineLow(IECBus::Line::DATA, false);
+            // Das Laufwerk übernimmt jetzt die TALK-Rolle:
+            // CLK auf Low ziehen und DATA freigeben.
             setLineLow(IECBus::Line::CLK, true);
+            setLineLow(IECBus::Line::DATA, false);
 
             m_sendPhase = SendPhase::WaitTalkAcknowledgeHold;
             m_stateCycles = 0;
+
+            qDebug() << "IEC TX: TALK turnaround acknowledged"
+                     << "cycles:" << m_stateCycles
+                     << "CLK:" << lineHigh(IECBus::Line::CLK)
+                     << "DATA:" << lineHigh(IECBus::Line::DATA)
+                     << "participant:" << m_participantId;
         }
         break;
 
     case SendPhase::WaitTalkAcknowledgeHold:
         // Das Laufwerk hält CLK mindestens 80 µs auf Low.
-        // Danach gibt es CLK frei, damit der C64 als Listener
-        // seine Bereitschaft durch DATA High signalisieren kann.
+        // Anschließend gibt es CLK frei und wartet auf die
+        // Listener-Bereitschaft des C64 über DATA High.
         if (m_stateCycles >= TALK_ATTENTION_ACK_HOLD_CYCLES)
         {
             setLineLow(IECBus::Line::CLK, false);
 
             m_sendPhase = SendPhase::WaitTalkListenerReady;
             m_stateCycles = 0;
+
+            qDebug() << "IEC TX: TALK acknowledge hold complete"
+                     << "cycles:" << TALK_ATTENTION_ACK_HOLD_CYCLES
+                     << "CLK:" << lineHigh(IECBus::Line::CLK)
+                     << "DATA:" << lineHigh(IECBus::Line::DATA);
         }
         break;
 
     case SendPhase::WaitTalkListenerReady:
-        // Der C64 gibt DATA frei, bevor seine EOI-Prüfung
-        // vollständig abgeschlossen ist.
-        // Wir warten deshalb noch, bevor das erste Datenbit beginnt.
+        // Nach Freigabe von CLK wartet das Laufwerk darauf,
+        // dass der C64 DATA freigibt und damit empfangsbereit ist.
         if (lineHigh(IECBus::Line::DATA))
         {
             m_sendPhase = SendPhase::WaitInitialDataStart;
             m_stateCycles = 0;
+
+            qDebug() << "IEC TX: C64 listener ready"
+                     << "CLK:" << lineHigh(IECBus::Line::CLK)
+                     << "DATA:" << lineHigh(IECBus::Line::DATA);
         }
         break;
 

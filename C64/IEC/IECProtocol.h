@@ -27,7 +27,6 @@ public:
     enum class SendPhase
     {
         WaitTalkTurnaround,
-        WaitTalkAttentionRelease,
         WaitTalkAcknowledgeHold,
         WaitTalkListenerReady,
         WaitInitialDataStart,
@@ -109,7 +108,6 @@ private:
     static constexpr quint32 FRAME_HANDSHAKE_TIMEOUT_CYCLES = 1023;
 
     // Talk attention turnaround.
-    static constexpr quint32 TALK_ATTENTION_RELEASE_CYCLES = 31;
     static constexpr quint32 TALK_ATTENTION_ACK_HOLD_CYCLES = 82;
 
     quint8 m_deviceNumber = 0;
