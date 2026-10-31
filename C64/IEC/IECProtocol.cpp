@@ -61,6 +61,17 @@ void IECProtocol::clock()
 
     ++m_stateCycles;
 
+    if (m_mode == Mode::Listen &&
+        attentionHigh &&
+        clockHigh &&
+        m_stateCycles == 1)
+    {
+        qDebug() << "IEC RX: listener active"
+                 << "device:" << m_deviceNumber
+                 << "participant:" << m_participantId
+                 << "state:" << static_cast<int>(m_state)
+                 << "mode:" << static_cast<int>(m_mode);
+    }
     switch (m_state)
     {
     case State::Idle:

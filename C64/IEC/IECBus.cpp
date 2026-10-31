@@ -51,6 +51,16 @@ bool IECBus::setLineLow(const ParticipantId participant, const Line line, const 
 
     updateLineStates();
 
+    if (line == Line::DATA &&
+        lineHigh(Line::ATN) &&
+        lineHigh(Line::CLK))
+    {
+        qDebug() << "IEC BUS: DATA transition"
+                 << "participant:" << participant
+                 << "low:" << low
+                 << "DATA high after change:" << lineHigh(Line::DATA);
+    }
+
     return true;
 }
 
