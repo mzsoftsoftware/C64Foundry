@@ -103,7 +103,13 @@ void IECProtocol::clock()
 
     case State::WaitFirstClockLow:
         // EOI wird vor dem ersten Datenbit erkannt.
-        // EOI gilt nur während der Datenphase.        
+        // EOI gilt nur während der Datenphase.
+        qDebug() << "IEC RX: EOI condition reached"
+                 << "mode:" << static_cast<int>(m_mode)
+                 << "ATN:" << attentionHigh
+                 << "CLK:" << clockHigh
+                 << "DATA:" << lineHigh(IECBus::Line::DATA)
+                 << "cycles:" << m_stateCycles;
         if (attentionHigh && m_mode == Mode::Listen && clockHigh && m_stateCycles >= EOI_TIMEOUT_CYCLES)
         {
             qDebug() << "IEC RX: EOI detected"
@@ -186,20 +192,20 @@ void IECProtocol::clock()
         break;
 
     case State::WaitNextClockHigh:
-        // Nach dem Byte-ACK hält der Listener
-        // DATA zunächst Low.
-        //
-        // Sobald der Talker CLK freigibt, wird
-        // DATA freigegeben und das nächste Byte erwartet.
         if (clockHigh)
         {
             setLineLow(IECBus::Line::DATA, false);
 
             m_state = State::WaitFirstClockLow;
             m_stateCycles = 0;
+
+            qDebug() << "IEC RX: ready for next byte"
+                     << "mode:" << static_cast<int>(m_mode)
+                     << "ATN:" << lineHigh(IECBus::Line::ATN)
+                     << "CLK:" << lineHigh(IECBus::Line::CLK)
+                     << "DATA:" << lineHigh(IECBus::Line::DATA);
         }
         break;
-
 
     case State::AcknowledgeEOI:
         if (m_stateCycles >= EOI_ACK_CYCLES)
@@ -775,10 +781,9 @@ void IECProtocol::prepareTransmitByte()
 
         qDebug() << "IEC TX: EOI start"
                  << "index:" << m_transmitIndex
-                 << "cycles:" << m_stateCycles
+                 << "ATN:" << lineHigh(IECBus::Line::ATN)
                  << "CLK:" << lineHigh(IECBus::Line::CLK)
-                 << "DATA:" << lineHigh(IECBus::Line::DATA)
-                 << "participant:" << m_participantId;
+                 << "DATA:" << lineHigh(IECBus::Line::DATA);
     }
     else
     {
