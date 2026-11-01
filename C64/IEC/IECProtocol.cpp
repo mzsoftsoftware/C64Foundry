@@ -448,11 +448,6 @@ void IECProtocol::clockSend()
         break;
 
     case SendPhase::WaitEOIAcknowledge:
-        qDebug() << "IEC TX: EOI acknowledge wait"
-                 << "index:" << m_transmitIndex
-                 << "cycles:" << m_stateCycles
-                 << "CLK:" << lineHigh(IECBus::Line::CLK)
-                 << "DATA:" << lineHigh(IECBus::Line::DATA);
         if (!lineHigh(IECBus::Line::DATA))
         {
             qDebug() << "IEC TX: EOI acknowledge detected"
