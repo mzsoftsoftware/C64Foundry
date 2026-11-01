@@ -447,24 +447,12 @@ void IECProtocol::clockSend()
         }
         break;
 
-    case SendPhase::WaitEOIStart:
-        setLineLow(IECBus::Line::CLK, false);
-        setLineLow(IECBus::Line::DATA, false);
-
-        if (!lineHigh(IECBus::Line::CLK))
-        {
-            m_stateCycles = 0;
-            break;
-        }
-
-        if (m_stateCycles >= EOI_TIMEOUT_CYCLES)
-        {
-            m_sendPhase = SendPhase::WaitEOIAcknowledge;
-            m_stateCycles = 0;
-        }
-        break;
-
     case SendPhase::WaitEOIAcknowledge:
+        qDebug() << "IEC TX: EOI acknowledge wait"
+                 << "index:" << m_transmitIndex
+                 << "cycles:" << m_stateCycles
+                 << "CLK:" << lineHigh(IECBus::Line::CLK)
+                 << "DATA:" << lineHigh(IECBus::Line::DATA);
         if (!lineHigh(IECBus::Line::DATA))
         {
             qDebug() << "IEC TX: EOI acknowledge detected"
@@ -777,11 +765,10 @@ void IECProtocol::prepareTransmitByte()
         setLineLow(IECBus::Line::CLK, false);
         setLineLow(IECBus::Line::DATA, false);
 
-        m_sendPhase = SendPhase::WaitEOIStart;
+        m_sendPhase = SendPhase::WaitEOIAcknowledge;
 
-        qDebug() << "IEC TX: EOI start"
+        qDebug() << "IEC TX: EOI wait"
                  << "index:" << m_transmitIndex
-                 << "ATN:" << lineHigh(IECBus::Line::ATN)
                  << "CLK:" << lineHigh(IECBus::Line::CLK)
                  << "DATA:" << lineHigh(IECBus::Line::DATA);
     }

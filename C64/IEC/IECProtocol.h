@@ -31,7 +31,6 @@ public:
         WaitTalkListenerReady,
         WaitInitialDataStart,
         WaitReady,
-        WaitEOIStart,
         WaitEOIAcknowledge,
         WaitEOIRelease,
         DriveBit,
@@ -92,7 +91,7 @@ private:
     // Values are rounded up to satisfy PAL and NTSC.
 
     // Listener receiving from an external talker.
-    static constexpr quint32 EOI_TIMEOUT_CYCLES = 205;
+    static constexpr quint32 EOI_TIMEOUT_CYCLES = 256;
     static constexpr quint32 EOI_ACK_CYCLES = 82;
     static constexpr quint32 BYTE_ACK_CYCLES = 100;
     static constexpr quint32 TALK_LISTENER_READY_DELAY_CYCLES = 62;
