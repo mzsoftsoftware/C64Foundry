@@ -413,3 +413,134 @@ void MOS6526TestRegister::testSerialPortInputRaisesInterruptAfterEightBits()
     //
     QVERIFY(!cia.irq());
 }
+
+void MOS6526TestRegister::testSerialPortInputShiftsOnlyOnRisingCNT()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x0C, 0x00);
+
+    cia.setSP(true);
+    cia.setCNT(false);
+
+    QCOMPARE(cia.readRegister(0x0C), quint8(0x00));
+
+    cia.setCNT(true);
+
+    QCOMPARE(cia.readRegister(0x0C), quint8(0x01));
+
+    cia.setCNT(false);
+
+    QCOMPARE(cia.readRegister(0x0C), quint8(0x01));
+}
+
+void MOS6526TestRegister::testSerialPortOutputModeDoesNotShiftInput()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x0E, 0x40);
+    cia.writeRegister(0x0C, 0xA5);
+
+    cia.setSP(false);
+    cia.setCNT(false);
+    cia.setCNT(true);
+
+    QCOMPARE(cia.readRegister(0x0C), quint8(0xA5));
+}
+
+void MOS6526TestRegister::testSerialPortInputReceivesConsecutiveBytes()
+{
+    MOS6526 cia;
+
+    const quint8 firstData = 0xA5;
+    const quint8 secondData = 0x3C;
+
+    for (int bit = 7; bit >= 0; --bit)
+    {
+        cia.setSP((firstData & (1 << bit)) != 0);
+        cia.setCNT(false);
+        cia.setCNT(true);
+    }
+
+    QCOMPARE(cia.readRegister(0x0C), firstData);
+
+    for (int bit = 7; bit >= 0; --bit)
+    {
+        cia.setSP((secondData & (1 << bit)) != 0);
+        cia.setCNT(false);
+        cia.setCNT(true);
+    }
+
+    QCOMPARE(cia.readRegister(0x0C), secondData);
+}
+
+void MOS6526TestRegister::testSerialPortInputResetClearsBitCount()
+{
+    MOS6526 cia;
+
+    //
+    // Start with an incomplete transfer.
+    //
+    cia.setSP(true);
+    cia.setCNT(false);
+    cia.setCNT(true);
+
+    cia.setSP(false);
+    cia.setCNT(false);
+    cia.setCNT(true);
+
+    cia.setSP(true);
+    cia.setCNT(false);
+    cia.setCNT(true);
+
+    cia.reset();
+
+    //
+    // Enable the serial interrupt after reset.
+    //
+    cia.writeRegister(0x0D, 0x88);
+
+    const quint8 data = 0x5A;
+
+    //
+    // Seven bits must not complete the previous transfer.
+    //
+    for (int bit = 7; bit >= 1; --bit)
+    {
+        cia.setSP((data & (1 << bit)) != 0);
+        cia.setCNT(false);
+        cia.setCNT(true);
+    }
+
+    QVERIFY(!cia.irq());
+
+    //
+    // The eighth bit completes the new byte.
+    //
+    cia.setSP((data & 0x01) != 0);
+    cia.setCNT(false);
+    cia.setCNT(true);
+
+    QVERIFY(cia.irq());
+    QCOMPARE(cia.readRegister(0x0C), data);
+}
+
+void MOS6526TestRegister::testSerialPortInputInterruptWithoutMask()
+{
+    MOS6526 cia;
+
+    const quint8 data = 0x96;
+
+    for (int bit = 7; bit >= 0; --bit)
+    {
+        cia.setSP((data & (1 << bit)) != 0);
+        cia.setCNT(false);
+        cia.setCNT(true);
+    }
+
+    //
+    // The interrupt source flag is set, but its mask is disabled.
+    //
+    QVERIFY(!cia.irq());
+    QCOMPARE(cia.readRegister(0x0D), quint8(0x08));
+}

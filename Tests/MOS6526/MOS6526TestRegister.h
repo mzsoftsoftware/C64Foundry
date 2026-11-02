@@ -35,4 +35,10 @@ private slots:
     void testSerialPortInputShiftsEightBits();
     void testSerialPortInputDoesNotInterruptBeforeEightBits();
     void testSerialPortInputRaisesInterruptAfterEightBits();
+
+    void testSerialPortInputShiftsOnlyOnRisingCNT();
+    void testSerialPortOutputModeDoesNotShiftInput();
+    void testSerialPortInputReceivesConsecutiveBytes();
+    void testSerialPortInputResetClearsBitCount();
+    void testSerialPortInputInterruptWithoutMask();
 };
