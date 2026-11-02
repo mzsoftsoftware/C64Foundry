@@ -4,6 +4,7 @@ add_executable(MOS6526Test
     MOS6526TestPort.h MOS6526TestPort.cpp
     MOS6526TestTimer.h MOS6526TestTimer.cpp
     MOS6526TestTOD.h MOS6526TestTOD.cpp
+    MOS6526TestRegister.h MOS6526TestRegister.cpp
 )
 
 set_target_properties(MOS6526Test PROPERTIES
