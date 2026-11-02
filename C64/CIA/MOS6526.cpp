@@ -48,6 +48,33 @@ quint8 MOS6526::readRegister(const quint8 address)
     case 0x07:
         return static_cast<quint8>(m_timerBCounter >> 8);
 
+    case 0x08:
+    {
+        const quint8 value = m_todReadLatched ? m_todReadLatch[0] : m_tod[0];
+
+        // Reading tenths releases the read latch.
+        m_todReadLatched = false;
+
+        return value;
+    }
+
+    case 0x09:
+        return m_todReadLatched ? m_todReadLatch[1] : m_tod[1];
+
+    case 0x0A:
+        return m_todReadLatched ? m_todReadLatch[2] : m_tod[2];
+
+    case 0x0B:
+        if (!m_todReadLatched)
+        {
+            for (int i = 0; i < 4; ++i)
+                m_todReadLatch[i] = m_tod[i];
+
+            m_todReadLatched = true;
+        }
+
+        return m_todReadLatch[3];
+
     case 0x0D:
     {
         quint8 value = m_interruptStatus;
@@ -142,6 +169,42 @@ void MOS6526::writeRegister(const quint8 address, const quint8 value)
             m_timerBCounter = m_timerBLatch;
 
         break;
+
+    case 0x08:
+        if (m_controlRegisterB & 0x80)
+            m_todAlarm[0] = value & 0x0F;
+        else
+        {
+            m_tod[0] = value & 0x0F;
+            m_todStopped = false;
+            m_todDividerCounter = 0;
+        }
+        return;
+
+    case 0x09:
+        if (m_controlRegisterB & 0x80)
+            m_todAlarm[1] = value & 0x7F;
+        else
+            m_tod[1] = value & 0x7F;
+        return;
+
+    case 0x0A:
+        if (m_controlRegisterB & 0x80)
+            m_todAlarm[2] = value & 0x7F;
+        else
+            m_tod[2] = value & 0x7F;
+        return;
+
+    case 0x0B:
+        if (m_controlRegisterB & 0x80)
+            m_todAlarm[3] = value & 0x9F;
+        else
+        {
+            m_tod[3] = value & 0x9F;
+            m_todStopped = true;
+            m_todDividerCounter = 0;
+        }
+        return;
 
     case 0x0D:
         // Bit 7 selects whether the specified interrupt mask bits are set or cleared.
@@ -330,4 +393,103 @@ void MOS6526::reset()
     // Notify connected hardware about the reset port state.
     if (m_ptrPort)
         m_ptrPort->portAOutputChanged(m_portA, m_dataDirectionA);
+
+    for (int i = 0; i < 4; ++i)
+    {
+        m_tod[i] = 0x00;
+        m_todAlarm[i] = 0x00;
+        m_todReadLatch[i] = 0x00;
+    }
+
+    m_todDividerCounter = 0;
+    m_todStopped = false;
+    m_todReadLatched = false;
+
+}
+
+
+void MOS6526::setTODDivider(const quint8 divider)
+{
+    if (divider == 0)
+        return;
+
+    m_todDivider = divider;
+    m_todDividerCounter = 0;
+}
+
+
+void MOS6526::clockTODPulse()
+{
+    if (m_todStopped)
+        return;
+
+    ++m_todDividerCounter;
+
+    if (m_todDividerCounter < m_todDivider)
+        return;
+
+    m_todDividerCounter = 0;
+
+    incrementTOD();
+    checkTODAlarm();
+}
+
+
+
+void MOS6526::incrementTOD()
+{
+    // Tenths.
+    ++m_tod[0];
+
+    if (m_tod[0] <= 0x09)
+        return;
+
+    m_tod[0] = 0x00;
+
+    // Convert BCD to decimal, increment, then convert back.
+    int seconds = ((m_tod[1] >> 4) * 10) + (m_tod[1] & 0x0F);
+    ++seconds;
+
+    if (seconds >= 60)
+    {
+        seconds = 0;
+        int minutes = ((m_tod[2] >> 4) * 10) + (m_tod[2] & 0x0F);
+        ++minutes;
+
+        if (minutes >= 60)
+        {
+            minutes = 0;
+
+            quint8 hour = m_tod[3] & 0x1F;
+            const bool pm = (m_tod[3] & 0x80) != 0;
+
+            if (hour == 0x11)
+                m_tod[3] = static_cast<quint8>(0x12 | (pm ? 0x00 : 0x80));
+            else if (hour == 0x12)
+                m_tod[3] = static_cast<quint8>(0x01 | (pm ? 0x80 : 0x00));
+            else
+            {
+                int decimalHour = ((hour >> 4) * 10) + (hour & 0x0F);
+                ++decimalHour;
+                hour = static_cast<quint8>(((decimalHour / 10) << 4) | (decimalHour % 10));
+                m_tod[3] = static_cast<quint8>(hour | (pm ? 0x80 : 0x00));
+            }
+        }
+
+        m_tod[2] = static_cast<quint8>(((minutes / 10) << 4) | (minutes % 10));
+    }
+
+    m_tod[1] = static_cast<quint8>(((seconds / 10) << 4) | (seconds % 10));
+}
+
+
+void MOS6526::checkTODAlarm()
+{
+    for (int i = 0; i < 4; ++i)
+    {
+        if (m_tod[i] != m_todAlarm[i])
+            return;
+    }
+
+    m_interruptStatus |= 0x04;
 }

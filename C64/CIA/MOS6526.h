@@ -25,6 +25,9 @@ public:
     void setPortAInputs(quint8 value)                       { m_portAInputs = value; }
     void setPortBInputs(quint8 value)                       { m_portBInputs = value; }
     void setCNT(bool level);
+    void setTODDivider(quint8 divider);
+    void clockTODPulse();
+
 
     // Operations
     void initialize();
@@ -35,6 +38,9 @@ private:
     bool clockTimerA();
     bool clockTimerB();
     void timerAUnderflow();
+    void incrementTOD();
+    void checkTODAlarm();
+
 
     MOS6526Port* m_ptrPort = nullptr;
 
@@ -61,4 +67,15 @@ private:
     quint16 m_unimplementedWriteReported = 0x0000;
 
     bool m_cnt = true;
+
+
+    quint8 m_tod[4] = { 0x00, 0x00, 0x00, 0x00 };
+    quint8 m_todAlarm[4] = { 0x00, 0x00, 0x00, 0x00 };
+    quint8 m_todReadLatch[4] = { 0x00, 0x00, 0x00, 0x00 };
+
+    quint8 m_todDivider = 5;
+    quint8 m_todDividerCounter = 0;
+
+    bool m_todStopped = false;
+    bool m_todReadLatched = false;
 };
