@@ -171,9 +171,9 @@ void MOS6526TestTOD::testTODAlarmInterrupt()
 
     cia.setTODDivider(5);
 
-    // Program the alarm for 01:00:00.0.
+    // Program the alarm for 01:00:00.0 PM.
     cia.writeRegister(0x0F, 0x80);
-    cia.writeRegister(0x0B, 0x01);
+    cia.writeRegister(0x0B, 0x81);
     cia.writeRegister(0x0A, 0x00);
     cia.writeRegister(0x09, 0x00);
     cia.writeRegister(0x08, 0x00);
