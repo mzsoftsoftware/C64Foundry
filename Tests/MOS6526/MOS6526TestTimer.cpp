@@ -470,18 +470,229 @@ void MOS6526TestTimer::testTimerAOneShot()
     QCOMPARE(cia.readRegister(0x05), quint8(0x00));
 }
 
-void MOS6526TestTimer::testControlRegisterB()
+void MOS6526TestTimer::testTimerACntClock()
 {
     MOS6526 cia;
 
-    //
-    // Control Register B is cleared after reset.
-    //
-    QCOMPARE(cia.readRegister(0x0F), quint8(0x00));
+    cia.writeRegister(0x04, 0x02);
+    cia.writeRegister(0x05, 0x00);
 
-    //
-    // Store Timer B control bits.
-    //
-    cia.writeRegister(0x0F, 0x08);
-    QCOMPARE(cia.readRegister(0x0F), quint8(0x08));
+    // CRA bit 5 selects CNT as Timer A clock source.
+    cia.writeRegister(0x0E, 0x21);
+
+    // Only a rising CNT edge clocks Timer A.
+    cia.setCNT(false);
+    QCOMPARE(cia.readRegister(0x04), quint8(0x02));
+
+    cia.setCNT(true);
+    QCOMPARE(cia.readRegister(0x04), quint8(0x01));
+
+    // A falling edge must not clock the timer.
+    cia.setCNT(false);
+    QCOMPARE(cia.readRegister(0x04), quint8(0x01));
+
+    // The next rising edge decrements the counter.
+    cia.setCNT(true);
+    QCOMPARE(cia.readRegister(0x04), quint8(0x00));
+}
+
+void MOS6526TestTimer::testTimerBCounterLoadWhenStopped()
+{
+    MOS6526 cia;
+
+    QCOMPARE(cia.readRegister(0x06), quint8(0x00));
+    QCOMPARE(cia.readRegister(0x07), quint8(0x00));
+
+    cia.writeRegister(0x06, 0x95);
+
+    // The low byte only changes the latch.
+    QCOMPARE(cia.readRegister(0x06), quint8(0x00));
+
+    cia.writeRegister(0x07, 0x42);
+
+    // Writing the high byte while stopped loads the counter.
+    QCOMPARE(cia.readRegister(0x06), quint8(0x95));
+    QCOMPARE(cia.readRegister(0x07), quint8(0x42));
+}
+
+void MOS6526TestTimer::testTimerBForceLoad()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x06, 0x34);
+    cia.writeRegister(0x07, 0x12);
+
+    cia.writeRegister(0x06, 0x78);
+
+    // The running counter is not changed by a latch write.
+    cia.writeRegister(0x0F, 0x01);
+    QCOMPARE(cia.readRegister(0x06), quint8(0x34));
+
+    // CRB bit 4 forces the latch into the counter.
+    cia.writeRegister(0x0F, 0x11);
+
+    QCOMPARE(cia.readRegister(0x06), quint8(0x78));
+    QCOMPARE(cia.readRegister(0x07), quint8(0x12));
+    QCOMPARE(cia.readRegister(0x0F) & 0x10, quint8(0x00));
+}
+
+void MOS6526TestTimer::testTimerBStopped()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x06, 0x02);
+    cia.writeRegister(0x07, 0x00);
+
+    cia.clock();
+    cia.clock();
+
+    QCOMPARE(cia.readRegister(0x06), quint8(0x02));
+    QCOMPARE(cia.readRegister(0x07), quint8(0x00));
+}
+
+void MOS6526TestTimer::testTimerBCount()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x06, 0x02);
+    cia.writeRegister(0x07, 0x00);
+
+    // CRB bit 0 starts Timer B, input mode 00 selects Φ2.
+    cia.writeRegister(0x0F, 0x01);
+
+    cia.clock();
+    QCOMPARE(cia.readRegister(0x06), quint8(0x01));
+
+    cia.clock();
+    QCOMPARE(cia.readRegister(0x06), quint8(0x00));
+}
+
+void MOS6526TestTimer::testTimerBUnderflowReload()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x06, 0x02);
+    cia.writeRegister(0x07, 0x00);
+    cia.writeRegister(0x0F, 0x01);
+
+    cia.clock();
+    cia.clock();
+
+    // Underflow occurs on the clock after reaching zero.
+    cia.clock();
+
+    QCOMPARE(cia.readRegister(0x06), quint8(0x02));
+    QCOMPARE(cia.readRegister(0x07), quint8(0x00));
+}
+
+void MOS6526TestTimer::testTimerBOneShot()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x06, 0x01);
+    cia.writeRegister(0x07, 0x00);
+
+    // START + one-shot.
+    cia.writeRegister(0x0F, 0x09);
+
+    cia.clock();
+    QCOMPARE(cia.readRegister(0x06), quint8(0x00));
+
+    cia.clock();
+
+    // Underflow reloads the latch and stops the timer.
+    QCOMPARE(cia.readRegister(0x06), quint8(0x01));
+    QCOMPARE(cia.readRegister(0x0F) & 0x01, quint8(0x00));
+
+    cia.clock();
+    QCOMPARE(cia.readRegister(0x06), quint8(0x01));
+}
+
+void MOS6526TestTimer::testTimerBInterrupt()
+{
+    MOS6526 cia;
+
+    // Enable Timer B interrupt.
+    cia.writeRegister(0x0D, 0x82);
+
+    cia.writeRegister(0x06, 0x01);
+    cia.writeRegister(0x07, 0x00);
+    cia.writeRegister(0x0F, 0x01);
+
+    cia.clock();
+    cia.clock();
+
+    QVERIFY(cia.irq());
+    QCOMPARE(cia.readRegister(0x0D), quint8(0x82));
+    QVERIFY(!cia.irq());
+}
+
+void MOS6526TestTimer::testTimerBCntClock()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x06, 0x02);
+    cia.writeRegister(0x07, 0x00);
+
+    // CRB bits 6-5 = 01 select CNT.
+    cia.writeRegister(0x0F, 0x21);
+
+    cia.setCNT(false);
+    QCOMPARE(cia.readRegister(0x06), quint8(0x02));
+
+    cia.setCNT(true);
+    QCOMPARE(cia.readRegister(0x06), quint8(0x01));
+
+    cia.setCNT(false);
+    QCOMPARE(cia.readRegister(0x06), quint8(0x01));
+
+    cia.setCNT(true);
+    QCOMPARE(cia.readRegister(0x06), quint8(0x00));
+}
+
+void MOS6526TestTimer::testTimerBTimerAUnderflowClock()
+{
+    MOS6526 cia;
+
+    // Timer A underflows on its first Φ2 clock.
+    cia.writeRegister(0x04, 0x00);
+    cia.writeRegister(0x05, 0x00);
+    cia.writeRegister(0x0E, 0x01);
+
+    cia.writeRegister(0x06, 0x02);
+    cia.writeRegister(0x07, 0x00);
+
+    // CRB bits 6-5 = 10: Timer A underflow.
+    cia.writeRegister(0x0F, 0x41);
+
+    cia.clock();
+
+    QCOMPARE(cia.readRegister(0x06), quint8(0x01));
+}
+
+void MOS6526TestTimer::testTimerBTimerAUnderflowClockWhileCntHigh()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x04, 0x00);
+    cia.writeRegister(0x05, 0x00);
+    cia.writeRegister(0x0E, 0x01);
+
+    cia.writeRegister(0x06, 0x02);
+    cia.writeRegister(0x07, 0x00);
+
+    // CRB bits 6-5 = 11: Timer A underflow while CNT is high.
+    cia.writeRegister(0x0F, 0x61);
+
+    cia.setCNT(false);
+    cia.clock();
+
+    // Timer A underflow occurred, but CNT was low.
+    QCOMPARE(cia.readRegister(0x06), quint8(0x02));
+
+    cia.setCNT(true);
+
+    // A new Timer A underflow is required.
+    cia.clock();
+    QCOMPARE(cia.readRegister(0x06), quint8(0x01));
 }

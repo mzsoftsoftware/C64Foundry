@@ -5,7 +5,7 @@ add_executable(MOS6526Test
     MOS6526TestTimer.h MOS6526TestTimer.cpp
 )
 
-set_target_properties(MOS6510Test PROPERTIES
+set_target_properties(MOS6526Test PROPERTIES
     AUTORCC ON
 )
 

@@ -232,3 +232,18 @@ void MOS6526::reset()
     if (m_ptrPort)
         m_ptrPort->portAOutputChanged(m_portA, m_dataDirectionA);
 }
+
+void MOS6526::setCNT(bool level)
+{
+    bool risingEdge = !m_cnt && level;
+    m_cnt = level;
+
+    if (risingEdge)
+    {
+        if ((m_controlRegisterA & 0x21) == 0x21)
+        {
+            // Timer A uses CNT as its clock source.
+            // Timer handling will be implemented in the timer update logic.
+        }
+    }
+}

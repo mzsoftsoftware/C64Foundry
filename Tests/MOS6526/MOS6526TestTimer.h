@@ -24,6 +24,15 @@ private slots:
     void testInterruptMaskClear();
     void testTimerALatchWriteWhileRunning();
     void testTimerAOneShot();
-    void testControlRegisterB();
-
+    void testTimerACntClock();
+    void testTimerBCounterLoadWhenStopped();
+    void testTimerBForceLoad();
+    void testTimerBStopped();
+    void testTimerBCount();
+    void testTimerBUnderflowReload();
+    void testTimerBOneShot();
+    void testTimerBInterrupt();
+    void testTimerBCntClock();
+    void testTimerBTimerAUnderflowClock();
+    void testTimerBTimerAUnderflowClockWhileCntHigh();
 };

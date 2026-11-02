@@ -24,6 +24,7 @@ public:
     void writeRegister(quint8 address, quint8 value);
     void setPortAInputs(quint8 value)                       { m_portAInputs = value; }
     void setPortBInputs(quint8 value)                       { m_portBInputs = value; }
+    void setCNT(bool level);
 
     // Operations
     void initialize();
@@ -51,4 +52,6 @@ private:
 
     quint16 m_unimplementedReadReported = 0x0000;
     quint16 m_unimplementedWriteReported = 0x0000;
+
+    bool m_cnt = true;
 };

@@ -130,8 +130,24 @@ void MOS6510::clock()
 
         m_initialFetch = false;
 
+        {
+        const quint16 instructionAddress = m_programCounter;
         m_opcode = read(m_programCounter);
         ++m_programCounter;
+
+        if (instructionAddress >= 0xEE00 && instructionAddress <= 0xEEFF)
+        {
+            qDebug() << "CPU KERNAL TRACE:"
+                     << "cycle:" << m_cycles
+                     << "PC:" << Qt::hex << instructionAddress
+                     << "opcode:" << m_opcode
+                     << "A:" << m_accumulator
+                     << "X:" << m_x
+                     << "Y:" << m_y
+                     << "SP:" << m_stackPointer
+                     << "P:" << m_status;
+        }
+        }
 
         m_ptrInstruction = &m_instructionTable.instruction(m_opcode);
         m_operation = m_ptrInstruction->operation;
