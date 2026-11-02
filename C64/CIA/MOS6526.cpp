@@ -75,6 +75,9 @@ quint8 MOS6526::readRegister(const quint8 address)
 
         return m_todReadLatch[3];
 
+    case 0x0C:
+        return m_serialDataRegister;
+
     case 0x0D:
     {
         quint8 value = m_interruptStatus;
@@ -204,6 +207,10 @@ void MOS6526::writeRegister(const quint8 address, const quint8 value)
             m_todStopped = true;
             m_todDividerCounter = 0;
         }
+        return;
+
+    case 0x0C:
+        m_serialDataRegister = value;
         return;
 
     case 0x0D:
@@ -404,6 +411,8 @@ void MOS6526::reset()
     m_todDividerCounter = 0;
     m_todStopped = false;
     m_todReadLatched = false;
+
+    m_serialDataRegister = 0x00;
 
 }
 

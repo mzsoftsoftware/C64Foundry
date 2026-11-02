@@ -22,4 +22,8 @@ private slots:
     void testMultipleInterruptSources();
     void testResetClearsRegistersAndInterrupts();
     void testInitializeResetsCIA();
+
+    void testSerialDataRegisterWriteRead();
+    void testSerialDataRegisterMirroring();
+    void testSerialDataRegisterReset();
 };

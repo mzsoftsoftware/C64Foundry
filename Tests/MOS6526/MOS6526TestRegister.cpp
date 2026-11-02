@@ -210,3 +210,44 @@ void MOS6526TestRegister::testInitializeResetsCIA()
     QCOMPARE(cia.readRegister(0x0E), quint8(0x00));
     QCOMPARE(cia.readRegister(0x0F), quint8(0x00));
 }
+
+
+void MOS6526TestRegister::testSerialDataRegisterWriteRead()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x0C, 0xA5);
+
+    QCOMPARE(cia.readRegister(0x0C), quint8(0xA5));
+
+    cia.writeRegister(0x0C, 0x3C);
+
+    QCOMPARE(cia.readRegister(0x0C), quint8(0x3C));
+}
+
+
+void MOS6526TestRegister::testSerialDataRegisterMirroring()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x1C, 0x96);
+
+    QCOMPARE(cia.readRegister(0x0C), quint8(0x96));
+    QCOMPARE(cia.readRegister(0x1C), quint8(0x96));
+    QCOMPARE(cia.readRegister(0x2C), quint8(0x96));
+    QCOMPARE(cia.readRegister(0xFC), quint8(0x96));
+}
+
+
+void MOS6526TestRegister::testSerialDataRegisterReset()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x0C, 0xA5);
+
+    QCOMPARE(cia.readRegister(0x0C), quint8(0xA5));
+
+    cia.reset();
+
+    QCOMPARE(cia.readRegister(0x0C), quint8(0x00));
+}
