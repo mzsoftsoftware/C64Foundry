@@ -21,4 +21,12 @@ private slots:
     void testTODAlarmInterrupt();
     void testTODSixtyHertzDivider();
     void testTODRegisterMirroring();
+
+    void testTODZeroDividerIsIgnored();
+    void testTODDividerChangeResetsPrescaler();
+    void testTODAlarmStatusWithoutInterruptMask();
+    void testTODAlarmDoesNotOverwriteClockRegisters();
+    void testTODRegisterValueMasks();
+    void testTODResetClearsClockAndAlarm();
+
 };

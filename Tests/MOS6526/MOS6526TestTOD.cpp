@@ -230,3 +230,192 @@ void MOS6526TestTOD::testTODRegisterMirroring()
     QCOMPARE(cia.readRegister(0x0B), quint8(0x01));
     QCOMPARE(cia.readRegister(0x2B), quint8(0x01));
 }
+
+
+void MOS6526TestTOD::testTODZeroDividerIsIgnored()
+{
+    MOS6526 cia;
+
+    //
+    // The default divider is five pulses per tenth.
+    // A divider value of zero must be ignored.
+    //
+    cia.setTODDivider(0);
+
+    cia.writeRegister(0x0B, 0x01);
+    cia.writeRegister(0x08, 0x00);
+
+    for (int i = 0; i < 4; ++i)
+        cia.clockTODPulse();
+
+    QCOMPARE(cia.readRegister(0x08), quint8(0x00));
+
+    cia.clockTODPulse();
+
+    QCOMPARE(cia.readRegister(0x08), quint8(0x01));
+}
+
+
+void MOS6526TestTOD::testTODDividerChangeResetsPrescaler()
+{
+    MOS6526 cia;
+
+    cia.setTODDivider(5);
+
+    cia.writeRegister(0x0B, 0x01);
+    cia.writeRegister(0x08, 0x00);
+
+    //
+    // Accumulate part of a divider interval.
+    //
+    cia.clockTODPulse();
+    cia.clockTODPulse();
+    cia.clockTODPulse();
+
+    QCOMPARE(cia.readRegister(0x08), quint8(0x00));
+
+    //
+    // Changing the divider resets the prescaler counter.
+    //
+    cia.setTODDivider(2);
+
+    cia.clockTODPulse();
+    QCOMPARE(cia.readRegister(0x08), quint8(0x00));
+
+    cia.clockTODPulse();
+    QCOMPARE(cia.readRegister(0x08), quint8(0x01));
+}
+
+
+void MOS6526TestTOD::testTODAlarmStatusWithoutInterruptMask()
+{
+    MOS6526 cia;
+
+    cia.setTODDivider(1);
+
+    //
+    // Program the alarm for 01:00:00.1 AM.
+    //
+    cia.writeRegister(0x0F, 0x80);
+    cia.writeRegister(0x0B, 0x01);
+    cia.writeRegister(0x0A, 0x00);
+    cia.writeRegister(0x09, 0x00);
+    cia.writeRegister(0x08, 0x01);
+
+    //
+    // Select the TOD clock registers and set the time
+    // immediately before the alarm value.
+    //
+    cia.writeRegister(0x0F, 0x00);
+    cia.writeRegister(0x0B, 0x01);
+    cia.writeRegister(0x0A, 0x00);
+    cia.writeRegister(0x09, 0x00);
+    cia.writeRegister(0x08, 0x00);
+
+    //
+    // Leave the TOD alarm interrupt masked.
+    //
+    cia.clockTODPulse();
+
+    QVERIFY(!cia.irq());
+
+    //
+    // ICR status bit 2 is still set even when the source is masked.
+    // Bit 7 remains clear because no enabled source is pending.
+    //
+    QCOMPARE(cia.readRegister(0x0D), quint8(0x04));
+}
+
+
+void MOS6526TestTOD::testTODAlarmDoesNotOverwriteClockRegisters()
+{
+    MOS6526 cia;
+
+    //
+    // Program an alarm without changing the TOD clock.
+    //
+    cia.writeRegister(0x0B, 0x01);
+    cia.writeRegister(0x0A, 0x12);
+    cia.writeRegister(0x09, 0x34);
+    cia.writeRegister(0x08, 0x05);
+
+    cia.writeRegister(0x0F, 0x80);
+    cia.writeRegister(0x0B, 0x82);
+    cia.writeRegister(0x0A, 0x56);
+    cia.writeRegister(0x09, 0x45);
+    cia.writeRegister(0x08, 0x07);
+
+    //
+    // Select the TOD clock registers again.
+    //
+    cia.writeRegister(0x0F, 0x00);
+
+    QCOMPARE(cia.readRegister(0x0B), quint8(0x01));
+    QCOMPARE(cia.readRegister(0x0A), quint8(0x12));
+    QCOMPARE(cia.readRegister(0x09), quint8(0x34));
+    QCOMPARE(cia.readRegister(0x08), quint8(0x05));
+}
+
+
+void MOS6526TestTOD::testTODRegisterValueMasks()
+{
+    MOS6526 cia;
+
+    //
+    // TOD registers accept only the defined BCD and AM/PM bits.
+    //
+    cia.writeRegister(0x0B, 0xFF);
+    cia.writeRegister(0x0A, 0xFF);
+    cia.writeRegister(0x09, 0xFF);
+    cia.writeRegister(0x08, 0xFF);
+
+    QCOMPARE(cia.readRegister(0x0B), quint8(0x9F));
+    QCOMPARE(cia.readRegister(0x0A), quint8(0x7F));
+    QCOMPARE(cia.readRegister(0x09), quint8(0x7F));
+    QCOMPARE(cia.readRegister(0x08), quint8(0x0F));
+}
+
+
+
+void MOS6526TestTOD::testTODResetClearsClockAndAlarm()
+{
+    MOS6526 cia;
+
+    cia.setTODDivider(1);
+
+    //
+    // Program an alarm for 01:00:00.1 AM.
+    //
+    cia.writeRegister(0x0F, 0x80);
+    cia.writeRegister(0x0B, 0x01);
+    cia.writeRegister(0x0A, 0x00);
+    cia.writeRegister(0x09, 0x00);
+    cia.writeRegister(0x08, 0x01);
+
+    //
+    // Reset must clear the clock and the programmed alarm.
+    //
+    cia.reset();
+
+    QCOMPARE(cia.readRegister(0x0B), quint8(0x00));
+    QCOMPARE(cia.readRegister(0x0A), quint8(0x00));
+    QCOMPARE(cia.readRegister(0x09), quint8(0x00));
+    QCOMPARE(cia.readRegister(0x08), quint8(0x00));
+
+    //
+    // Set the clock to the value that matched the old alarm
+    // immediately before its expected trigger.
+    //
+    cia.writeRegister(0x0B, 0x01);
+    cia.writeRegister(0x0A, 0x00);
+    cia.writeRegister(0x09, 0x00);
+    cia.writeRegister(0x08, 0x00);
+
+    cia.clockTODPulse();
+
+    //
+    // The old alarm must no longer trigger after reset.
+    //
+    QVERIFY(!cia.irq());
+    QCOMPARE(cia.readRegister(0x0D), quint8(0x00));
+}

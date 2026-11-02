@@ -696,3 +696,164 @@ void MOS6526TestTimer::testTimerBTimerAUnderflowClockWhileCntHigh()
     cia.clock();
     QCOMPARE(cia.readRegister(0x06), quint8(0x01));
 }
+
+
+void MOS6526TestTimer::testTimerALatchReloadAfterLatchChange()
+{
+    MOS6526 cia;
+
+    //
+    // Load Timer A with $0001 and start it.
+    //
+    cia.writeRegister(0x04, 0x01);
+    cia.writeRegister(0x05, 0x00);
+    cia.writeRegister(0x0E, 0x01);
+
+    //
+    // Change the latch while the timer is running.
+    // The current counter must remain unchanged.
+    //
+    cia.writeRegister(0x04, 0x03);
+    cia.writeRegister(0x05, 0x00);
+
+    QCOMPARE(cia.readRegister(0x04), quint8(0x01));
+
+    //
+    // The counter reaches zero, then underflows.
+    // Underflow must reload the updated latch.
+    //
+    cia.clock();
+    QCOMPARE(cia.readRegister(0x04), quint8(0x00));
+
+    cia.clock();
+    QCOMPARE(cia.readRegister(0x04), quint8(0x03));
+}
+
+
+void MOS6526TestTimer::testTimerACntClockDoesNotCountPhi2()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x04, 0x02);
+    cia.writeRegister(0x05, 0x00);
+
+    //
+    // CRA bit 5 selects CNT as the Timer A clock source.
+    //
+    cia.writeRegister(0x0E, 0x21);
+
+    cia.setCNT(false);
+
+    //
+    // PHI2 clocks must not decrement Timer A in CNT mode.
+    //
+    cia.clock();
+    cia.clock();
+    cia.clock();
+
+    QCOMPARE(cia.readRegister(0x04), quint8(0x02));
+
+    //
+    // A rising CNT edge decrements the timer.
+    //
+    cia.setCNT(true);
+    QCOMPARE(cia.readRegister(0x04), quint8(0x01));
+}
+
+
+void MOS6526TestTimer::testTimerBReloadAfterLatchChange()
+{
+    MOS6526 cia;
+
+    //
+    // Load Timer B with $0001 and start it.
+    //
+    cia.writeRegister(0x06, 0x01);
+    cia.writeRegister(0x07, 0x00);
+    cia.writeRegister(0x0F, 0x01);
+
+    //
+    // Update the latch while the timer is running.
+    //
+    cia.writeRegister(0x06, 0x03);
+    cia.writeRegister(0x07, 0x00);
+
+    //
+    // The running counter is unchanged until underflow.
+    //
+    QCOMPARE(cia.readRegister(0x06), quint8(0x01));
+
+    cia.clock();
+    QCOMPARE(cia.readRegister(0x06), quint8(0x00));
+
+    cia.clock();
+    QCOMPARE(cia.readRegister(0x06), quint8(0x03));
+}
+
+
+void MOS6526TestTimer::testTimerBTimerAUnderflowDoesNotCountPhi2()
+{
+    MOS6526 cia;
+
+    //
+    // Timer A uses PHI2 and underflows on each clock.
+    //
+    cia.writeRegister(0x04, 0x00);
+    cia.writeRegister(0x05, 0x00);
+    cia.writeRegister(0x0E, 0x01);
+
+    //
+    // Timer B uses Timer A underflows as its source.
+    // Its own PHI2 input must not decrement it independently.
+    //
+    cia.writeRegister(0x06, 0x05);
+    cia.writeRegister(0x07, 0x00);
+    cia.writeRegister(0x0F, 0x41);
+
+    cia.clock();
+
+    QCOMPARE(cia.readRegister(0x06), quint8(0x04));
+
+    cia.clock();
+
+    QCOMPARE(cia.readRegister(0x06), quint8(0x03));
+}
+
+
+void MOS6526TestTimer::testTimerBTimerAUnderflowWhileCntLow()
+{
+    MOS6526 cia;
+
+    //
+    // Timer A underflows on each PHI2 clock.
+    //
+    cia.writeRegister(0x04, 0x00);
+    cia.writeRegister(0x05, 0x00);
+    cia.writeRegister(0x0E, 0x01);
+
+    //
+    // Timer B counts Timer A underflows only while CNT is high.
+    //
+    cia.writeRegister(0x06, 0x02);
+    cia.writeRegister(0x07, 0x00);
+    cia.writeRegister(0x0F, 0x61);
+
+    cia.setCNT(false);
+
+    cia.clock();
+    cia.clock();
+
+    //
+    // Timer A underflows occurred, but CNT was low.
+    // Timer B must not have counted.
+    //
+    QCOMPARE(cia.readRegister(0x06), quint8(0x02));
+
+    //
+    // A subsequent Timer A underflow while CNT is high counts Timer B.
+    //
+    cia.setCNT(true);
+    cia.clock();
+
+    QCOMPARE(cia.readRegister(0x06), quint8(0x01));
+}

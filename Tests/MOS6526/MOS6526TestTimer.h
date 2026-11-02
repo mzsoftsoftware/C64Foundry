@@ -35,4 +35,11 @@ private slots:
     void testTimerBCntClock();
     void testTimerBTimerAUnderflowClock();
     void testTimerBTimerAUnderflowClockWhileCntHigh();
+
+    void testTimerALatchReloadAfterLatchChange();
+    void testTimerACntClockDoesNotCountPhi2();
+    void testTimerBReloadAfterLatchChange();
+    void testTimerBTimerAUnderflowDoesNotCountPhi2();
+    void testTimerBTimerAUnderflowWhileCntLow();
+
 };
