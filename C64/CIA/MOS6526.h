@@ -13,8 +13,8 @@ public:
 
     // Getter
     quint8 readRegister(quint8 address);
-    quint8 portAPins() const                                { return (m_portA & m_dataDirectionA) | (m_portAInputs & ~m_dataDirectionA); }
-    quint8 portBPins() const                                { return (m_portB & m_dataDirectionB) | (m_portBInputs & ~m_dataDirectionB); }
+    quint8 portAPins() const                                { return (m_portA & m_dataDirectionA) | (m_portAInputs & static_cast<quint8>(~m_dataDirectionA)); }
+    quint8 portBPins() const                                { return (m_portB & m_dataDirectionB) | (m_portBInputs & static_cast<quint8>(~m_dataDirectionB)); }
     bool irq() const                                        { return (m_interruptStatus & m_interruptMask) != 0x00; }
     quint8 portAOutput() const                              { return m_portA | static_cast<quint8>(~m_dataDirectionA); }
     quint8 portBOutput() const                              { return m_portB | static_cast<quint8>(~m_dataDirectionB); }
@@ -32,6 +32,10 @@ public:
     void clock();
 
 private:
+    bool clockTimerA();
+    bool clockTimerB();
+    void timerAUnderflow();
+
     MOS6526Port* m_ptrPort = nullptr;
 
     quint8 m_portA = 0x00;
@@ -44,6 +48,9 @@ private:
 
     quint16 m_timerALatch = 0x0000;
     quint16 m_timerACounter = 0x0000;
+    quint16 m_timerBLatch = 0x0000;
+    quint16 m_timerBCounter = 0x0000;
+
     quint8 m_controlRegisterA = 0x00;
     quint8 m_controlRegisterB = 0x00;
 
