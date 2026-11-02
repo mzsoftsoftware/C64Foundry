@@ -396,6 +396,8 @@ void MOS6526::reset()
     m_unimplementedWriteReported = 0x0000;
 
     m_cnt = true;
+    m_serialPortInput = true;
+    m_serialPortOutput = true;
 
     // Notify connected hardware about the reset port state.
     if (m_ptrPort)

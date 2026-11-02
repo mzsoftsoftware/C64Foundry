@@ -18,6 +18,8 @@ public:
     bool irq() const                                        { return (m_interruptStatus & m_interruptMask) != 0x00; }
     quint8 portAOutput() const                              { return m_portA | static_cast<quint8>(~m_dataDirectionA); }
     quint8 portBOutput() const                              { return m_portB | static_cast<quint8>(~m_dataDirectionB); }
+    bool serialPortInput() const                            { return m_serialPortInput; }
+    bool serialPortOutput() const                           { return m_serialPortOutput; }
 
     // Setter
     void setPort(MOS6526Port* ptrPort)                      { m_ptrPort = ptrPort; }
@@ -27,7 +29,7 @@ public:
     void setCNT(bool level);
     void setTODDivider(quint8 divider);
     void clockTODPulse();
-
+    void setSP(bool level)                                  { m_serialPortInput = level; }
 
     // Operations
     void initialize();
@@ -68,6 +70,8 @@ private:
 
     bool m_cnt = true;
 
+    bool m_serialPortInput = true;
+    bool m_serialPortOutput = true;
 
     quint8 m_tod[4] = { 0x00, 0x00, 0x00, 0x00 };
     quint8 m_todAlarm[4] = { 0x00, 0x00, 0x00, 0x00 };

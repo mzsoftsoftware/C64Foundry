@@ -299,3 +299,26 @@ void MOS6526TestRegister::testSerialDataRegisterAccessibleInBothModes()
 
     QCOMPARE(cia.readRegister(0x0C), quint8(0x3C));
 }
+
+void MOS6526TestRegister::testSerialPortInputLevel()
+{
+    MOS6526 cia;
+
+    cia.setSP(false);
+    QCOMPARE(cia.serialPortInput(), false);
+
+    cia.setSP(true);
+    QCOMPARE(cia.serialPortInput(), true);
+}
+
+
+void MOS6526TestRegister::testSerialPortOutputResetState()
+{
+    MOS6526 cia;
+
+    QCOMPARE(cia.serialPortOutput(), true);
+
+    cia.reset();
+
+    QCOMPARE(cia.serialPortOutput(), true);
+}
