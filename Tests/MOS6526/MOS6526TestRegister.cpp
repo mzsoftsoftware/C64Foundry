@@ -322,3 +322,94 @@ void MOS6526TestRegister::testSerialPortOutputResetState()
 
     QCOMPARE(cia.serialPortOutput(), true);
 }
+
+void MOS6526TestRegister::testSerialPortInputShiftsEightBits()
+{
+    MOS6526 cia;
+
+    //
+    // Serial input mode.
+    //
+    cia.writeRegister(0x0E, 0x00);
+    cia.writeRegister(0x0C, 0x00);
+
+    //
+    // Transfer $A5, MSB first.
+    //
+    const quint8 data = 0xA5;
+
+    for (int bit = 7; bit >= 0; --bit)
+    {
+        cia.setSP((data & (1 << bit)) != 0);
+
+        //
+        // One complete CNT pulse: falling edge, then rising edge.
+        //
+        cia.setCNT(false);
+        cia.setCNT(true);
+    }
+
+    QCOMPARE(cia.readRegister(0x0C), quint8(0xA5));
+}
+
+
+void MOS6526TestRegister::testSerialPortInputDoesNotInterruptBeforeEightBits()
+{
+    MOS6526 cia;
+
+    //
+    // Enable serial interrupt.
+    //
+    cia.writeRegister(0x0D, 0x88);
+
+    //
+    // Transfer only seven bits.
+    //
+    const quint8 data = 0xA5;
+
+    for (int bit = 7; bit >= 1; --bit)
+    {
+        cia.setSP((data & (1 << bit)) != 0);
+        cia.setCNT(false);
+        cia.setCNT(true);
+    }
+
+    QVERIFY(!cia.irq());
+    QCOMPARE(cia.readRegister(0x0D), quint8(0x00));
+}
+
+
+void MOS6526TestRegister::testSerialPortInputRaisesInterruptAfterEightBits()
+{
+    MOS6526 cia;
+
+    //
+    // Enable serial interrupt.
+    //
+    cia.writeRegister(0x0D, 0x88);
+
+    //
+    // Transfer eight bits.
+    //
+    const quint8 data = 0xA5;
+
+    for (int bit = 7; bit >= 0; --bit)
+    {
+        cia.setSP((data & (1 << bit)) != 0);
+        cia.setCNT(false);
+        cia.setCNT(true);
+    }
+
+    QVERIFY(cia.irq());
+
+    //
+    // ICR bit 3 indicates the serial interrupt.
+    // Bit 7 indicates that an enabled interrupt is pending.
+    //
+    QCOMPARE(cia.readRegister(0x0D), quint8(0x88));
+
+    //
+    // Reading ICR clears the pending interrupt.
+    //
+    QVERIFY(!cia.irq());
+}

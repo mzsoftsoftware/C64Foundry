@@ -342,13 +342,33 @@ void MOS6526::clock()
 }
 
 
-void MOS6526::setCNT(bool level)
+void MOS6526::setCNT(const bool level)
 {
     const bool risingEdge = !m_cnt && level;
     m_cnt = level;
 
     if (!risingEdge)
         return;
+
+    //
+    // Serial input mode:
+    // Shift one bit from SP into the serial data register.
+    //
+    if (!(m_controlRegisterA & 0x40))
+    {
+        m_serialDataRegister = static_cast<quint8>((m_serialDataRegister << 1) | (m_serialPortInput ? 0x01 : 0x00));
+
+        ++m_serialBitCount;
+
+        //
+        // A complete byte has been received.
+        //
+        if (m_serialBitCount >= 8)
+        {
+            m_serialBitCount = 0;
+            m_interruptStatus |= 0x08;
+        }
+    }
 
     bool timerAUnderflowed = false;
 
@@ -415,7 +435,7 @@ void MOS6526::reset()
     m_todReadLatched = false;
 
     m_serialDataRegister = 0x00;
-
+    m_serialBitCount = 0;
 }
 
 

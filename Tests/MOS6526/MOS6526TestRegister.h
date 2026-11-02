@@ -31,4 +31,8 @@ private slots:
     void testSerialDataRegisterAccessibleInBothModes();
     void testSerialPortInputLevel();
     void testSerialPortOutputResetState();
+
+    void testSerialPortInputShiftsEightBits();
+    void testSerialPortInputDoesNotInterruptBeforeEightBits();
+    void testSerialPortInputRaisesInterruptAfterEightBits();
 };

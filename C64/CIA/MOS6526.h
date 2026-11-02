@@ -84,4 +84,5 @@ private:
     bool m_todReadLatched = false;
 
     quint8 m_serialDataRegister = 0x00;
+    quint8 m_serialBitCount = 0;
 };
