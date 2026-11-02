@@ -251,3 +251,51 @@ void MOS6526TestRegister::testSerialDataRegisterReset()
 
     QCOMPARE(cia.readRegister(0x0C), quint8(0x00));
 }
+
+void MOS6526TestRegister::testSerialPortOutputMode()
+{
+    MOS6526 cia;
+
+    //
+    // CRA bit 6 selects serial output mode.
+    //
+    cia.writeRegister(0x0E, 0x40);
+
+    QCOMPARE(cia.readRegister(0x0E), quint8(0x40));
+}
+
+
+void MOS6526TestRegister::testSerialPortInputMode()
+{
+    MOS6526 cia;
+
+    //
+    // CRA bit 6 clear selects serial input mode.
+    //
+    cia.writeRegister(0x0E, 0x40);
+    cia.writeRegister(0x0E, 0x00);
+
+    QCOMPARE(cia.readRegister(0x0E), quint8(0x00));
+}
+
+
+void MOS6526TestRegister::testSerialDataRegisterAccessibleInBothModes()
+{
+    MOS6526 cia;
+
+    //
+    // Serial output mode.
+    //
+    cia.writeRegister(0x0E, 0x40);
+    cia.writeRegister(0x0C, 0xA5);
+
+    QCOMPARE(cia.readRegister(0x0C), quint8(0xA5));
+
+    //
+    // Serial input mode.
+    //
+    cia.writeRegister(0x0E, 0x00);
+    cia.writeRegister(0x0C, 0x3C);
+
+    QCOMPARE(cia.readRegister(0x0C), quint8(0x3C));
+}

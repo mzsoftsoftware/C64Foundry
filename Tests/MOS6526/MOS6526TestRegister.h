@@ -26,4 +26,7 @@ private slots:
     void testSerialDataRegisterWriteRead();
     void testSerialDataRegisterMirroring();
     void testSerialDataRegisterReset();
+    void testSerialPortOutputMode();
+    void testSerialPortInputMode();
+    void testSerialDataRegisterAccessibleInBothModes();
 };
