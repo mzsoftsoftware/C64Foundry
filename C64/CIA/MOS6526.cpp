@@ -211,6 +211,10 @@ void MOS6526::writeRegister(const quint8 address, const quint8 value)
 
     case 0x0C:
         m_serialDataRegister = value;
+
+        if (m_controlRegisterA & 0x40)
+            m_serialOutputPending = true;
+
         return;
 
     case 0x0D:
@@ -338,7 +342,10 @@ void MOS6526::clock()
         clockTimerB();
 
     if (timerAUnderflowed)
+    {
         timerAUnderflow();
+        serialPortOutputTimerAUnderflow();
+    }
 }
 
 
@@ -436,6 +443,12 @@ void MOS6526::reset()
 
     m_serialDataRegister = 0x00;
     m_serialBitCount = 0;
+
+    m_serialShiftRegister = 0x00;
+    m_serialClockOutput = true;
+    m_serialOutputPending = false;
+    m_serialOutputActive = false;
+    m_serialOutputClockPhase = false;
 }
 
 
@@ -523,4 +536,58 @@ void MOS6526::checkTODAlarm()
     }
 
     m_interruptStatus |= 0x04;
+}
+
+void MOS6526::serialPortOutputTimerAUnderflow()
+{
+    if (!(m_controlRegisterA & 0x40))
+        return;
+
+    //
+    // A new SDR value is waiting to be transmitted.
+    //
+    if (!m_serialOutputActive && m_serialOutputPending)
+    {
+        m_serialShiftRegister = m_serialDataRegister;
+        m_serialBitCount = 0;
+        m_serialOutputPending = false;
+        m_serialOutputActive = true;
+        m_serialOutputClockPhase = false;
+        m_serialClockOutput = true;
+        m_serialPortOutput = (m_serialShiftRegister & 0x80) != 0;
+    }
+
+    if (!m_serialOutputActive)
+    {
+        m_serialClockOutput = true;
+        return;
+    }
+
+    //
+    // Generate the two phases of the serial clock.
+    //
+    m_serialOutputClockPhase = !m_serialOutputClockPhase;
+
+    if (m_serialOutputClockPhase)
+    {
+        m_serialClockOutput = false;
+        return;
+    }
+
+    m_serialClockOutput = true;
+
+    m_serialShiftRegister = static_cast<quint8>(m_serialShiftRegister << 1);
+    ++m_serialBitCount;
+
+    if (m_serialBitCount >= 8)
+    {
+        m_interruptStatus |= 0x08;
+        m_serialOutputActive = false;
+        m_serialPortOutput = (m_serialShiftRegister & 0x80) != 0;
+        m_serialClockOutput = true;
+    }
+    else
+    {
+        m_serialPortOutput = (m_serialShiftRegister & 0x80) != 0;
+    }
 }

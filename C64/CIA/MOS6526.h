@@ -20,6 +20,7 @@ public:
     quint8 portBOutput() const                              { return m_portB | static_cast<quint8>(~m_dataDirectionB); }
     bool serialPortInput() const                            { return m_serialPortInput; }
     bool serialPortOutput() const                           { return m_serialPortOutput; }
+    bool serialClockOutput() const                          { return m_serialClockOutput; }
 
     // Setter
     void setPort(MOS6526Port* ptrPort)                      { m_ptrPort = ptrPort; }
@@ -42,8 +43,9 @@ private:
     void timerAUnderflow();
     void incrementTOD();
     void checkTODAlarm();
+    void serialPortOutputTimerAUnderflow();
 
-
+private:
     MOS6526Port* m_ptrPort = nullptr;
 
     quint8 m_portA = 0x00;
@@ -85,4 +87,10 @@ private:
 
     quint8 m_serialDataRegister = 0x00;
     quint8 m_serialBitCount = 0;
+
+    quint8 m_serialShiftRegister = 0x00;
+    bool m_serialClockOutput = true;
+    bool m_serialOutputPending = false;
+    bool m_serialOutputActive = false;
+    bool m_serialOutputClockPhase = false;
 };
