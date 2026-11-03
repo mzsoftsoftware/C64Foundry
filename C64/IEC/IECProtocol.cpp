@@ -1,7 +1,5 @@
 #include "IECProtocol.h"
 
-#include <QDebug>
-
 
 IECProtocol::IECProtocol(IECBus* ptrBus, const quint8 deviceNumber, const IECBus::ParticipantId participantId)
     : m_deviceNumber(deviceNumber)
@@ -61,13 +59,6 @@ void IECProtocol::clock()
 
     ++m_stateCycles;
 
-    if (m_deviceNumber == 8 && m_state == State::WaitFirstClockLow)
-    {
-        qDebug() << "IEC RX: waiting first clock low"
-                 << "mode:" << static_cast<int>(m_mode)
-                 << "cycles:" << m_stateCycles;
-    }
-
     switch (m_state)
     {
     case State::Idle:
@@ -104,21 +95,8 @@ void IECProtocol::clock()
     case State::WaitFirstClockLow:
         // EOI wird vor dem ersten Datenbit erkannt.
         // EOI gilt nur während der Datenphase.
-        qDebug() << "IEC RX: EOI condition reached"
-                 << "mode:" << static_cast<int>(m_mode)
-                 << "ATN:" << attentionHigh
-                 << "CLK:" << clockHigh
-                 << "DATA:" << lineHigh(IECBus::Line::DATA)
-                 << "cycles:" << m_stateCycles;
         if (attentionHigh && m_mode == Mode::Listen && clockHigh && m_stateCycles >= EOI_TIMEOUT_CYCLES)
         {
-            qDebug() << "IEC RX: EOI detected"
-                     << "mode:" << static_cast<int>(m_mode)
-                     << "ATN high:" << attentionHigh
-                     << "CLK high:" << clockHigh
-                     << "DATA high before ACK:" << lineHigh(IECBus::Line::DATA)
-                     << "cycles:" << m_stateCycles;
-
             setLineLow(IECBus::Line::DATA, true);
 
             m_endOfInformation = true;
@@ -152,11 +130,6 @@ void IECProtocol::clock()
 
             if (m_receivedBits == 8)
             {
-                qDebug() << "IEC RX byte complete:"
-                         << "value:" << Qt::hex << m_receivedByte
-                         << "ATN high:" << attentionHigh
-                         << "CLK high:" << clockHigh;
-
                 m_state = State::WaitByteEnd;
                 m_stateCycles = 0;
             }
@@ -171,11 +144,6 @@ void IECProtocol::clock()
             processReceivedByte(m_receivedByte, !attentionHigh);
 
             setLineLow(IECBus::Line::DATA, true);
-
-            qDebug() << "IEC RX byte ACK:"
-                     << "value:" << Qt::hex << m_receivedByte
-                     << "CLK high:" << lineHigh(IECBus::Line::CLK)
-                     << "DATA high:" << lineHigh(IECBus::Line::DATA);
 
             m_state = State::Acknowledge;
             m_stateCycles = 0;
@@ -198,28 +166,13 @@ void IECProtocol::clock()
 
             m_state = State::WaitFirstClockLow;
             m_stateCycles = 0;
-
-            qDebug() << "IEC RX: ready for next byte"
-                     << "mode:" << static_cast<int>(m_mode)
-                     << "ATN:" << lineHigh(IECBus::Line::ATN)
-                     << "CLK:" << lineHigh(IECBus::Line::CLK)
-                     << "DATA:" << lineHigh(IECBus::Line::DATA);
         }
         break;
 
     case State::AcknowledgeEOI:
         if (m_stateCycles >= EOI_ACK_CYCLES)
         {
-            qDebug() << "IEC RX: EOI acknowledge complete"
-                     << "cycles:" << m_stateCycles
-                     << "CLK high:" << lineHigh(IECBus::Line::CLK)
-                     << "DATA high before release:" << lineHigh(IECBus::Line::DATA);
-
             setLineLow(IECBus::Line::DATA, false);
-
-            qDebug() << "IEC RX: EOI DATA released"
-                     << "CLK high:" << lineHigh(IECBus::Line::CLK)
-                     << "DATA high after release:" << lineHigh(IECBus::Line::DATA);
 
             m_state = State::WaitEOIRelease;
             m_stateCycles = 0;
@@ -432,12 +385,6 @@ void IECProtocol::clockSend()
         {
             if (m_stateCycles >= TALK_LISTENER_READY_DELAY_CYCLES)
             {
-                qDebug() << "IEC TX: ready"
-                         << "index:" << m_transmitIndex
-                         << "cycles:" << m_stateCycles
-                         << "CLK:" << lineHigh(IECBus::Line::CLK)
-                         << "DATA:" << lineHigh(IECBus::Line::DATA);
-
                 prepareTransmitByte();
             }
         }
@@ -450,24 +397,11 @@ void IECProtocol::clockSend()
     case SendPhase::WaitEOIAcknowledge:
         if (!lineHigh(IECBus::Line::DATA))
         {
-            qDebug() << "IEC TX: EOI acknowledge detected"
-                     << "index:" << m_transmitIndex
-                     << "cycles:" << m_stateCycles
-                     << "CLK:" << lineHigh(IECBus::Line::CLK)
-                     << "DATA:" << lineHigh(IECBus::Line::DATA);
-
             m_sendPhase = SendPhase::WaitEOIRelease;
             m_stateCycles = 0;
         }
         else if (m_stateCycles >= FRAME_HANDSHAKE_TIMEOUT_CYCLES)
         {
-            qWarning() << "IEC TX: EOI acknowledge timeout"
-                       << "index:" << m_transmitIndex
-                       << "cycles:" << m_stateCycles
-                       << "CLK:" << lineHigh(IECBus::Line::CLK)
-                       << "DATA:" << lineHigh(IECBus::Line::DATA)
-                       << "participant:" << m_participantId;
-
             finishSending();
         }
         break;
@@ -492,18 +426,6 @@ void IECProtocol::clockSend()
 
         setLineLow(IECBus::Line::DATA, !bitHigh);
         setLineLow(IECBus::Line::CLK, true);
-
-        if (m_transmitIndex == 0)
-        {
-            qDebug() << "IEC TX: bit setup"
-                     << "index:" << m_transmitIndex
-                     << "value:" << Qt::hex << value
-                     << "bit:" << m_transmitBit
-                     << "bitHigh:" << bitHigh
-                     << "cycles:" << m_stateCycles
-                     << "CLK:" << lineHigh(IECBus::Line::CLK)
-                     << "DATA:" << lineHigh(IECBus::Line::DATA);
-        }
 
         m_sendPhase = SendPhase::WaitClockLow;
         m_stateCycles = 0;
@@ -530,14 +452,6 @@ void IECProtocol::clockSend()
 
         if (m_stateCycles >= SEND_DATA_VALID_CYCLES)
         {
-            qDebug() << "IEC TX: bit phase complete"
-                     << "index:" << m_transmitIndex
-                     << "value:" << Qt::hex << static_cast<quint8>(m_transmitData.at(m_transmitIndex))
-                     << "bit:" << m_transmitBit
-                     << "cycles:" << m_stateCycles
-                     << "CLK:" << lineHigh(IECBus::Line::CLK)
-                     << "DATA:" << lineHigh(IECBus::Line::DATA);
-
             setLineLow(IECBus::Line::CLK, true);
 
             if (m_transmitBit < 7)
@@ -576,27 +490,11 @@ void IECProtocol::clockSend()
     case SendPhase::WaitByteAcknowledge:
         if (!lineHigh(IECBus::Line::DATA))
         {
-            qDebug() << "IEC TX: byte ACK detected"
-                     << "index:" << m_transmitIndex
-                     << "value:" << Qt::hex << static_cast<quint8>(m_transmitData.at(m_transmitIndex))
-                     << "lastBit:" << m_transmitBit
-                     << "cycles:" << m_stateCycles
-                     << "CLK:" << lineHigh(IECBus::Line::CLK)
-                     << "DATA:" << lineHigh(IECBus::Line::DATA);
-
             m_sendPhase = SendPhase::WaitAcknowledgeHold;
             m_stateCycles = 0;
         }
         else if (m_stateCycles >= FRAME_HANDSHAKE_TIMEOUT_CYCLES)
         {
-            qWarning() << "IEC TX timeout waiting for byte ACK:"
-                       << "index:" << m_transmitIndex
-                       << "value:" << Qt::hex << static_cast<quint8>(m_transmitData.at(m_transmitIndex))
-                       << "lastBit:" << m_transmitBit
-                       << "cycles:" << m_stateCycles
-                       << "CLK:" << lineHigh(IECBus::Line::CLK)
-                       << "DATA:" << lineHigh(IECBus::Line::DATA);
-
             finishSending();
         }
         break;
@@ -607,14 +505,6 @@ void IECProtocol::clockSend()
         // CLK bleibt währenddessen Low.
         if (m_stateCycles >= SEND_BYTE_ACK_HOLD_CYCLES)
         {
-            qDebug() << "IEC TX: ACK hold complete"
-                     << "index:" << m_transmitIndex
-                     << "value:" << Qt::hex << static_cast<quint8>(m_transmitData.at(m_transmitIndex))
-                     << "lastBit:" << m_transmitBit
-                     << "cycles:" << m_stateCycles
-                     << "CLK:" << lineHigh(IECBus::Line::CLK)
-                     << "DATA:" << lineHigh(IECBus::Line::DATA);
-
             setLineLow(IECBus::Line::CLK, false);
 
             m_sendPhase = SendPhase::WaitAcknowledgeRelease;
@@ -625,14 +515,6 @@ void IECProtocol::clockSend()
     case SendPhase::WaitAcknowledgeRelease:
         if (lineHigh(IECBus::Line::DATA))
         {
-            qDebug() << "IEC TX: ACK released"
-                     << "index:" << m_transmitIndex
-                     << "value:" << Qt::hex << static_cast<quint8>(m_transmitData.at(m_transmitIndex))
-                     << "lastBit:" << m_transmitBit
-                     << "cycles:" << m_stateCycles
-                     << "CLK:" << lineHigh(IECBus::Line::CLK)
-                     << "DATA:" << lineHigh(IECBus::Line::DATA);
-
             if (m_transmitIndex + 1 >= m_transmitData.size())
             {
                 finishSending();
@@ -665,12 +547,6 @@ void IECProtocol::clockSend()
         // T_BB beginnt erst nach Freigabe des ACKs.
         if (m_stateCycles >= BETWEEN_BYTES_CYCLES)
         {
-            qDebug() << "IEC TX: next byte"
-                     << "old index:" << m_transmitIndex
-                     << "cycles:" << m_stateCycles
-                     << "CLK:" << lineHigh(IECBus::Line::CLK)
-                     << "DATA:" << lineHigh(IECBus::Line::DATA);
-
             ++m_transmitIndex;
             m_transmitBit = 0;
             m_sendPhase = SendPhase::WaitReady;
@@ -690,12 +566,6 @@ void IECProtocol::clockSend()
 
             m_sendPhase = SendPhase::WaitTalkAcknowledgeHold;
             m_stateCycles = 0;
-
-            qDebug() << "IEC TX: TALK turnaround acknowledged"
-                     << "cycles:" << m_stateCycles
-                     << "CLK:" << lineHigh(IECBus::Line::CLK)
-                     << "DATA:" << lineHigh(IECBus::Line::DATA)
-                     << "participant:" << m_participantId;
         }
         break;
 
@@ -709,11 +579,6 @@ void IECProtocol::clockSend()
 
             m_sendPhase = SendPhase::WaitTalkListenerReady;
             m_stateCycles = 0;
-
-            qDebug() << "IEC TX: TALK acknowledge hold complete"
-                     << "cycles:" << TALK_ATTENTION_ACK_HOLD_CYCLES
-                     << "CLK:" << lineHigh(IECBus::Line::CLK)
-                     << "DATA:" << lineHigh(IECBus::Line::DATA);
         }
         break;
 
@@ -724,10 +589,6 @@ void IECProtocol::clockSend()
         {
             m_sendPhase = SendPhase::WaitInitialDataStart;
             m_stateCycles = 0;
-
-            qDebug() << "IEC TX: C64 listener ready"
-                     << "CLK:" << lineHigh(IECBus::Line::CLK)
-                     << "DATA:" << lineHigh(IECBus::Line::DATA);
         }
         break;
 
@@ -743,16 +604,6 @@ void IECProtocol::prepareTransmitByte()
     m_transmitBit = 0;
     m_stateCycles = 0;
 
-    const quint8 value = static_cast<quint8>(m_transmitData.at(m_transmitIndex));
-
-    qDebug() << "IEC TX: byte start"
-             << "index:" << m_transmitIndex
-             << "value:" << Qt::hex << value
-             << "size:" << m_transmitData.size()
-             << "last:" << (m_transmitIndex == m_transmitData.size() - 1)
-             << "CLK:" << lineHigh(IECBus::Line::CLK)
-             << "DATA:" << lineHigh(IECBus::Line::DATA);
-
     const qsizetype lastIndex = m_transmitData.size() - 1;
 
     if (m_transmitIndex == lastIndex)
@@ -761,11 +612,6 @@ void IECProtocol::prepareTransmitByte()
         setLineLow(IECBus::Line::DATA, false);
 
         m_sendPhase = SendPhase::WaitEOIAcknowledge;
-
-        qDebug() << "IEC TX: EOI wait"
-                 << "index:" << m_transmitIndex
-                 << "CLK:" << lineHigh(IECBus::Line::CLK)
-                 << "DATA:" << lineHigh(IECBus::Line::DATA);
     }
     else
     {
