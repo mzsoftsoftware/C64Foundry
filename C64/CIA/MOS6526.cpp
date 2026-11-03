@@ -228,6 +228,22 @@ void MOS6526::writeRegister(const quint8 address, const quint8 value)
 
     case 0x0E:
     {
+        const bool wasSerialOutput = (m_controlRegisterA & 0x40) != 0;
+        const bool isSerialOutput = (value & 0x40) != 0;
+
+        // A mode change aborts the current serial transfer.
+        if (wasSerialOutput != isSerialOutput)
+        {
+            m_serialBitCount = 0;
+            m_serialShiftRegister = 0;
+            m_serialOutputPending = false;
+            m_serialOutputActive = false;
+            m_serialOutputClockPhase = false;
+
+            // Release SP and CNT.
+            setSerialOutput(true, true);
+        }
+
         // CRA bit 0 rising edge starts Timer A and sets the toggle output HIGH.
         const bool startRisingEdge = !(m_controlRegisterA & 0x01) && (value & 0x01);
 
@@ -462,7 +478,6 @@ void MOS6526::reset()
 
     m_cnt = true;
     m_serialPortInput = true;
-    m_serialPortOutput = true;
 
     // Notify connected hardware about the reset port state.
     if (m_ptrPort)
@@ -483,7 +498,6 @@ void MOS6526::reset()
     m_serialBitCount = 0;
 
     m_serialShiftRegister = 0x00;
-    m_serialClockOutput = true;
     m_serialOutputPending = false;
     m_serialOutputActive = false;
     m_serialOutputClockPhase = false;
@@ -494,6 +508,14 @@ void MOS6526::reset()
 
     m_timerAPulse = false;
     m_timerBPulse = false;
+
+    m_serialShiftRegister = 0x00;
+    m_serialBitCount = 0;
+    m_serialOutputPending = false;
+    m_serialOutputActive = false;
+    m_serialOutputClockPhase = false;
+
+    setSerialOutput(true, true);
 }
 
 
@@ -592,9 +614,15 @@ void MOS6526::serialPortOutputTimerAUnderflow()
     if (!(m_controlRegisterA & 0x01) || (m_controlRegisterA & 0x08))
         return;
 
-    //
+    // A completed byte must finish its CNT pulse before
+    // another byte can begin.
+    if (!m_serialOutputActive && !m_serialClockOutput)
+    {
+        setSerialOutput(m_serialPortOutput, true);
+        return;
+    }
+
     // Load a pending byte when no byte is currently being transmitted.
-    //
     if (!m_serialOutputActive && m_serialOutputPending)
     {
         m_serialShiftRegister = m_serialDataRegister;
@@ -602,25 +630,23 @@ void MOS6526::serialPortOutputTimerAUnderflow()
         m_serialOutputPending = false;
         m_serialOutputActive = true;
         m_serialOutputClockPhase = false;
-        m_serialClockOutput = true;
     }
 
     if (!m_serialOutputActive)
     {
-        m_serialClockOutput = true;
+        setSerialOutput(m_serialPortOutput, true);
         return;
     }
 
-    //
     // Timer A generates one CNT transition per underflow.
-    //
     m_serialOutputClockPhase = !m_serialOutputClockPhase;
 
     if (m_serialOutputClockPhase)
     {
         // Falling CNT edge: output the current MSB.
-        m_serialClockOutput = false;
-        m_serialPortOutput = (m_serialShiftRegister & 0x80) != 0;
+        const bool dataLevel = (m_serialShiftRegister & 0x80) != 0;
+
+        setSerialOutput(dataLevel, false);
 
         m_serialShiftRegister = static_cast<quint8>(m_serialShiftRegister << 1);
         ++m_serialBitCount;
@@ -635,7 +661,7 @@ void MOS6526::serialPortOutputTimerAUnderflow()
     }
 
     // Rising CNT edge: keep SP stable.
-    m_serialClockOutput = true;
+    setSerialOutput(m_serialPortOutput, true);
 }
 
 void MOS6526::setFLAG(const bool level)
@@ -674,4 +700,19 @@ quint8 MOS6526::portBValue(const quint8 inputs) const
     }
 
     return value;
+}
+
+void MOS6526::setSerialOutput(const bool dataLevel, const bool clockLevel)
+{
+    if (m_serialPortOutput == dataLevel &&
+        m_serialClockOutput == clockLevel)
+    {
+        return;
+    }
+
+    m_serialPortOutput = dataLevel;
+    m_serialClockOutput = clockLevel;
+
+    if (m_ptrPort)
+        m_ptrPort->serialPortOutputChanged(m_serialPortOutput, m_serialClockOutput);
 }

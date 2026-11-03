@@ -45,6 +45,7 @@ private:
     void incrementTOD();
     void checkTODAlarm();
     void serialPortOutputTimerAUnderflow();
+    void setSerialOutput(bool dataLevel, bool clockLevel);
     quint8 portBValue(quint8 inputs) const;
     void timerBUnderflow();
 

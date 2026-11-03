@@ -3,6 +3,35 @@
 #include <QTest>
 
 #include "C64/CIA/MOS6526.h"
+#include "C64/CIA/MOS6526Port.h"
+
+
+class MOS6526SerialTestPort : public MOS6526Port
+{
+public:
+    quint8 portAInputs(quint8 portBOutput) const override
+    {
+        Q_UNUSED(portBOutput);
+        return 0xFF;
+    }
+
+    quint8 portBInputs(quint8 portAOutput) const override
+    {
+        Q_UNUSED(portAOutput);
+        return 0xFF;
+    }
+
+    void serialPortOutputChanged(const bool serialData, const bool serialClock) override
+    {
+        dataLevel = serialData;
+        clockLevel = serialClock;
+        ++changeCount;
+    }
+
+    bool dataLevel = true;
+    bool clockLevel = true;
+    quint32 changeCount = 0;
+};
 
 
 MOS6526TestRegister::MOS6526TestRegister()
@@ -797,4 +826,142 @@ void MOS6526TestRegister::testFLAGResetState()
 
     QVERIFY(cia.irq());
     QCOMPARE(cia.readRegister(0x0D), quint8(0x90));
+}
+
+void MOS6526TestRegister::testSerialPortOutputCompletesFinalClockPulse()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x04, 0x00);
+    cia.writeRegister(0x05, 0x00);
+    cia.writeRegister(0x0E, 0x41);
+    cia.writeRegister(0x0C, 0xA5);
+
+    // Eight falling CNT edges transmit all eight bits.
+    for (int cycle = 0; cycle < 15; ++cycle)
+        cia.clock();
+
+    QVERIFY(!cia.serialClockOutput());
+
+    // The final CNT pulse must still receive its rising edge.
+    cia.clock();
+
+    QVERIFY(cia.serialClockOutput());
+    QCOMPARE(cia.readRegister(0x0D) & 0x08, quint8(0x08));
+}
+
+void MOS6526TestRegister::testSerialPortOutputQueuesNextByte()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x04, 0x00);
+    cia.writeRegister(0x05, 0x00);
+    cia.writeRegister(0x0E, 0x41);
+    cia.writeRegister(0x0C, 0xA5);
+
+    // Start the first byte.
+    cia.clock();
+
+    QCOMPARE(cia.serialPortOutput(), true);
+    QCOMPARE(cia.serialClockOutput(), false);
+
+    // Queue another byte while the first one is active.
+    cia.writeRegister(0x0C, 0x3C);
+
+    // Complete the first byte.
+    for (int cycle = 1; cycle < 15; ++cycle)
+        cia.clock();
+
+    QCOMPARE(cia.serialClockOutput(), false);
+
+    // Finish the last CNT pulse.
+    cia.clock();
+
+    QVERIFY(cia.serialClockOutput());
+
+    // The next Timer A underflow starts the queued byte.
+    cia.clock();
+
+    QCOMPARE(cia.serialClockOutput(), false);
+    QCOMPARE(cia.serialPortOutput(), false); // MSB of $3C
+}
+
+void MOS6526TestRegister::testSerialPortOutputModeChangeAbortsTransfer()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x04, 0x00);
+    cia.writeRegister(0x05, 0x00);
+    cia.writeRegister(0x0E, 0x41);
+    cia.writeRegister(0x0C, 0xA5);
+
+    cia.clock();
+
+    QVERIFY(!cia.serialClockOutput());
+
+    // Switch to serial input mode.
+    cia.writeRegister(0x0E, 0x01);
+
+    QVERIFY(cia.serialClockOutput());
+    QVERIFY(cia.serialPortOutput());
+
+    cia.writeRegister(0x0C, 0x00);
+    cia.setSP(true);
+    cia.setCNT(false);
+    cia.setCNT(true);
+
+    QCOMPARE(cia.readRegister(0x0C), quint8(0x01));
+}
+
+void MOS6526TestRegister::testSerialPortOutputNotifiesConnectedHardware()
+{
+    MOS6526 cia;
+    MOS6526SerialTestPort port;
+
+    cia.setPort(&port);
+
+    cia.writeRegister(0x04, 0x00);
+    cia.writeRegister(0x05, 0x00);
+    cia.writeRegister(0x0E, 0x41);
+    cia.writeRegister(0x0C, 0xA5);
+
+    const quint32 initialChangeCount = port.changeCount;
+
+    // First Timer A underflow: SP changes and CNT goes LOW.
+    cia.clock();
+
+    QVERIFY(port.changeCount > initialChangeCount);
+    QCOMPARE(port.dataLevel, true);
+    QCOMPARE(port.clockLevel, false);
+
+    // Second Timer A underflow: CNT returns HIGH.
+    cia.clock();
+
+    QCOMPARE(port.dataLevel, true);
+    QCOMPARE(port.clockLevel, true);
+}
+
+void MOS6526TestRegister::testSerialPortOutputResetNotifiesConnectedHardware()
+{
+    MOS6526 cia;
+    MOS6526SerialTestPort port;
+
+    cia.setPort(&port);
+
+    cia.writeRegister(0x04, 0x00);
+    cia.writeRegister(0x05, 0x00);
+    cia.writeRegister(0x0E, 0x41);
+    cia.writeRegister(0x0C, 0xA5);
+
+    cia.clock();
+
+    QVERIFY(!port.clockLevel);
+
+    const quint32 previousChangeCount = port.changeCount;
+
+    cia.reset();
+
+    QVERIFY(port.changeCount > previousChangeCount);
+    QVERIFY(port.dataLevel);
+    QVERIFY(port.clockLevel);
 }

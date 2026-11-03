@@ -55,4 +55,10 @@ private slots:
     void testFLAGRisingEdgeDoesNotInterrupt();
     void testFLAGRequiresNewFallingEdge();
     void testFLAGResetState();
+
+    void testSerialPortOutputCompletesFinalClockPulse();
+    void testSerialPortOutputQueuesNextByte();
+    void testSerialPortOutputModeChangeAbortsTransfer();
+    void testSerialPortOutputNotifiesConnectedHardware();
+    void testSerialPortOutputResetNotifiesConnectedHardware();
 };

@@ -16,4 +16,10 @@ public:
         Q_UNUSED(portA);
         Q_UNUSED(dataDirectionA);
     }
+
+    virtual void serialPortOutputChanged(bool serialData, bool serialClock)
+    {
+        Q_UNUSED(serialData);
+        Q_UNUSED(serialClock);
+    }
 };
