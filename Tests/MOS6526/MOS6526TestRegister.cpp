@@ -544,3 +544,164 @@ void MOS6526TestRegister::testSerialPortInputInterruptWithoutMask()
     QVERIFY(!cia.irq());
     QCOMPARE(cia.readRegister(0x0D), quint8(0x08));
 }
+
+void MOS6526TestRegister::testSerialPortOutputDoesNotStartOnSDRWrite()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x0E, 0x40);
+    cia.writeRegister(0x0C, 0x25);
+
+    QCOMPARE(cia.serialPortOutput(), true);
+}
+
+void MOS6526TestRegister::testSerialPortOutputWaitsForTimerAUnderflow()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x04, 0x01);
+    cia.writeRegister(0x05, 0x00);
+
+    cia.writeRegister(0x0C, 0x25);
+
+    //
+    // Serial output mode, Timer A started.
+    //
+    cia.writeRegister(0x0E, 0x41);
+
+    QCOMPARE(cia.serialPortOutput(), true);
+
+    //
+    // Timer A counts from 1 to 0.
+    //
+    cia.clock();
+
+    QCOMPARE(cia.serialPortOutput(), true);
+
+    //
+    // Timer A underflows.
+    // The first serial bit (bit 7 = 0) is output.
+    //
+    cia.clock();
+
+    QCOMPARE(cia.serialPortOutput(), false);
+}
+
+void MOS6526TestRegister::testSerialPortOutputShiftsMSBFirst()
+{
+    MOS6526 cia;
+
+    const quint8 data = 0x25;
+
+    cia.writeRegister(0x04, 0x00);
+    cia.writeRegister(0x05, 0x00);
+
+    cia.writeRegister(0x0C, data);
+
+    //
+    // Serial output mode, Timer A started.
+    //
+    cia.writeRegister(0x0E, 0x41);
+
+    for (int bit = 7; bit >= 0; --bit)
+    {
+        cia.clock();
+
+        const bool expectedLevel = (data & (1 << bit)) != 0;
+
+        QCOMPARE(cia.serialPortOutput(), expectedLevel);
+    }
+}
+
+void MOS6526TestRegister::testSerialPortOutputDoesNotShiftOnExternalCNT()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x0C, 0x25);
+    cia.writeRegister(0x0E, 0x40);
+
+    cia.setSP(false);
+    cia.setCNT(false);
+    cia.setCNT(true);
+
+    cia.setSP(true);
+    cia.setCNT(false);
+    cia.setCNT(true);
+
+    QCOMPARE(cia.readRegister(0x0C), quint8(0x25));
+    QCOMPARE(cia.serialPortOutput(), true);
+}
+
+void MOS6526TestRegister::testSerialPortOutputDoesNotInterruptBeforeEightBits()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x0D, 0x88);
+
+    cia.writeRegister(0x04, 0x00);
+    cia.writeRegister(0x05, 0x00);
+
+    cia.writeRegister(0x0C, 0xA5);
+    cia.writeRegister(0x0E, 0x41);
+
+    for (int bit = 0; bit < 7; ++bit)
+    {
+        cia.clock();
+        QVERIFY(!cia.irq());
+    }
+
+    QVERIFY(!cia.irq());
+
+    //
+    // Timer A has underflowed, but the serial transfer is incomplete.
+    //
+    QCOMPARE(cia.readRegister(0x0D), quint8(0x01));
+}
+
+void MOS6526TestRegister::testSerialPortOutputRaisesInterruptAfterEightBits()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x0D, 0x88);
+
+    cia.writeRegister(0x04, 0x00);
+    cia.writeRegister(0x05, 0x00);
+
+    cia.writeRegister(0x0C, 0xA5);
+    cia.writeRegister(0x0E, 0x41);
+
+    for (int bit = 0; bit < 8; ++bit)
+        cia.clock();
+
+    QVERIFY(cia.irq());
+
+    //
+    // Timer A and serial interrupt status bits are set.
+    // Bit 7 indicates an enabled interrupt pending.
+    //
+    QCOMPARE(cia.readRegister(0x0D), quint8(0x89));
+
+    QVERIFY(!cia.irq());
+}
+
+void MOS6526TestRegister::testSerialPortOutputInterruptWithoutMask()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x04, 0x00);
+    cia.writeRegister(0x05, 0x00);
+
+    cia.writeRegister(0x0C, 0x96);
+    cia.writeRegister(0x0E, 0x41);
+
+    for (int bit = 0; bit < 8; ++bit)
+        cia.clock();
+
+    QVERIFY(!cia.irq());
+
+    //
+    // Timer A and serial interrupt status bits are set.
+    // Neither source has an enabled interrupt mask.
+    //
+    QCOMPARE(cia.readRegister(0x0D), quint8(0x09));
+}
