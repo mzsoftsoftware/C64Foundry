@@ -558,16 +558,10 @@ void MOS6526TestRegister::testSerialPortOutputDoesNotStartOnSDRWrite()
 void MOS6526TestRegister::testSerialPortOutputWaitsForTimerAUnderflow()
 {
     MOS6526 cia;
-
     cia.writeRegister(0x04, 0x01);
     cia.writeRegister(0x05, 0x00);
-
+    cia.writeRegister(0x0E, 0x41); // Serial output + start Timer A
     cia.writeRegister(0x0C, 0x25);
-
-    //
-    // Serial output mode, Timer A started.
-    //
-    cia.writeRegister(0x0E, 0x41);
 
     QCOMPARE(cia.serialPortOutput(), true);
 
@@ -595,8 +589,16 @@ void MOS6526TestRegister::testSerialPortOutputShiftsMSBFirst()
 
     cia.writeRegister(0x04, 0x00);
     cia.writeRegister(0x05, 0x00);
-    cia.writeRegister(0x0C, data);
+
+    //
+    // Serial output mode, Timer A started.
+    //
     cia.writeRegister(0x0E, 0x41);
+
+    //
+    // Write the byte after enabling serial output.
+    //
+    cia.writeRegister(0x0C, data);
 
     for (int bit = 7; bit >= 0; --bit)
     {
@@ -641,8 +643,8 @@ void MOS6526TestRegister::testSerialPortOutputDoesNotInterruptBeforeEightBits()
     cia.writeRegister(0x04, 0x00);
     cia.writeRegister(0x05, 0x00);
 
-    cia.writeRegister(0x0C, 0xA5);
     cia.writeRegister(0x0E, 0x41);
+    cia.writeRegister(0x0C, 0xA5);
 
     for (int bit = 0; bit < 13; ++bit)
     {
@@ -667,8 +669,8 @@ void MOS6526TestRegister::testSerialPortOutputRaisesInterruptAfterEightBits()
     cia.writeRegister(0x04, 0x00);
     cia.writeRegister(0x05, 0x00);
 
-    cia.writeRegister(0x0C, 0xA5);
     cia.writeRegister(0x0E, 0x41);
+    cia.writeRegister(0x0C, 0xA5);
 
     for (int bit = 0; bit < 15; ++bit)
         cia.clock();
@@ -693,6 +695,7 @@ void MOS6526TestRegister::testSerialPortOutputInterruptWithoutMask()
 
     cia.writeRegister(0x0C, 0x96);
     cia.writeRegister(0x0E, 0x41);
+    cia.writeRegister(0x0C, 0xA5);
 
     for (int bit = 0; bit < 15; ++bit)
         cia.clock();
