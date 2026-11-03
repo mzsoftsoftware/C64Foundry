@@ -41,7 +41,11 @@ public:
 private:
     int sectorsOnTrack(int track);
     int sectorOffset(int track, int sector);
-    bool appendBasicLine(QByteArray& program, quint16& address, quint16 lineNumber, const QByteArray& content);
+
+    bool createDirectoryHeader(const QByteArray& bam, QByteArray& header);
+    bool createDirectoryEntry(const QByteArray& directorySector, int entryOffset, QByteArray& entry);
+    bool createDirectoryFooter(quint16 freeBlocks, QByteArray& footer);
+
     QByteArray normalizeDiskFileName(QByteArray fileName);
     bool saveImageInternal(quint8 deviceNumber);
     void debugDirectorySector(const QByteArray& directorySector, quint8 track, quint8 sector);

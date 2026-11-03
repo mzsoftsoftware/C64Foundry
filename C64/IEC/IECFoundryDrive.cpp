@@ -40,26 +40,7 @@ int IECFoundryDrive::sectorOffset(int track, int sector)
         offset += sectorsOnTrack(currentTrack);
     return (offset + sector) * 256;
 }
-bool IECFoundryDrive::appendBasicLine(QByteArray& program, quint16& address, quint16 lineNumber, const QByteArray& content)
-{
-    const quint32 nextAddress = static_cast<quint32>(address) + 5U + static_cast<quint32>(content.size());
 
-    if (nextAddress > 0xFFFFU)
-        return false;
-
-    program.append(static_cast<char>(nextAddress & 0xFFU));
-    program.append(static_cast<char>((nextAddress >> 8) & 0xFFU));
-
-    program.append(static_cast<char>(lineNumber & 0xFFU));
-    program.append(static_cast<char>((lineNumber >> 8) & 0xFFU));
-
-    program.append(content);
-    program.append(static_cast<char>(0x00));
-
-    address = static_cast<quint16>(nextAddress);
-
-    return true;
-}
 QByteArray IECFoundryDrive::normalizeDiskFileName(QByteArray fileName)
 {
     while (!fileName.isEmpty() && (static_cast<quint8>(fileName.back()) == 0xA0 || fileName.back() == ' '))
@@ -331,66 +312,29 @@ bool IECFoundryDrive::createDirectoryProgram(const quint8 deviceNumber, QByteArr
     }
 
     QByteArray bam;
+
     if (!readSector(deviceNumber, 18, 0, bam) || bam.size() != 256)
         return false;
 
-    if (bam.size() != 256)
-    {
-        m_qstrLastError = QStringLiteral("Der BAM-Sektor der Diskette hat eine ungültige Größe.");
-        return false;
-    }
-
-    // PRG-Ladeadresse: $0801.
-    program.append(static_cast<char>(0x01));
-    program.append(static_cast<char>(0x08));
-    quint16 address = 0x0801;
-    QByteArray diskName = bam.mid(144, 16);
-
-    QByteArray diskId = bam.mid(162, 2);
-    QByteArray dosType = bam.mid(165, 2);
-
-    // Commodore-Füllzeichen $A0 dürfen nicht als BASIC-Token
-    // in das Directory-Programm übernommen werden.
-    for (int index = 0; index < diskName.size(); ++index)
-    {
-        if (static_cast<quint8>(diskName.at(index)) == 0xA0)
-            diskName[index] = ' ';
-    }
-
-    for (int index = 0; index < diskId.size(); ++index)
-    {
-        if (static_cast<quint8>(diskId.at(index)) == 0xA0)
-            diskId[index] = ' ';
-    }
-
-    for (int index = 0; index < dosType.size(); ++index)
-    {
-        if (static_cast<quint8>(dosType.at(index)) == 0xA0)
-            dosType[index] = ' ';
-    }
-
     QByteArray header;
-    header.append(static_cast<char>(0x12));
-    header.append('"');
-    header.append(diskName);
-    header.append('"');
-    header.append(' ');
-    header.append(diskId);
-    header.append(' ');
-    header.append(dosType);
-    header.append(static_cast<char>(0x92));
-    if (!appendBasicLine(program, address, 0, header))
+
+    if (!createDirectoryHeader(bam, header))
     {
-        program.clear();
+        m_qstrLastError = QStringLiteral("Der Directory-Header konnte nicht erzeugt werden.");
         return false;
     }
+
+    program.append(header);
 
     quint8 track = 18;
     quint8 sector = 1;
     QSet<quint16> visitedSectors;
+
     while (track != 0)
     {
-        const quint16 sectorKey = static_cast<quint16>((static_cast<quint16>(track) << 8) | sector);
+        const quint16 sectorKey =
+            (static_cast<quint16>(track) << 8) | sector;
+
         if (visitedSectors.contains(sectorKey))
         {
             m_qstrLastError = QStringLiteral("Die Directory-Sektorkette enthält einen Zyklus.");
@@ -399,7 +343,9 @@ bool IECFoundryDrive::createDirectoryProgram(const quint8 deviceNumber, QByteArr
         }
 
         visitedSectors.insert(sectorKey);
+
         QByteArray directorySector;
+
         if (!readSector(deviceNumber, track, sector, directorySector) || directorySector.size() != 256)
         {
             program.clear();
@@ -408,65 +354,31 @@ bool IECFoundryDrive::createDirectoryProgram(const quint8 deviceNumber, QByteArr
 
         debugDirectorySector(directorySector, track, sector);
 
-        const quint8 nextTrack = static_cast<quint8>(directorySector.at(0));
-        const quint8 nextSector = static_cast<quint8>(directorySector.at(1));
         for (int entryOffset = 2; entryOffset + 31 < directorySector.size(); entryOffset += 32)
         {
             const quint8 fileType = static_cast<quint8>(directorySector.at(entryOffset));
+
             if ((fileType & 0x07U) == 0)
                 continue;
 
-            const quint16 blocks = static_cast<quint8>(directorySector.at(entryOffset + 28)) |
-                                   (static_cast<quint16>(static_cast<quint8>(directorySector.at(entryOffset + 29))) << 8);
-            QByteArray fileName = directorySector.mid(entryOffset + 3, 16);
-            while (!fileName.isEmpty() && (static_cast<quint8>(fileName.back()) == 0xA0 || fileName.back() == ' '))
+            QByteArray entry;
+
+            if (!createDirectoryEntry(directorySector, entryOffset, entry))
             {
-                fileName.chop(1);
-            }
-
-            QByteArray typeName;
-            switch (fileType & 0x07U)
-            {
-            case 1:
-                typeName = "SEQ";
-                break;
-            case 2:
-                typeName = "PRG";
-                break;
-            case 3:
-                typeName = "USR";
-                break;
-            case 4:
-                typeName = "REL";
-                break;
-            default:
-                typeName = "???";
-                break;
-            }
-
-            if ((fileType & 0x80U) == 0)
-                typeName.append('*');
-            if ((fileType & 0x40U) != 0)
-                typeName.append('<');
-
-            QByteArray line;
-            line.append(" \"");
-            line.append(fileName);
-            line.append("\" ");
-            line.append(typeName);
-
-            if (!appendBasicLine(program, address, blocks, line))
-            {
+                m_qstrLastError = QStringLiteral("Ein Directory-Eintrag konnte nicht erzeugt werden.");
                 program.clear();
                 return false;
             }
+
+            program.append(entry);
         }
 
-        track = nextTrack;
-        sector = nextSector;
+        track = static_cast<quint8>(directorySector.at(0));
+        sector = static_cast<quint8>(directorySector.at(1));
     }
 
     quint16 freeBlocks = 0;
+
     for (int currentTrack = 1; currentTrack <= 35; ++currentTrack)
     {
         if (currentTrack == 18)
@@ -476,16 +388,16 @@ bool IECFoundryDrive::createDirectoryProgram(const quint8 deviceNumber, QByteArr
         freeBlocks += static_cast<quint8>(bam.at(bamOffset));
     }
 
-    const QByteArray freeBlocksLine = QByteArrayLiteral("BLOCKS FREE.");
-    if (!appendBasicLine(program, address, freeBlocks, freeBlocksLine))
+    QByteArray footer;
+
+    if (!createDirectoryFooter(freeBlocks, footer))
     {
+        m_qstrLastError = QStringLiteral("Der Directory-Footer konnte nicht erzeugt werden.");
         program.clear();
         return false;
     }
 
-    // Ende des BASIC-Programms: Nullzeiger.
-    program.append('\0');
-    program.append('\0');
+    program.append(footer);
 
     qDebug() << "IEC directory program:"
              << "size:" << program.size()
@@ -673,4 +585,198 @@ void IECFoundryDrive::debugDirectorySector(const QByteArray& directorySector, co
                  << "blocks:" << Qt::dec << blocks
                  << "block bytes:" << Qt::hex << blockLow << blockHigh;
     }
+}
+
+bool IECFoundryDrive::createDirectoryHeader(const QByteArray& bam, QByteArray& header)
+{
+    header.clear();
+
+    if (bam.size() != 256)
+        return false;
+
+    header = QByteArray(32, ' ');
+
+    // BASIC-Ladeadresse $0401.
+    header[0] = static_cast<char>(0x01);
+    header[1] = static_cast<char>(0x04);
+
+    // Zeiger auf den nächsten BASIC-Datensatz.
+    header[2] = static_cast<char>(0x01);
+    header[3] = static_cast<char>(0x01);
+
+    // Verzeichnis-Header: Zeilennummer 0.
+    header[4] = static_cast<char>(0x00);
+    header[5] = static_cast<char>(0x00);
+
+    // Reverse on, öffnendes Anführungszeichen.
+    header[6] = static_cast<char>(0x12);
+    header[7] = '"';
+
+    // Diskettenname: exakt 16 Zeichen.
+    for (int index = 0; index < 16; ++index)
+    {
+        quint8 value = static_cast<quint8>(bam.at(144 + index));
+
+        if (value == 0xA0)
+            value = 0x20;
+
+        header[8 + index] = static_cast<char>(value & 0x7F);
+    }
+
+    // Schließendes Anführungszeichen und Leerzeichen.
+    header[24] = '"';
+    header[25] = ' ';
+
+    // Disketten-ID.
+    for (int index = 0; index < 2; ++index)
+    {
+        quint8 value = static_cast<quint8>(bam.at(162 + index));
+
+        if (value == 0xA0)
+            value = 0x20;
+
+        header[26 + index] = static_cast<char>(value & 0x7F);
+    }
+
+    header[28] = ' ';
+
+    // DOS-Typ.
+    for (int index = 0; index < 2; ++index)
+    {
+        quint8 value = static_cast<quint8>(bam.at(165 + index));
+
+        if (value == 0xA0)
+            value = 0x20;
+
+        header[29 + index] = static_cast<char>(value & 0x7F);
+    }
+
+    // Ende der BASIC-Zeile.
+    header[31] = static_cast<char>(0x00);
+
+    return true;
+}
+
+bool IECFoundryDrive::createDirectoryEntry(const QByteArray& directorySector, int entryOffset, QByteArray& entry)
+{
+    if (entryOffset < 2 || entryOffset + 32 > directorySector.size())
+    {
+        return false;
+    }
+
+    const quint8 fileTypeFlags = static_cast<quint8>(directorySector.at(entryOffset + 2));
+    const quint16 blocks = static_cast<quint8>(directorySector.at(entryOffset + 28))
+                           | (static_cast<quint16>(static_cast<quint8>(directorySector.at(entryOffset + 29))) << 8);
+
+    QByteArray fileName = directorySector.mid(entryOffset + 3, 16);
+
+    while (!fileName.isEmpty())
+    {
+        const quint8 lastCharacter = static_cast<quint8>(fileName.at(fileName.size() - 1));
+        if (lastCharacter == 0xA0 || lastCharacter == 0x20 || lastCharacter == 0x00)
+        {
+            fileName.chop(1);
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    for (int index = 0; index < fileName.size(); ++index)
+    {
+        quint8 character = static_cast<quint8>(fileName.at(index));
+        if (character == 0x22 || character == 0x00)
+        {
+            fileName.truncate(index);
+            break;
+        }
+        fileName[index] = static_cast<char>(character & 0x7F);
+    }
+
+    entry = QByteArray(32, ' ');
+    entry[0] = 0x01;
+    entry[1] = 0x01;
+    entry[2] = static_cast<char>(blocks & 0xFF);
+    entry[3] = static_cast<char>((blocks >> 8) & 0xFF);
+
+    int position = 4;
+    if (blocks < 100)
+    {
+        ++position;
+    }
+    if (blocks < 10)
+    {
+        ++position;
+    }
+
+    entry[position++] = '"';
+
+    const int nameStart = position;
+    for (int index = 0; index < fileName.size() && index < 16; ++index)
+    {
+        entry[position++] = fileName.at(index);
+    }
+
+    entry[position++] = '"';
+
+    const int typePosition = nameStart + 17;
+    if (position < typePosition)
+    {
+        while (position < typePosition)
+        {
+            entry[position++] = ' ';
+        }
+    }
+
+    if ((fileTypeFlags & 0x80) == 0)
+    {
+        entry[typePosition] = '*';
+    }
+
+    const quint8 type = fileTypeFlags & 0x07;
+    const char* typeName = "???";
+
+    switch (type)
+    {
+    case 0: typeName = "DEL"; break;
+    case 1: typeName = "SEQ"; break;
+    case 2: typeName = "PRG"; break;
+    case 3: typeName = "USR"; break;
+    case 4: typeName = "REL"; break;
+    default: break;
+    }
+
+    entry[typePosition + 1] = typeName[0];
+    entry[typePosition + 2] = typeName[1];
+    entry[typePosition + 3] = typeName[2];
+
+    if ((fileTypeFlags & 0x40) != 0)
+    {
+        entry[typePosition + 4] = '<';
+    }
+
+    entry[31] = '\0';
+    return true;
+}
+
+bool IECFoundryDrive::createDirectoryFooter(const quint16 freeBlocks, QByteArray& footer)
+{
+    footer = QByteArray(32, ' ');
+
+    footer[0] = static_cast<char>(0x01);
+    footer[1] = static_cast<char>(0x01);
+
+    footer[2] = static_cast<char>(freeBlocks & 0xFFU);
+    footer[3] = static_cast<char>((freeBlocks >> 8) & 0xFFU);
+
+    const QByteArray text = QByteArrayLiteral("BLOCKS FREE.");
+    footer.replace(4, text.size(), text);
+
+    // SD2IEC-Footer endet mit drei Nullbytes.
+    footer[29] = static_cast<char>(0x00);
+    footer[30] = static_cast<char>(0x00);
+    footer[31] = static_cast<char>(0x00);
+
+    return true;
 }
