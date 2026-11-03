@@ -370,6 +370,7 @@ bool IECFoundryDrive::createDirectoryProgram(const quint8 deviceNumber, QByteArr
     }
 
     QByteArray header;
+    header.append(static_cast<char>(0x12));
     header.append('"');
     header.append(diskName);
     header.append('"');
@@ -377,6 +378,7 @@ bool IECFoundryDrive::createDirectoryProgram(const quint8 deviceNumber, QByteArr
     header.append(diskId);
     header.append(' ');
     header.append(dosType);
+    header.append(static_cast<char>(0x92));
     if (!appendBasicLine(program, address, 0, header))
     {
         program.clear();
@@ -447,7 +449,7 @@ bool IECFoundryDrive::createDirectoryProgram(const quint8 deviceNumber, QByteArr
             if ((fileType & 0x40U) != 0)
                 typeName.append('<');
 
-            QByteArray line = QByteArray::number(blocks).rightJustified(5, ' ');
+            QByteArray line;
             line.append(" \"");
             line.append(fileName);
             line.append("\" ");
