@@ -1,7 +1,5 @@
 #include "IECProtocol.h"
 
-#include <QDebug>
-
 
 IECProtocol::IECProtocol(IECBus* ptrBus, const quint8 deviceNumber, const IECBus::ParticipantId participantId)
     : m_deviceNumber(deviceNumber)
@@ -517,11 +515,6 @@ void IECProtocol::clockSend()
     case SendPhase::WaitAcknowledgeRelease:
         if (lineHigh(IECBus::Line::DATA))
         {
-            qDebug() << "IEC TALK byte ACK:"
-                     << "index:" << m_transmitIndex
-                     << "value:" << Qt::hex
-                     << static_cast<quint8>(m_transmitData.at(m_transmitIndex));
-
             if (m_transmitIndex + 1 >= m_transmitData.size())
             {
                 finishSending();
@@ -554,13 +547,6 @@ void IECProtocol::clockSend()
         // T_BB beginnt erst nach Freigabe des ACKs.
         if (m_stateCycles >= BETWEEN_BYTES_CYCLES)
         {
-            //++m_transmitIndex;
-
-            qDebug() << "IEC TALK next byte:"
-                     << "index:" << m_transmitIndex
-                     << "value:" << Qt::hex
-                     << static_cast<quint8>(m_transmitData.at(m_transmitIndex));
-
             m_transmitBit = 0;
             m_sendPhase = SendPhase::WaitReady;
             m_stateCycles = 0;

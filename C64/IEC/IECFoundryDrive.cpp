@@ -358,7 +358,7 @@ bool IECFoundryDrive::createDirectoryProgram(const quint8 deviceNumber, QByteArr
         {
             const quint8 fileType = static_cast<quint8>(directorySector.at(entryOffset));
 
-            if ((fileType & 0x07U) == 0)
+            if (fileType == 0)
                 continue;
 
             QByteArray entry;
@@ -664,7 +664,7 @@ bool IECFoundryDrive::createDirectoryEntry(const QByteArray& directorySector, in
         return false;
     }
 
-    const quint8 fileTypeFlags = static_cast<quint8>(directorySector.at(entryOffset + 2));
+    const quint8 fileTypeFlags = static_cast<quint8>(directorySector.at(entryOffset));
     const quint16 blocks = static_cast<quint8>(directorySector.at(entryOffset + 28))
                            | (static_cast<quint16>(static_cast<quint8>(directorySector.at(entryOffset + 29))) << 8);
 
