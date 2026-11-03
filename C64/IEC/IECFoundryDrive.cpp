@@ -456,7 +456,7 @@ bool IECFoundryDrive::readFile(const quint8 deviceNumber, const QByteArray& file
             const quint8 fileType = static_cast<quint8>(directorySector.at(entryOffset));
 
             // Ungenutzte Directory-Einträge überspringen.
-            if ((fileType & 0x07U) == 0)
+            if (fileType == 0)
                 continue;
             // Für LOAD unterstützen wir PRG-Dateien.
             if ((fileType & 0x07U) != 2)
@@ -668,30 +668,19 @@ bool IECFoundryDrive::createDirectoryEntry(const QByteArray& directorySector, in
     const quint16 blocks = static_cast<quint8>(directorySector.at(entryOffset + 28))
                            | (static_cast<quint16>(static_cast<quint8>(directorySector.at(entryOffset + 29))) << 8);
 
-    QByteArray fileName = directorySector.mid(entryOffset + 3, 16);
+    const QByteArray fileName = directorySector.mid(entryOffset + 3, 16);
 
-    while (!fileName.isEmpty())
-    {
-        const quint8 lastCharacter = static_cast<quint8>(fileName.at(fileName.size() - 1));
-        if (lastCharacter == 0xA0 || lastCharacter == 0x20 || lastCharacter == 0x00)
-        {
-            fileName.chop(1);
-        }
-        else
-        {
-            break;
-        }
-    }
+    int nameLength = 16;
 
-    for (int index = 0; index < fileName.size(); ++index)
+    for (int index = 0; index < 16; ++index)
     {
-        quint8 character = static_cast<quint8>(fileName.at(index));
+        const quint8 character = static_cast<quint8>(fileName.at(index));
+
         if (character == 0x22 || character == 0x00)
         {
-            fileName.truncate(index);
+            nameLength = index;
             break;
         }
-        fileName[index] = static_cast<char>(character & 0x7F);
     }
 
     entry = QByteArray(32, ' ');
@@ -701,6 +690,9 @@ bool IECFoundryDrive::createDirectoryEntry(const QByteArray& directorySector, in
     entry[3] = static_cast<char>((blocks >> 8) & 0xFF);
 
     int position = 4;
+    // Festes Leerzeichen nach der Blockzahl.
+    ++position;
+
     if (blocks < 100)
     {
         ++position;
@@ -713,12 +705,27 @@ bool IECFoundryDrive::createDirectoryEntry(const QByteArray& directorySector, in
     entry[position++] = '"';
 
     const int nameStart = position;
-    for (int index = 0; index < fileName.size() && index < 16; ++index)
+
+    for (int index = 0; index < 16; ++index)
     {
-        entry[position++] = fileName.at(index);
+        quint8 character = static_cast<quint8>(fileName.at(index));
+
+        if (index < nameLength)
+        {
+            entry[nameStart + index] = static_cast<char>(character);
+        }
+        else
+        {
+            if (character == 0x00)
+                character = 0x20;
+            else
+                character &= 0x7F;
+
+            entry[nameStart + index] = static_cast<char>(character);
+        }
     }
 
-    entry[position++] = '"';
+    entry[nameStart + nameLength] = '"';
 
     const int typePosition = nameStart + 17;
     if (position < typePosition)
