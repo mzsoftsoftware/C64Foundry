@@ -6,6 +6,8 @@
 
 #include "IECFoundryDisk.h"
 
+#include <QDebug>
+
 
 struct IECFoundryDrive::DriveState
 {
@@ -40,13 +42,10 @@ int IECFoundryDrive::sectorOffset(int track, int sector)
 }
 bool IECFoundryDrive::appendBasicLine(QByteArray& program, quint16& address, quint16 lineNumber, const QByteArray& content)
 {
-    const quint32 nextAddress = static_cast<quint32>(address) + 2U + 2U + static_cast<quint32>(content.size()) + 1U;
+    const quint32 nextAddress = static_cast<quint32>(address) + 5U + static_cast<quint32>(content.size());
 
     if (nextAddress > 0xFFFFU)
-    {
-        m_qstrLastError = QStringLiteral("Das Directory ist zu groß für ein BASIC-Programm.");
         return false;
-    }
 
     program.append(static_cast<char>(nextAddress & 0xFFU));
     program.append(static_cast<char>((nextAddress >> 8) & 0xFFU));
@@ -55,7 +54,7 @@ bool IECFoundryDrive::appendBasicLine(QByteArray& program, quint16& address, qui
     program.append(static_cast<char>((lineNumber >> 8) & 0xFFU));
 
     program.append(content);
-    program.append('\0');
+    program.append(static_cast<char>(0x00));
 
     address = static_cast<quint16>(nextAddress);
 
@@ -351,14 +350,37 @@ bool IECFoundryDrive::createDirectoryProgram(const quint8 deviceNumber, QByteArr
         diskName.chop(1);
     }
 
+    QByteArray diskId = bam.mid(162, 2);
+    QByteArray dosType = bam.mid(165, 2);
+
+    // Commodore-Füllzeichen $A0 dürfen nicht als BASIC-Token
+    // in das Directory-Programm übernommen werden.
+    for (int index = 0; index < diskName.size(); ++index)
+    {
+        if (static_cast<quint8>(diskName.at(index)) == 0xA0)
+            diskName[index] = ' ';
+    }
+
+    for (int index = 0; index < diskId.size(); ++index)
+    {
+        if (static_cast<quint8>(diskId.at(index)) == 0xA0)
+            diskId[index] = ' ';
+    }
+
+    for (int index = 0; index < dosType.size(); ++index)
+    {
+        if (static_cast<quint8>(dosType.at(index)) == 0xA0)
+            dosType[index] = ' ';
+    }
+
     QByteArray header;
     header.append('"');
     header.append(diskName);
     header.append('"');
     header.append(' ');
-    header.append(bam.mid(162, 2));
+    header.append(diskId);
     header.append(' ');
-    header.append(bam.mid(164, 2));
+    header.append(dosType);
     if (!appendBasicLine(program, address, 0, header))
     {
         program.clear();
@@ -385,6 +407,8 @@ bool IECFoundryDrive::createDirectoryProgram(const quint8 deviceNumber, QByteArr
             program.clear();
             return false;
         }
+
+        debugDirectorySector(directorySector, track, sector);
 
         const quint8 nextTrack = static_cast<quint8>(directorySector.at(0));
         const quint8 nextSector = static_cast<quint8>(directorySector.at(1));
@@ -460,6 +484,14 @@ bool IECFoundryDrive::createDirectoryProgram(const quint8 deviceNumber, QByteArr
     // Ende des BASIC-Programms: Nullzeiger.
     program.append('\0');
     program.append('\0');
+
+    qDebug() << "IEC directory program:"
+             << "size:" << program.size()
+             << "load address:" << Qt::hex
+             << static_cast<quint8>(program.at(0))
+             << static_cast<quint8>(program.at(1));
+
+    qDebug().noquote() << program.toHex(' ');
 
     return true;
 }
@@ -602,4 +634,41 @@ bool IECFoundryDrive::readFile(const quint8 deviceNumber, const QByteArray& file
     }
 
     return true;
+}
+
+void IECFoundryDrive::debugDirectorySector(const QByteArray& directorySector, const quint8 track, const quint8 sector)
+{
+    qDebug() << "IEC directory sector:"
+             << "track:" << track
+             << "sector:" << sector
+             << "size:" << directorySector.size();
+
+    qDebug().noquote() << directorySector.toHex(' ');
+
+    if (directorySector.size() != 256)
+        return;
+
+    for (int entryOffset = 2; entryOffset + 31 < directorySector.size(); entryOffset += 32)
+    {
+        const quint8 fileType = static_cast<quint8>(directorySector.at(entryOffset));
+
+        if ((fileType & 0x07U) == 0)
+            continue;
+
+        const QByteArray fileName = directorySector.mid(entryOffset + 3, 16);
+
+        const quint8 blockLow = static_cast<quint8>(directorySector.at(entryOffset + 30));
+        const quint8 blockHigh = static_cast<quint8>(directorySector.at(entryOffset + 31));
+
+        const quint16 blocks = static_cast<quint16>(
+            static_cast<quint16>(blockLow) |
+            (static_cast<quint16>(blockHigh) << 8));
+
+        qDebug() << "IEC directory entry:"
+                 << "offset:" << entryOffset
+                 << "type:" << Qt::hex << fileType
+                 << "name:" << fileName.toHex(' ')
+                 << "blocks:" << Qt::dec << blocks
+                 << "block bytes:" << Qt::hex << blockLow << blockHigh;
+    }
 }

@@ -130,24 +130,8 @@ void MOS6510::clock()
 
         m_initialFetch = false;
 
-        {
-        const quint16 instructionAddress = m_programCounter;
         m_opcode = read(m_programCounter);
         ++m_programCounter;
-
-        if (instructionAddress >= 0xEE00 && instructionAddress <= 0xEEFF)
-        {
-            qDebug() << "CPU KERNAL TRACE:"
-                     << "cycle:" << m_cycles
-                     << "PC:" << Qt::hex << instructionAddress
-                     << "opcode:" << m_opcode
-                     << "A:" << m_accumulator
-                     << "X:" << m_x
-                     << "Y:" << m_y
-                     << "SP:" << m_stackPointer
-                     << "P:" << m_status;
-        }
-        }
 
         m_ptrInstruction = &m_instructionTable.instruction(m_opcode);
         m_operation = m_ptrInstruction->operation;
@@ -1948,22 +1932,6 @@ quint8 MOS6510::read(const quint16 address)
 
     const quint8 value = m_ptrBus->read(address);
 
-    if (address == 0xDD00 || address == 0xDD02)
-    {
-        static quint16 logCount = 0;
-
-        if (logCount < 500)
-        {
-            ++logCount;
-
-            qDebug() << "CPU CIA2 READ:"
-                     << "cycle:" << m_cycles
-                     << "PC:" << Qt::hex << m_programCounter
-                     << "register:" << Qt::hex << address
-                     << "value:" << Qt::hex << value;
-        }
-    }
-
     return value;
 }
 void MOS6510::write(const quint16 address, const quint8 value)
@@ -2009,22 +1977,6 @@ void MOS6510::write(const quint16 address, const quint8 value)
         m_ptrBus->setCpuPortLines(portPins());
         m_ptrBus->writeCycle(address);
         return;
-    }
-
-    if (address == 0xDD00 || address == 0xDD02)
-    {
-        static quint16 logCount = 0;
-
-        if (logCount < 500)
-        {
-            ++logCount;
-
-            qDebug() << "CPU CIA2 WRITE:"
-                     << "cycle:" << m_cycles
-                     << "PC:" << Qt::hex << m_programCounter
-                     << "register:" << Qt::hex << address
-                     << "value:" << Qt::hex << value;
-        }
     }
 
     m_ptrBus->write(address, value);

@@ -44,6 +44,7 @@ private:
     bool appendBasicLine(QByteArray& program, quint16& address, quint16 lineNumber, const QByteArray& content);
     QByteArray normalizeDiskFileName(QByteArray fileName);
     bool saveImageInternal(quint8 deviceNumber);
+    void debugDirectorySector(const QByteArray& directorySector, quint8 track, quint8 sector);
 
 private:
     struct DriveState;

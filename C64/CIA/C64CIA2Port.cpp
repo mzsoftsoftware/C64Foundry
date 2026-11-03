@@ -79,11 +79,6 @@ quint8 C64CIA2Port::portAInputs(quint8 portBOutput) const
     if (inputs != previousInputs)
     {
         previousInputs = inputs;
-
-        qDebug() << "CIA2 IEC IN:"
-                 << "inputs:" << Qt::hex << inputs
-                 << "CLK high:" << clockHigh
-                 << "DATA high:" << dataHigh;
     }
 
     return inputs;
@@ -120,13 +115,6 @@ void C64CIA2Port::portAOutputChanged(quint8 portA, quint8 dataDirectionA)
     m_ptrIECBus->setLineLow(m_participantId, IECBus::Line::CLK, clockLow);
     m_ptrIECBus->setLineLow(m_participantId, IECBus::Line::DATA, dataLow);
     m_ptrIECBus->setLineLow(m_participantId, IECBus::Line::ATN, attentionLow);
-
-    qDebug() << "CIA2 IEC OUT:"
-             << "PA:" << Qt::hex << portA
-             << "DDRA:" << Qt::hex << dataDirectionA
-             << "CLK output low:" << clockLow
-             << "DATA output low:" << dataLow
-             << "ATN output low:" << attentionLow;
 }
 
 void C64CIA2Port::serialPortOutputChanged(const bool serialData, const bool serialClock)
