@@ -345,10 +345,6 @@ bool IECFoundryDrive::createDirectoryProgram(const quint8 deviceNumber, QByteArr
     program.append(static_cast<char>(0x08));
     quint16 address = 0x0801;
     QByteArray diskName = bam.mid(144, 16);
-    while (!diskName.isEmpty() && (static_cast<quint8>(diskName.back()) == 0xA0 || diskName.back() == ' '))
-    {
-        diskName.chop(1);
-    }
 
     QByteArray diskId = bam.mid(162, 2);
     QByteArray dosType = bam.mid(165, 2);
@@ -495,7 +491,7 @@ bool IECFoundryDrive::createDirectoryProgram(const quint8 deviceNumber, QByteArr
              << static_cast<quint8>(program.at(0))
              << static_cast<quint8>(program.at(1));
 
-    qDebug().noquote() << program.toHex(' ');
+    qDebug().noquote() << "IEC directory program:" << program.toHex(' ');
 
     return true;
 }
@@ -661,8 +657,8 @@ void IECFoundryDrive::debugDirectorySector(const QByteArray& directorySector, co
 
         const QByteArray fileName = directorySector.mid(entryOffset + 3, 16);
 
-        const quint8 blockLow = static_cast<quint8>(directorySector.at(entryOffset + 30));
-        const quint8 blockHigh = static_cast<quint8>(directorySector.at(entryOffset + 31));
+        const quint8 blockLow = static_cast<quint8>(directorySector.at(entryOffset + 29));
+        const quint8 blockHigh = static_cast<quint8>(directorySector.at(entryOffset + 30));
 
         const quint16 blocks = static_cast<quint16>(
             static_cast<quint16>(blockLow) |
