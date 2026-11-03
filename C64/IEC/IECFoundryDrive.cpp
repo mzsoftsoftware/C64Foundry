@@ -354,7 +354,7 @@ bool IECFoundryDrive::createDirectoryProgram(const quint8 deviceNumber, QByteArr
 
         debugDirectorySector(directorySector, track, sector);
 
-        for (int entryOffset = 2; entryOffset + 31 < directorySector.size(); entryOffset += 32)
+        for (int entryOffset = 2; entryOffset + 29 < directorySector.size(); entryOffset += 32)
         {
             const quint8 fileType = static_cast<quint8>(directorySector.at(entryOffset));
 
@@ -451,7 +451,7 @@ bool IECFoundryDrive::readFile(const quint8 deviceNumber, const QByteArray& file
         if (!readSector(deviceNumber, directoryTrack, directorySectorNumber, directorySector))
             return false;
 
-        for (int entryOffset = 2; entryOffset + 31 < directorySector.size(); entryOffset += 32)
+        for (int entryOffset = 2; entryOffset + 29 < directorySector.size(); entryOffset += 32)
         {
             const quint8 fileType = static_cast<quint8>(directorySector.at(entryOffset));
 
@@ -562,7 +562,7 @@ void IECFoundryDrive::debugDirectorySector(const QByteArray& directorySector, co
     if (directorySector.size() != 256)
         return;
 
-    for (int entryOffset = 2; entryOffset + 31 < directorySector.size(); entryOffset += 32)
+    for (int entryOffset = 2; entryOffset + 29 < directorySector.size(); entryOffset += 32)
     {
         const quint8 fileType = static_cast<quint8>(directorySector.at(entryOffset));
 
@@ -627,8 +627,8 @@ bool IECFoundryDrive::createDirectoryHeader(const QByteArray& bam, QByteArray& h
     header[24] = '"';
     header[25] = ' ';
 
-    // Disketten-ID.
-    for (int index = 0; index < 2; ++index)
+    // Disketten-ID und DOS-Typ einschließlich Trennzeichen.
+    for (int index = 0; index < 5; ++index)
     {
         quint8 value = static_cast<quint8>(bam.at(162 + index));
 
@@ -636,19 +636,6 @@ bool IECFoundryDrive::createDirectoryHeader(const QByteArray& bam, QByteArray& h
             value = 0x20;
 
         header[26 + index] = static_cast<char>(value & 0x7F);
-    }
-
-    header[28] = ' ';
-
-    // DOS-Typ.
-    for (int index = 0; index < 2; ++index)
-    {
-        quint8 value = static_cast<quint8>(bam.at(165 + index));
-
-        if (value == 0xA0)
-            value = 0x20;
-
-        header[29 + index] = static_cast<char>(value & 0x7F);
     }
 
     // Ende der BASIC-Zeile.
@@ -659,7 +646,7 @@ bool IECFoundryDrive::createDirectoryHeader(const QByteArray& bam, QByteArray& h
 
 bool IECFoundryDrive::createDirectoryEntry(const QByteArray& directorySector, int entryOffset, QByteArray& entry)
 {
-    if (entryOffset < 2 || entryOffset + 32 > directorySector.size())
+    if (entryOffset < 2 || entryOffset + 29 >= directorySector.size())
     {
         return false;
     }
@@ -728,13 +715,6 @@ bool IECFoundryDrive::createDirectoryEntry(const QByteArray& directorySector, in
     entry[nameStart + nameLength] = '"';
 
     const int typePosition = nameStart + 17;
-    if (position < typePosition)
-    {
-        while (position < typePosition)
-        {
-            entry[position++] = ' ';
-        }
-    }
 
     if ((fileTypeFlags & 0x80) == 0)
     {
