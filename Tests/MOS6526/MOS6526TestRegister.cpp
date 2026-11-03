@@ -708,3 +708,93 @@ void MOS6526TestRegister::testSerialPortOutputInterruptWithoutMask()
     //
     QCOMPARE(cia.readRegister(0x0D), quint8(0x09));
 }
+
+void MOS6526TestRegister::testFLAGFallingEdgeSetsInterrupt()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x0D, 0x90);
+
+    cia.setFLAG(false);
+
+    QVERIFY(cia.irq());
+    QCOMPARE(cia.readRegister(0x0D), quint8(0x90));
+    QVERIFY(!cia.irq());
+}
+
+
+void MOS6526TestRegister::testFLAGInterruptRespectsMask()
+{
+    MOS6526 cia;
+
+    cia.setFLAG(false);
+
+    QVERIFY(!cia.irq());
+    QCOMPARE(cia.readRegister(0x0D), quint8(0x10));
+}
+
+
+void MOS6526TestRegister::testFLAGRisingEdgeDoesNotInterrupt()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x0D, 0x90);
+
+    cia.setFLAG(false);
+    cia.readRegister(0x0D);
+
+    cia.setFLAG(true);
+
+    QVERIFY(!cia.irq());
+    QCOMPARE(cia.readRegister(0x0D), quint8(0x00));
+}
+
+
+void MOS6526TestRegister::testFLAGRequiresNewFallingEdge()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x0D, 0x90);
+
+    cia.setFLAG(false);
+
+    QVERIFY(cia.irq());
+
+    cia.readRegister(0x0D);
+    QVERIFY(!cia.irq());
+
+    // Remaining LOW must not trigger another interrupt.
+    cia.setFLAG(false);
+    QVERIFY(!cia.irq());
+
+    // A new falling edge must trigger again.
+    cia.setFLAG(true);
+    cia.setFLAG(false);
+
+    QVERIFY(cia.irq());
+    QCOMPARE(cia.readRegister(0x0D), quint8(0x90));
+}
+
+
+void MOS6526TestRegister::testFLAGResetState()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x0D, 0x90);
+    cia.setFLAG(false);
+
+    QVERIFY(cia.irq());
+
+    cia.reset();
+
+    QVERIFY(!cia.irq());
+
+    // FLAG is HIGH after reset. Re-enable the FLAG interrupt mask.
+    cia.writeRegister(0x0D, 0x90);
+
+    // A new falling edge must trigger the interrupt.
+    cia.setFLAG(false);
+
+    QVERIFY(cia.irq());
+    QCOMPARE(cia.readRegister(0x0D), quint8(0x90));
+}

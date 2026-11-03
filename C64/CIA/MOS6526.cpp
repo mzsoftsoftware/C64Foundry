@@ -449,6 +449,8 @@ void MOS6526::reset()
     m_serialOutputPending = false;
     m_serialOutputActive = false;
     m_serialOutputClockPhase = false;
+
+    m_flag = true;
 }
 
 
@@ -591,4 +593,13 @@ void MOS6526::serialPortOutputTimerAUnderflow()
 
     // Rising CNT edge: keep SP stable.
     m_serialClockOutput = true;
+}
+
+void MOS6526::setFLAG(const bool level)
+{
+    const bool fallingEdge = m_flag && !level;
+    m_flag = level;
+
+    if (fallingEdge)
+        m_interruptStatus |= 0x10;
 }

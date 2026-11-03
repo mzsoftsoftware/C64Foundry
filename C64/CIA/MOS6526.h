@@ -31,6 +31,7 @@ public:
     void setTODDivider(quint8 divider);
     void clockTODPulse();
     void setSP(bool level)                                  { m_serialPortInput = level; }
+    void setFLAG(bool level);
 
     // Operations
     void initialize();
@@ -93,4 +94,6 @@ private:
     bool m_serialOutputPending = false;
     bool m_serialOutputActive = false;
     bool m_serialOutputClockPhase = false;
+
+    bool m_flag = true;
 };

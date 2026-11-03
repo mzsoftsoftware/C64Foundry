@@ -49,4 +49,10 @@ private slots:
     void testSerialPortOutputDoesNotInterruptBeforeEightBits();
     void testSerialPortOutputRaisesInterruptAfterEightBits();
     void testSerialPortOutputInterruptWithoutMask();
+
+    void testFLAGFallingEdgeSetsInterrupt();
+    void testFLAGInterruptRespectsMask();
+    void testFLAGRisingEdgeDoesNotInterrupt();
+    void testFLAGRequiresNewFallingEdge();
+    void testFLAGResetState();
 };
