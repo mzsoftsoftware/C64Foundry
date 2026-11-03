@@ -27,7 +27,7 @@ quint8 MOS6526::readRegister(const quint8 address)
     case 0x01:
     {
         const quint8 inputs = m_ptrPort ? m_ptrPort->portBInputs(portAOutput()) : m_portBInputs;
-        return (m_portB & m_dataDirectionB) | (inputs & static_cast<quint8>(~m_dataDirectionB));
+        return portBValue(inputs);
     }
 
     case 0x02:
@@ -227,6 +227,13 @@ void MOS6526::writeRegister(const quint8 address, const quint8 value)
         break;
 
     case 0x0E:
+    {
+        // CRA bit 0 rising edge starts Timer A and sets the toggle output HIGH.
+        const bool startRisingEdge = !(m_controlRegisterA & 0x01) && (value & 0x01);
+
+        if (startRisingEdge)
+            m_timerAOutput = true;
+
         // CRA bit 4 is the Timer A Force Load strobe.
         if (value & 0x10)
             m_timerACounter = m_timerALatch;
@@ -234,8 +241,16 @@ void MOS6526::writeRegister(const quint8 address, const quint8 value)
         // Force Load is a strobe and is not stored.
         m_controlRegisterA = value & static_cast<quint8>(~0x10);
         break;
+    }
 
     case 0x0F:
+    {
+        // CRB bit 0 rising edge starts Timer B and sets the toggle output HIGH.
+        const bool startRisingEdge = !(m_controlRegisterB & 0x01) && (value & 0x01);
+
+        if (startRisingEdge)
+            m_timerBOutput = true;
+
         // CRB bit 4 is the Timer B Force Load strobe.
         if (value & 0x10)
             m_timerBCounter = m_timerBLatch;
@@ -243,6 +258,7 @@ void MOS6526::writeRegister(const quint8 address, const quint8 value)
         // Force Load is a strobe and is not stored.
         m_controlRegisterB = value & static_cast<quint8>(~0x10);
         break;
+    }
 
     default:
     {
@@ -311,26 +327,42 @@ bool MOS6526::clockTimerB()
 }
 
 
-// Notify Timer B when Timer A underflows.
-// CRB bits 6-5 = 10: count Timer A underflows.
-// CRB bits 6-5 = 11: count Timer A underflows while CNT is high.
 void MOS6526::timerAUnderflow()
 {
+    // The toggle flip-flop changes on every Timer A underflow.
+    m_timerAOutput = !m_timerAOutput;
+
+    // The pulse output remains active until the next PHI2 clock.
+    m_timerAPulse = true;
+
     const quint8 source = (m_controlRegisterB >> 5) & 0x03;
 
     if (source == 0x02)
     {
-        clockTimerB();
+        if (clockTimerB())
+            timerBUnderflow();
     }
     else if (source == 0x03 && m_cnt)
     {
-        clockTimerB();
+        if (clockTimerB())
+            timerBUnderflow();
     }
 }
+void MOS6526::timerBUnderflow()
+{
+    // The toggle flip-flop changes on every Timer B underflow.
+    m_timerBOutput = !m_timerBOutput;
 
+    // The pulse output remains active until the next PHI2 clock.
+    m_timerBPulse = true;
+}
 
 void MOS6526::clock()
 {
+    // Timer output pulses last for one PHI2 cycle.
+    m_timerAPulse = false;
+    m_timerBPulse = false;
+
     bool timerAUnderflowed = false;
 
     // Timer A source: Φ2 when CRA bit 5 is clear.
@@ -339,7 +371,10 @@ void MOS6526::clock()
 
     // Timer B source: Φ2 when CRB bits 6-5 are 00.
     if (((m_controlRegisterB >> 5) & 0x03) == 0x00)
-        clockTimerB();
+    {
+        if (clockTimerB())
+            timerBUnderflow();
+    }
 
     if (timerAUnderflowed)
     {
@@ -385,7 +420,10 @@ void MOS6526::setCNT(const bool level)
 
     // CRB bits 6-5 = 01 select CNT as Timer B's clock source.
     if (((m_controlRegisterB >> 5) & 0x03) == 0x01)
-        clockTimerB();
+    {
+        if (clockTimerB())
+            timerBUnderflow();
+    }
 
     if (timerAUnderflowed)
         timerAUnderflow();
@@ -451,6 +489,11 @@ void MOS6526::reset()
     m_serialOutputClockPhase = false;
 
     m_flag = true;
+    m_timerAOutput = false;
+    m_timerBOutput = false;
+
+    m_timerAPulse = false;
+    m_timerBPulse = false;
 }
 
 
@@ -602,4 +645,33 @@ void MOS6526::setFLAG(const bool level)
 
     if (fallingEdge)
         m_interruptStatus |= 0x10;
+}
+
+quint8 MOS6526::portBValue(const quint8 inputs) const
+{
+    quint8 value = (m_portB & m_dataDirectionB) | (inputs & static_cast<quint8>(~m_dataDirectionB));
+
+    // Timer A output overrides DDRB bit 6 when PBON is enabled.
+    if (m_controlRegisterA & 0x02)
+    {
+        const bool output = (m_controlRegisterA & 0x04) ? m_timerAOutput : m_timerAPulse;
+
+        if (output)
+            value |= 0x40;
+        else
+            value &= static_cast<quint8>(~0x40);
+    }
+
+    // Timer B output overrides DDRB bit 7 when PBON is enabled.
+    if (m_controlRegisterB & 0x02)
+    {
+        const bool output = (m_controlRegisterB & 0x04) ? m_timerBOutput : m_timerBPulse;
+
+        if (output)
+            value |= 0x80;
+        else
+            value &= static_cast<quint8>(~0x80);
+    }
+
+    return value;
 }

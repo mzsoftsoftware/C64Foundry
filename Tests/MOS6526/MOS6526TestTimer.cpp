@@ -857,3 +857,244 @@ void MOS6526TestTimer::testTimerBTimerAUnderflowWhileCntLow()
 
     QCOMPARE(cia.readRegister(0x06), quint8(0x01));
 }
+
+void MOS6526TestTimer::testTimerAOutputPulse()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x04, 0x01);
+    cia.writeRegister(0x05, 0x00);
+
+    // PBON + START, pulse mode.
+    cia.writeRegister(0x0E, 0x03);
+
+    QVERIFY((cia.portBPins() & 0x40) == 0);
+
+    // Counter reaches zero.
+    cia.clock();
+
+    QVERIFY((cia.portBPins() & 0x40) == 0);
+
+    // Timer A underflows and generates a positive pulse.
+    cia.clock();
+
+    QVERIFY(cia.portBPins() & 0x40);
+
+    // The pulse ends after the next PHI2 clock.
+    cia.clock();
+
+    QVERIFY((cia.portBPins() & 0x40) == 0);
+}
+
+
+void MOS6526TestTimer::testTimerAOutputToggle()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x04, 0x00);
+    cia.writeRegister(0x05, 0x00);
+
+    // PBON + TOGGLE + START.
+    cia.writeRegister(0x0E, 0x07);
+
+    // START rising edge sets the toggle output HIGH.
+    QVERIFY(cia.portBPins() & 0x40);
+
+    // First underflow toggles the output LOW.
+    cia.clock();
+
+    QVERIFY((cia.portBPins() & 0x40) == 0);
+
+    // Second underflow toggles the output HIGH.
+    cia.clock();
+
+    QVERIFY(cia.portBPins() & 0x40);
+}
+
+
+void MOS6526TestTimer::testTimerAOutputOverridesDDRB()
+{
+    MOS6526 cia;
+
+    // PB6 remains configured as input.
+    cia.writeRegister(0x03, 0x00);
+
+    cia.writeRegister(0x04, 0x00);
+    cia.writeRegister(0x05, 0x00);
+
+    // PBON + TOGGLE + START.
+    cia.writeRegister(0x0E, 0x07);
+
+    // Timer output overrides DDRB.
+    QVERIFY(cia.portBPins() & 0x40);
+    QVERIFY(cia.portBOutput() & 0x40);
+
+    // The output also appears when reading Port B.
+    QCOMPARE(cia.readRegister(0x01) & 0x40, quint8(0x40));
+}
+
+
+void MOS6526TestTimer::testTimerAOutputToggleStartState()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x04, 0x00);
+    cia.writeRegister(0x05, 0x00);
+
+    // Start Timer A in toggle mode.
+    cia.writeRegister(0x0E, 0x07);
+
+    QVERIFY(cia.portBPins() & 0x40);
+
+    // Stop Timer A.
+    cia.writeRegister(0x0E, 0x06);
+
+    // Starting it again creates a new rising edge.
+    cia.writeRegister(0x0E, 0x07);
+
+    // The toggle output is set HIGH again.
+    QVERIFY(cia.portBPins() & 0x40);
+}
+
+
+void MOS6526TestTimer::testTimerAOutputReset()
+{
+    MOS6526 cia;
+    cia.writeRegister(0x04, 0x00);
+    cia.writeRegister(0x05, 0x00);
+    cia.writeRegister(0x0E, 0x07);
+
+    QVERIFY(cia.portBPins() & 0x40);
+
+    cia.reset();
+
+    // PBON + Toggle-Modus, aber Timer bleibt gestoppt.
+    // Der zurückgesetzte interne Timer-Ausgang muss LOW sein.
+    cia.writeRegister(0x0E, 0x06);
+
+    QVERIFY((cia.portBPins() & 0x40) == 0);
+}
+
+void MOS6526TestTimer::testTimerBOutputPulse()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x06, 0x01);
+    cia.writeRegister(0x07, 0x00);
+
+    // PBON + START, pulse mode.
+    cia.writeRegister(0x0F, 0x03);
+
+    QVERIFY((cia.portBPins() & 0x80) == 0);
+
+    // Counter reaches zero.
+    cia.clock();
+
+    QVERIFY((cia.portBPins() & 0x80) == 0);
+
+    // Timer B underflows and generates a positive pulse.
+    cia.clock();
+
+    QVERIFY(cia.portBPins() & 0x80);
+
+    // The pulse ends after the next PHI2 clock.
+    cia.clock();
+
+    QVERIFY((cia.portBPins() & 0x80) == 0);
+}
+
+
+void MOS6526TestTimer::testTimerBOutputToggle()
+{
+    MOS6526 cia;
+
+    cia.writeRegister(0x06, 0x00);
+    cia.writeRegister(0x07, 0x00);
+
+    // PBON + TOGGLE + START.
+    cia.writeRegister(0x0F, 0x07);
+
+    // START rising edge sets the toggle output HIGH.
+    QVERIFY(cia.portBPins() & 0x80);
+
+    // First underflow toggles the output LOW.
+    cia.clock();
+
+    QVERIFY((cia.portBPins() & 0x80) == 0);
+
+    // Second underflow toggles the output HIGH.
+    cia.clock();
+
+    QVERIFY(cia.portBPins() & 0x80);
+}
+
+
+void MOS6526TestTimer::testTimerBOutputOverridesDDRB()
+{
+    MOS6526 cia;
+
+    // PB7 remains configured as input.
+    cia.writeRegister(0x03, 0x00);
+
+    cia.writeRegister(0x06, 0x00);
+    cia.writeRegister(0x07, 0x00);
+
+    // PBON + TOGGLE + START.
+    cia.writeRegister(0x0F, 0x07);
+
+    QVERIFY(cia.portBPins() & 0x80);
+    QVERIFY(cia.portBOutput() & 0x80);
+
+    QCOMPARE(cia.readRegister(0x01) & 0x80, quint8(0x80));
+}
+
+
+void MOS6526TestTimer::testTimerBOutputTimerAUnderflow()
+{
+    MOS6526 cia;
+
+    // Timer A underflows on every PHI2 clock.
+    cia.writeRegister(0x04, 0x00);
+    cia.writeRegister(0x05, 0x00);
+    cia.writeRegister(0x0E, 0x01);
+
+    // Timer B counts Timer A underflows.
+    cia.writeRegister(0x06, 0x00);
+    cia.writeRegister(0x07, 0x00);
+
+    // PBON + TOGGLE + START + Timer A underflow source.
+    cia.writeRegister(0x0F, 0x47);
+
+    // Timer B toggle output starts HIGH.
+    QVERIFY(cia.portBPins() & 0x80);
+
+    // Timer A underflow also clocks Timer B.
+    // Timer B underflows and toggles PB7 LOW.
+    cia.clock();
+
+    QVERIFY((cia.portBPins() & 0x80) == 0);
+
+    // Next Timer A underflow toggles PB7 HIGH again.
+    cia.clock();
+
+    QVERIFY(cia.portBPins() & 0x80);
+}
+
+
+void MOS6526TestTimer::testTimerBOutputReset()
+{
+    MOS6526 cia;
+    cia.writeRegister(0x06, 0x00);
+    cia.writeRegister(0x07, 0x00);
+    cia.writeRegister(0x0F, 0x07);
+
+    QVERIFY(cia.portBPins() & 0x80);
+
+    cia.reset();
+
+    // PBON + Toggle-Modus, aber Timer bleibt gestoppt.
+    // Der zurückgesetzte interne Timer-Ausgang muss LOW sein.
+    cia.writeRegister(0x0F, 0x06);
+
+    QVERIFY((cia.portBPins() & 0x80) == 0);
+}

@@ -42,4 +42,15 @@ private slots:
     void testTimerBTimerAUnderflowDoesNotCountPhi2();
     void testTimerBTimerAUnderflowWhileCntLow();
 
+    void testTimerAOutputPulse();
+    void testTimerAOutputToggle();
+    void testTimerAOutputOverridesDDRB();
+    void testTimerAOutputToggleStartState();
+    void testTimerAOutputReset();
+
+    void testTimerBOutputPulse();
+    void testTimerBOutputToggle();
+    void testTimerBOutputOverridesDDRB();
+    void testTimerBOutputTimerAUnderflow();
+    void testTimerBOutputReset();
 };

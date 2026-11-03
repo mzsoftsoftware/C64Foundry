@@ -14,10 +14,10 @@ public:
     // Getter
     quint8 readRegister(quint8 address);
     quint8 portAPins() const                                { return (m_portA & m_dataDirectionA) | (m_portAInputs & static_cast<quint8>(~m_dataDirectionA)); }
-    quint8 portBPins() const                                { return (m_portB & m_dataDirectionB) | (m_portBInputs & static_cast<quint8>(~m_dataDirectionB)); }
-    bool irq() const                                        { return (m_interruptStatus & m_interruptMask) != 0x00; }
     quint8 portAOutput() const                              { return m_portA | static_cast<quint8>(~m_dataDirectionA); }
-    quint8 portBOutput() const                              { return m_portB | static_cast<quint8>(~m_dataDirectionB); }
+    quint8 portBPins() const                                { return portBValue(m_portBInputs); }
+    quint8 portBOutput() const                              { return portBValue(0xFF); }
+    bool irq() const                                        { return (m_interruptStatus & m_interruptMask) != 0x00; }
     bool serialPortInput() const                            { return m_serialPortInput; }
     bool serialPortOutput() const                           { return m_serialPortOutput; }
     bool serialClockOutput() const                          { return m_serialClockOutput; }
@@ -45,6 +45,8 @@ private:
     void incrementTOD();
     void checkTODAlarm();
     void serialPortOutputTimerAUnderflow();
+    quint8 portBValue(quint8 inputs) const;
+    void timerBUnderflow();
 
 private:
     MOS6526Port* m_ptrPort = nullptr;
@@ -96,4 +98,9 @@ private:
     bool m_serialOutputClockPhase = false;
 
     bool m_flag = true;
+    bool m_timerAOutput = false;
+    bool m_timerBOutput = false;
+
+    bool m_timerAPulse = false;
+    bool m_timerBPulse = false;
 };
