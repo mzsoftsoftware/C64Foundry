@@ -595,12 +595,7 @@ void MOS6526TestRegister::testSerialPortOutputShiftsMSBFirst()
 
     cia.writeRegister(0x04, 0x00);
     cia.writeRegister(0x05, 0x00);
-
     cia.writeRegister(0x0C, data);
-
-    //
-    // Serial output mode, Timer A started.
-    //
     cia.writeRegister(0x0E, 0x41);
 
     for (int bit = 7; bit >= 0; --bit)
@@ -609,7 +604,12 @@ void MOS6526TestRegister::testSerialPortOutputShiftsMSBFirst()
 
         const bool expectedLevel = (data & (1 << bit)) != 0;
 
+        QCOMPARE(cia.serialClockOutput(), false);
         QCOMPARE(cia.serialPortOutput(), expectedLevel);
+
+        // Complete the CNT pulse before checking the next bit.
+        cia.clock();
+        QCOMPARE(cia.serialClockOutput(), true);
     }
 }
 
@@ -644,7 +644,7 @@ void MOS6526TestRegister::testSerialPortOutputDoesNotInterruptBeforeEightBits()
     cia.writeRegister(0x0C, 0xA5);
     cia.writeRegister(0x0E, 0x41);
 
-    for (int bit = 0; bit < 7; ++bit)
+    for (int bit = 0; bit < 13; ++bit)
     {
         cia.clock();
         QVERIFY(!cia.irq());
@@ -670,7 +670,7 @@ void MOS6526TestRegister::testSerialPortOutputRaisesInterruptAfterEightBits()
     cia.writeRegister(0x0C, 0xA5);
     cia.writeRegister(0x0E, 0x41);
 
-    for (int bit = 0; bit < 8; ++bit)
+    for (int bit = 0; bit < 15; ++bit)
         cia.clock();
 
     QVERIFY(cia.irq());
@@ -694,7 +694,7 @@ void MOS6526TestRegister::testSerialPortOutputInterruptWithoutMask()
     cia.writeRegister(0x0C, 0x96);
     cia.writeRegister(0x0E, 0x41);
 
-    for (int bit = 0; bit < 8; ++bit)
+    for (int bit = 0; bit < 15; ++bit)
         cia.clock();
 
     QVERIFY(!cia.irq());

@@ -543,8 +543,12 @@ void MOS6526::serialPortOutputTimerAUnderflow()
     if (!(m_controlRegisterA & 0x40))
         return;
 
+    // Serial output requires Timer A to run in continuous mode.
+    if (!(m_controlRegisterA & 0x01) || (m_controlRegisterA & 0x08))
+        return;
+
     //
-    // A new SDR value is waiting to be transmitted.
+    // Load a pending byte when no byte is currently being transmitted.
     //
     if (!m_serialOutputActive && m_serialOutputPending)
     {
@@ -554,7 +558,6 @@ void MOS6526::serialPortOutputTimerAUnderflow()
         m_serialOutputActive = true;
         m_serialOutputClockPhase = false;
         m_serialClockOutput = true;
-        m_serialPortOutput = (m_serialShiftRegister & 0x80) != 0;
     }
 
     if (!m_serialOutputActive)
@@ -564,30 +567,28 @@ void MOS6526::serialPortOutputTimerAUnderflow()
     }
 
     //
-    // Generate the two phases of the serial clock.
+    // Timer A generates one CNT transition per underflow.
     //
     m_serialOutputClockPhase = !m_serialOutputClockPhase;
 
     if (m_serialOutputClockPhase)
     {
+        // Falling CNT edge: output the current MSB.
         m_serialClockOutput = false;
+        m_serialPortOutput = (m_serialShiftRegister & 0x80) != 0;
+
+        m_serialShiftRegister = static_cast<quint8>(m_serialShiftRegister << 1);
+        ++m_serialBitCount;
+
+        if (m_serialBitCount >= 8)
+        {
+            m_interruptStatus |= 0x08;
+            m_serialOutputActive = false;
+        }
+
         return;
     }
 
+    // Rising CNT edge: keep SP stable.
     m_serialClockOutput = true;
-
-    m_serialShiftRegister = static_cast<quint8>(m_serialShiftRegister << 1);
-    ++m_serialBitCount;
-
-    if (m_serialBitCount >= 8)
-    {
-        m_interruptStatus |= 0x08;
-        m_serialOutputActive = false;
-        m_serialPortOutput = (m_serialShiftRegister & 0x80) != 0;
-        m_serialClockOutput = true;
-    }
-    else
-    {
-        m_serialPortOutput = (m_serialShiftRegister & 0x80) != 0;
-    }
 }
