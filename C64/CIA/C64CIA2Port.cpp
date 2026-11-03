@@ -10,6 +10,7 @@ C64CIA2Port::C64CIA2Port()
 C64CIA2Port::~C64CIA2Port()
 {
     setIECBus(nullptr);
+    setUserPortBus(nullptr);
 }
 
 void C64CIA2Port::setIECBus(IECBus* ptrIECBus)
@@ -29,6 +30,28 @@ void C64CIA2Port::setIECBus(IECBus* ptrIECBus)
         m_participantId = m_ptrIECBus->addParticipant();
 
         qDebug() << "CIA2 IEC participant:" << m_participantId;
+    }
+}
+
+void C64CIA2Port::setUserPortBus(UserPortBus* ptrUserPortBus)
+{
+    if (m_ptrUserPortBus == ptrUserPortBus)
+        return;
+
+    if (m_ptrUserPortBus != nullptr)
+        m_ptrUserPortBus->removeParticipant(m_userPortParticipantId);
+
+    m_ptrUserPortBus = ptrUserPortBus;
+    m_userPortParticipantId = 0;
+
+    if (m_ptrUserPortBus != nullptr)
+        m_userPortParticipantId = m_ptrUserPortBus->addParticipant();
+
+    // Den aktuellen CIA-Ausgangszustand auf den neuen Bus übertragen.
+    if (m_ptrUserPortBus != nullptr)
+    {
+        m_ptrUserPortBus->setLineLow(m_userPortParticipantId, UserPortBus::Line::SP, !m_serialDataOutput);
+        m_ptrUserPortBus->setLineLow(m_userPortParticipantId, UserPortBus::Line::CNT, !m_serialClockOutput);
     }
 }
 
@@ -116,6 +139,12 @@ void C64CIA2Port::serialPortOutputChanged(const bool serialData, const bool seri
 
     m_serialDataOutput = serialData;
     m_serialClockOutput = serialClock;
+
+    if (m_ptrUserPortBus != nullptr)
+    {
+        m_ptrUserPortBus->setLineLow(m_userPortParticipantId, UserPortBus::Line::SP, !m_serialDataOutput);
+        m_ptrUserPortBus->setLineLow(m_userPortParticipantId, UserPortBus::Line::CNT, !m_serialClockOutput);
+    }
 
     qDebug() << "CIA2 USER PORT SERIAL OUT:"
              << "SP:" << m_serialDataOutput

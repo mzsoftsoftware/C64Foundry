@@ -5,6 +5,7 @@
 class C64ROMSet;
 class C64Memory;
 class C64Bus;
+class UserPortBus;
 class MOS6510;
 class VICII;
 class MOS6526;
@@ -24,6 +25,7 @@ public:
 
     // Operations
     void setIECBus(IECBus* ptrIECBus);
+    void setUserPortBus(UserPortBus* ptrUserPortBus);
     bool loadROMSet(const C64ROMSet& romSet);
     bool loadProgram(quint16 address, const QByteArray& data);
     void setBasicProgramEnd(quint16 endAddress);
@@ -88,12 +90,14 @@ public:
     bool cia2SerialDataOutput() const;
     bool cia2SerialClockOutput() const;
 
+
 private:
     C64::Timing     m_timing = C64::PALTiming;
     quint64         m_cycles = 0;
 
     C64Memory*      m_ptrMemory = nullptr;
     C64Bus*         m_ptrBus = nullptr;
+    UserPortBus*    m_ptrUserPortBus = nullptr;
 
     MOS6510*        m_ptrCpu = nullptr;
     VICII*          m_ptrVICII = nullptr;

@@ -22,4 +22,8 @@ private slots:
     void testCIA2SerialOutput();
     void testCIA2SerialOutputReset();
 
+    void testUserPortInitialLineStates();
+    void testUserPortMultipleParticipants();
+    void testCIA2SerialOutputToUserPort();
+    void testUserPortExternalDevice();
 };

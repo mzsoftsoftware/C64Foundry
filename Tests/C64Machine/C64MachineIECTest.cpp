@@ -4,6 +4,7 @@
 
 #include "C64/C64Machine.h"
 #include "C64/IEC/IECBus.h"
+#include "C64/UserPort/UserPortBus.h"
 
 
 C64MachineIECTest::C64MachineIECTest()
@@ -269,4 +270,121 @@ void C64MachineIECTest::testCIA2SerialOutputReset()
 
     QVERIFY(machine.cia2SerialDataOutput());
     QVERIFY(machine.cia2SerialClockOutput());
+}
+
+void C64MachineIECTest::testUserPortInitialLineStates()
+{
+    UserPortBus bus;
+
+    QVERIFY(bus.lineHigh(UserPortBus::Line::SP));
+    QVERIFY(bus.lineHigh(UserPortBus::Line::CNT));
+}
+
+void C64MachineIECTest::testUserPortMultipleParticipants()
+{
+    UserPortBus bus;
+
+    const UserPortBus::ParticipantId first = bus.addParticipant();
+    const UserPortBus::ParticipantId second = bus.addParticipant();
+
+    QVERIFY(bus.setLineLow(first, UserPortBus::Line::SP, true));
+    QVERIFY(!bus.lineHigh(UserPortBus::Line::SP));
+
+    // Ein zweiter Teilnehmer zieht CNT ebenfalls auf LOW.
+    QVERIFY(bus.setLineLow(second, UserPortBus::Line::CNT, true));
+
+    // Das Freigeben durch Teilnehmer 1 darf SP nicht beeinflussen,
+    // solange Teilnehmer 2 SP weiterhin auf LOW ziehen würde.
+    QVERIFY(bus.setLineLow(first, UserPortBus::Line::SP, false));
+    QVERIFY(bus.lineHigh(UserPortBus::Line::SP));
+    QVERIFY(!bus.lineHigh(UserPortBus::Line::CNT));
+
+    // Entfernen von Teilnehmer 2 gibt CNT frei.
+    QVERIFY(bus.removeParticipant(second));
+
+    QVERIFY(bus.lineHigh(UserPortBus::Line::SP));
+    QVERIFY(bus.lineHigh(UserPortBus::Line::CNT));
+
+    QVERIFY(!bus.removeParticipant(second));
+}
+
+void C64MachineIECTest::testCIA2SerialOutputToUserPort()
+{
+    UserPortBus bus;
+    C64Machine machine;
+
+    machine.setUserPortBus(&bus);
+    machine.powerOn();
+
+    QVERIFY(bus.lineHigh(UserPortBus::Line::SP));
+    QVERIFY(bus.lineHigh(UserPortBus::Line::CNT));
+
+    machine.writeCIA2Register(0x04, 0x00);
+    machine.writeCIA2Register(0x05, 0x00);
+    machine.writeCIA2Register(0x0E, 0x41);
+    machine.writeCIA2Register(0x0C, 0xA5);
+
+    // Erster Timer-A-Unterlauf: SP = 1, CNT = 0.
+    machine.clock();
+
+    QVERIFY(bus.lineHigh(UserPortBus::Line::SP));
+    QVERIFY(!bus.lineHigh(UserPortBus::Line::CNT));
+
+    // Zweiter Timer-A-Unterlauf: CNT = 1.
+    machine.clock();
+
+    QVERIFY(bus.lineHigh(UserPortBus::Line::SP));
+    QVERIFY(bus.lineHigh(UserPortBus::Line::CNT));
+
+    // Dritter Timer-A-Unterlauf: SP = 0, CNT = 0.
+    machine.clock();
+
+    QVERIFY(!bus.lineHigh(UserPortBus::Line::SP));
+    QVERIFY(!bus.lineHigh(UserPortBus::Line::CNT));
+
+    // Reset gibt beide CIA-Ausgänge frei.
+    machine.softReset();
+
+    QVERIFY(bus.lineHigh(UserPortBus::Line::SP));
+    QVERIFY(bus.lineHigh(UserPortBus::Line::CNT));
+
+    // Ausschalten entfernt den CIA2-Teilnehmer.
+    machine.powerOff();
+
+    QVERIFY(bus.lineHigh(UserPortBus::Line::SP));
+    QVERIFY(bus.lineHigh(UserPortBus::Line::CNT));
+}
+
+void C64MachineIECTest::testUserPortExternalDevice()
+{
+    UserPortBus bus;
+    C64Machine machine;
+
+    machine.setUserPortBus(&bus);
+    machine.powerOn();
+
+    const UserPortBus::ParticipantId externalDevice = bus.addParticipant();
+
+    // Das externe Gerät zieht SP auf LOW.
+    QVERIFY(bus.setLineLow(externalDevice, UserPortBus::Line::SP, true));
+    QVERIFY(!bus.lineHigh(UserPortBus::Line::SP));
+
+    // CIA2 setzt SP auf HIGH und gibt seine Leitung frei.
+    // Das externe Gerät hält SP weiterhin auf LOW.
+    machine.writeCIA2Register(0x04, 0x00);
+    machine.writeCIA2Register(0x05, 0x00);
+    machine.writeCIA2Register(0x0E, 0x41);
+    machine.writeCIA2Register(0x0C, 0xA5);
+
+    machine.clock();
+    machine.clock();
+
+    QVERIFY(!bus.lineHigh(UserPortBus::Line::SP));
+
+    // Erst das externe Gerät gibt die Leitung frei.
+    QVERIFY(bus.setLineLow(externalDevice, UserPortBus::Line::SP, false));
+
+    QVERIFY(bus.lineHigh(UserPortBus::Line::SP));
+
+    QVERIFY(bus.removeParticipant(externalDevice));
 }

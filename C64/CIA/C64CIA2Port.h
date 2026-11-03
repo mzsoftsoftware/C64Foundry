@@ -2,6 +2,7 @@
 
 #include "MOS6526Port.h"
 #include "C64/IEC/IECBus.h"
+#include "C64/UserPort/UserPortBus.h"
 
 
 class C64CIA2Port : public MOS6526Port
@@ -12,6 +13,7 @@ public:
 
     // Setter
     void setIECBus(IECBus* ptrIECBus);
+    void setUserPortBus(UserPortBus* ptrUserPortBus);
 
     // Operations
     quint8 portAInputs(quint8 portBOutput) const override;
@@ -27,6 +29,9 @@ public:
 private:
     IECBus* m_ptrIECBus = nullptr;
     IECBus::ParticipantId m_participantId = 0;
+
+    UserPortBus* m_ptrUserPortBus = nullptr;
+    UserPortBus::ParticipantId m_userPortParticipantId = 0;
 
     mutable quint16 m_portAReadLogCount = 0;
     bool m_serialDataOutput = true;

@@ -4,6 +4,7 @@
 
 #include "C64ROMSet.h"
 #include "Bus/C64Bus.h"
+#include "UserPort/UserPortBus.h"
 #include "Memory/C64Memory.h"
 #include "CPU/MOS6510.h"
 #include "VIC-II/VIC-II.h"
@@ -67,6 +68,19 @@ void C64Machine::setIECBus(IECBus* ptrIECBus)
     if (m_bPoweredOn && m_ptrIECBus)
         m_ptrCIA2Port->setIECBus(m_ptrIECBus);
 }
+void C64Machine::setUserPortBus(UserPortBus* ptrUserPortBus)
+{
+    if (m_ptrUserPortBus == ptrUserPortBus)
+        return;
+
+    if (m_bPoweredOn)
+        m_ptrCIA2Port->setUserPortBus(nullptr);
+
+    m_ptrUserPortBus = ptrUserPortBus;
+
+    if (m_bPoweredOn && m_ptrUserPortBus != nullptr)
+        m_ptrCIA2Port->setUserPortBus(m_ptrUserPortBus);
+}
 bool C64Machine::loadROMSet(const C64ROMSet& romSet)
 {
     //
@@ -123,6 +137,9 @@ void C64Machine::powerOn()
     if (m_ptrIECBus)
         m_ptrCIA2Port->setIECBus(m_ptrIECBus);
 
+    if (m_ptrUserPortBus)
+        m_ptrCIA2Port->setUserPortBus(m_ptrUserPortBus);
+
     m_bPoweredOn = true;
 }
 void C64Machine::powerOff()
@@ -131,6 +148,7 @@ void C64Machine::powerOff()
         return;
 
     m_ptrCIA2Port->setIECBus(nullptr);
+    m_ptrCIA2Port->setUserPortBus(nullptr);
 
     m_bPoweredOn = false;
 }

@@ -42,6 +42,8 @@ add_library(C64FoundryCore STATIC
 
     C64/Bus/C64Bus.h C64/Bus/C64Bus.cpp
 
+    C64/UserPort/UserPortBus.h C64/UserPort/UserPortBus.cpp
+
     C64/Memory/C64Memory.h C64/Memory/C64Memory.cpp
     C64/Memory/RAM.h C64/Memory/RAM.cpp
     C64/Memory/ROM.h C64/Memory/ROM.cpp
