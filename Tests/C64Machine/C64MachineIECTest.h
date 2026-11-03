@@ -18,4 +18,8 @@ private slots:
     void testExternalIECInputs();
     void testVICBankBitsUnaffected();
     void testResetAndPowerOn();
+
+    void testCIA2SerialOutput();
+    void testCIA2SerialOutputReset();
+
 };

@@ -18,10 +18,17 @@ public:
     quint8 portBInputs(quint8 portAOutput) const override;
 
     void portAOutputChanged(quint8 portA, quint8 dataDirectionA) override;
+    void serialPortOutputChanged(bool serialData, bool serialClock) override;
+
+    // Getter
+    bool serialDataOutput() const     { return m_serialDataOutput; }
+    bool serialClockOutput() const    { return m_serialClockOutput; }
 
 private:
     IECBus* m_ptrIECBus = nullptr;
     IECBus::ParticipantId m_participantId = 0;
 
     mutable quint16 m_portAReadLogCount = 0;
+    bool m_serialDataOutput = true;
+    bool m_serialClockOutput = true;
 };

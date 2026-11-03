@@ -105,3 +105,19 @@ void C64CIA2Port::portAOutputChanged(quint8 portA, quint8 dataDirectionA)
              << "DATA output low:" << dataLow
              << "ATN output low:" << attentionLow;
 }
+
+void C64CIA2Port::serialPortOutputChanged(const bool serialData, const bool serialClock)
+{
+    if (m_serialDataOutput == serialData &&
+        m_serialClockOutput == serialClock)
+    {
+        return;
+    }
+
+    m_serialDataOutput = serialData;
+    m_serialClockOutput = serialClock;
+
+    qDebug() << "CIA2 USER PORT SERIAL OUT:"
+             << "SP:" << m_serialDataOutput
+             << "CNT:" << m_serialClockOutput;
+}

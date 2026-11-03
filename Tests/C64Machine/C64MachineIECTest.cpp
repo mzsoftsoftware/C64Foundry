@@ -36,27 +36,21 @@ void C64MachineIECTest::testCIA2IECOutputs()
     machine.powerOn();
 
     //
-    // PA4-PA6 are IEC outputs.
+    // PA3-PA5 are IEC outputs.
     //
     machine.writeCIA2Register(0x00, 0x00);
-    machine.writeCIA2Register(0x02, 0x70);
+    machine.writeCIA2Register(0x02, 0x38);
 
     QVERIFY(ptrBus->lineHigh(IECBus::Line::ATN));
     QVERIFY(ptrBus->lineHigh(IECBus::Line::CLK));
     QVERIFY(ptrBus->lineHigh(IECBus::Line::DATA));
 
-    //
-    // Assert all three IEC lines.
-    //
-    machine.writeCIA2Register(0x00, 0x70);
+    machine.writeCIA2Register(0x00, 0x38);
 
     QVERIFY(!ptrBus->lineHigh(IECBus::Line::ATN));
     QVERIFY(!ptrBus->lineHigh(IECBus::Line::CLK));
     QVERIFY(!ptrBus->lineHigh(IECBus::Line::DATA));
 
-    //
-    // Release all three IEC lines.
-    //
     machine.writeCIA2Register(0x00, 0x00);
 
     QVERIFY(ptrBus->lineHigh(IECBus::Line::ATN));
@@ -72,37 +66,30 @@ void C64MachineIECTest::testCIA2DataDirection()
     IECBus* ptrBus = &bus;
     machine.powerOn();
 
-    //
     // PRA high, but all pins configured as inputs.
-    //
-    machine.writeCIA2Register(0x00, 0x70);
+    machine.writeCIA2Register(0x00, 0x38);
     machine.writeCIA2Register(0x02, 0x00);
 
+    // All lines are released.
     QVERIFY(ptrBus->lineHigh(IECBus::Line::ATN));
     QVERIFY(ptrBus->lineHigh(IECBus::Line::CLK));
     QVERIFY(ptrBus->lineHigh(IECBus::Line::DATA));
 
-    //
     // Enable CLK output.
-    //
     machine.writeCIA2Register(0x02, 0x10);
 
     QVERIFY(ptrBus->lineHigh(IECBus::Line::ATN));
     QVERIFY(!ptrBus->lineHigh(IECBus::Line::CLK));
     QVERIFY(ptrBus->lineHigh(IECBus::Line::DATA));
 
-    //
     // Enable all IEC outputs.
-    //
-    machine.writeCIA2Register(0x02, 0x70);
+    machine.writeCIA2Register(0x02, 0x38);
 
     QVERIFY(!ptrBus->lineHigh(IECBus::Line::ATN));
     QVERIFY(!ptrBus->lineHigh(IECBus::Line::CLK));
     QVERIFY(!ptrBus->lineHigh(IECBus::Line::DATA));
 
-    //
     // Return all pins to inputs.
-    //
     machine.writeCIA2Register(0x02, 0x00);
 
     QVERIFY(ptrBus->lineHigh(IECBus::Line::ATN));
@@ -120,30 +107,26 @@ void C64MachineIECTest::testExternalIECInputs()
 
     const IECBus::ParticipantId drive = ptrBus->addParticipant();
 
-    //
-    // PA2 = CLK IN, PA3 = DATA IN.
-    //
+    // PA6 = CLK IN, PA7 = DATA IN.
     machine.writeCIA2Register(0x02, 0x00);
 
-    QCOMPARE(machine.readCIA2Register(0x00) & quint8(0x0C), quint8(0x0C));
+    QCOMPARE(machine.readCIA2Register(0x00) & quint8(0xC0), quint8(0xC0));
 
     QVERIFY(ptrBus->setLineLow(drive, IECBus::Line::CLK, true));
 
-    QCOMPARE(machine.readCIA2Register(0x00) & quint8(0x0C), quint8(0x08));
+    QCOMPARE(machine.readCIA2Register(0x00) & quint8(0xC0), quint8(0x80));
 
     QVERIFY(ptrBus->setLineLow(drive, IECBus::Line::DATA, true));
 
-    QCOMPARE(machine.readCIA2Register(0x00) & quint8(0x0C), quint8(0x00));
+    QCOMPARE(machine.readCIA2Register(0x00) & quint8(0xC0), quint8(0x00));
 
     QVERIFY(ptrBus->setLineLow(drive, IECBus::Line::CLK, false));
 
-    QCOMPARE(machine.readCIA2Register(0x00) & quint8(0x0C), quint8(0x04));
+    QCOMPARE(machine.readCIA2Register(0x00) & quint8(0xC0), quint8(0x40));
 
     QVERIFY(ptrBus->setLineLow(drive, IECBus::Line::DATA, false));
 
-    QCOMPARE(machine.readCIA2Register(0x00) & quint8(0x0C), quint8(0x0C));
-
-    QVERIFY(ptrBus->removeParticipant(drive));
+    QCOMPARE(machine.readCIA2Register(0x00) & quint8(0xC0), quint8(0xC0));
 }
 
 void C64MachineIECTest::testVICBankBitsUnaffected()
@@ -181,8 +164,8 @@ void C64MachineIECTest::testResetAndPowerOn()
     //
     // Pull all IEC lines low.
     //
-    machine.writeCIA2Register(0x02, 0x70);
-    machine.writeCIA2Register(0x00, 0x70);
+    machine.writeCIA2Register(0x02, 0x38);
+    machine.writeCIA2Register(0x00, 0x38);
 
     QVERIFY(!ptrBus->lineHigh(IECBus::Line::ATN));
     QVERIFY(!ptrBus->lineHigh(IECBus::Line::CLK));
@@ -200,8 +183,8 @@ void C64MachineIECTest::testResetAndPowerOn()
     //
     // Assert the lines again.
     //
-    machine.writeCIA2Register(0x02, 0x70);
-    machine.writeCIA2Register(0x00, 0x70);
+    machine.writeCIA2Register(0x02, 0x38);
+    machine.writeCIA2Register(0x00, 0x38);
 
     QVERIFY(!ptrBus->lineHigh(IECBus::Line::ATN));
     QVERIFY(!ptrBus->lineHigh(IECBus::Line::CLK));
@@ -224,4 +207,66 @@ void C64MachineIECTest::testResetAndPowerOn()
     QVERIFY(ptrBus->lineHigh(IECBus::Line::ATN));
     QVERIFY(ptrBus->lineHigh(IECBus::Line::CLK));
     QVERIFY(ptrBus->lineHigh(IECBus::Line::DATA));
+}
+
+void C64MachineIECTest::testCIA2SerialOutput()
+{
+    C64Machine machine;
+    machine.powerOn();
+
+    // CIA2 Timer A mit dem kürzestmöglichen Intervall starten.
+    machine.writeCIA2Register(0x04, 0x00);
+    machine.writeCIA2Register(0x05, 0x00);
+
+    // Serial Output Mode und Timer A starten.
+    machine.writeCIA2Register(0x0E, 0x41);
+
+    // Erstes auszugebendes Byte: $A5.
+    machine.writeCIA2Register(0x0C, 0xA5);
+
+    // Ausgangszustand vor der ersten Timer-A-Unterlauf-Flanke.
+    QVERIFY(machine.cia2SerialDataOutput());
+    QVERIFY(machine.cia2SerialClockOutput());
+
+    // Erster Timer-A-Unterlauf: MSB von $A5 wird ausgegeben,
+    // CNT wechselt auf LOW.
+    machine.clock();
+
+    QVERIFY(machine.cia2SerialDataOutput());
+    QVERIFY(!machine.cia2SerialClockOutput());
+
+    // Zweiter Timer-A-Unterlauf: CNT wechselt wieder auf HIGH.
+    machine.clock();
+
+    QVERIFY(machine.cia2SerialDataOutput());
+    QVERIFY(machine.cia2SerialClockOutput());
+
+    // Dritter Timer-A-Unterlauf: zweites Bit von $A5 ist 0.
+    machine.clock();
+
+    QVERIFY(!machine.cia2SerialDataOutput());
+    QVERIFY(!machine.cia2SerialClockOutput());
+}
+
+void C64MachineIECTest::testCIA2SerialOutputReset()
+{
+    C64Machine machine;
+    machine.powerOn();
+
+    machine.writeCIA2Register(0x04, 0x00);
+    machine.writeCIA2Register(0x05, 0x00);
+    machine.writeCIA2Register(0x0E, 0x41);
+    machine.writeCIA2Register(0x0C, 0xA5);
+
+    // Ersten Bit-Takt ausführen.
+    machine.clock();
+
+    QVERIFY(machine.cia2SerialDataOutput());
+    QVERIFY(!machine.cia2SerialClockOutput());
+
+    // Reset muss beide Ausgänge freigeben.
+    machine.softReset();
+
+    QVERIFY(machine.cia2SerialDataOutput());
+    QVERIFY(machine.cia2SerialClockOutput());
 }

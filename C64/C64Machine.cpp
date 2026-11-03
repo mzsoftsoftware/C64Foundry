@@ -364,3 +364,12 @@ quint16 C64Machine::videoFrameHeight() const
 {
     return m_ptrVICII->frameHeight();
 }
+bool C64Machine::cia2SerialDataOutput() const
+{
+    return m_ptrCIA2Port->serialDataOutput();
+}
+
+bool C64Machine::cia2SerialClockOutput() const
+{
+    return m_ptrCIA2Port->serialClockOutput();
+}

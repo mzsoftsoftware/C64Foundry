@@ -85,6 +85,9 @@ public:
     quint16 videoFrameWidth() const;
     quint16 videoFrameHeight() const;
 
+    bool cia2SerialDataOutput() const;
+    bool cia2SerialClockOutput() const;
+
 private:
     C64::Timing     m_timing = C64::PALTiming;
     quint64         m_cycles = 0;
