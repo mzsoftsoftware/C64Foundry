@@ -798,7 +798,7 @@ void IECFoundryDrive::recordSectorAccess(DriveState* ptrState, const quint8 devi
 
     ptrState->sectorAccessEvents.append(status);
 }
-QVector<IECFoundryDrive::SectorAccessStatus> IECFoundryDrive::takeSectorAccessEvents(const quint8 deviceNumber)
+QQueue<IECFoundryDrive::SectorAccessStatus> IECFoundryDrive::takeSectorAccessEvents(const quint8 deviceNumber)
 {
     DriveState* ptrState = m_drives.value(deviceNumber, nullptr);
 

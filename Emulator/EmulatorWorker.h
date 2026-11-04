@@ -14,10 +14,10 @@
 #include "EmulatorResponse.h"
 #include "EmulatorIECDeviceEvent.h"
 
+#include "C64/IEC/IECFoundryDrive.h"
 class C64Machine;
 class IECBus;
 class IECDeviceManager;
-class IECFoundryDrive;
 
 
 class EmulatorWorker : public QObject
@@ -43,6 +43,7 @@ signals:
 
     void iecDeviceChanged(EmulatorIECDeviceEvent::Type type, IECDeviceConfiguration::DeviceId deviceId);
     void printerOutputChanged(IECDeviceConfiguration::DeviceId deviceId, quint64 revision, QByteArray output);
+    void driveAccessChanged(IECDeviceConfiguration::DeviceId deviceId, QQueue<IECFoundryDrive::SectorAccessStatus> events);
 
 private:
     void waitForRequests();
@@ -63,6 +64,7 @@ private:
 
     void publishIECDeviceEvent(EmulatorIECDeviceEvent::Type type, IECDeviceConfiguration::DeviceId deviceId);
     void publishPrinterOutputChanges();
+    void publishDriveAccessChanges();
 
 private:
     C64Machine* m_ptrMachine = nullptr;

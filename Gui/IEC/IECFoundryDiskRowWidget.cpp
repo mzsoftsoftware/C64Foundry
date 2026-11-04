@@ -21,6 +21,10 @@ IECFoundryDiskRowWidget::IECFoundryDiskRowWidget(QWidget* parent)
     ui->setupUi(this);
 
     ui->widget_ActivityLED->setLEDCount(2);
+
+    m_activityTimer.setInterval(240);
+    m_activityTimer.setTimerType(Qt::PreciseTimer);
+    connect(&m_activityTimer, &QTimer::timeout, this, &IECFoundryDiskRowWidget::processNextSectorAccessEvent);
 }
 
 IECFoundryDiskRowWidget::~IECFoundryDiskRowWidget()
@@ -38,7 +42,7 @@ void IECFoundryDiskRowWidget::setImageLoaded(bool loaded)
 
 void IECFoundryDiskRowWidget::onControllerSet()
 {
-    // Hier kommen später laufwerksspezifische Controller-Signale hinzu.
+    connect(m_ptrController, &EmulatorController::driveAccessChanged, this, &IECFoundryDiskRowWidget::onDriveAccessChanged);
 }
 
 void IECFoundryDiskRowWidget::applyConfiguration(const IECDeviceConfiguration& configuration)
@@ -226,4 +230,42 @@ void IECFoundryDiskRowWidget::showSettingsDialog(
         dialog.configuration();
 
     requestSetConfiguration(updatedConfiguration);
+}
+
+void IECFoundryDiskRowWidget::onDriveAccessChanged(const IECDeviceConfiguration::DeviceId deviceId, QVector<IECFoundryDrive::SectorAccessStatus> events)
+{
+    if (deviceId != this->deviceId())
+        return;
+
+    for (const IECFoundryDrive::SectorAccessStatus& event : events)
+        m_sectorAccessQueue.enqueue(event);
+
+    if (!m_sectorAccessQueue.isEmpty() && !m_activityTimer.isActive())
+        m_activityTimer.start();
+}
+void IECFoundryDiskRowWidget::processNextSectorAccessEvent()
+{
+    if (m_sectorAccessQueue.isEmpty())
+    {
+        m_activityTimer.stop();
+        return;
+    }
+
+    const IECFoundryDrive::SectorAccessStatus event = m_sectorAccessQueue.dequeue();
+
+    ui->lcdNumber_TrackSector->display(QStringLiteral("%1.%2").arg(event.track, 2, 10, QChar('0')).arg(event.sector, 2, 10, QChar('0')));
+
+    switch (event.operation)
+    {
+    case IECFoundryDrive::SectorAccessOperation::Read:
+        ui->widget_ActivityLED->triggerActivity(0);
+        break;
+
+    case IECFoundryDrive::SectorAccessOperation::Write:
+        ui->widget_ActivityLED->triggerActivity(1);
+        break;
+    }
+
+    if (m_sectorAccessQueue.isEmpty())
+        m_activityTimer.stop();
 }

@@ -18,6 +18,8 @@ EmulatorWorker::EmulatorWorker(IECBus* ptrIECBus, QObject* parent)
     : QObject{parent}
 {
     qRegisterMetaType<EmulatorIECDeviceEvent::Type>("EmulatorIECDeviceEvent::Type");
+    qRegisterMetaType<IECFoundryDrive::SectorAccessStatus>("IECFoundryDrive::SectorAccessStatus");
+    qRegisterMetaType<QQueue<IECFoundryDrive::SectorAccessStatus>>("QQueue<IECFoundryDrive::SectorAccessStatus>");
 
     m_ptrMachine = new C64Machine();
     m_ptrMachine->setIECBus(ptrIECBus);
@@ -80,6 +82,7 @@ void EmulatorWorker::run()
 
         m_ptrScheduler->runCycles(cyclesPerBatch);
         publishPrinterOutputChanges();
+        publishDriveAccessChanges();
 
         m_totalCycles += cyclesPerBatch;
         m_measuredCycles += cyclesPerBatch;
@@ -726,4 +729,26 @@ void EmulatorWorker::publishPrinterOutputChanges()
     }
 
     m_printerOutputRevisions = currentRevisions;
+}
+
+void EmulatorWorker::publishDriveAccessChanges()
+{
+    const QList<IECDeviceManager::ConfigurationPtr> configurations = m_ptrIECDeviceManager->configurations();
+
+    for (const IECDeviceManager::ConfigurationPtr& ptrConfiguration : configurations)
+    {
+        if (ptrConfiguration.isNull() || ptrConfiguration->type() != IECDeviceType::FoundryDisk)
+            continue;
+
+        const QQueue<IECFoundryDrive::SectorAccessStatus> events = m_ptrFoundryDrive->takeSectorAccessEvents(ptrConfiguration->deviceNumber());
+        if (events.isEmpty())
+            continue;
+
+        qDebug() << "EmulatorWorker: driveAccessChanged"
+                 << "deviceId:" << ptrConfiguration->id()
+                 << "deviceNumber:" << ptrConfiguration->deviceNumber()
+                 << "events:" << events.size();
+
+        emit driveAccessChanged(ptrConfiguration->id(), events);
+    }
 }

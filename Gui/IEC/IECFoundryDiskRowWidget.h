@@ -2,6 +2,11 @@
 
 #include "IECDeviceRowWidget.h"
 
+#include <QQueue>
+#include <QTimer>
+
+#include "C64/IEC/IECFoundryDrive.h"
+
 namespace Ui {
 class IECFoundryDiskRowWidget;
 }
@@ -33,10 +38,16 @@ private slots:
     void on_toolButton_Settings_clicked();
     void on_toolButton_Remove_clicked();
 
+    void onDriveAccessChanged(IECDeviceConfiguration::DeviceId deviceId, QVector<IECFoundryDrive::SectorAccessStatus> events);
+    void processNextSectorAccessEvent();
+
 private:
     void showSettingsDialog(const EmulatorResponseIEC* ptrResponse);
 
 private:
     Ui::IECFoundryDiskRowWidget* ui = nullptr;
     bool m_bImageLoaded = false;
+
+    QQueue<IECFoundryDrive::SectorAccessStatus> m_sectorAccessQueue;
+    QTimer m_activityTimer;
 };

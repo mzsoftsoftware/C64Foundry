@@ -5,6 +5,8 @@
 #include <QQueue>
 #include <QString>
 #include <QtGlobal>
+#include <QMetaType>
+
 
 class IECFoundryDisk;
 
@@ -41,7 +43,7 @@ public:
     IECFoundryDrive& operator=(const IECFoundryDrive&) = delete;
 
     QString lastError() const                       { return m_qstrLastError; }
-    QVector<SectorAccessStatus> takeSectorAccessEvents(quint8 deviceNumber);
+    QQueue<SectorAccessStatus> takeSectorAccessEvents(quint8 deviceNumber);
 
     bool registerDisk(IECFoundryDisk* ptrDisk);
     void unregisterDisk(IECFoundryDisk* ptrDisk);
@@ -80,3 +82,5 @@ private:
     QHash<quint8, DriveState*> m_drives;
     QString m_qstrLastError;
 };
+
+Q_DECLARE_METATYPE(IECFoundryDrive::SectorAccessStatus)
