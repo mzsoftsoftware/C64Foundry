@@ -2,15 +2,38 @@
 
 #include <QByteArray>
 #include <QHash>
+#include <QQueue>
 #include <QString>
 #include <QtGlobal>
 
 class IECFoundryDisk;
 
-
 class IECFoundryDrive
 {
 public:
+    enum class SectorAccessOperation : quint8
+    {
+        Read,
+        Write
+    };
+    struct SectorAccessStatus
+    {
+        quint8 deviceNumber = 0;
+        SectorAccessOperation operation = SectorAccessOperation::Read;
+        quint8 track = 0;
+        quint8 sector = 0;
+        bool success = false;
+        QString errorMessage;
+    };
+    struct DriveState
+    {
+        IECFoundryDisk* ptrDisk = nullptr;
+        QString imageFileName;
+        QByteArray imageData;
+        bool imageModified = false;
+        QQueue<SectorAccessStatus> sectorAccessEvents;
+    };
+
     explicit IECFoundryDrive();
     virtual ~IECFoundryDrive();
 
@@ -18,6 +41,7 @@ public:
     IECFoundryDrive& operator=(const IECFoundryDrive&) = delete;
 
     QString lastError() const                       { return m_qstrLastError; }
+    QVector<SectorAccessStatus> takeSectorAccessEvents(quint8 deviceNumber);
 
     bool registerDisk(IECFoundryDisk* ptrDisk);
     void unregisterDisk(IECFoundryDisk* ptrDisk);
@@ -50,9 +74,9 @@ private:
     bool saveImageInternal(quint8 deviceNumber);
     void debugDirectorySector(const QByteArray& directorySector, quint8 track, quint8 sector);
 
-private:
-    struct DriveState;
-    QHash<quint8, DriveState*> m_drives;
+    void recordSectorAccess(DriveState* ptrState, quint8 deviceNumber, SectorAccessOperation operation, quint8 track, quint8 sector, bool success, const QString& errorMessage);
 
+private:
+    QHash<quint8, DriveState*> m_drives;
     QString m_qstrLastError;
 };

@@ -9,13 +9,6 @@
 #include <QDebug>
 
 
-struct IECFoundryDrive::DriveState
-{
-    IECFoundryDisk* ptrDisk = nullptr;
-    QString imageFileName;
-    QByteArray imageData;
-    bool imageModified = false;
-};
 int IECFoundryDrive::sectorsOnTrack(int track)
 {
     if (track < 1 || track > 35)
@@ -251,51 +244,73 @@ bool IECFoundryDrive::readSector(const quint8 deviceNumber, const quint8 track, 
     m_qstrLastError.clear();
     data.clear();
 
-    const DriveState* ptrState = m_drives.value(deviceNumber, nullptr);
+    DriveState* ptrState = m_drives.value(deviceNumber, nullptr);
+
     if (ptrState == nullptr || ptrState->ptrDisk == nullptr)
     {
         m_qstrLastError = QStringLiteral("Das Laufwerk ist nicht vorhanden.");
+        recordSectorAccess(ptrState, deviceNumber, SectorAccessOperation::Read, track, sector, false, m_qstrLastError);
         return false;
     }
+
     if (ptrState->imageFileName.isEmpty() || ptrState->imageData.isNull())
     {
         m_qstrLastError = QStringLiteral("Es ist kein Disketten-Image geladen.");
+        recordSectorAccess(ptrState, deviceNumber, SectorAccessOperation::Read, track, sector, false, m_qstrLastError);
         return false;
     }
 
     const int offset = sectorOffset(track, sector);
+
     if (offset < 0)
     {
         m_qstrLastError = QStringLiteral("Ungültiger Track oder Sektor.");
+        recordSectorAccess(ptrState, deviceNumber, SectorAccessOperation::Read, track, sector, false, m_qstrLastError);
         return false;
     }
+
     constexpr int SECTOR_SIZE = 256;
+
     if (offset + SECTOR_SIZE > ptrState->imageData.size())
     {
         m_qstrLastError = QStringLiteral("Der Sektor liegt außerhalb des Disketten-Images.");
+        recordSectorAccess(ptrState, deviceNumber, SectorAccessOperation::Read, track, sector, false, m_qstrLastError);
         return false;
     }
 
     data = ptrState->imageData.mid(offset, SECTOR_SIZE);
+
     if (data.size() != SECTOR_SIZE)
     {
         data.clear();
         m_qstrLastError = QStringLiteral("Der Sektor konnte nicht vollständig gelesen werden.");
+        recordSectorAccess(ptrState, deviceNumber, SectorAccessOperation::Read, track, sector, false, m_qstrLastError);
         return false;
     }
+
+    recordSectorAccess(ptrState, deviceNumber, SectorAccessOperation::Read, track, sector, true, QString());
 
     return true;
 }
 
-bool IECFoundryDrive::writeSector(quint8 deviceNumber, quint8 track, quint8 sector, const QByteArray& data)
+bool IECFoundryDrive::writeSector(const quint8 deviceNumber, const quint8 track, const quint8 sector, const QByteArray& data)
 {
-    Q_UNUSED(deviceNumber);
-    Q_UNUSED(track);
-    Q_UNUSED(sector);
     Q_UNUSED(data);
 
     m_qstrLastError.clear();
+
+    DriveState* ptrState = m_drives.value(deviceNumber, nullptr);
+
+    if (ptrState == nullptr || ptrState->ptrDisk == nullptr)
+    {
+        m_qstrLastError = QStringLiteral("Das Laufwerk ist nicht vorhanden.");
+        recordSectorAccess(ptrState, deviceNumber, SectorAccessOperation::Write, track, sector, false, m_qstrLastError);
+        return false;
+    }
+
     m_qstrLastError = QStringLiteral("Das Schreiben von Sektoren ist noch nicht implementiert.");
+
+    recordSectorAccess(ptrState, deviceNumber, SectorAccessOperation::Write, track, sector, false, m_qstrLastError);
 
     return false;
 }
@@ -766,4 +781,32 @@ bool IECFoundryDrive::createDirectoryFooter(const quint16 freeBlocks, QByteArray
     footer[31] = static_cast<char>(0x00);
 
     return true;
+}
+
+void IECFoundryDrive::recordSectorAccess(DriveState* ptrState, const quint8 deviceNumber, const SectorAccessOperation operation, const quint8 track, const quint8 sector, const bool success, const QString& errorMessage)
+{
+    if (ptrState == nullptr)
+        return;
+
+    SectorAccessStatus status;
+    status.deviceNumber = deviceNumber;
+    status.operation = operation;
+    status.track = track;
+    status.sector = sector;
+    status.success = success;
+    status.errorMessage = errorMessage;
+
+    ptrState->sectorAccessEvents.append(status);
+}
+QVector<IECFoundryDrive::SectorAccessStatus> IECFoundryDrive::takeSectorAccessEvents(const quint8 deviceNumber)
+{
+    DriveState* ptrState = m_drives.value(deviceNumber, nullptr);
+
+    if (ptrState == nullptr)
+        return {};
+
+    QQueue<SectorAccessStatus> events;
+    events.swap(ptrState->sectorAccessEvents);
+
+    return events;
 }
