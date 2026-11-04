@@ -2,9 +2,9 @@
 
 C64Foundry is an early-stage, Qt 6/C++ Commodore 64 emulator with the long-term goal of becoming an integrated C64 software development environment.
 
-The project combines an emulation core, a desktop control interface, video output, physical and virtual keyboard input, an IEC bus and initial disk/printer devices. The current storage implementation supports D64 disk images, sector reading, directory generation and loading PRG files from disk images.
+The project combines an emulation core, a desktop control interface, video output, physical and virtual keyboard input, an IEC bus and disk/printer devices. The storage implementation is based on D64 disk images and is being extended toward comprehensive support for standard Commodore disk-drive commands and DOS operations.
 
-> **Status:** Work in progress. C64Foundry is not yet a complete or cycle-exact C64/1541 emulator. Implemented components and partial functionality are distinguished from complete hardware compatibility and user workflows.
+> **Status:** Work in progress. C64Foundry is not yet a complete or cycle-exact C64 emulator. The disk subsystem is also still under development. Implemented components and partial functionality are distinguished from complete hardware compatibility and user workflows.
 
 ## Currently implemented
 
@@ -17,7 +17,7 @@ The project combines an emulation core, a desktop control interface, video outpu
 - VIC-II raster timing, raster IRQ, badline logic, BA/AEC bus arbitration, screen/character fetches, border behavior and a basic high-resolution character-pixel pipeline.
 - Triple-buffered VIC-II frame data with a separate video worker that converts C64 color indices into Qt images.
 - PAL, NTSC and old-NTSC timing definitions in the core. Runtime selection is not yet exposed as a user setting.
-- Direct program-byte loading into RAM at a caller-supplied address via `C64Machine::loadProgram()`. This API is separate from loading a PRG file through IEC.
+- Direct program-byte loading into RAM at a caller-supplied address via `C64Machine::loadProgram()`.
 
 ### Desktop application
 
@@ -41,8 +41,10 @@ The project combines an emulation core, a desktop control interface, video outpu
 - Directory program generation from the disk BAM and directory sectors. The generated BASIC program is transferred through IEC and supports `LOAD "$",8`.
 - Reading PRG files from a D64 image through the directory and file-sector chains.
 - Filename normalization and basic prefix matching using a trailing `*`.
+- Queued disk-sector access events, with separate read/write activity indicators in the disk device GUI.
+- Track/Sector information displayed in the disk device GUI.
 
-The current disk implementation is an initial sector-based implementation. It is **not** yet a complete Commodore 1541/1541-II drive emulation.
+The disk implementation is sector-based and uses D64 images. Its goal is to provide the standard drive and DOS functionality expected by ordinary C64 software, without requiring a complete emulation of the physical 1541 drive hardware.
 
 ## Current limitations
 
@@ -55,14 +57,15 @@ The current disk implementation is an initial sector-based implementation. It is
 
 ### IEC and disk drives
 
-- The IEC disk device currently supports directory transfer and PRG file reading. It does not yet implement the complete 1541 DOS command set.
-- The DOS command channel and status/error channel are incomplete.
-- `SAVE` and disk formatting are not implemented.
-- Sector writing is not implemented.
-- SEQ and REL file handling is not implemented. Directory entries can be displayed in the generated directory listing, but this does not mean those file types can already be read or written.
-- The disk GUI does not yet provide the planned on-demand directory view and current Track/Sector display.
+- The IEC disk device currently supports directory transfer and PRG file reading from D64 images.
+- IEC secondary-address and channel handling still needs to be completed for the intended DOS functionality.
+- The command channel and DOS status/error channel are not yet fully implemented.
+- The standard DOS command set, including the required file and block operations, is not yet complete.
+- Sector writing, `SAVE`, file creation, replacement, deletion and disk formatting are not yet implemented.
+- SEQ and REL file handling is not yet implemented.
+- The disk GUI already provides image management, drive activity indicators and Track/Sector information. An on-demand graphical directory view is planned but is not an immediate priority.
 - The current implementation works with D64 sector images. G64/P64, GCR track data, half-tracks, copy-protection behavior and cycle-sensitive drive hardware are not implemented.
-- Full fastloader and direct 1541 hardware compatibility is therefore not available.
+- Direct programming of the physical 1541 drive hardware over IEC, such as arbitrary drive memory access or execution of custom drive code, is outside the current compatibility target.
 
 ### Development environment and platform
 
@@ -100,7 +103,7 @@ The exact executable location may vary with the CMake generator and build config
 6. Configure an IEC disk device and attach a supported D64 image to it.
 7. From the emulated C64, use `LOAD "$",8` to load the generated disk directory or load a supported PRG file by its disk filename.
 
-**Note:** The disk implementation is still under development. In particular, writing files, formatting disks, DOS commands and full 1541 compatibility are not yet available.
+**Note:** The disk implementation is still under development. In particular, the DOS command channel, status/error handling, disk writing, file operations and formatting are not yet complete.
 
 ## Architecture
 
@@ -123,14 +126,22 @@ The emulator core is a separate static library (`C64FoundryCore`). The Qt applic
 
 ## Development direction
 
-The immediate focus is the IEC disk workflow and compatibility with a Commodore 1541/1541-II:
+The immediate focus is completing the IEC disk subsystem so that ordinary C64 software can use the emulated drive through the standard IEC interface.
 
-1. Complete the disk GUI with current Track/Sector information and an on-demand directory view generated from the currently attached image.
-2. Extend the IEC disk implementation toward the behavior expected from a 1541/1541-II, using VICE as a behavioral and technical reference.
-3. Implement the missing DOS and disk operations, including writing, saving, formatting and additional file types.
-4. Consider more advanced drive emulation only when required by the compatibility target.
+The next development steps are:
 
-The project will not prioritize SD2IEC-specific extensions unless they are also needed for the intended 1541/1541-II compatibility.
+1. Complete IEC secondary-address and channel handling, including the command channel and DOS status/error channel.
+2. Implement the standard DOS command interface and its error/status reporting.
+3. Implement disk writing and the normal file operations, including `SAVE`, file creation, replacement and deletion.
+4. Implement the standard block and disk-management commands, including the required BAM and directory updates.
+5. Extend file support to additional DOS file types such as SEQ and REL.
+6. Validate the observable behavior against VICE and real C64 BASIC commands and programs.
+
+The intended compatibility target is a practical D64-based implementation of the standard 1541 DOS and drive command interface. This includes normal disk, file, channel and block operations.
+
+It does **not** require emulating the internal 1541 hardware or allowing software to program the drive itself over the IEC bus. A separate drive CPU, VIA hardware, drive RAM/ROM, GCR processing, rotational timing, half-tracks and copy-protection support are not current priorities. Fastloaders or other software that depends on direct drive hardware access are not guaranteed to work.
+
+The disk GUI's on-demand directory view and any additional shared directory presentation model are useful improvements, but they are deferred until the core IEC and DOS functionality is in place.
 
 Longer-term goals include completing the C64 hardware implementation, memory expansions, development tools and an integrated source/build/run workflow. See [TODO.md](TODO.md) for actionable tasks and [ROADMAP.md](ROADMAP.md) for the planned development stages.
 

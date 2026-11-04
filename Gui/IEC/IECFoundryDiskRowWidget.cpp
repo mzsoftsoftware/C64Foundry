@@ -232,7 +232,7 @@ void IECFoundryDiskRowWidget::showSettingsDialog(
     requestSetConfiguration(updatedConfiguration);
 }
 
-void IECFoundryDiskRowWidget::onDriveAccessChanged(const IECDeviceConfiguration::DeviceId deviceId, QVector<IECFoundryDrive::SectorAccessStatus> events)
+void IECFoundryDiskRowWidget::onDriveAccessChanged(const IECDeviceConfiguration::DeviceId deviceId, QQueue<IECFoundryDrive::SectorAccessStatus> events)
 {
     if (deviceId != this->deviceId())
         return;

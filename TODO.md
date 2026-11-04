@@ -7,28 +7,13 @@ The list distinguishes between implemented functionality and work that is still 
 - **Done:** Implemented and usable for the described scope.
 - **Partial:** Some supporting implementation exists, but the feature is incomplete.
 - **Open:** Not implemented yet.
+- **Deferred:** Intentionally postponed; not part of the immediate development sequence.
 
-The current priority is the IEC disk subsystem and compatibility with a Commodore 1541/1541-II. See [ROADMAP.md](ROADMAP.md) for the larger development stages and [README.md](README.md) for the current feature overview.
+The current priority is completing the IEC disk subsystem and the standard 1541 DOS/drive command interface using D64 images. Full emulation of the physical 1541 hardware is not the target. See [ROADMAP.md](ROADMAP.md) for the larger development stages and [README.md](README.md) for the current feature overview.
 
-## P0 — Disk GUI integration
+## P0 — IEC channels and DOS status/error handling
 
-### Disk status and directory view
-
-- [ ] **Open:** Display the current Track and Sector information for the selected disk device.
-- [ ] **Open:** Add a `DIR` action to the disk device GUI.
-- [ ] **Open:** Generate the directory on demand when the user presses `DIR`.
-- [ ] **Open:** Generate the directory from the currently attached image and its current in-memory state.
-- [ ] **Open:** Display filenames, file types, block counts and free blocks in a readable GUI view.
-- [ ] **Open:** Refresh the displayed directory after image insertion/ejection and after later disk modifications.
-- [ ] **Open:** Show useful error information when directory generation fails.
-- [ ] **Open:** Keep D64 parsing and directory generation in the drive/storage layer; do not duplicate this logic in the GUI.
-
-**Acceptance criteria:**
-- The directory is not a stale copy from an earlier image or an earlier state.
-- Pressing `DIR` generates the listing from the currently selected disk image.
-- The GUI handles an empty drive and invalid directory data gracefully.
-
-## P1 — Complete the 1541/1541-II IEC protocol
+**Goal:** Establish the complete IEC communication foundation required by normal disk and file commands.
 
 ### Existing implementation
 
@@ -38,100 +23,145 @@ The current priority is the IEC disk subsystem and compatibility with a Commodor
 - [x] **Done:** Initial LISTEN/TALK handling for directory and PRG data transfer.
 - [x] **Done:** Directory transfer for `LOAD "$",8`.
 - [x] **Done:** PRG file reading from D64 directory and sector chains.
-- [ ] **Partial:** Complete IEC protocol behavior and channel handling.
-- [ ] **Partial:** Command channel and DOS status/error channel are not implemented completely.
+- [x] **Done:** Queued disk-sector access events and GUI read/write activity indication.
+- [x] **Done:** Track/Sector information in the disk device GUI.
 
-### IEC channels and commands
+### IEC channels
 
 - [ ] **Open:** Complete secondary-address handling.
-- [ ] **Open:** Implement command channel handling (secondary address 15).
-- [ ] **Open:** Implement the status/error channel.
+- [ ] **Open:** Implement consistent channel selection and channel state management.
+- [ ] **Open:** Implement the data channels required for normal file access.
+- [ ] **Open:** Implement command channel handling using secondary address 15.
 - [ ] **Open:** Implement consistent channel open and close behavior.
-- [ ] **Open:** Handle channel state and command sequencing correctly.
-- [ ] **Open:** Implement the DOS command parsing layer.
-- [ ] **Open:** Return the appropriate DOS status codes and error messages.
-- [ ] **Open:** Handle invalid commands, invalid channels, missing images and missing files.
-- [ ] **Open:** Validate behavior for repeated commands and consecutive transfers.
-- [ ] **Open:** Compare the observable IEC behavior with VICE.
+- [ ] **Open:** Handle channel state across repeated and consecutive operations.
+- [ ] **Open:** Handle channel switching and cleanup after failed transfers.
+- [ ] **Open:** Validate LISTEN/TALK and secondary-address sequencing against the expected IEC behavior.
+
+### DOS status and error channel
+
+- [ ] **Open:** Implement the DOS status/error channel.
+- [ ] **Open:** Define a central representation of DOS status codes and status messages.
+- [ ] **Open:** Return the appropriate status after successful commands and file operations.
+- [ ] **Open:** Return meaningful errors for invalid commands and command parameters.
+- [ ] **Open:** Handle missing images, missing files, invalid channels and invalid operations.
+- [ ] **Open:** Ensure status information can be read repeatedly and is updated at the appropriate points.
+- [ ] **Open:** Ensure errors do not leave the IEC device or its channels in an unusable state.
+
+### DOS command parsing foundation
+
+- [ ] **Open:** Implement a dedicated DOS command parsing layer.
+- [ ] **Open:** Separate command parsing from IEC byte transfer and D64 sector storage.
+- [ ] **Open:** Define command parameters and validation consistently.
+- [ ] **Open:** Establish a common result/error path between DOS commands, drive operations and the status channel.
 
 **Acceptance criteria:**
-- Common IEC command sequences work without relying on debug-only behavior.
-- Errors are reported through the expected DOS status mechanism.
-- The device returns to a valid state after successful and failed operations.
 
-## P2 — Complete D64 sector and directory handling
+- Common IEC channel sequences work without relying on debug-only behavior.
+- The command channel can receive and process commands.
+- The status/error channel reports the result of commands and operations.
+- Successful and failed operations leave the device in a valid state.
+- The behavior can be tested using C64 BASIC commands and compared with VICE.
 
-### Existing implementation
+## P1 — Standard DOS commands and disk writing
+
+**Goal:** Implement the normal 1541 DOS command interface and the disk operations required by ordinary C64 software.
+
+This milestone follows directly after P0. It is not intended to emulate the internal 1541 hardware; it is intended to provide the standard externally visible DOS and drive functionality using D64 sectors.
+
+### D64 sector operations
 
 - [x] **Done:** D64 image insertion and ejection.
 - [x] **Done:** Image data held in the drive layer.
 - [x] **Done:** Image saving through the drive layer.
 - [x] **Done:** Standard 35-track D64 sector addressing.
 - [x] **Done:** Sector reading.
-- [x] **Done:** BAM reading from track 18, sector 0.
-- [x] **Done:** Directory sector-chain traversal.
-- [x] **Done:** Directory program generation from BAM and directory entries.
-- [x] **Done:** Directory handling includes all eight entries in a directory sector.
-- [x] **Done:** Directory chain cycle detection.
-- [x] **Done:** PRG directory lookup and file-sector-chain reading.
-- [ ] **Open:** Sector writing is currently not implemented.
-
-### Sector access and validation
-
 - [ ] **Open:** Implement sector writing with track, sector and data-length validation.
 - [ ] **Open:** Validate all sector accesses against the actual image geometry.
 - [ ] **Open:** Handle invalid or truncated images safely.
 - [ ] **Open:** Track image modifications consistently after writes.
-- [ ] **Open:** Ensure that image saving persists the current in-memory image data.
+- [ ] **Open:** Ensure image saving persists the current in-memory image data.
 - [ ] **Open:** Verify that failed writes or saves do not silently discard modifications.
 - [ ] **Open:** Add robust handling for malformed BAM and directory structures.
 - [ ] **Open:** Verify sector-chain termination and last-sector byte counts.
 - [ ] **Open:** Check for invalid sector references and cycles in every relevant chain.
 
-### Directory behavior
+### BAM and directory management
 
+- [x] **Done:** BAM reading from track 18, sector 0.
+- [x] **Done:** Directory sector-chain traversal.
+- [x] **Done:** Directory program generation from BAM and directory entries.
+- [x] **Done:** Directory handling includes all eight entries in a directory sector.
+- [x] **Done:** Directory chain cycle detection.
 - [x] **Done:** Generate a BASIC directory program at load address `$0401`.
 - [x] **Done:** Read disk name and DOS identification fields from the BAM.
 - [x] **Done:** Generate directory entries with block counts, names, file types and status markers.
 - [x] **Done:** Generate the free-block footer from BAM allocation information.
+- [ ] **Open:** Implement directory-entry allocation and updates.
+- [ ] **Open:** Implement BAM allocation and release of sectors.
+- [ ] **Open:** Keep BAM and directory contents consistent after every operation.
+- [ ] **Open:** Handle full directories and insufficient free directory entries.
+- [ ] **Open:** Handle disk-full conditions and allocation failures.
 - [ ] **Open:** Compare directory formatting and edge cases with VICE and a real C64 BASIC environment.
-- [ ] **Open:** Ensure directory display and IEC directory transfer use the same underlying directory data.
-- [ ] **Open:** Verify behavior for full directories and multiple directory sectors.
 
-## P3 — Standard 1541 DOS file operations
+### PRG file operations
 
-### PRG files
-
-- [x] **Done:** Find PRG entries in the D64 directory.
-- [x] **Done:** Read PRG data from a linked sequence of sectors.
+- [x] **Done:** PRG directory lookup and file-sector-chain reading.
 - [x] **Done:** Detect cycles in the file-sector chain.
 - [x] **Done:** Validate the final sector's used-byte count.
 - [x] **Done:** Return PRG data including its two-byte load address.
+- [ ] **Open:** Verify C64 BASIC `LOAD "PROGRAM",8` through IEC using a D64 image.
 - [ ] **Open:** Implement `SAVE` for PRG files.
 - [ ] **Open:** Implement file creation and directory-entry allocation.
 - [ ] **Open:** Implement file replacement.
 - [ ] **Open:** Implement file deletion and release allocated sectors.
-- [ ] **Open:** Update BAM allocation information after file operations.
+- [ ] **Open:** Implement correct handling of file names and replacement syntax.
 - [ ] **Open:** Handle disk-full conditions and insufficient free directory entries.
 - [ ] **Open:** Validate file operations against VICE.
 
-### Disk commands
+**Important distinction:** Loading a host PRG file through the application's GUI and loading a PRG file from a D64 image with the C64's IEC `LOAD` command are separate workflows. Host PRG loading is already implemented. The IEC/D64 `LOAD "PROGRAM",8` workflow still needs explicit validation.
 
-- [ ] **Open:** Implement the standard 1541 DOS commands needed for normal disk use.
+### Standard DOS commands
+
+- [ ] **Open:** Implement the standard DOS command parser and command dispatch.
 - [ ] **Open:** Implement disk initialization behavior.
 - [ ] **Open:** Implement disk validation behavior.
 - [ ] **Open:** Implement disk formatting.
-- [ ] **Open:** Implement the required error handling for invalid command parameters.
+- [ ] **Open:** Implement file scratch/deletion.
+- [ ] **Open:** Implement file rename.
+- [ ] **Open:** Implement file copy where supported by the intended DOS behavior.
+- [ ] **Open:** Implement the standard block read and block write commands.
+- [ ] **Open:** Implement the required buffer allocation and release behavior.
+- [ ] **Open:** Implement the required block positioning and buffer-pointer behavior.
+- [ ] **Open:** Implement the standard disk identification and directory-related commands.
+- [ ] **Open:** Implement command parameter validation and the corresponding DOS errors.
 - [ ] **Open:** Verify that formatting creates a consistent BAM, directory sector and disk identification fields.
 - [ ] **Open:** Verify that image changes can be saved and reopened without data loss.
 
+### Standard command coverage
+
+The intended command coverage includes the normal DOS interface exposed by a 1541-compatible drive, including:
+
+- File channel operations such as `OPEN`, `CLOSE`, reading and writing.
+- File operations such as `LOAD`, `SAVE`, replacement, rename and scratch.
+- Disk initialization, validation and formatting.
+- Command-channel status and error reporting.
+- Block-level operations such as block read and block write.
+- Buffer and block positioning operations required by the standard DOS interface.
+
+Commands whose purpose is to access or execute arbitrary code inside the physical drive are not part of this target. In particular, arbitrary drive RAM/ROM access and programming the internal 1541 CPU are not required.
+
 **Acceptance criteria:**
-- PRG files can be loaded, saved, replaced and deleted.
+
+- Normal PRG files can be loaded, saved, replaced and deleted through the IEC interface.
+- Standard disk and block commands work with supported D64 images.
 - BAM and directory contents remain consistent after every operation.
 - Formatting creates a usable disk image.
 - DOS errors are reported correctly for common failure cases.
+- Modified images can be saved and reopened without losing changes.
 
-## P4 — SEQ and REL files
+## P2 — Additional DOS file types and channel behavior
+
+**Goal:** Extend file support beyond PRG files and complete less common standard DOS workflows.
 
 ### SEQ files
 
@@ -139,6 +169,7 @@ The current priority is the IEC disk subsystem and compatibility with a Commodor
 - [ ] **Open:** Implement SEQ file writing.
 - [ ] **Open:** Implement the corresponding DOS channel behavior.
 - [ ] **Open:** Validate sequential data transfer and file termination.
+- [ ] **Open:** Validate file creation, replacement and deletion for SEQ files.
 
 ### REL files
 
@@ -148,29 +179,46 @@ The current priority is the IEC disk subsystem and compatibility with a Commodor
 - [ ] **Open:** Implement side-sector allocation and management.
 - [ ] **Open:** Validate REL file behavior against VICE.
 
+### Additional DOS behavior
+
+- [ ] **Open:** Verify wildcard and filename matching behavior.
+- [ ] **Open:** Verify file type and access-mode handling.
+- [ ] **Open:** Verify multiple open channels and channel reuse.
+- [ ] **Open:** Verify error handling for unsupported file types and invalid access modes.
+- [ ] **Open:** Verify command sequences involving multiple files and channels.
+
 **Acceptance criteria:**
-- SEQ and REL files are handled according to their respective 1541 DOS semantics.
+
+- SEQ and REL files are handled according to their respective DOS semantics.
 - Unsupported operations return meaningful errors instead of being treated as PRG operations.
+- Multiple channels can be used without corrupting each other's state.
 
-## P5 — Define the required drive hardware compatibility
+## Deferred — Disk GUI directory view and shared directory model
 
-The current implementation uses D64 sector images. This is sufficient as a foundation for standard sector-oriented disk DOS behavior, but it does not represent the complete physical 1541 drive.
+These tasks are useful for usability and code organization, but they are not prerequisites for the IEC/DOS implementation. They are intentionally postponed until the core drive functionality is in place.
 
-- [ ] **Open:** Define the intended compatibility level for 1541/1541-II software.
-- [ ] **Open:** Identify which standard DOS operations can be completed with the current sector-based architecture.
-- [ ] **Open:** Evaluate G64 image support.
-- [ ] **Open:** Evaluate P64 image support.
-- [ ] **Open:** Evaluate GCR encoding and decoding.
-- [ ] **Open:** Evaluate track and half-track representation.
-- [ ] **Open:** Evaluate drive-side CPU, RAM and ROM emulation.
-- [ ] **Open:** Evaluate the two 6522 VIA instances and their drive-side behavior.
-- [ ] **Open:** Evaluate rotation, synchronization and timing-dependent behavior.
-- [ ] **Open:** Evaluate copy-protection and non-standard disk layouts.
-- [ ] **Open:** Evaluate fastloaders and software that accesses drive hardware directly.
+### Directory data model
 
-**Priority note:** Do not implement a complete cycle-exact 1541 merely because VICE does so. First complete standard DOS compatibility using D64 sector images. Add drive hardware emulation when the required compatibility target or actual software makes it necessary.
+- [ ] **Deferred:** Introduce a shared directory representation for the drive/storage layer and GUI.
+- [ ] **Deferred:** Keep directory parsing and interpretation in the storage/drive layer.
+- [ ] **Deferred:** Provide a consistent representation of filenames, file types, block counts, status flags and free blocks.
+- [ ] **Deferred:** Ensure the representation reflects the current in-memory image state.
 
-## P6 — C64 hardware compatibility
+### Directory GUI
+
+- [ ] **Deferred:** Add a `DIR` action to the disk device GUI.
+- [ ] **Deferred:** Generate the directory on demand when the user presses `DIR`.
+- [ ] **Deferred:** Display filenames, file types, block counts and free blocks in a readable GUI view.
+- [ ] **Deferred:** Refresh the displayed directory after image insertion/ejection and after disk modifications.
+- [ ] **Deferred:** Show useful error information when directory generation fails.
+
+**Acceptance criteria:**
+
+- The directory is generated from the currently attached image and its current in-memory state.
+- The GUI does not duplicate D64 parsing logic.
+- The GUI handles an empty drive and invalid directory data gracefully.
+
+## P3 — C64 hardware compatibility
 
 ### VIC-II
 
@@ -195,7 +243,7 @@ The current implementation uses D64 sector images. This is sufficient as a found
 - [ ] **Partial:** Finish CIA interrupt behavior and port-level integration, including relevant CIA2 functions.
 - [ ] **Open:** Define intentional SID-register behavior; sound synthesis remains a later feature.
 
-## P7 — Configuration and host input
+## P4 — Configuration and host input
 
 - [ ] **Partial:** Add UI to list, create, select, edit and delete persistent machine configurations.
 - [ ] **Partial:** Add ROM-set selection and validation in the UI; VICE ROM detection currently uses a fixed Linux path.
@@ -206,7 +254,7 @@ The current implementation uses D64 sector images. This is sufficient as a found
 - [ ] **Open:** Add separate keyboard backends/mappings for X11, Windows and macOS only when those platforms become supported.
 - [ ] **Partial:** Improve actionable startup feedback for invalid configurations and ROM-loading failures.
 
-## P8 — Memory expansion and additional devices
+## P5 — Memory expansion and additional devices
 
 - [ ] **Open:** Define a reusable expansion-device interface for IO1/IO2, cartridge signals and address-space integration.
 - [ ] **Open:** Implement GeoRAM register/bank selection and expansion RAM.
@@ -214,9 +262,7 @@ The current implementation uses D64 sector images. This is sufficient as a found
 - [ ] **Open:** Add UI and persistent settings for expansion devices.
 - [ ] **Open:** Consider additional IEC devices only when required by a concrete compatibility or development use case.
 
-SD2IEC-specific extensions are not a priority unless they are also needed for the intended 1541/1541-II compatibility.
-
-## P9 — Development-facing emulator API
+## P6 — Development-facing emulator API
 
 - [ ] **Partial:** Introduce explicit pause/resume and synchronized machine-state access on top of the existing start/stop worker controls.
 - [ ] **Partial:** Expose safe read/write memory operations, CPU registers and program loading through the emulator controller.
@@ -225,7 +271,7 @@ SD2IEC-specific extensions are not a priority unless they are also needed for th
 - [ ] **Open:** Provide a minimal memory viewer, register viewer and disassembly interface.
 - [ ] **Open:** Define source-address and symbol integration points for future tools.
 
-## P10 — Integrated development environment
+## P7 — Integrated development environment
 
 - [ ] **Open:** Implement project/workspace creation and persistence.
 - [ ] **Open:** Add a source editor and file navigation.
@@ -234,7 +280,24 @@ SD2IEC-specific extensions are not a priority unless they are also needed for th
 - [ ] **Open:** Add symbol-aware navigation, source-level breakpoints and source-to-address mapping.
 - [ ] **Open:** Implement the complete Edit → Build → Run → Inspect workflow.
 
-## Later — Audio, platform support and distribution
+## Later — Drive hardware extensions, audio, platform support and distribution
+
+The following are explicitly outside the immediate standard DOS compatibility target. They may be considered later if concrete software requirements justify them.
+
+### Physical drive hardware compatibility
+
+- [ ] **Deferred:** Evaluate G64 image support.
+- [ ] **Deferred:** Evaluate P64 image support.
+- [ ] **Deferred:** Evaluate GCR encoding and decoding.
+- [ ] **Deferred:** Evaluate track and half-track representation.
+- [ ] **Deferred:** Evaluate drive-side CPU, RAM and ROM emulation.
+- [ ] **Deferred:** Evaluate the two 6522 VIA instances and their drive-side behavior.
+- [ ] **Deferred:** Evaluate rotation, synchronization and timing-dependent behavior.
+- [ ] **Deferred:** Evaluate copy-protection and non-standard disk layouts.
+- [ ] **Deferred:** Evaluate fastloaders and software that accesses drive hardware directly.
+- [ ] **Out of scope for current target:** Arbitrary programming of the internal 1541 CPU or direct drive RAM/ROM access over IEC.
+
+### Audio, platform support and distribution
 
 - [ ] **Open:** Add SID audio synthesis and host audio output.
 - [ ] **Open:** Expand host-platform support after the Linux Wayland workflow is stable.
@@ -244,12 +307,13 @@ SD2IEC-specific extensions are not a priority unless they are also needed for th
 
 ## Development and validation principles
 
-1. Use VICE as the primary behavioral reference for 1541/1541-II DOS and IEC compatibility.
-2. Compare observable behavior rather than copying VICE's architecture without a concrete reason.
-3. Keep IEC protocol, DOS behavior, disk-image storage and GUI presentation separate.
-4. Generate directory information from the current image state; do not rely on stale cached output.
-5. Validate both successful operations and error cases.
-6. Distinguish standard D64/DOS compatibility from GCR, copy-protection, fastloader and cycle-exact drive compatibility.
-7. Prefer coherent, buildable implementation steps and commit stable checkpoints.
-8. Do not mark a feature complete until its behavior is tested in the intended workflow.
+1. Use VICE as the primary behavioral reference for standard IEC and 1541 DOS behavior.
+2. Compare observable behavior rather than copying VICE's architecture.
+3. Keep IEC protocol, DOS command handling, disk-image storage and GUI presentation separate.
+4. Implement the standard drive command interface before considering physical drive hardware emulation.
+5. Generate directory information from the current image state; do not rely on stale cached output.
+6. Validate both successful operations and error cases.
+7. Distinguish standard D64/DOS compatibility from GCR, copy-protection, direct-drive programming, fastloader and cycle-exact hardware compatibility.
+8. Prefer coherent, buildable implementation steps and commit stable checkpoints.
+9. Do not mark a feature complete until its behavior is tested in the intended workflow.
 

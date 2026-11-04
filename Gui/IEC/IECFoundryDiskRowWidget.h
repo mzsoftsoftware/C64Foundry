@@ -38,7 +38,7 @@ private slots:
     void on_toolButton_Settings_clicked();
     void on_toolButton_Remove_clicked();
 
-    void onDriveAccessChanged(IECDeviceConfiguration::DeviceId deviceId, QVector<IECFoundryDrive::SectorAccessStatus> events);
+    void onDriveAccessChanged(IECDeviceConfiguration::DeviceId deviceId, QQueue<IECFoundryDrive::SectorAccessStatus> events);
     void processNextSectorAccessEvent();
 
 private:
