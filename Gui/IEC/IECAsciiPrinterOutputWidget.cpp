@@ -96,15 +96,10 @@ void IECAsciiPrinterOutputWidget::on_toolButton_TearOff_clicked()
     m_ptrController->request(new EmulatorRequestTearOffIECPrinter(m_deviceId));
 }
 
-void IECAsciiPrinterOutputWidget::onPrinterOutputChanged(IECDeviceConfiguration::DeviceId deviceId, quint64 revision, QByteArray output)
+void IECAsciiPrinterOutputWidget::onPrinterOutputChanged(IECDeviceConfiguration::DeviceId deviceId, QQueue<IECPrinterOutputEvent> events)
 {
     if (deviceId != m_deviceId)
         return;
-
-    if (revision < m_outputRevision)
-        return;
-
-    m_outputRevision = revision;
 
     ui->plainTextEdit_Paper->setPlainText(QString::fromLatin1(output));
 

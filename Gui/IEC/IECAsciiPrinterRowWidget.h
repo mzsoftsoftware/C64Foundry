@@ -1,7 +1,7 @@
 #pragma once
 
 #include "IECDeviceRowWidget.h"
-#include "C64/IEC/IECAsciiPrinterConfiguration.h"
+#include "C64/IEC/IECDeviceEvent.h"
 
 namespace Ui {
 class IECAsciiPrinterRowWidget;
@@ -16,8 +16,6 @@ public:
     explicit IECAsciiPrinterRowWidget(QWidget* parent = nullptr);
     virtual ~IECAsciiPrinterRowWidget();
 
-    void triggerActivity(int index = 0);
-
 protected:
     void onControllerSet() override;
     void setOperationState(IECOperationStatusWidget::State state, const QString& message = QString()) override;
@@ -30,12 +28,12 @@ private slots:
     void on_toolButton_Power_toggled(bool checked);
     void on_toolButton_Settings_clicked();
     void on_toolButton_Remove_clicked();
-    void onPrinterOutputChanged(IECDeviceConfiguration::DeviceId deviceId,
-                                quint64 revision,
-                                QByteArray output);
+    void onPrinterOutputChanged(IECDeviceConfiguration::DeviceId deviceId, QQueue<IECPrinterOutputEvent> events);
 
 private:
     void showSettingsDialog(const EmulatorResponseIEC* ptrResponse);
+    void triggerActivity(int index = 0);
 
+private:
     Ui::IECAsciiPrinterRowWidget* ui = nullptr;
 };

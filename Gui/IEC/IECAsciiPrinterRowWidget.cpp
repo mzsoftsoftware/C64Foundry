@@ -82,14 +82,12 @@ void IECAsciiPrinterRowWidget::on_toolButton_Remove_clicked()
     requestRemove();
 }
 
-void IECAsciiPrinterRowWidget::openSettingsDialog(
-    const EmulatorResponseIEC* ptrResponse)
+void IECAsciiPrinterRowWidget::openSettingsDialog(const EmulatorResponseIEC* ptrResponse)
 {
     showSettingsDialog(ptrResponse);
 }
 
-void IECAsciiPrinterRowWidget::showSettingsDialog(
-    const EmulatorResponseIEC* ptrResponse)
+void IECAsciiPrinterRowWidget::showSettingsDialog(const EmulatorResponseIEC* ptrResponse)
 {
     if (ptrResponse == nullptr || configuration() == nullptr)
     {
@@ -143,13 +141,9 @@ void IECAsciiPrinterRowWidget::showSettingsDialog(
     requestSetConfiguration(updatedConfiguration);
 }
 
-void IECAsciiPrinterRowWidget::onPrinterOutputChanged(
-    IECDeviceConfiguration::DeviceId deviceId,
-    quint64 revision,
-    QByteArray output)
+void IECAsciiPrinterRowWidget::onPrinterOutputChanged(IECDeviceConfiguration::DeviceId deviceId, QQueue<IECPrinterOutputEvent> events)
 {
-    Q_UNUSED(revision)
-    Q_UNUSED(output)
+    Q_UNUSED(events)
 
     if (deviceId != this->deviceId())
         return;

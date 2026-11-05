@@ -22,6 +22,21 @@ struct IECDriveAccessEvent
     QString errorMessage;
 };
 
+struct IECPrinterOutputEvent
+{
+    enum class Format : quint8
+    {
+        Text,
+        Graphics,
+        Page
+    };
+
+    Format format = Format::Text;
+    QByteArray data;
+};
 
 Q_DECLARE_METATYPE(IECDriveAccessEvent)
 Q_DECLARE_METATYPE(QQueue<IECDriveAccessEvent>)
+
+Q_DECLARE_METATYPE(IECPrinterOutputEvent)
+Q_DECLARE_METATYPE(QQueue<IECPrinterOutputEvent>)
