@@ -12,7 +12,7 @@
 #include "EmulatorResponse.h"
 #include "EmulatorIECDeviceEvent.h"
 
-#include "C64/IEC/IECFoundryDrive.h"
+#include "C64/IEC/IECDeviceEvent.h"
 class C64Machine;
 class IECSystem;
 class IECDeviceFactory;
@@ -43,7 +43,7 @@ signals:
 
     void iecDeviceChanged(EmulatorIECDeviceEvent::Type type, IECDeviceConfiguration::DeviceId deviceId);
     void printerOutputChanged(IECDeviceConfiguration::DeviceId deviceId, quint64 revision, QByteArray output);
-    void driveAccessChanged(IECDeviceConfiguration::DeviceId deviceId, QQueue<IECFoundryDrive::SectorAccessStatus> events);
+    void driveAccessChanged(IECDeviceConfiguration::DeviceId deviceId, QQueue<IECDriveAccessEvent> events);
 
 private:
     void waitForRequests();

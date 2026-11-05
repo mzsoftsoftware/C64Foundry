@@ -10,7 +10,7 @@
 
 #include "C64/C64ROMSet.h"
 #include "Input/InputEvent.h"
-#include "C64/IEC/IECFoundryDrive.h"
+#include "C64/IEC/IECDeviceEvent.h"
 
 class EmulatorThread;
 class EmulatorWorker;
@@ -57,7 +57,7 @@ signals:
 
     void iecDeviceChanged(EmulatorIECDeviceEvent::Type type, IECDeviceConfiguration::DeviceId deviceId);
     void printerOutputChanged(IECDeviceConfiguration::DeviceId deviceId, quint64 revision, QByteArray output);
-    void driveAccessChanged(IECDeviceConfiguration::DeviceId deviceId, QQueue<IECFoundryDrive::SectorAccessStatus> events);
+    void driveAccessChanged(IECDeviceConfiguration::DeviceId deviceId, QQueue<IECDriveAccessEvent> events);
 
 private slots:
     void onWorkerRequestDone(QSharedPointer<EmulatorResponse> response);

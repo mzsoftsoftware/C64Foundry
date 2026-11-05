@@ -5,7 +5,7 @@
 #include <QQueue>
 #include <QTimer>
 
-#include "C64/IEC/IECFoundryDrive.h"
+#include "C64/IEC/IECDeviceEvent.h"
 
 namespace Ui {
 class IECFoundryDiskRowWidget;
@@ -38,7 +38,7 @@ private slots:
     void on_toolButton_Settings_clicked();
     void on_toolButton_Remove_clicked();
 
-    void onDriveAccessChanged(IECDeviceConfiguration::DeviceId deviceId, QQueue<IECFoundryDrive::SectorAccessStatus> events);
+    void onDriveAccessChanged(IECDeviceConfiguration::DeviceId deviceId, QQueue<IECDriveAccessEvent> events);
     void processNextSectorAccessEvent();
 
 private:
@@ -48,6 +48,6 @@ private:
     Ui::IECFoundryDiskRowWidget* ui = nullptr;
     bool m_bImageLoaded = false;
 
-    QQueue<IECFoundryDrive::SectorAccessStatus> m_sectorAccessQueue;
+    QQueue<IECDriveAccessEvent> m_sectorAccessQueue;
     QTimer m_activityTimer;
 };

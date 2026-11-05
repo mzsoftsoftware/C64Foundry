@@ -232,12 +232,12 @@ void IECFoundryDiskRowWidget::showSettingsDialog(
     requestSetConfiguration(updatedConfiguration);
 }
 
-void IECFoundryDiskRowWidget::onDriveAccessChanged(const IECDeviceConfiguration::DeviceId deviceId, QQueue<IECFoundryDrive::SectorAccessStatus> events)
+void IECFoundryDiskRowWidget::onDriveAccessChanged(const IECDeviceConfiguration::DeviceId deviceId, QQueue<IECDriveAccessEvent> events)
 {
     if (deviceId != this->deviceId())
         return;
 
-    for (const IECFoundryDrive::SectorAccessStatus& event : events)
+    for (const IECDriveAccessEvent& event : events)
         m_sectorAccessQueue.enqueue(event);
 
     if (!m_sectorAccessQueue.isEmpty() && !m_activityTimer.isActive())
@@ -251,17 +251,17 @@ void IECFoundryDiskRowWidget::processNextSectorAccessEvent()
         return;
     }
 
-    const IECFoundryDrive::SectorAccessStatus event = m_sectorAccessQueue.dequeue();
+    const IECDriveAccessEvent event = m_sectorAccessQueue.dequeue();
 
     ui->lcdNumber_TrackSector->display(QStringLiteral("%1.%2").arg(event.track, 2, 10, QChar('0')).arg(event.sector, 2, 10, QChar('0')));
 
     switch (event.operation)
     {
-    case IECFoundryDrive::SectorAccessOperation::Read:
+    case IECDriveAccessEvent::Operation::Read:
         ui->widget_ActivityLED->triggerActivity(0);
         break;
 
-    case IECFoundryDrive::SectorAccessOperation::Write:
+    case IECDriveAccessEvent::Operation::Write:
         ui->widget_ActivityLED->triggerActivity(1);
         break;
     }

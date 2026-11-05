@@ -16,8 +16,8 @@ EmulatorWorker::EmulatorWorker(QObject* parent)
     : QObject{parent}
 {
     qRegisterMetaType<EmulatorIECDeviceEvent::Type>("EmulatorIECDeviceEvent::Type");
-    qRegisterMetaType<IECFoundryDrive::SectorAccessStatus>("IECFoundryDrive::SectorAccessStatus");
-    qRegisterMetaType<QQueue<IECFoundryDrive::SectorAccessStatus>>("QQueue<IECFoundryDrive::SectorAccessStatus>");
+    qRegisterMetaType<IECDriveAccessEvent>("IECDriveAccessEvent");
+    qRegisterMetaType<QQueue<IECDriveAccessEvent>>("QQueue<IECDriveAccessEvent>");
 
     m_ptrMachine = new C64Machine();
     m_ptrIECSystem = new IECSystem(m_ptrMachine, m_ptrScheduler, m_ptrIECDeviceFactory);
@@ -624,4 +624,3 @@ void EmulatorWorker::forwardDriveAccessChanges()
         emit driveAccessChanged(change.deviceId, change.events);
     }
 }
-
