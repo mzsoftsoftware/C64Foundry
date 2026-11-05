@@ -18,6 +18,8 @@ EmulatorWorker::EmulatorWorker(QObject* parent)
     qRegisterMetaType<EmulatorIECDeviceEvent::Type>("EmulatorIECDeviceEvent::Type");
     qRegisterMetaType<IECDriveAccessEvent>("IECDriveAccessEvent");
     qRegisterMetaType<QQueue<IECDriveAccessEvent>>("QQueue<IECDriveAccessEvent>");
+    qRegisterMetaType<IECPrinterOutputEvent>("IECPrinterOutputEvent");
+    qRegisterMetaType<QQueue<IECPrinterOutputEvent>>("QQueue<IECPrinterOutputEvent>");
 
     m_ptrMachine = new C64Machine();
     m_ptrIECSystem = new IECSystem(m_ptrMachine, m_ptrScheduler, m_ptrIECDeviceFactory);

@@ -40,7 +40,6 @@ void IECAsciiPrinterOutputWidget::setController(EmulatorController* ptrControlle
 
     m_ptrController = ptrController;
     m_deviceId = deviceId;
-    m_outputRevision = 0;
 
     if (m_ptrController == nullptr)
         return;
@@ -101,7 +100,22 @@ void IECAsciiPrinterOutputWidget::onPrinterOutputChanged(IECDeviceConfiguration:
     if (deviceId != m_deviceId)
         return;
 
-    ui->plainTextEdit_Paper->setPlainText(QString::fromLatin1(output));
+    QTextCursor cursor = ui->plainTextEdit_Paper->textCursor();
+    cursor.movePosition(QTextCursor::End);
+
+    while (!events.isEmpty())
+    {
+        const IECPrinterOutputEvent event = events.dequeue();
+
+        if (event.format != IECPrinterOutputEvent::Format::Text)
+            continue;
+
+        cursor.insertText(QString::fromLatin1(event.data));
+    }
+
+    ui->plainTextEdit_Paper->setTextCursor(cursor);
+
+    const QByteArray output = ui->plainTextEdit_Paper->toPlainText().toLatin1();
 
     QTextDocument* document = ui->plainTextEdit_Paper->document();
     QTextBlock block = document->begin();
@@ -114,11 +128,11 @@ void IECAsciiPrinterOutputWidget::onPrinterOutputChanged(IECDeviceConfiguration:
 
         // Der letzte leere Block nach einem abschließenden Zeilenumbruch
         // ist nur der Abschlussblock des Texteditors.
-        bool isTrailingEmptyBlock =
+        const bool isTrailingEmptyBlock =
             block.text().isEmpty() && !nextBlock.isValid() && !output.isEmpty()
             && (output.endsWith('\n') || output.endsWith('\r'));
 
-        QTextCursor cursor(block);
+        QTextCursor blockCursor(block);
         QTextBlockFormat blockFormat = block.blockFormat();
         QTextCharFormat charFormat;
 
@@ -127,13 +141,9 @@ void IECAsciiPrinterOutputWidget::onPrinterOutputChanged(IECDeviceConfiguration:
         if (!isTrailingEmptyBlock)
         {
             if ((row % 2) == 0)
-            {
                 blockFormat.setBackground(QColor(216, 216, 216));
-            }
             else
-            {
                 blockFormat.setBackground(QColor(187, 214, 178));
-            }
 
             blockFormat.setLineHeight(95, QTextBlockFormat::ProportionalHeight);
             ++row;
@@ -143,9 +153,9 @@ void IECAsciiPrinterOutputWidget::onPrinterOutputChanged(IECDeviceConfiguration:
             blockFormat.clearBackground();
         }
 
-        cursor.setBlockFormat(blockFormat);
-        cursor.select(QTextCursor::BlockUnderCursor);
-        cursor.mergeCharFormat(charFormat);
+        blockCursor.setBlockFormat(blockFormat);
+        blockCursor.select(QTextCursor::BlockUnderCursor);
+        blockCursor.mergeCharFormat(charFormat);
 
         block = nextBlock;
     }
