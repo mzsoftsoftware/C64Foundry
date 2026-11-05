@@ -15,7 +15,6 @@
 class EmulatorThread;
 class EmulatorWorker;
 class C64Machine;
-class IECBus;
 
 
 class EmulatorController : public QObject
@@ -80,7 +79,6 @@ private:
 private:
     EmulatorThread* m_ptrThread = nullptr;
     EmulatorWorker* m_ptrWorker = nullptr;
-    IECBus* m_ptrIECBus = nullptr;
 
     Emulator::State m_state = Emulator::State::PoweredOff;
 

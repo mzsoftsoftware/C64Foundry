@@ -6,25 +6,25 @@
 #include <QElapsedTimer>
 #include <QQueue>
 #include <QByteArray>
-#include <QHash>
 
 #include "EmulatorTypes.h"
-#include "EmulationScheduler.h"
 #include "EmulatorRequest.h"
 #include "EmulatorResponse.h"
 #include "EmulatorIECDeviceEvent.h"
 
 #include "C64/IEC/IECFoundryDrive.h"
 class C64Machine;
-class IECBus;
-class IECDeviceManager;
+class IECSystem;
+class IECDeviceFactory;
+class EmulationScheduler;
 
 
 class EmulatorWorker : public QObject
 {
     Q_OBJECT
+
 public:
-    explicit EmulatorWorker(IECBus* ptrIECBus, QObject* parent = nullptr);
+    explicit EmulatorWorker(QObject* parent = nullptr);
     virtual ~EmulatorWorker();
 
     // Getter
@@ -54,25 +54,16 @@ private:
     quint64 targetCyclesPerSecond() const;
     void synchronizeSpeed();
 
-    void registerIECDevices();
-    void unregisterIECDevices();
-    bool setIECDeviceConfiguration(const IECDeviceConfiguration& configuration, QString* operationMessage = nullptr);
-    bool removeIECDevice(IECDeviceConfiguration::DeviceId id);
-
-    void invalidatePrinterOutputRevision(IECDeviceConfiguration::DeviceId deviceId);
-    void invalidateAllPrinterOutputRevisions();
-
     void publishIECDeviceEvent(EmulatorIECDeviceEvent::Type type, IECDeviceConfiguration::DeviceId deviceId);
-    void publishPrinterOutputChanges();
-    void publishDriveAccessChanges();
+    void forwardPrinterOutputChanges();
+    void forwardDriveAccessChanges();
 
 private:
     C64Machine* m_ptrMachine = nullptr;
-    EmulationScheduler* m_ptrScheduler = nullptr;
-    IECDeviceManager* m_ptrIECDeviceManager = nullptr;
-    IECFoundryDrive* m_ptrFoundryDrive = nullptr;
+    IECSystem* m_ptrIECSystem = nullptr;
+    IECDeviceFactory* m_ptrIECDeviceFactory = nullptr;
 
-    QHash<IECDeviceConfiguration::DeviceId, quint64> m_printerOutputRevisions;
+    EmulationScheduler* m_ptrScheduler = nullptr;
 
     QMutex m_mutex;
     QWaitCondition m_waitCondition;

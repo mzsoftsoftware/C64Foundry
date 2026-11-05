@@ -7,14 +7,12 @@
 #include "C64/C64Machine.h"
 #include "C64/C64Timing.h"
 
-#include "C64/IEC/IECDeviceManager.h"
-#include "C64/IEC/IECFoundryDrive.h"
-#include "C64/IEC/IECFoundryDisk.h"
-#include "C64/IEC/IECDevice.h"
-#include "C64/IEC/IECPrinter.h"
+#include "EmulationScheduler.h"
+#include "C64/IEC/IECDeviceFactory.h"
+#include "C64/IEC/IECSystem.h"
 
 
-EmulatorWorker::EmulatorWorker(IECBus* ptrIECBus, QObject* parent)
+EmulatorWorker::EmulatorWorker(QObject* parent)
     : QObject{parent}
 {
     qRegisterMetaType<EmulatorIECDeviceEvent::Type>("EmulatorIECDeviceEvent::Type");
@@ -22,12 +20,9 @@ EmulatorWorker::EmulatorWorker(IECBus* ptrIECBus, QObject* parent)
     qRegisterMetaType<QQueue<IECFoundryDrive::SectorAccessStatus>>("QQueue<IECFoundryDrive::SectorAccessStatus>");
 
     m_ptrMachine = new C64Machine();
-    m_ptrMachine->setIECBus(ptrIECBus);
-
+    m_ptrIECSystem = new IECSystem(m_ptrMachine, m_ptrScheduler, m_ptrIECDeviceFactory);
+    m_ptrIECDeviceFactory = new IECDeviceFactory();
     m_ptrScheduler = new EmulationScheduler(m_ptrMachine);
-    m_ptrFoundryDrive = new IECFoundryDrive();
-    m_ptrIECDeviceManager = new IECDeviceManager(ptrIECBus, m_ptrFoundryDrive);
-
 
     qDebug() << "EmulatorWorker: created";
 }
@@ -39,10 +34,9 @@ EmulatorWorker::~EmulatorWorker()
         delete m_requests.dequeue();
 
     m_ptrMachine->powerOff();
-    unregisterIECDevices();
 
-    delete m_ptrIECDeviceManager;
-    delete m_ptrFoundryDrive;
+    delete m_ptrIECSystem;
+    delete m_ptrIECDeviceFactory;
     delete m_ptrScheduler;
     delete m_ptrMachine;
 
@@ -81,8 +75,8 @@ void EmulatorWorker::run()
             continue;
 
         m_ptrScheduler->runCycles(cyclesPerBatch);
-        publishPrinterOutputChanges();
-        publishDriveAccessChanges();
+        forwardPrinterOutputChanges();
+        forwardDriveAccessChanges();
 
         m_totalCycles += cyclesPerBatch;
         m_measuredCycles += cyclesPerBatch;
@@ -205,7 +199,7 @@ bool EmulatorWorker::processNextRequest()
 
     delete ptrRequest;
 
-    publishPrinterOutputChanges();
+    forwardPrinterOutputChanges();
 
     emit requestDone(response);
 
@@ -284,10 +278,8 @@ EmulatorResponse::Result EmulatorWorker::processRequest(const EmulatorRequest* p
             return EmulatorResponse::Result::InvalidState;
 
         m_ptrMachine->powerOn();
-        m_ptrIECDeviceManager->reset();
-        invalidateAllPrinterOutputRevisions();
+        m_ptrIECSystem->reset();
         publishIECDeviceEvent(EmulatorIECDeviceEvent::Type::Reset, 0);
-        publishPrinterOutputChanges();
 
         m_totalCycles = 0;
         m_measuredCycles = 0;
@@ -359,10 +351,8 @@ EmulatorResponse::Result EmulatorWorker::processRequest(const EmulatorRequest* p
             return EmulatorResponse::Result::InvalidState;
 
         m_ptrMachine->hardReset();
-        m_ptrIECDeviceManager->reset();
-        invalidateAllPrinterOutputRevisions();
+        m_ptrIECSystem->reset();
         publishIECDeviceEvent(EmulatorIECDeviceEvent::Type::Reset, 0);
-        publishPrinterOutputChanges();
 
         if (m_state == Emulator::State::Running)
             bRestartTiming = true;
@@ -427,24 +417,23 @@ QSharedPointer<EmulatorResponse> EmulatorWorker::processIECRequest(const Emulato
     {
     case EmulatorRequest::Type::GetIECConfigurations:
     {
-        response->setConfigurations(m_ptrIECDeviceManager->configurations());
+        const QList<QSharedPointer<IECDeviceConfiguration>> configurations = m_ptrIECSystem->configurations();
+        const QList<IECDeviceType> availableTypes = m_ptrIECSystem->availableDeviceTypes();
 
-        for (const IECDeviceManager::ConfigurationPtr& ptrConfiguration : m_ptrIECDeviceManager->configurations())
+        response->setConfigurations(configurations);
+        response->setAvailableDeviceTypes(availableTypes);
+        response->setAddableDeviceTypes(m_ptrIECSystem->addableDeviceTypes());
+
+        for (const QSharedPointer<IECDeviceConfiguration>& ptrConfiguration : configurations)
         {
             if (ptrConfiguration.isNull() || ptrConfiguration->type() != IECDeviceType::FoundryDisk)
-            {
                 continue;
-            }
 
-            IECFoundryDisk* ptrDisk = dynamic_cast<IECFoundryDisk*>(m_ptrIECDeviceManager->device(ptrConfiguration->id()));
-            response->setDiskImageLoaded(ptrConfiguration->id(), ptrDisk != nullptr && ptrDisk->hasImage());
+            response->setDiskImageLoaded(ptrConfiguration->id(), m_ptrIECSystem->isDiskImageLoaded(ptrConfiguration->id()));
         }
 
-        response->setAvailableDeviceTypes(m_ptrIECDeviceManager->availableDeviceTypes());
-        response->setAddableDeviceTypes(m_ptrIECDeviceManager->addableDeviceTypes());
-
-        for (IECDeviceType type : m_ptrIECDeviceManager->availableDeviceTypes())
-            response->setSupportedDeviceNumbers(type, m_ptrIECDeviceManager->supportedDeviceNumbers(type));
+        for (IECDeviceType type : availableTypes)
+            response->setSupportedDeviceNumbers(type, m_ptrIECSystem->supportedDeviceNumbers(type));
 
         result = EmulatorResponse::Result::Success;
         break;
@@ -453,7 +442,7 @@ QSharedPointer<EmulatorResponse> EmulatorWorker::processIECRequest(const Emulato
     {
         const EmulatorRequestAddIECDevice* ptrIECRequest = static_cast<const EmulatorRequestAddIECDevice*>(ptrRequest);
 
-        const IECDeviceManager::DeviceId id = m_ptrIECDeviceManager->addDevice(ptrIECRequest->deviceType());
+        const IECDeviceConfiguration::DeviceId id = m_ptrIECSystem->addDevice(ptrIECRequest->deviceType());
 
         if (id != 0)
         {
@@ -468,7 +457,7 @@ QSharedPointer<EmulatorResponse> EmulatorWorker::processIECRequest(const Emulato
     {
         const EmulatorRequestRemoveIECDevice* ptrIECRequest = static_cast<const EmulatorRequestRemoveIECDevice*>(ptrRequest);
 
-        if (removeIECDevice(ptrIECRequest->deviceId()))
+        if (m_ptrIECSystem->removeDevice(ptrIECRequest->deviceId()))
         {
             response->setDeviceId(ptrIECRequest->deviceId());
             result = EmulatorResponse::Result::Success;
@@ -482,7 +471,7 @@ QSharedPointer<EmulatorResponse> EmulatorWorker::processIECRequest(const Emulato
         const EmulatorRequestSetIECConfiguration* ptrIECRequest = static_cast<const EmulatorRequestSetIECConfiguration*>(ptrRequest);
 
         const IECDeviceConfiguration& requestedConfiguration = ptrIECRequest->configuration();
-        const IECDeviceManager::ConfigurationPtr ptrCurrentConfiguration = m_ptrIECDeviceManager->configuration(requestedConfiguration.id());
+        const QSharedPointer<IECDeviceConfiguration> ptrCurrentConfiguration = m_ptrIECSystem->configuration(requestedConfiguration.id());
 
         if (ptrCurrentConfiguration.isNull())
             break;
@@ -490,21 +479,18 @@ QSharedPointer<EmulatorResponse> EmulatorWorker::processIECRequest(const Emulato
         const bool bConfigurationChanged = *ptrCurrentConfiguration != requestedConfiguration;
 
         QString operationMessage;
-        if (setIECDeviceConfiguration(requestedConfiguration, &operationMessage))
+        if (m_ptrIECSystem->setConfiguration(requestedConfiguration, &operationMessage))
         {
             response->setDeviceId(requestedConfiguration.id());
             response->setMessage(operationMessage);
 
-            IECFoundryDisk* ptrDisk = dynamic_cast<IECFoundryDisk*>(m_ptrIECDeviceManager->device(requestedConfiguration.id()));
-            if (ptrDisk != nullptr)
-            {
-                response->setDiskImageLoaded(requestedConfiguration.id(), ptrDisk->hasImage());
-            }
+            if (requestedConfiguration.type() == IECDeviceType::FoundryDisk)
+                response->setDiskImageLoaded(requestedConfiguration.id(), m_ptrIECSystem->isDiskImageLoaded(requestedConfiguration.id()));
 
             result = EmulatorResponse::Result::Success;
 
             if (bConfigurationChanged)
-                publishIECDeviceEvent(EmulatorIECDeviceEvent::Type::ConfigurationChanged, requestedConfiguration.id());            
+                publishIECDeviceEvent(EmulatorIECDeviceEvent::Type::ConfigurationChanged, requestedConfiguration.id());
         }
 
         break;
@@ -520,30 +506,22 @@ QSharedPointer<EmulatorResponse> EmulatorWorker::processIECRequest(const Emulato
 
         const EmulatorRequestRestoreIECConfigurations* ptrIECRequest = static_cast<const EmulatorRequestRestoreIECConfigurations*>(ptrRequest);
 
-        if (!m_ptrIECDeviceManager->restoreConfigurations(ptrIECRequest->configurations()))
+        if (!m_ptrIECSystem->restoreConfigurations(ptrIECRequest->configurations()))
             break;
-
-        registerIECDevices();
 
         result = EmulatorResponse::Result::Success;
 
         publishIECDeviceEvent(EmulatorIECDeviceEvent::Type::Restored, 0);
 
-        break;
+        brerak;
     }
 
     case EmulatorRequest::Type::TearOffIECPrinter:
     {
-        const EmulatorRequestTearOffIECPrinter* ptrIECRequest =
-            static_cast<const EmulatorRequestTearOffIECPrinter*>(ptrRequest);
+        const EmulatorRequestTearOffIECPrinter* ptrIECRequest = static_cast<const EmulatorRequestTearOffIECPrinter*>(ptrRequest);
 
-        IECPrinter* ptrPrinter = dynamic_cast<IECPrinter*>(
-            m_ptrIECDeviceManager->device(ptrIECRequest->deviceId()));
-
-        if (ptrPrinter == nullptr)
+        if (!m_ptrIECSystem->tearOffPrinter(ptrIECRequest->deviceId()))
             break;
-
-        ptrPrinter->tearOff();
 
         response->setDeviceId(ptrIECRequest->deviceId());
         result = EmulatorResponse::Result::Success;
@@ -606,82 +584,6 @@ void EmulatorWorker::synchronizeSpeed()
         QThread::usleep(static_cast<unsigned long>(waitMicroseconds));
 }
 
-void EmulatorWorker::registerIECDevices()
-{
-    const QList<IECDeviceManager::ConfigurationPtr> configurations = m_ptrIECDeviceManager->configurations();
-
-    for (const IECDeviceManager::ConfigurationPtr& ptrConfiguration : configurations)
-    {
-        IECDevice* ptrDevice = m_ptrIECDeviceManager->device(ptrConfiguration->id());
-
-        if (ptrDevice != nullptr)
-            m_ptrScheduler->addIECDevice(ptrDevice);
-    }
-}
-
-void EmulatorWorker::unregisterIECDevices()
-{
-    const QList<IECDeviceManager::ConfigurationPtr> configurations = m_ptrIECDeviceManager->configurations();
-
-    for (const IECDeviceManager::ConfigurationPtr& ptrConfiguration : configurations)
-    {
-        IECDevice* ptrDevice = m_ptrIECDeviceManager->device(ptrConfiguration->id());
-
-        if (ptrDevice != nullptr)
-            m_ptrScheduler->removeIECDevice(ptrDevice);
-    }
-}
-
-bool EmulatorWorker::setIECDeviceConfiguration(const IECDeviceConfiguration& configuration, QString* operationMessage)
-{
-    IECDevice* ptrPreviousDevice = m_ptrIECDeviceManager->device(configuration.id());
-    IECDevice* ptrRemovedDevice = nullptr;
-
-    if (!m_ptrIECDeviceManager->setConfiguration(configuration, ptrRemovedDevice, operationMessage))
-        return false;
-
-    if (ptrRemovedDevice != nullptr)
-    {
-        m_ptrScheduler->removeIECDevice(ptrRemovedDevice);
-        invalidatePrinterOutputRevision(configuration.id());
-        delete ptrRemovedDevice;
-    }
-
-    IECDevice* ptrDevice = m_ptrIECDeviceManager->device(configuration.id());
-
-    if (ptrDevice != nullptr && ptrDevice != ptrPreviousDevice)
-        m_ptrScheduler->addIECDevice(ptrDevice);
-
-    return true;
-}
-
-bool EmulatorWorker::removeIECDevice(IECDeviceConfiguration::DeviceId id)
-{
-    IECDevice* ptrRemovedDevice = nullptr;
-
-    if (!m_ptrIECDeviceManager->removeDevice(id, ptrRemovedDevice))
-        return false;
-
-    if (ptrRemovedDevice != nullptr)
-    {
-        m_ptrScheduler->removeIECDevice(ptrRemovedDevice);
-        invalidatePrinterOutputRevision(id);
-        delete ptrRemovedDevice;
-    }
-
-    return true;
-}
-
-void EmulatorWorker::invalidatePrinterOutputRevision(IECDeviceConfiguration::DeviceId deviceId)
-{
-    m_printerOutputRevisions.remove(deviceId);
-}
-
-void EmulatorWorker::invalidateAllPrinterOutputRevisions()
-{
-    m_printerOutputRevisions.clear();
-}
-
 void EmulatorWorker::publishIECDeviceEvent(EmulatorIECDeviceEvent::Type type, IECDeviceConfiguration::DeviceId deviceId)
 {
     qDebug() << "EmulatorWorker: iecDeviceChanged"
@@ -691,64 +593,35 @@ void EmulatorWorker::publishIECDeviceEvent(EmulatorIECDeviceEvent::Type type, IE
     emit iecDeviceChanged(type, deviceId);
 }
 
-void EmulatorWorker::publishPrinterOutputChanges()
+void EmulatorWorker::forwardPrinterOutputChanges()
 {
-    const QList<IECDeviceManager::ConfigurationPtr> configurations = m_ptrIECDeviceManager->configurations();
-    QHash<IECDeviceConfiguration::DeviceId, quint64> currentRevisions;
+    const QList<IECSystem::PrinterOutputChange> changes = m_ptrIECSystem->takePrinterOutputChanges();
 
-    for (const IECDeviceManager::ConfigurationPtr& ptrConfiguration : configurations)
+    for (const IECSystem::PrinterOutputChange& change : changes)
     {
-        IECPrinter* ptrPrinter = dynamic_cast<IECPrinter*>(m_ptrIECDeviceManager->device(ptrConfiguration->id()));
-
-        if (ptrPrinter == nullptr)
-            continue;
-
-        const IECDeviceConfiguration::DeviceId deviceId = ptrConfiguration->id();
-        const quint64 revision = ptrPrinter->outputRevision();
-
-        currentRevisions.insert(deviceId, revision);
-
-        if (!m_printerOutputRevisions.contains(deviceId))
-        {
-            if (revision == 0 && !ptrPrinter->hasOutput())
-                continue;
-        }
-        else if (m_printerOutputRevisions.value(deviceId) == revision)
-        {
-            continue;
-        }
-
-        const QByteArray output = ptrPrinter->outputSnapshot();
-
         qDebug() << "EmulatorWorker: printerOutputChanged"
-                 << "deviceId:" << deviceId
-                 << "revision:" << revision
-                 << "bytes:" << output.size();
+                 << "deviceId:" << change.deviceId
+                 << "revision:" << change.revision
+                 << "bytes:" << change.output.size();
 
-        emit printerOutputChanged(deviceId, revision, output);
+        emit printerOutputChanged(change.deviceId, change.revision, change.output);
     }
-
-    m_printerOutputRevisions = currentRevisions;
 }
-
-void EmulatorWorker::publishDriveAccessChanges()
+void EmulatorWorker::forwardDriveAccessChanges()
 {
-    const QList<IECDeviceManager::ConfigurationPtr> configurations = m_ptrIECDeviceManager->configurations();
+    const QList<IECSystem::DriveAccessChange> changes = m_ptrIECSystem->takeDriveAccessChanges();
 
-    for (const IECDeviceManager::ConfigurationPtr& ptrConfiguration : configurations)
+    for (const IECSystem::DriveAccessChange& change : changes)
     {
-        if (ptrConfiguration.isNull() || ptrConfiguration->type() != IECDeviceType::FoundryDisk)
-            continue;
-
-        const QQueue<IECFoundryDrive::SectorAccessStatus> events = m_ptrFoundryDrive->takeSectorAccessEvents(ptrConfiguration->deviceNumber());
-        if (events.isEmpty())
+        if (change.events.isEmpty())
             continue;
 
         qDebug() << "EmulatorWorker: driveAccessChanged"
-                 << "deviceId:" << ptrConfiguration->id()
-                 << "deviceNumber:" << ptrConfiguration->deviceNumber()
-                 << "events:" << events.size();
+                 << "deviceId:" << change.deviceId
+                 << "deviceNumber:" << change.deviceNumber
+                 << "events:" << change.events.size();
 
-        emit driveAccessChanged(ptrConfiguration->id(), events);
+        emit driveAccessChanged(change.deviceId, change.events);
     }
 }
+

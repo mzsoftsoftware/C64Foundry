@@ -7,8 +7,6 @@
 #include "Emulator/EmulatorThread.h"
 #include "Emulator/EmulatorWorker.h"
 
-#include "C64/IEC/IECBus.h"
-
 
 EmulatorController::EmulatorController(QObject* parent)
     : QObject(parent)
@@ -17,8 +15,7 @@ EmulatorController::EmulatorController(QObject* parent)
 
     qRegisterMetaType<QSharedPointer<EmulatorResponse>>("EmulatorResponsePtr");
 
-    m_ptrIECBus = new IECBus();
-    m_ptrWorker = new EmulatorWorker(m_ptrIECBus);
+    m_ptrWorker = new EmulatorWorker();
     m_ptrThread = new EmulatorThread(m_ptrWorker, this);
 
     connect(m_ptrWorker, &EmulatorWorker::requestDone, this, &EmulatorController::onWorkerRequestDone, Qt::QueuedConnection);
@@ -41,7 +38,6 @@ EmulatorController::~EmulatorController()
     m_ptrThread->wait();
 
     delete m_ptrWorker;
-    delete m_ptrIECBus;
 
     qDebug() << "EmulatorController: destroyed";
 }
