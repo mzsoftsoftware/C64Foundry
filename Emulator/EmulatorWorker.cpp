@@ -22,8 +22,8 @@ EmulatorWorker::EmulatorWorker(QObject* parent)
     qRegisterMetaType<QQueue<IECPrinterOutputEvent>>("QQueue<IECPrinterOutputEvent>");
 
     m_ptrMachine = new C64Machine();
-    m_ptrIECSystem = new IECSystem(m_ptrMachine, m_ptrScheduler, m_ptrIECDeviceFactory);
     m_ptrIECDeviceFactory = new IECDeviceFactory();
+    m_ptrIECSystem = new IECSystem(m_ptrMachine, m_ptrIECDeviceFactory);
     m_ptrScheduler = new EmulationScheduler(m_ptrMachine);
 
     qDebug() << "EmulatorWorker: created";
@@ -35,16 +35,23 @@ EmulatorWorker::~EmulatorWorker()
     while (!m_requests.isEmpty())
         delete m_requests.dequeue();
 
-    m_ptrMachine->powerOff();
+    if (m_ptrMachine != nullptr)
+        m_ptrMachine->powerOff();
+
+    delete m_ptrScheduler;
+    m_ptrScheduler = nullptr;
 
     delete m_ptrIECSystem;
+    m_ptrIECSystem = nullptr;
+
     delete m_ptrIECDeviceFactory;
-    delete m_ptrScheduler;
+    m_ptrIECDeviceFactory = nullptr;
+
     delete m_ptrMachine;
+    m_ptrMachine = nullptr;
 
     qDebug() << "EmulatorWorker: destroyed";
 }
-
 
 void EmulatorWorker::run()
 {
@@ -598,15 +605,12 @@ void EmulatorWorker::publishIECDeviceEvent(EmulatorIECDeviceEvent::Type type, IE
 void EmulatorWorker::forwardPrinterOutputChanges()
 {
     const QList<IECSystem::PrinterOutputChange> changes = m_ptrIECSystem->takePrinterOutputChanges();
-
     for (const IECSystem::PrinterOutputChange& change : changes)
     {
-        qDebug() << "EmulatorWorker: printerOutputChanged"
-                 << "deviceId:" << change.deviceId
-                 << "revision:" << change.revision
-                 << "bytes:" << change.output.size();
+        if (change.events.isEmpty())
+            continue;
 
-        emit printerOutputChanged(change.deviceId, change.revision, change.output);
+        emit printerOutputChanged(change.deviceId, change.events);
     }
 }
 void EmulatorWorker::forwardDriveAccessChanges()
