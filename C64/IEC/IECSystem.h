@@ -2,13 +2,14 @@
 
 #include <QHash>
 #include <QList>
-#include <QQueue>
 #include <QSharedPointer>
 #include <QString>
 #include <QtGlobal>
 
 #include "IECDeviceConfiguration.h"
+#include "IECSystemEvent.h"
 #include "IECDeviceEvent.h"
+#include "IECResponse.h"
 
 
 class C64Machine;
@@ -17,6 +18,7 @@ class IECProtocol;
 class IECDevice;
 class IECDeviceManager;
 class IECDeviceFactory;
+class IECRequest;
 
 
 class IECSystem
@@ -24,19 +26,6 @@ class IECSystem
 public:
     using DeviceId = IECDeviceConfiguration::DeviceId;
     using ConfigurationPtr = QSharedPointer<IECDeviceConfiguration>;
-
-    struct PrinterOutputChange
-    {
-        DeviceId deviceId = 0;
-        QQueue<IECPrinterOutputEvent> events;
-    };
-
-    struct DriveAccessChange
-    {
-        DeviceId deviceId = 0;
-        quint8 deviceNumber = 0;
-        QQueue<IECDriveAccessEvent> events;
-    };
 
     explicit IECSystem(C64Machine* ptrMachine, IECDeviceFactory* ptrDeviceFactory);
     ~IECSystem();
@@ -64,13 +53,12 @@ public:
     bool removeDevice(DeviceId id);
     bool setConfiguration(const IECDeviceConfiguration& configuration, QString* operationMessage = nullptr);
 
-    // Device-specific operations
-    bool isDiskImageLoaded(DeviceId id) const;
-    bool tearOffPrinter(DeviceId id);
+    // Requests
+    IECResponse::Result processRequest(const IECRequest& request, IECResponse& response);
 
     // Events
-    QList<PrinterOutputChange> takePrinterOutputChanges();
-    QList<DriveAccessChange> takeDriveAccessChanges();
+    IECSystemEventList takeSystemEvents();
+    IECDeviceEventList takeDeviceEvents();
 
 private:
     struct DeviceEntry
@@ -88,8 +76,8 @@ private:
     void unregisterDevice(DeviceEntry& entry);
     void destroyDevice(DeviceEntry& entry);
 
-    void collectPrinterOutputChanges();
-    void collectDriveAccessChanges();
+    void collectDeviceEvents();
+    void addSystemEvent(IECSystemEvent::Type type, DeviceId deviceId = 0);
 
 private:
     // Non-owning references
@@ -102,14 +90,14 @@ private:
     IECDeviceManager* m_ptrDeviceManager = nullptr;
 
     // Configuration and device registry.
-    // The actual device instances are owned by IECDeviceFactory.
+    // Device instances are owned by IECDeviceFactory.
     QList<DeviceEntry> m_devices;
     DeviceId m_nextDeviceId = 1;
 
     // Last forwarded printer output revision per device.
     QHash<DeviceId, quint64> m_printerOutputRevisions;
 
-    // Pending events collected during clocking or device operations.
-    QList<PrinterOutputChange> m_printerOutputChanges;
-    QList<DriveAccessChange> m_driveAccessChanges;
+    // Pending events
+    IECSystemEventList m_systemEvents;
+    IECDeviceEventList m_deviceEvents;
 };
