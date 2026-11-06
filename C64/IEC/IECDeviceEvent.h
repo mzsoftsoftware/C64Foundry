@@ -1,28 +1,20 @@
 #pragma once
 
-#include <QMetaType>
-#include <QQueue>
+#include <QByteArray>
+#include <QList>
+#include <QSharedPointer>
 #include <QString>
 #include <QtGlobal>
 
 
-struct IECDriveAccessEvent
+struct IECDeviceEvent
 {
-    enum class Operation : quint8
-    {
-        Read,
-        Write
-    };
+    virtual ~IECDeviceEvent() = default;
 
-    quint8 deviceNumber = 0;
-    Operation operation = Operation::Read;
-    quint8 track = 0;
-    quint8 sector = 0;
-    bool success = false;
-    QString errorMessage;
+    IECDeviceConfiguration::DeviceId deviceId = 0;
 };
 
-struct IECPrinterOutputEvent
+struct IECPrinterOutputEvent : public IECDeviceEvent
 {
     enum class Format : quint8
     {
@@ -35,8 +27,24 @@ struct IECPrinterOutputEvent
     QByteArray data;
 };
 
-Q_DECLARE_METATYPE(IECDriveAccessEvent)
-Q_DECLARE_METATYPE(QQueue<IECDriveAccessEvent>)
+struct IECDriveAccessEvent : public IECDeviceEvent
+{
+    enum class Operation : quint8
+    {
+        Read,
+        Write
+    };
 
-Q_DECLARE_METATYPE(IECPrinterOutputEvent)
-Q_DECLARE_METATYPE(QQueue<IECPrinterOutputEvent>)
+    quint8 deviceNumber = 0;
+    Operation operation = Operation::Read;
+
+    quint8 track = 0;
+    quint8 sector = 0;
+
+    bool success = false;
+    QString errorMessage;
+};
+
+
+using IECDeviceEventPtr = QSharedPointer<IECDeviceEvent>;
+using IECDeviceEventList = QList<IECDeviceEventPtr>;

@@ -1,30 +1,23 @@
 #pragma once
 
-#include <QtGlobal>
-
-#include "IECBus.h"
+#include "IECProtocolEvent.h"
+#include "IECDeviceEvent.h"
 
 
 class IECDevice
 {
 public:
-    explicit IECDevice(IECBus* ptrBus, quint8 deviceNumber);
-    virtual ~IECDevice();
+    virtual ~IECDevice() = default;
 
-    quint8 deviceNumber() const                     { return m_deviceNumber; }
+    IECDevice(const IECDevice&) = delete;
+    IECDevice& operator=(const IECDevice&) = delete;
 
     virtual void reset() = 0;
-    virtual void clock() = 0;
+
+    virtual void handleProtocolEvent(const IECProtocolEvent& event) = 0;
+
+    virtual IECDeviceEventList takeEvents();
 
 protected:
-    bool lineHigh(IECBus::Line line) const;
-    void setLineLow(IECBus::Line line, bool low);
-
-    IECBus* iecBus() const                          { return m_ptrBus; }
-    IECBus::ParticipantId participantId() const     { return m_participantId; }
-
-private:
-    quint8 m_deviceNumber = 0;
-    IECBus* m_ptrBus = nullptr;
-    IECBus::ParticipantId m_participantId = 0;
+    IECDevice() = default;
 };
