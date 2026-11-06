@@ -5,17 +5,22 @@
 #include <QWaitCondition>
 #include <QElapsedTimer>
 #include <QQueue>
+#include <QSharedPointer>
+#include <QList>
 
 #include "EmulatorTypes.h"
 #include "EmulatorRequest.h"
 #include "EmulatorResponse.h"
-#include "EmulatorIECDeviceEvent.h"
-#include "C64/IEC/IECDeviceEvent.h"
 
 class C64Machine;
 class IECSystem;
 class IECDeviceFactory;
 class EmulationScheduler;
+
+class IECRequest;
+class IECResponse;
+class IECSystemEvent;
+class IECDeviceEvent;
 
 
 class EmulatorWorker : public QObject
@@ -32,28 +37,45 @@ public:
     // Operations
     void run();
     void request(EmulatorRequest* ptrRequest);
+    void request(IECRequest* ptrRequest);
 
 signals:
+    // Emulator/IEC requests
     void requestDone(QSharedPointer<EmulatorResponse> response);
+    void iecRequestDone(QSharedPointer<IECResponse> response);
 
+    // Emulator state
     void stateChanged(Emulator::State state);
     void speedChanged(Emulator::Speed speed);
     void statisticsChanged(quint64 cycles, quint64 currentCyclesPerSecond, quint64 averageCyclesPerSecond);
 
-    void iecDeviceChanged(EmulatorIECDeviceEvent::Type type, IECDeviceConfiguration::DeviceId deviceId);
-    void printerOutputChanged(IECDeviceConfiguration::DeviceId deviceId, QQueue<IECPrinterOutputEvent> events);
-    void driveAccessChanged(IECDeviceConfiguration::DeviceId deviceId, QQueue<IECDriveAccessEvent> events);
+    // IEC events
+    void iecSystemEventsChanged(QList<QSharedPointer<IECSystemEvent>> events);
+    void iecDeviceEventsChanged(QList<QSharedPointer<IECDeviceEvent>> events);
 
 private:
+    struct PendingRequest
+    {
+        enum class Type
+        {
+            Emulator,
+            IEC
+        };
+
+        Type type = Type::Emulator;
+
+        EmulatorRequest* ptrEmulatorRequest = nullptr;
+        IECRequest* ptrIECRequest = nullptr;
+    };
     void waitForRequests();
     bool processNextRequest();
     EmulatorResponse::Result processRequest(const EmulatorRequest* ptrRequest, bool& bRestartTiming);
     QSharedPointer<EmulatorResponse> processIECRequest(const EmulatorRequest* ptrRequest);
+    void cancelPendingRequest(PendingRequest& request);
 
     quint64 targetCyclesPerSecond() const;
     void synchronizeSpeed();
 
-    void publishIECDeviceEvent(EmulatorIECDeviceEvent::Type type, IECDeviceConfiguration::DeviceId deviceId);
     void forwardIECEvents();
 
 private:
@@ -66,7 +88,7 @@ private:
     // Request queue
     QMutex m_mutex;
     QWaitCondition m_waitCondition;
-    QQueue<EmulatorRequest*> m_requests;
+    QQueue<PendingRequest> m_requests;
     bool m_bAcceptRequests = true;
     bool m_bShutdown = false;
 

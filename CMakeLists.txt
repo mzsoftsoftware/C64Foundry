@@ -57,13 +57,16 @@ add_library(C64FoundryCore STATIC
     C64/IEC/IECDeviceFactory.h C64/IEC/IECDeviceFactory.cpp
     C64/IEC/IECDevice.h C64/IEC/IECDevice.cpp
     C64/IEC/IECDeviceEvent.h
+    C64/IEC/IECDeviceRequest.h C64/IEC/IECDeviceResponse.h
     C64/IEC/IECDeviceConfiguration.h C64/IEC/IECDeviceConfiguration.cpp
-    C64/IEC/IECDeviceGuiRequest.h C64/IEC/IECDeviceGuiRequest.cpp
 
+    C64/IEC/IECRequest.h C64/IEC/IECResponse.h
     C64/IEC/IECBus.h C64/IEC/IECBus.cpp
     C64/IEC/IECProtocol.h C64/IEC/IECProtocol.cpp
     C64/IEC/IECProtocolEvent.h
     C64/IEC/IECSystem.h C64/IEC/IECSystem.cpp
+    C64/IEC/IECSystemEvent.h
+    C64/IEC/IECSystemRequest.h C64/IEC/IECSystemResponse.h
 
     C64/IEC/IECPrinter.h C64/IEC/IECPrinter.cpp
     C64/IEC/IECAsciiPrinter.h C64/IEC/IECAsciiPrinter.cpp
@@ -72,7 +75,6 @@ add_library(C64FoundryCore STATIC
     C64/IEC/IECFoundryDrive.h C64/IEC/IECFoundryDrive.cpp
     C64/IEC/IECFoundryDisk.h C64/IEC/IECFoundryDisk.cpp
     C64/IEC/IECFoundryDiskConfiguration.h
-
 )
 
 target_include_directories(C64FoundryCore

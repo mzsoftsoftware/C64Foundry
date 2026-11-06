@@ -6,6 +6,8 @@
 #include <QString>
 #include <QtGlobal>
 
+#include "IECDeviceConfiguration.h"
+
 
 struct IECDeviceEvent
 {
@@ -13,6 +15,7 @@ struct IECDeviceEvent
 
     IECDeviceConfiguration::DeviceId deviceId = 0;
 };
+
 
 struct IECPrinterOutputEvent : public IECDeviceEvent
 {
@@ -26,6 +29,7 @@ struct IECPrinterOutputEvent : public IECDeviceEvent
     Format format = Format::Text;
     QByteArray data;
 };
+
 
 struct IECDriveAccessEvent : public IECDeviceEvent
 {
