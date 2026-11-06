@@ -5,14 +5,13 @@
 #include <QWaitCondition>
 #include <QElapsedTimer>
 #include <QQueue>
-#include <QByteArray>
 
 #include "EmulatorTypes.h"
 #include "EmulatorRequest.h"
 #include "EmulatorResponse.h"
 #include "EmulatorIECDeviceEvent.h"
-
 #include "C64/IEC/IECDeviceEvent.h"
+
 class C64Machine;
 class IECSystem;
 class IECDeviceFactory;
@@ -55,20 +54,19 @@ private:
     void synchronizeSpeed();
 
     void publishIECDeviceEvent(EmulatorIECDeviceEvent::Type type, IECDeviceConfiguration::DeviceId deviceId);
-    void forwardPrinterOutputChanges();
-    void forwardDriveAccessChanges();
+    void forwardIECEvents();
 
 private:
+    // Core components
     C64Machine* m_ptrMachine = nullptr;
-    IECSystem* m_ptrIECSystem = nullptr;
     IECDeviceFactory* m_ptrIECDeviceFactory = nullptr;
-
+    IECSystem* m_ptrIECSystem = nullptr;
     EmulationScheduler* m_ptrScheduler = nullptr;
 
+    // Request queue
     QMutex m_mutex;
     QWaitCondition m_waitCondition;
     QQueue<EmulatorRequest*> m_requests;
-
     bool m_bAcceptRequests = true;
     bool m_bShutdown = false;
 

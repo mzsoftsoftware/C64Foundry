@@ -4,10 +4,10 @@
 #include <QMutexLocker>
 #include <QThread>
 
+#include "EmulationScheduler.h"
+
 #include "C64/C64Machine.h"
 #include "C64/C64Timing.h"
-
-#include "EmulationScheduler.h"
 #include "C64/IEC/IECDeviceFactory.h"
 #include "C64/IEC/IECSystem.h"
 
@@ -21,6 +21,7 @@ EmulatorWorker::EmulatorWorker(QObject* parent)
     qRegisterMetaType<IECPrinterOutputEvent>("IECPrinterOutputEvent");
     qRegisterMetaType<QQueue<IECPrinterOutputEvent>>("QQueue<IECPrinterOutputEvent>");
 
+    // Core components are created in dependency order.
     m_ptrMachine = new C64Machine();
     m_ptrIECDeviceFactory = new IECDeviceFactory();
     m_ptrIECSystem = new IECSystem(m_ptrMachine, m_ptrIECDeviceFactory);
@@ -38,6 +39,7 @@ EmulatorWorker::~EmulatorWorker()
     if (m_ptrMachine != nullptr)
         m_ptrMachine->powerOff();
 
+    // Destroy components in reverse dependency order.
     delete m_ptrScheduler;
     m_ptrScheduler = nullptr;
 
@@ -84,8 +86,7 @@ void EmulatorWorker::run()
             continue;
 
         m_ptrScheduler->runCycles(cyclesPerBatch);
-        forwardPrinterOutputChanges();
-        forwardDriveAccessChanges();
+        forwardIECEvents();
 
         m_totalCycles += cyclesPerBatch;
         m_measuredCycles += cyclesPerBatch;
@@ -125,10 +126,8 @@ void EmulatorWorker::request(EmulatorRequest* ptrRequest)
         return;
 
     bool bAccepted = false;
-
     {
         QMutexLocker locker(&m_mutex);
-
         if (m_bAcceptRequests)
         {
             m_requests.enqueue(ptrRequest);
@@ -146,9 +145,7 @@ void EmulatorWorker::request(EmulatorRequest* ptrRequest)
     if (!bAccepted)
     {
         const QSharedPointer<EmulatorResponse> response(new EmulatorResponse(ptrRequest->id(), ptrRequest->type(), EmulatorResponse::Result::Cancelled));
-
         delete ptrRequest;
-
         emit requestDone(response);
     }
 }
@@ -167,7 +164,6 @@ void EmulatorWorker::waitForRequests()
 bool EmulatorWorker::processNextRequest()
 {
     EmulatorRequest* ptrRequest = nullptr;
-
     {
         QMutexLocker locker(&m_mutex);
 
@@ -190,7 +186,6 @@ bool EmulatorWorker::processNextRequest()
     case EmulatorRequest::Type::TearOffIECPrinter:
         response = processIECRequest(ptrRequest);
         break;
-
     default:
     {
         const EmulatorResponse::Result result = processRequest(ptrRequest, bRestartTiming);
@@ -208,8 +203,8 @@ bool EmulatorWorker::processNextRequest()
 
     delete ptrRequest;
 
-    forwardPrinterOutputChanges();
-
+    // Device operations may also have produced output or access events.
+    forwardIECEvents();
     emit requestDone(response);
 
     return bRestartTiming;
@@ -602,22 +597,23 @@ void EmulatorWorker::publishIECDeviceEvent(EmulatorIECDeviceEvent::Type type, IE
     emit iecDeviceChanged(type, deviceId);
 }
 
-void EmulatorWorker::forwardPrinterOutputChanges()
+void EmulatorWorker::forwardIECEvents()
 {
-    const QList<IECSystem::PrinterOutputChange> changes = m_ptrIECSystem->takePrinterOutputChanges();
-    for (const IECSystem::PrinterOutputChange& change : changes)
+    const QList<IECSystem::PrinterOutputChange> printerChanges =
+        m_ptrIECSystem->takePrinterOutputChanges();
+
+    for (const IECSystem::PrinterOutputChange& change : printerChanges)
     {
         if (change.events.isEmpty())
             continue;
 
         emit printerOutputChanged(change.deviceId, change.events);
     }
-}
-void EmulatorWorker::forwardDriveAccessChanges()
-{
-    const QList<IECSystem::DriveAccessChange> changes = m_ptrIECSystem->takeDriveAccessChanges();
 
-    for (const IECSystem::DriveAccessChange& change : changes)
+    const QList<IECSystem::DriveAccessChange> driveChanges =
+        m_ptrIECSystem->takeDriveAccessChanges();
+
+    for (const IECSystem::DriveAccessChange& change : driveChanges)
     {
         if (change.events.isEmpty())
             continue;
