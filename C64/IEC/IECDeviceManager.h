@@ -14,51 +14,19 @@ class IECFoundryDrive;
 class IECDeviceManager
 {
 public:
-    using DeviceId = IECDeviceConfiguration::DeviceId;
-    using ConfigurationPtr = QSharedPointer<IECDeviceConfiguration>;
-
-    explicit IECDeviceManager(IECBus* ptrBus, IECFoundryDrive* ptrFoundryDrive);
-    virtual ~IECDeviceManager();
+    IECDeviceManager();
+    ~IECDeviceManager();
 
     IECDeviceManager(const IECDeviceManager&) = delete;
     IECDeviceManager& operator=(const IECDeviceManager&) = delete;
 
-    QList<IECDeviceType> availableDeviceTypes() const;
-    QList<quint8> supportedDeviceNumbers(IECDeviceType type) const;
+    bool registerDevice(quint8 deviceNumber, IECDevice* ptrDevice);
+    bool unregisterDevice(quint8 deviceNumber);
 
-    QList<ConfigurationPtr> configurations() const;
-    ConfigurationPtr configuration(DeviceId id) const;
-    bool restoreConfigurations(const QList<ConfigurationPtr>& configurations);
+    IECDevice* device(quint8 deviceNumber) const;
 
-    QList<IECDeviceType> addableDeviceTypes() const;
-    bool canAddDevice(IECDeviceType type) const;
-    DeviceId addDevice(IECDeviceType type);
-    bool removeDevice(DeviceId id, IECDevice*& ptrRemovedDevice);
-    bool setConfiguration(const IECDeviceConfiguration& configuration, IECDevice*& ptrRemovedDevice, QString* operationMessage = nullptr);
-
-    IECDevice* device(DeviceId id) const;
-
-    void reset();
+    void processEvent(const IECProtocolEvent& event, IECProtocolResponse& response);
 
 private:
-    struct DeviceEntry
-    {
-        ConfigurationPtr configuration;
-        IECDevice* ptrDevice = nullptr;
-    };
-
-    DeviceEntry* findEntry(DeviceId id);
-    const DeviceEntry* findEntry(DeviceId id) const;
-
-    bool isDeviceNumberReserved(quint8 deviceNumber, DeviceId excludedId = 0) const;
-
-    ConfigurationPtr createConfiguration(IECDeviceType type) const;
-    IECDevice* createDevice(const IECDeviceConfiguration& configuration, QString* operationMessage = nullptr) const;
-
-private:
-    IECBus* m_ptrBus = nullptr;
-    IECFoundryDrive* m_ptrFoundryDrive = nullptr;
-
-    QList<DeviceEntry> m_devices;
-    DeviceId m_nextDeviceId = 1;
+    QHash<quint8, IECDevice*> m_devices;
 };
