@@ -11,6 +11,8 @@
 #include "EmulatorTypes.h"
 #include "EmulatorRequest.h"
 #include "EmulatorResponse.h"
+#include "C64/IEC/IECResponse.h"
+
 
 class C64Machine;
 class IECSystem;
@@ -18,7 +20,6 @@ class IECDeviceFactory;
 class EmulationScheduler;
 
 class IECRequest;
-class IECResponse;
 class IECSystemEvent;
 class IECDeviceEvent;
 
@@ -31,16 +32,13 @@ public:
     explicit EmulatorWorker(QObject* parent = nullptr);
     virtual ~EmulatorWorker();
 
-    // Getter
-    C64Machine* machine() const { return m_ptrMachine; }
-
     // Operations
     void run();
     void request(EmulatorRequest* ptrRequest);
     void request(IECRequest* ptrRequest);
 
 signals:
-    // Emulator/IEC requests
+    // Request responses
     void requestDone(QSharedPointer<EmulatorResponse> response);
     void iecRequestDone(QSharedPointer<IECResponse> response);
 
@@ -67,10 +65,13 @@ private:
         EmulatorRequest* ptrEmulatorRequest = nullptr;
         IECRequest* ptrIECRequest = nullptr;
     };
+
     void waitForRequests();
     bool processNextRequest();
+
     EmulatorResponse::Result processRequest(const EmulatorRequest* ptrRequest, bool& bRestartTiming);
-    QSharedPointer<EmulatorResponse> processIECRequest(const EmulatorRequest* ptrRequest);
+    IECResponse::Result processIECRequest(const IECRequest* ptrRequest, IECResponse& response);
+
     void cancelPendingRequest(PendingRequest& request);
 
     quint64 targetCyclesPerSecond() const;
@@ -79,7 +80,7 @@ private:
     void forwardIECEvents();
 
 private:
-    // Core components
+    // Runtime components
     C64Machine* m_ptrMachine = nullptr;
     IECDeviceFactory* m_ptrIECDeviceFactory = nullptr;
     IECSystem* m_ptrIECSystem = nullptr;
@@ -95,6 +96,7 @@ private:
     // Current state
     Emulator::State m_state = Emulator::State::PoweredOff;
     Emulator::Speed m_speed = Emulator::Speed::Normal;
+
     QElapsedTimer m_speedTimer;
     quint64 m_speedStartCycles = 0;
 
