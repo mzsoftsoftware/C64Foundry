@@ -1,24 +1,21 @@
 #pragma once
 
 #include <QtGlobal>
-#include <QVector>
+
 
 class C64Machine;
-class IECDevice;
+class IECSystem;
 
 
 class EmulationScheduler
 {
 public:
-    explicit EmulationScheduler(C64Machine* ptrMachine);
-
-    void addIECDevice(IECDevice* ptrDevice);
-    void removeIECDevice(IECDevice* ptrDevice);
+    explicit EmulationScheduler(C64Machine* ptrMachine, IECSystem* ptrIECSystem);
 
     void clock();
     void runCycles(quint64 cycles);
 
 private:
     C64Machine* m_ptrMachine = nullptr;
-    QVector<IECDevice*> m_iecDevices;
+    IECSystem* m_ptrIECSystem = nullptr;
 };
