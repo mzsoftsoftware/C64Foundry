@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QHash>
 #include <QList>
 #include <QSharedPointer>
 #include <QString>
@@ -93,9 +92,6 @@ private:
     // Device instances are owned by IECDeviceFactory.
     QList<DeviceEntry> m_devices;
     DeviceId m_nextDeviceId = 1;
-
-    // Last forwarded printer output revision per device.
-    QHash<DeviceId, quint64> m_printerOutputRevisions;
 
     // Pending events
     IECSystemEventList m_systemEvents;

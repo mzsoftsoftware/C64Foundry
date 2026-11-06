@@ -1,12 +1,18 @@
 #pragma once
 
+#include "IECDeviceConfiguration.h"
 #include "IECProtocolEvent.h"
 #include "IECDeviceEvent.h"
+
+
+class IECProtocolResponse;
 
 
 class IECDevice
 {
 public:
+    using DeviceId = IECDeviceConfiguration::DeviceId;
+
     explicit IECDevice(DeviceId id);
     virtual ~IECDevice();
 

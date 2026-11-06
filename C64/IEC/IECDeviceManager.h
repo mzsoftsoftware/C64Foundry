@@ -1,14 +1,12 @@
 #pragma once
 
-#include <QList>
-#include <QSharedPointer>
+#include <QHash>
 #include <QtGlobal>
 
-#include "IECDeviceConfiguration.h"
 
-class IECBus;
 class IECDevice;
-class IECFoundryDrive;
+struct IECProtocolEvent;
+struct IECProtocolResponse;
 
 
 class IECDeviceManager
