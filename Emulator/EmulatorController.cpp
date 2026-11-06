@@ -14,21 +14,48 @@ EmulatorController::EmulatorController(QObject* parent)
     qDebug() << "EmulatorController: created" << QThread::currentThreadId();
 
     qRegisterMetaType<QSharedPointer<EmulatorResponse>>("EmulatorResponsePtr");
+    qRegisterMetaType<QSharedPointer<IECResponse>>("IECResponsePtr");
+
+    qRegisterMetaType<IECSystemEventList>("IECSystemEventList");
+    qRegisterMetaType<IECDeviceEventList>("IECDeviceEventList");
 
     m_ptrWorker = new EmulatorWorker();
     m_ptrThread = new EmulatorThread(m_ptrWorker, this);
 
-    connect(m_ptrWorker, &EmulatorWorker::requestDone, this, &EmulatorController::onWorkerRequestDone, Qt::QueuedConnection);
-    connect(m_ptrWorker, &EmulatorWorker::stateChanged, this, &EmulatorController::onWorkerStateChanged);
-    connect(m_ptrWorker, &EmulatorWorker::speedChanged, this, &EmulatorController::speedChanged);
-    connect(m_ptrWorker, &EmulatorWorker::statisticsChanged, this, &EmulatorController::statisticsChanged);
+    // Request responses
+    connect(m_ptrWorker, &EmulatorWorker::requestDone,
+            this, &EmulatorController::onWorkerRequestDone,
+            Qt::QueuedConnection);
 
-    connect(m_ptrWorker, &EmulatorWorker::iecDeviceChanged, this, &EmulatorController::iecDeviceChanged, Qt::QueuedConnection);
-    connect(m_ptrWorker, &EmulatorWorker::printerOutputChanged, this, &EmulatorController::printerOutputChanged, Qt::QueuedConnection);
-    connect(m_ptrWorker, &EmulatorWorker::driveAccessChanged, this, &EmulatorController::driveAccessChanged, Qt::QueuedConnection);
+    connect(m_ptrWorker, &EmulatorWorker::iecRequestDone,
+            this, &EmulatorController::iecRequestDone,
+            Qt::QueuedConnection);
+
+    // Emulator state
+    connect(m_ptrWorker, &EmulatorWorker::stateChanged,
+            this, &EmulatorController::onWorkerStateChanged,
+            Qt::QueuedConnection);
+
+    connect(m_ptrWorker, &EmulatorWorker::speedChanged,
+            this, &EmulatorController::speedChanged,
+            Qt::QueuedConnection);
+
+    connect(m_ptrWorker, &EmulatorWorker::statisticsChanged,
+            this, &EmulatorController::statisticsChanged,
+            Qt::QueuedConnection);
+
+    // IEC events
+    connect(m_ptrWorker, &EmulatorWorker::iecSystemEventsChanged,
+            this, &EmulatorController::iecSystemEventsChanged,
+            Qt::QueuedConnection);
+
+    connect(m_ptrWorker, &EmulatorWorker::iecDeviceEventsChanged,
+            this, &EmulatorController::iecDeviceEventsChanged,
+            Qt::QueuedConnection);
 
     m_ptrThread->start();
 }
+
 
 EmulatorController::~EmulatorController()
 {
@@ -38,15 +65,11 @@ EmulatorController::~EmulatorController()
     m_ptrThread->wait();
 
     delete m_ptrWorker;
+    m_ptrWorker = nullptr;
 
     qDebug() << "EmulatorController: destroyed";
 }
 
-
-C64Machine* EmulatorController::machine() const
-{
-    return m_ptrWorker->machine();
-}
 
 EmulatorRequest::RequestId EmulatorController::request(EmulatorRequest* ptrRequest)
 {
@@ -60,9 +83,19 @@ EmulatorRequest::RequestId EmulatorController::request(EmulatorRequest* ptrReque
 
     return id;
 }
-EmulatorRequest::RequestId EmulatorController::restoreIECConfigurations(const QList<QSharedPointer<IECDeviceConfiguration>>& configurations)
+
+
+IECRequest::RequestId EmulatorController::request(IECRequest* ptrRequest)
 {
-    return request(new EmulatorRequestRestoreIECConfigurations(configurations));
+    if (ptrRequest == nullptr)
+        return 0;
+
+    const IECRequest::RequestId id = m_nextRequestId++;
+
+    ptrRequest->setId(id);
+    m_ptrWorker->request(ptrRequest);
+
+    return id;
 }
 
 void EmulatorController::loadROMSet(const C64ROMSet& romSet)
@@ -70,15 +103,18 @@ void EmulatorController::loadROMSet(const C64ROMSet& romSet)
     request(new EmulatorRequestLoadROMSet(romSet));
 }
 
+
 void EmulatorController::input(const InputEvent& event)
 {
     request(new EmulatorRequestInput(event));
 }
 
+
 void EmulatorController::powerOn()
 {
     request(new EmulatorRequestPowerOn());
 }
+
 
 void EmulatorController::powerOff()
 {
@@ -86,20 +122,24 @@ void EmulatorController::powerOff()
     request(new EmulatorRequestPowerOff());
 }
 
+
 void EmulatorController::pause(bool bPaused)
 {
     request(new EmulatorRequestPause(bPaused));
 }
+
 
 void EmulatorController::softReset()
 {
     request(new EmulatorRequestSoftReset());
 }
 
+
 void EmulatorController::hardReset()
 {
     request(new EmulatorRequestHardReset());
 }
+
 
 void EmulatorController::setSpeed(Emulator::Speed speed)
 {
@@ -124,20 +164,24 @@ void EmulatorController::loadProgram(quint16 address, const QByteArray& data)
     {
     case Emulator::State::PoweredOff:
         m_programLoadState = ProgramLoadState::WaitingForPowerOn;
-        m_programRequestId = request(new EmulatorRequestPowerOn());
+        request(new EmulatorRequestPowerOn());
+        m_programRequestId = m_nextRequestId - 1;
         break;
 
     case Emulator::State::Running:
         m_programLoadState = ProgramLoadState::WaitingForPause;
-        m_programRequestId = request(new EmulatorRequestPause(true));
+        request(new EmulatorRequestPause(true));
+        m_programRequestId = m_nextRequestId - 1;
         break;
 
     case Emulator::State::Paused:
         m_programLoadState = ProgramLoadState::WaitingForProgram;
-        m_programRequestId = request(new EmulatorRequestLoadProgram(m_programAddress, m_programData));
+        request(new EmulatorRequestLoadProgram(m_programAddress, m_programData));
+        m_programRequestId = m_nextRequestId - 1;
         break;
     }
 }
+
 
 void EmulatorController::onWorkerStateChanged(Emulator::State state)
 {
@@ -152,22 +196,8 @@ void EmulatorController::onWorkerRequestDone(QSharedPointer<EmulatorResponse> re
     if (response.isNull())
         return;
 
-    // Alle Responses werden zunächst an die GUI weitergegeben.
     emit requestDone(response);
 
-    // Bestehende Signale für die GUI erhalten.
-    switch (response->type())
-    {
-    case EmulatorRequest::Type::LoadROMSet:
-        emit romSetLoaded(response->success());
-        break;
-
-    default:
-        break;
-    }
-
-    // Eine Response kann gleichzeitig zu einem internen
-    // Programmlade-Schritt gehören.
     processProgramLoadResponse(response);
 }
 
@@ -177,7 +207,6 @@ void EmulatorController::processProgramLoadResponse(const QSharedPointer<Emulato
     if (m_programLoadState == ProgramLoadState::Idle)
         return;
 
-    // Nur die Response des aktuell erwarteten Requests auswerten.
     if (response->id() != m_programRequestId)
         return;
 
@@ -194,11 +223,12 @@ void EmulatorController::processProgramLoadResponse(const QSharedPointer<Emulato
             return;
         }
 
-        // Nach PowerOn
         m_programLoadState = ProgramLoadState::WaitingForPause;
-        m_programRequestId = request(new EmulatorRequestPause(true));
+        request(new EmulatorRequestPause(true));
+        m_programRequestId = m_nextRequestId - 1;
         break;
     }
+
     case ProgramLoadState::WaitingForPause:
     {
         if (!bSuccess)
@@ -208,11 +238,12 @@ void EmulatorController::processProgramLoadResponse(const QSharedPointer<Emulato
             return;
         }
 
-        // Nach Pause
         m_programLoadState = ProgramLoadState::WaitingForProgram;
-        m_programRequestId = request(new EmulatorRequestLoadProgram(m_programAddress, m_programData));
+        request(new EmulatorRequestLoadProgram(m_programAddress, m_programData));
+        m_programRequestId = m_nextRequestId - 1;
         break;
     }
+
     case ProgramLoadState::WaitingForProgram:
     {
         const bool bLoaded = bSuccess;
@@ -220,7 +251,8 @@ void EmulatorController::processProgramLoadResponse(const QSharedPointer<Emulato
         if (m_bResumeAfterProgramLoad)
         {
             m_programLoadState = ProgramLoadState::WaitingForResume;
-            m_programRequestId = request(new EmulatorRequestPause(false));
+            request(new EmulatorRequestPause(false));
+            m_programRequestId = m_nextRequestId - 1;
         }
         else
         {
@@ -230,6 +262,7 @@ void EmulatorController::processProgramLoadResponse(const QSharedPointer<Emulato
         emit programLoaded(bLoaded);
         break;
     }
+
     case ProgramLoadState::WaitingForResume:
     {
         if (!bSuccess)
@@ -238,6 +271,7 @@ void EmulatorController::processProgramLoadResponse(const QSharedPointer<Emulato
         cancelProgramLoad();
         break;
     }
+
     case ProgramLoadState::Idle:
         break;
     }

@@ -6,15 +6,17 @@
 #include "EmulatorTypes.h"
 #include "EmulatorRequest.h"
 #include "EmulatorResponse.h"
-#include "EmulatorIECDeviceEvent.h"
 
 #include "C64/C64ROMSet.h"
 #include "Input/InputEvent.h"
+#include "C64/IEC/IECRequest.h"
+#include "C64/IEC/IECResponse.h"
+#include "C64/IEC/IECSystemEvent.h"
 #include "C64/IEC/IECDeviceEvent.h"
+
 
 class EmulatorThread;
 class EmulatorWorker;
-class C64Machine;
 
 
 class EmulatorController : public QObject
@@ -25,14 +27,12 @@ public:
     explicit EmulatorController(QObject* parent = nullptr);
     virtual ~EmulatorController();
 
-    // Getter
-    C64Machine* machine() const;
-
+public slots:
     // Requests
     EmulatorRequest::RequestId request(EmulatorRequest* ptrRequest);
-    EmulatorRequest::RequestId restoreIECConfigurations(const QList<QSharedPointer<IECDeviceConfiguration>>& configurations);
+    IECRequest::RequestId request(IECRequest* ptrRequest);
 
-public slots:
+    // Emulator operations
     void loadROMSet(const C64ROMSet& romSet);
     void input(const InputEvent& event);
     void loadProgram(quint16 address, const QByteArray& data);
@@ -45,19 +45,21 @@ public slots:
     void setSpeed(Emulator::Speed speed);
 
 signals:
+    // Request responses
     void requestDone(QSharedPointer<EmulatorResponse> response);
+    void iecRequestDone(QSharedPointer<IECResponse> response);
 
-    // Bestehende GUI-Schnittstelle
-    void romSetLoaded(bool bLoaded);
-    void programLoaded(bool bLoaded);
-
+    // Emulator state
     void stateChanged(Emulator::State state);
     void speedChanged(Emulator::Speed speed);
     void statisticsChanged(quint64 cycles, quint64 currentCyclesPerSecond, quint64 averageCyclesPerSecond);
 
-    void iecDeviceChanged(EmulatorIECDeviceEvent::Type type, IECDeviceConfiguration::DeviceId deviceId);
-    void printerOutputChanged(IECDeviceConfiguration::DeviceId deviceId, QQueue<IECPrinterOutputEvent> events);
-    void driveAccessChanged(IECDeviceConfiguration::DeviceId deviceId, QQueue<IECDriveAccessEvent> events);
+    // IEC events
+    void iecSystemEventsChanged(IECSystemEventList events);
+    void iecDeviceEventsChanged(IECDeviceEventList events);
+
+    // Composite operation
+    void programLoaded(bool bLoaded);
 
 private slots:
     void onWorkerRequestDone(QSharedPointer<EmulatorResponse> response);
@@ -82,9 +84,9 @@ private:
 
     Emulator::State m_state = Emulator::State::PoweredOff;
 
-    EmulatorRequest::RequestId m_nextRequestId = 1;
+    quint64 m_nextRequestId = 1;
 
-    // Programmladen
+    // Program load
     ProgramLoadState m_programLoadState = ProgramLoadState::Idle;
     EmulatorRequest::RequestId m_programRequestId = 0;
 
