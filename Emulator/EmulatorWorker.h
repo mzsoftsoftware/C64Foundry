@@ -67,12 +67,10 @@ private:
     };
 
     void waitForRequests();
-    bool processNextRequest();
+    void processNextRequest(bool& bRestartTiming);
 
     EmulatorResponse::Result processRequest(const EmulatorRequest* ptrRequest, bool& bRestartTiming);
     IECResponse::Result processIECRequest(const IECRequest* ptrRequest, IECResponse& response);
-
-    void cancelPendingRequest(PendingRequest& request);
 
     quint64 targetCyclesPerSecond() const;
     void synchronizeSpeed();

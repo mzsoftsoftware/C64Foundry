@@ -40,14 +40,6 @@ EmulatorWorker::EmulatorWorker(QObject* parent)
 EmulatorWorker::~EmulatorWorker()
 {
     // Der EmulatorThread muss vor dem Destruktor beendet worden sein.
-    while (!m_requests.isEmpty())
-    {
-        PendingRequest request = m_requests.dequeue();
-        cancelPendingRequest(request);
-    }
-
-    if (m_ptrMachine != nullptr)
-        m_ptrMachine->powerOff();
 
     // Komponenten in umgekehrter Abhängigkeitsreihenfolge zerstören.
     delete m_ptrScheduler;
@@ -65,6 +57,7 @@ EmulatorWorker::~EmulatorWorker()
     qDebug() << "EmulatorWorker: destroyed";
 }
 
+
 void EmulatorWorker::run()
 {
     qDebug() << "EmulatorWorker: run() started" << QThread::currentThreadId();
@@ -79,7 +72,8 @@ void EmulatorWorker::run()
             waitForRequests();
 
         // Pro Schleifendurchlauf maximal einen Request ausführen.
-        const bool bRestartTiming = processNextRequest();
+        bool bRestartTiming = false;
+        processNextRequest(bRestartTiming);
 
         if (m_bShutdown)
             break;
@@ -124,7 +118,14 @@ void EmulatorWorker::run()
         }
     }
 
+    // Der Worker beendet die Maschine genau einmal.
     m_ptrMachine->powerOff();
+
+    if (m_state != Emulator::State::PoweredOff)
+    {
+        m_state = Emulator::State::PoweredOff;
+        emit stateChanged(m_state);
+    }
 
     qDebug() << "EmulatorWorker: run() finished";
 }
@@ -160,7 +161,9 @@ void EmulatorWorker::request(EmulatorRequest* ptrRequest)
 
     if (!bAccepted)
     {
-        const QSharedPointer<EmulatorResponse> response(new EmulatorResponse(ptrRequest->id(), ptrRequest->type(), EmulatorResponse::Result::Cancelled));
+        const QSharedPointer<EmulatorResponse> response(
+            new EmulatorResponse(ptrRequest->id(), ptrRequest->type(), EmulatorResponse::Result::Cancelled));
+
         delete ptrRequest;
         emit requestDone(response);
     }
@@ -193,11 +196,13 @@ void EmulatorWorker::request(IECRequest* ptrRequest)
     if (!bAccepted)
     {
         QSharedPointer<IECResponse> response(ptrRequest->createResponse());
+
         if (!response.isNull())
         {
             response->setResult(IECResponse::Result::Cancelled);
             emit iecRequestDone(response);
         }
+
         delete ptrRequest;
     }
 }
@@ -212,33 +217,32 @@ void EmulatorWorker::waitForRequests()
 }
 
 
-bool EmulatorWorker::processNextRequest()
+void EmulatorWorker::processNextRequest(bool& bRestartTiming)
 {
     PendingRequest request;
+
     {
         QMutexLocker locker(&m_mutex);
 
         if (m_requests.isEmpty())
-            return false;
+            return;
 
         request = m_requests.dequeue();
     }
-
-    bool bRestartTiming = false;
 
     if (request.type == PendingRequest::Type::IEC)
     {
         IECRequest* ptrIECRequest = request.ptrIECRequest;
 
         if (ptrIECRequest == nullptr)
-            return false;
+            return;
 
         QSharedPointer<IECResponse> response(ptrIECRequest->createResponse());
 
         if (response.isNull())
         {
             delete ptrIECRequest;
-            return false;
+            return;
         }
 
         const IECResponse::Result result = processIECRequest(ptrIECRequest, *response);
@@ -250,13 +254,13 @@ bool EmulatorWorker::processNextRequest()
 
         emit iecRequestDone(response);
 
-        return false;
+        return;
     }
 
     EmulatorRequest* ptrEmulatorRequest = request.ptrEmulatorRequest;
 
     if (ptrEmulatorRequest == nullptr)
-        return false;
+        return;
 
     const EmulatorResponse::Result result = processRequest(ptrEmulatorRequest, bRestartTiming);
 
@@ -275,8 +279,6 @@ bool EmulatorWorker::processNextRequest()
     forwardIECEvents();
 
     emit requestDone(response);
-
-    return bRestartTiming;
 }
 
 
@@ -487,35 +489,6 @@ EmulatorResponse::Result EmulatorWorker::processRequest(const EmulatorRequest* p
 IECResponse::Result EmulatorWorker::processIECRequest(const IECRequest* ptrRequest, IECResponse& response)
 {
     return m_ptrIECSystem->processRequest(*ptrRequest, response);
-}
-
-
-void EmulatorWorker::cancelPendingRequest(PendingRequest& request)
-{
-    if (request.type == PendingRequest::Type::Emulator)
-    {
-        if (request.ptrEmulatorRequest == nullptr)
-            return;
-
-        const QSharedPointer<EmulatorResponse> response(new EmulatorResponse(request.ptrEmulatorRequest->id(), request.ptrEmulatorRequest->type(), EmulatorResponse::Result::Cancelled));
-        delete request.ptrEmulatorRequest;
-        request.ptrEmulatorRequest = nullptr;
-        emit requestDone(response);
-        return;
-    }
-
-    if (request.ptrIECRequest == nullptr)
-        return;
-
-    QSharedPointer<IECResponse> response(request.ptrIECRequest->createResponse());
-    if (!response.isNull())
-    {
-        response->setResult(IECResponse::Result::Cancelled);
-        emit iecRequestDone(response);
-    }
-
-    delete request.ptrIECRequest;
-    request.ptrIECRequest = nullptr;
 }
 
 
