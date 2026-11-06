@@ -24,7 +24,7 @@ EmulatorController::EmulatorController(QObject* parent)
 
     // Request responses
     connect(m_ptrWorker, &EmulatorWorker::requestDone,
-            this, &EmulatorController::onWorkerRequestDone,
+            this, &EmulatorController::requestDone,
             Qt::QueuedConnection);
 
     connect(m_ptrWorker, &EmulatorWorker::iecRequestDone,
@@ -33,7 +33,7 @@ EmulatorController::EmulatorController(QObject* parent)
 
     // Emulator state
     connect(m_ptrWorker, &EmulatorWorker::stateChanged,
-            this, &EmulatorController::onWorkerStateChanged,
+            this, &EmulatorController::stateChanged,
             Qt::QueuedConnection);
 
     connect(m_ptrWorker, &EmulatorWorker::speedChanged,
@@ -98,9 +98,16 @@ IECRequest::RequestId EmulatorController::request(IECRequest* ptrRequest)
     return id;
 }
 
+
 void EmulatorController::loadROMSet(const C64ROMSet& romSet)
 {
     request(new EmulatorRequestLoadROMSet(romSet));
+}
+
+
+void EmulatorController::loadProgram(quint16 address, const QByteArray& data)
+{
+    request(new EmulatorRequestLoadProgram(address, data));
 }
 
 
@@ -118,7 +125,6 @@ void EmulatorController::powerOn()
 
 void EmulatorController::powerOff()
 {
-    cancelProgramLoad();
     request(new EmulatorRequestPowerOff());
 }
 
@@ -144,147 +150,4 @@ void EmulatorController::hardReset()
 void EmulatorController::setSpeed(Emulator::Speed speed)
 {
     request(new EmulatorRequestSetSpeed(speed));
-}
-
-
-void EmulatorController::loadProgram(quint16 address, const QByteArray& data)
-{
-    if (m_programLoadState != ProgramLoadState::Idle)
-    {
-        qWarning() << "EmulatorController: program load already in progress";
-        emit programLoaded(false);
-        return;
-    }
-
-    m_programAddress = address;
-    m_programData = data;
-    m_bResumeAfterProgramLoad = m_state != Emulator::State::Paused;
-
-    switch (m_state)
-    {
-    case Emulator::State::PoweredOff:
-        m_programLoadState = ProgramLoadState::WaitingForPowerOn;
-        request(new EmulatorRequestPowerOn());
-        m_programRequestId = m_nextRequestId - 1;
-        break;
-
-    case Emulator::State::Running:
-        m_programLoadState = ProgramLoadState::WaitingForPause;
-        request(new EmulatorRequestPause(true));
-        m_programRequestId = m_nextRequestId - 1;
-        break;
-
-    case Emulator::State::Paused:
-        m_programLoadState = ProgramLoadState::WaitingForProgram;
-        request(new EmulatorRequestLoadProgram(m_programAddress, m_programData));
-        m_programRequestId = m_nextRequestId - 1;
-        break;
-    }
-}
-
-
-void EmulatorController::onWorkerStateChanged(Emulator::State state)
-{
-    m_state = state;
-
-    emit stateChanged(state);
-}
-
-
-void EmulatorController::onWorkerRequestDone(QSharedPointer<EmulatorResponse> response)
-{
-    if (response.isNull())
-        return;
-
-    emit requestDone(response);
-
-    processProgramLoadResponse(response);
-}
-
-
-void EmulatorController::processProgramLoadResponse(const QSharedPointer<EmulatorResponse>& response)
-{
-    if (m_programLoadState == ProgramLoadState::Idle)
-        return;
-
-    if (response->id() != m_programRequestId)
-        return;
-
-    const bool bSuccess = response->success();
-
-    switch (m_programLoadState)
-    {
-    case ProgramLoadState::WaitingForPowerOn:
-    {
-        if (!bSuccess)
-        {
-            emit programLoaded(false);
-            cancelProgramLoad();
-            return;
-        }
-
-        m_programLoadState = ProgramLoadState::WaitingForPause;
-        request(new EmulatorRequestPause(true));
-        m_programRequestId = m_nextRequestId - 1;
-        break;
-    }
-
-    case ProgramLoadState::WaitingForPause:
-    {
-        if (!bSuccess)
-        {
-            emit programLoaded(false);
-            cancelProgramLoad();
-            return;
-        }
-
-        m_programLoadState = ProgramLoadState::WaitingForProgram;
-        request(new EmulatorRequestLoadProgram(m_programAddress, m_programData));
-        m_programRequestId = m_nextRequestId - 1;
-        break;
-    }
-
-    case ProgramLoadState::WaitingForProgram:
-    {
-        const bool bLoaded = bSuccess;
-
-        if (m_bResumeAfterProgramLoad)
-        {
-            m_programLoadState = ProgramLoadState::WaitingForResume;
-            request(new EmulatorRequestPause(false));
-            m_programRequestId = m_nextRequestId - 1;
-        }
-        else
-        {
-            cancelProgramLoad();
-        }
-
-        emit programLoaded(bLoaded);
-        break;
-    }
-
-    case ProgramLoadState::WaitingForResume:
-    {
-        if (!bSuccess)
-            qWarning() << "EmulatorController: resume after program load failed";
-
-        cancelProgramLoad();
-        break;
-    }
-
-    case ProgramLoadState::Idle:
-        break;
-    }
-}
-
-
-void EmulatorController::cancelProgramLoad()
-{
-    m_programLoadState = ProgramLoadState::Idle;
-    m_programRequestId = 0;
-
-    m_programAddress = 0;
-    m_programData.clear();
-
-    m_bResumeAfterProgramLoad = false;
 }

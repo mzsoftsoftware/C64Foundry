@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QByteArray>
+#include <QSharedPointer>
 
 #include "EmulatorTypes.h"
 #include "EmulatorRequest.h"
@@ -34,8 +35,8 @@ public slots:
 
     // Emulator operations
     void loadROMSet(const C64ROMSet& romSet);
-    void input(const InputEvent& event);
     void loadProgram(quint16 address, const QByteArray& data);
+    void input(const InputEvent& event);
 
     void powerOn();
     void powerOff();
@@ -58,40 +59,9 @@ signals:
     void iecSystemEventsChanged(IECSystemEventList events);
     void iecDeviceEventsChanged(IECDeviceEventList events);
 
-    // Composite operation
-    void programLoaded(bool bLoaded);
-
-private slots:
-    void onWorkerRequestDone(QSharedPointer<EmulatorResponse> response);
-    void onWorkerStateChanged(Emulator::State state);
-
-private:
-    enum class ProgramLoadState
-    {
-        Idle,
-        WaitingForPowerOn,
-        WaitingForPause,
-        WaitingForProgram,
-        WaitingForResume
-    };
-
-    void cancelProgramLoad();
-    void processProgramLoadResponse(const QSharedPointer<EmulatorResponse>& response);
-
 private:
     EmulatorThread* m_ptrThread = nullptr;
     EmulatorWorker* m_ptrWorker = nullptr;
 
-    Emulator::State m_state = Emulator::State::PoweredOff;
-
     quint64 m_nextRequestId = 1;
-
-    // Program load
-    ProgramLoadState m_programLoadState = ProgramLoadState::Idle;
-    EmulatorRequest::RequestId m_programRequestId = 0;
-
-    quint16 m_programAddress = 0;
-    QByteArray m_programData;
-
-    bool m_bResumeAfterProgramLoad = false;
 };
