@@ -33,8 +33,15 @@ struct IECProtocolEvent
     bool eoi = false;
 };
 
-struct IECDeviceProtocolResponse
+
+struct IECProtocolResponse
 {
-    quint8 deviceNumber = 0;
+    enum class Type : quint8
+    {
+        None,
+        SendData
+    };
+
+    Type type = Type::None;
     QByteArray data;
 };
