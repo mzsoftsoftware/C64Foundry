@@ -5,6 +5,7 @@
 #include "ROMSetDetector.h"
 
 #include "Emulator/EmulatorController.h"
+#include "C64/IEC/IECConfigurationValidator.h"
 
 #include <QDebug>
 
@@ -146,6 +147,24 @@ bool ConfigurationManager::setIECConfigurations(const QList<QSharedPointer<IECDe
         copiedConfigurations.append(ptrCopy);
     }
 
+    //
+    // Validate the complete copied configuration before replacing
+    // the currently active configuration.
+    //
+    QStringList errors;
+
+    if (!IECConfigurationValidator::validate(copiedConfigurations, &errors))
+    {
+        for (const QString& error : errors)
+            qWarning() << "ConfigurationManager: invalid IEC configuration:" << error;
+
+        return false;
+    }
+
+    //
+    // Replace the active IEC configuration only after successful
+    // cloning and validation.
+    //
     m_ptrActiveConfiguration->iecDevices.swap(copiedConfigurations);
 
     return true;
