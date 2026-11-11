@@ -1,6 +1,12 @@
 #include "IECFoundryDiskConfiguration.h"
 
 
+IECFoundryDiskConfiguration::DiskId IECFoundryDiskConfiguration::diskId() const
+{
+    return m_diskId;
+}
+
+
 int IECFoundryDiskConfiguration::slotIndex() const
 {
     return m_slotIndex;
@@ -22,6 +28,12 @@ QString IECFoundryDiskConfiguration::imageFileName() const
 bool IECFoundryDiskConfiguration::saveCurrentDiskOnExit() const
 {
     return m_saveCurrentDiskOnExit;
+}
+
+
+void IECFoundryDiskConfiguration::setDiskId(const DiskId diskId)
+{
+    m_diskId = diskId;
 }
 
 
@@ -51,7 +63,8 @@ void IECFoundryDiskConfiguration::setSaveCurrentDiskOnExit(const bool enabled)
 
 bool IECFoundryDiskConfiguration::operator==(const IECFoundryDiskConfiguration& other) const
 {
-    return m_slotIndex == other.m_slotIndex &&
+    return m_diskId == other.m_diskId &&
+           m_slotIndex == other.m_slotIndex &&
            m_enabled == other.m_enabled &&
            m_imageFileName == other.m_imageFileName &&
            m_saveCurrentDiskOnExit == other.m_saveCurrentDiskOnExit;
