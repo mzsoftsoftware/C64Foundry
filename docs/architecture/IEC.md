@@ -41,6 +41,7 @@ Relevant ATN command ranges:
 | CLOSE | `$E0`–`$EF` |
 | OPEN | `$F0`–`$FF` |
 
+
 ### `IECDeviceManager`
 
 The manager performs generic address registration and protocol-event routing.
@@ -56,7 +57,7 @@ The manager performs generic address registration and protocol-event routing.
 - Does not know concrete device classes or their internal structure.
 - Does not know about disks, disk images, printer jobs or DOS commands.
 
-The address domain used by the Foundry Drive is #8 through #11. It is a small bounded domain; fixed-size lookup is preferred over a hash map in the hot path where practical.
+The manager supports the complete IEC address range #0 through #30. Address registration is independent of device type and does not imply that the device has a separate IEC address of its own. A device may reserve and register a contiguous range of addresses.
 
 ### `IECDevice`
 
@@ -92,35 +93,59 @@ The factory is owned by `EmulatorWorker`. Factory operations and device lifecycl
 
 It connects the bus to the C64 machine, coordinates protocol/manager event flow, handles IEC reset and coordinates configured device lifecycle with the factory. It does not own concrete devices or a Foundry Drive.
 
+
 ## Device ownership: Foundry Drive and disks
 
 ### `IECFoundryDrive`
 
-`IECFoundryDrive` is one generic `IECDevice`, not a separate IEC device for every disk slot.
+`IECFoundryDrive` is one generic `IECDevice`. It represents one logical drive system and may expose multiple IEC addresses.
+
+A drive has its own internal `DeviceId`, but it does not have an IEC device number of its own.
 
 The drive:
 
 - Implements IEC-facing drive behavior and the commands sent by the C64, including directory and file operations such as `LOAD "$"` and, as implemented later, the broader DOS command set.
 - Manages secondary addresses and channels.
-- Exposes any configured IEC device numbers in the range #8 through #11.
+- Manages a configurable number of disk slots.
+- Reserves a contiguous IEC address range for its slots.
 - Selects the internal disk corresponding to the IEC number addressed by the C64.
 - Owns and manages its `IECFoundryDisk` objects.
 - Delegates media and sector operations to the selected disk.
+- Handles accesses to empty slots according to its drive behavior.
 
-The available numbers #8, #9, #10 and #11 are independently configurable. Any subset may be enabled; for example, a configuration containing only #9 is valid. A single `IECFoundryDrive` object is registered with the manager under only the numbers it currently exposes.
+Multiple independent `IECFoundryDrive` instances are supported. Each drive has its own configuration, identity, disk slots and reserved IEC address range.
+
+The drive configuration contains:
+
+- The number of available disk slots.
+- The start IEC device number.
+
+The end address is calculated:
+
+`endDeviceNumber = startDeviceNumber + diskCount - 1`
+
+The end address is derived data and is not stored independently.
+
+The current maximum number of disk slots per drive is four. This is a current product/configuration limit, not a fundamental architectural limitation. The implementation should not make future increases unnecessarily difficult.
+
+The complete address range is reserved by the drive, including addresses whose disk slots are currently empty. The range must not overlap with another drive or any other IEC device.
+
+The same `IECFoundryDrive` instance is registered with the manager under every address in its reserved range. The drive uses the addressed IEC number to determine the corresponding slot.
 
 ### `IECFoundryDisk`
 
 `IECFoundryDisk` is an internal drive component, not an `IECDevice`.
 
 - It has no IEC device number and does not participate in manager registration.
-- It represents one drive/media slot managed by `IECFoundryDrive`.
+- It represents one configured disk slot managed by `IECFoundryDrive`.
 - It manages one `DiskImage`.
 - It provides the drive with track/sector access, including reading and writing sector data.
 - It owns or controls the lifecycle of its attached image according to the disk-image API.
-- It can be exchanged with another disk object without changing the IEC address exposed by the drive.
+- It can be exchanged with another disk object without changing the IEC address assigned to its slot.
 
-The distinction is intentional: the drive handles IEC commands and channel semantics; the disk handles the mounted medium and its track/sector data.
+A disk slot may be empty. An empty slot has no `IECFoundryDisk` object and no disk configuration. The slot nevertheless remains part of the drive's reserved IEC address range.
+
+Disk configurations are optional and independent. A drive with four available slots may have only one configured disk, for example at IEC #9.
 
 ### `DiskImage`
 
@@ -128,28 +153,26 @@ The distinction is intentional: the drive handles IEC commands and channel seman
 
 This separation leaves room for future storage backends and media types, including HDD-like storage or other non-D64 media, without teaching `IECDeviceManager` or `IECProtocol` about them.
 
-### Fixed disk-slot array
+### Disk-slot storage
 
-The Foundry Drive has four possible slots corresponding to IEC numbers #8 through #11. The drive uses a fixed-size array of disk pointers:
+The drive manages its available disk slots internally. The current implementation may use a fixed-size array for the current maximum of four slots:
 
 ```cpp
-static constexpr quint8 FIRST_DEVICE_NUMBER = 8;
-static constexpr quint8 LAST_DEVICE_NUMBER = 11;
-static constexpr quint8 DEVICE_COUNT = LAST_DEVICE_NUMBER - FIRST_DEVICE_NUMBER + 1;
+static constexpr quint8 MAX_DISK_COUNT = 4;
 
-IECFoundryDisk* m_disks[DEVICE_COUNT] = {};
+IECFoundryDisk* m_disks[MAX_DISK_COUNT] = {};
 ```
 
-- Array index 0 corresponds to IEC #8; index 3 corresponds to IEC #11.
-- A non-null pointer means that the slot has a configured disk.
-- `nullptr` means that the slot is unused.
-- IEC number to array index conversion is `deviceNumber - FIRST_DEVICE_NUMBER`, after range validation.
-- The drive reports only the addresses whose array entries are populated.
-- The array is a fixed, bounded structure; no hash lookup or dynamic slot container is needed.
+- Array indices represent slot positions within the drive.
+- The IEC address for a slot is derived from the drive's start address and the slot index.
+- A non-null pointer means that the slot contains a configured disk.
+- `nullptr` means that the slot is empty.
+- The slot's IEC address does not depend on whether a disk is configured.
+- The disk object itself never stores an IEC device number.
 
-The IEC number belongs to the drive's slot mapping, never to `IECFoundryDisk`.
+The implementation must not assume that the first slot always corresponds to IEC #8 or that a drive can only expose #8 through #11.
 
-A disk swap changes the disk pointer associated with a slot. The slot's IEC number remains unchanged.
+A disk swap changes the disk object associated with a slot. The slot's IEC address remains unchanged.
 
 ## Event flow
 
@@ -167,18 +190,23 @@ A disk swap changes the disk pointer associated with a slot. The slot's IEC numb
 
 Devices do not bypass the manager to access the protocol or bus. A device response is returned through the manager to the central protocol, which owns the electrical transfer and handshake.
 
+
 ## Registration and lifetime
 
 - The factory owns every concrete device it creates.
 - The manager stores non-owning device references.
-- Registration supplies one device and all IEC addresses currently exposed by that device.
-- Registration is atomic: invalid, duplicate or conflicting addresses must not leave a partial mapping.
+- Registration maps every IEC address reserved by a device to that device.
+- A drive is registered under every address in its configured range, including addresses whose disk slots are empty.
+- The complete address range must be validated before registration. Invalid, duplicate or conflicting addresses must not leave a partial mapping.
+- No two devices may reserve or register the same IEC address.
 - Unregistration removes every address belonging to that device and clears selection state referring to it.
 - A device must be unregistered before the factory destroys it.
 - Device creation, configuration, registration and destruction happen in the emulation thread.
 - No registration or destruction occurs in the normal emulation-cycle path.
 
-`IECFoundryDrive` is registered once, with the subset of #8–#11 represented by populated disk slots. The manager maps each such address to the same drive pointer.
+A Foundry Drive reserves a contiguous IEC address range determined by its configured slot count and start address. The same drive pointer is registered for every address in that range. The manager does not distinguish between populated and empty disk slots.
+
+The drive itself decides how to respond when the C64 accesses an address whose corresponding disk slot is empty.
 
 ## Events to the GUI
 

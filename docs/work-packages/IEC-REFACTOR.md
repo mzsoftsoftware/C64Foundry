@@ -79,6 +79,7 @@ These header changes define interfaces. They do not imply that all corresponding
 ## 3. Agreed target ownership and runtime structure
 
 ```text
+
 GUI / external clients
  |
  v
@@ -87,11 +88,10 @@ EmulatorController
  |    |-- C64Machine
  |    |-- IECDeviceFactory
  |    |    |-- IECAsciiPrinter
- |    |    `-- IECFoundryDrive : IECDevice
- |    |         |-- IECFoundryDisk for slot #8
- |    |         |-- IECFoundryDisk for slot #9
- |    |         |-- IECFoundryDisk for slot #10
- |    |         `-- IECFoundryDisk for slot #11
+ |    |    |-- IECFoundryDrive (Drive A)
+ |    |    |    |-- IECFoundryDisk (configured slots)
+ |    |    `-- IECFoundryDrive (Drive B)
+ |    |         `-- IECFoundryDisk (configured slots)
  |    |-- IECSystem
  |    |    |-- IECBus
  |    |    |-- IECProtocol
@@ -163,31 +163,44 @@ IECBus -> IECProtocol -> IECProtocolEvent
 
 ### 4.4 Foundry Drive and disk objects
 
-`IECFoundryDrive` is one `IECDevice`. It may expose any configured subset of IEC device numbers #8, #9, #10 and #11. The GUI may configure only #9, for example; the other slots remain empty.
+IECFoundryDrive is one IECDevice representing one logical drive system. It has an internal DeviceId, but no IEC device number of its own.
+
+Multiple independent Foundry Drive instances are supported.
+
+Each drive configuration contains:
+- The number of available disk slots.
+- The start IEC device number.
+- An automatically calculated end IEC device number.
+The end address is calculated as:
+
+endDeviceNumber = startDeviceNumber + diskCount - 1
+
+The end address is not stored independently.
+
+The current maximum is four disk slots per drive. This is a configurable product limit and must not become an architectural limitation.
+
+The complete IEC address range is reserved by the drive, including empty slots. When the configuration is saved, all reserved ranges must be checked for conflicts with every other configured IEC device, including other drives and printers.
+
+The same IECFoundryDrive pointer is registered with IECDeviceManager under every address in its reserved range. The manager does not know whether a corresponding disk slot is populated.
+
+IECFoundryDisk is not an IECDevice and has no IEC device number. It is an internal component owned by the drive. Each configured disk slot contains one IECFoundryDisk, which manages one DiskImage.
+
+Disk slots are optional. A drive with four available slots may have only one configured disk, for example at IEC #9. Empty slots remain reserved but do not have a disk configuration or disk object.
+
+The GUI displays only configured disks. Empty slots are not displayed as disk entries. The user can add a disk to any free slot within the drive's configured capacity.
+
+The IEC address of a slot is derived from the drive's start address and the slot index. A disk swap changes the disk object associated with a slot, but never changes the slot's IEC address.
 
 The drive handles:
-
-- IEC-facing drive behavior and C64 commands, including `LOAD "$"` and the future DOS command set.
+- IEC-facing drive behavior and C64 commands.
 - Secondary addresses and channel management.
-- Mapping an addressed IEC number to the corresponding internal disk.
+- Mapping an addressed IEC number to its internal slot.
+- Accesses to empty slots.
 - Disk selection and disk swapping.
 - Drive-level status and sector-access events.
+Future drive-specific control commands are intentionally not specified yet. Possible interfaces include I/O addresses or additional IEC secondary-address channels. The drive logic should remain sufficiently independent of this future control interface.
 
-`IECFoundryDisk` is not an `IECDevice` and has no IEC number. It is an internal drive component that manages one `DiskImage` and provides track/sector read and write access.
-
-The Foundry Drive uses a fixed array of four pointers:
-
-```cpp
-static constexpr quint8 FIRST_DEVICE_NUMBER = 8;
-static constexpr quint8 LAST_DEVICE_NUMBER = 11;
-static constexpr quint8 DEVICE_COUNT = LAST_DEVICE_NUMBER - FIRST_DEVICE_NUMBER + 1;
-
-IECFoundryDisk* m_disks[DEVICE_COUNT] = {};
-```
-
-Index 0 maps to #8 and index 3 maps to #11. A populated pointer means that slot exists; `nullptr` means it is not configured. The drive's `supportedDeviceNumbers()` reports only populated slots. The IEC number is derived from the array index and is not stored in `IECFoundryDisk`.
-
-A disk swap changes the disk object associated with a drive slot; the IEC address remains stable. This design also leaves room for future media/storage types such as HDD-like devices without changing the generic manager.
+This design does not limit the number of independent drives to one. It also avoids tying the architecture to the current maximum of four disk slots per drive.
 
 ### 4.5 GUI and requests
 
@@ -197,6 +210,10 @@ A disk swap changes the disk object associated with a drive slot; the IEC addres
 - `IECSystem` routes a request to the target device. A concrete request performs the appropriate type check at the device boundary.
 - Generic device events carry the information needed by the GUI, including the IEC number for drive-sector activity.
 - Do not add concrete Drive or Disk dependencies to `EmulatorWorker` or `EmulatorController`.
+The drive configuration is managed as one parent configuration. Individual disk configurations belong to that drive and refer to a slot within its available capacity.
+The GUI creates and configures a drive first. It then allows the user to add, edit or remove disk configurations within the drive's available slots. Only configured disks are displayed.
+The drive's reserved IEC address range remains occupied even when some or all disk slots are empty. Removing a disk configuration does not release the corresponding IEC address.
+The configuration save operation validates all IEC address reservations globally. It rejects invalid address ranges and any overlap with another drive or standalone IEC device.
 
 ### 4.6 Threading and performance
 
@@ -219,62 +236,81 @@ The current source of truth is the repository. Historical findings from before t
 ## 6. Remaining implementation sequence
 
 1. **Implement `IECDeviceManager`.**
-   - Register one generic device under all numbers returned by `supportedDeviceNumbers()`.
-   - Validate all numbers before changing the mapping.
-   - Reject invalid numbers, duplicates and conflicts atomically.
-   - Unregister every mapping for a device without deleting it.
-   - Route protocol events to the device selected by the event's IEC number.
-   - Initialize the response to `None` before dispatch.
+   - Register and unregister individual IEC addresses.
+   - Validate address numbers and conflicts.
    - Keep the implementation generic and non-owning.
 
-2. **Finalize protocol/manager interaction.**
-   - Verify the event types and response semantics.
-   - Ensure protocol selection state and manager routing state cannot become inconsistent.
-   - Preserve required LISTEN/TALK and multi-listener semantics.
 
-3. **Adapt `IECBus` and central `IECProtocol`.**
-   - Remove per-device protocol instances.
-   - Convert bus activity into neutral protocol events.
-   - Route responses from the manager back through the central protocol.
-   - Preserve the electrical handshake and timing unless separately agreed.
-
-4. **Adapt `IECAsciiPrinter`.**
-   - Make it use the generic device interface.
-   - Preserve completed-job events and current GUI behavior.
-   - Keep printer-specific job semantics inside the printer.
-
-5. **Adapt `IECFoundryDrive` and `IECFoundryDisk`.**
-   - Make `IECFoundryDrive` the single registered `IECDevice`.
-   - Keep drive command/channel logic in the drive.
-   - Keep image and track/sector access in `IECFoundryDisk`.
-   - Use the fixed four-entry disk pointer array for #8–#11.
-   - Keep disk objects free of IEC device numbers.
-   - Preserve current GUI-facing image operations and drive activity events.
-
-6. **Verify integration.**
-   - Check reset and device lifecycle.
-   - Verify each IEC component is clocked exactly once.
-   - Verify printer output and drive access events reach the GUI.
-   - Verify one or multiple configured drive slots, including only #9.
-   - Verify disk swap does not change the exposed IEC number.
-   - Build and test after each coherent step.
+2. Finalize protocol/manager interaction.
+- Verify event types and response semantics.
+- Ensure protocol selection state and manager routing state cannot become inconsistent.
+- Preserve required LISTEN/TALK and multi-listener semantics.
+3. Adapt IECBus and central IECProtocol.
+- Remove per-device protocol instances.
+- Convert bus activity into neutral protocol events.
+- Route responses through the central protocol.
+- Preserve electrical handshake and timing unless separately agreed.
+4. Adapt IECAsciiPrinter.
+- Use the generic device interface.
+- Preserve completed-job events and current GUI behavior.
+- Keep printer-specific job semantics inside the printer.
+5. Redesign Foundry Drive configuration and GUI.
+- Introduce a parent IECFoundryDriveConfiguration.
+- Store the available disk-slot count and start IEC address.
+- Calculate the end address instead of storing it.
+- Support multiple independent drives.
+- Make disk configurations optional child configurations belonging to a drive.
+- Validate all reserved IEC address ranges globally when saving configuration.
+- Reserve the complete address range, including empty slots.
+- Display only configured disks in the GUI.
+- Allow adding, editing and removing disks within the drive's available capacity.
+- Keep future drive-control interfaces undecided.
+6. Adapt IECDeviceFactory.
+- Create and own multiple independent Foundry Drive instances.
+- Associate each drive configuration with its drive instance.
+- Configure the drive's disk slots from its child disk configurations.
+- Create independent printer instances for independent printer configurations.
+- Avoid generic device-type deduplication.
+7. Adapt IECFoundryDrive and IECFoundryDisk.
+- Make IECFoundryDrive the registered IECDevice.
+- Register the drive under every address in its reserved range.
+- Keep drive command/channel logic in the drive.
+- Keep image and track/sector access in IECFoundryDisk.
+- Derive each slot's IEC address from the drive start address and slot index.
+- Support empty slots and accesses to empty slots.
+- Keep disk objects free of IEC device numbers.
+- Preserve current GUI-facing image operations and drive activity events.
+8. Integrate configuration and lifecycle in IECSystem.
+- Coordinate creation, configuration, registration, unregistration and destruction.
+- Ensure the manager is cleared before a device is destroyed.
+- Keep the factory and IECSystem ownership boundaries intact.
+9. Verify integration.
+- Check reset and device lifecycle.
+- Verify each IEC component is clocked exactly once.
+- Verify printer output and drive access events reach the GUI.
+- Verify multiple drives with non-overlapping address ranges.
+- Verify address conflicts are rejected, including conflicts with empty slots.
+- Verify drives with partially populated or completely empty slots.
+- Verify disk swap does not change the exposed IEC address.
+- Build and test after each coherent step.
 
 ## 7. Acceptance criteria
 
-- Controller has no direct IEC bus/device ownership.
-- Worker has no concrete IEC device dependencies.
-- Scheduler advances the machine and IEC system exactly once per cycle.
-- `IECSystem` owns bus, protocol and manager only.
-- Factory owns concrete IEC devices.
-- Manager performs generic non-owning registration and routing.
-- A device can expose multiple IEC addresses.
-- The Foundry Drive is registered once for its configured subset of #8–#11.
+- Multiple independent Foundry Drive instances are supported.
+- A Foundry Drive has an internal `DeviceId` but no IEC device number of its own.
+- Each drive has a configured disk-slot capacity and start IEC address.
+- The end IEC address is calculated from the start address and slot count.
+- The current maximum of four slots is not an architectural limitation.
+- The complete reserved address range is checked for conflicts against all other IEC devices.
+- Empty slots remain part of the reserved address range.
+- The same drive pointer is registered under every address in its reserved range.
+- Only configured disk slots are displayed in the GUI.
+- Disk configurations are optional and belong to a drive.
+- Slot IEC addresses are derived from the drive start address and slot index.
 - `IECFoundryDisk` has no IEC number and is not registered with the manager.
-- The drive uses a fixed four-entry disk pointer array; `nullptr` marks an unused slot.
 - Disk image and track/sector operations remain inside the disk/storage layer.
-- Existing printer and disk GUI workflows are preserved unless a change is explicitly agreed.
-- No device is destroyed while the manager still references it.
-- No accidental change to IEC handshake timing is introduced.
+- Disk swapping does not change the slot's IEC address.
+- The future drive-control interface (I/O addresses or IEC secondary-address channels) remains undecided.
 
 ## 8. Explicit non-goals
 
@@ -289,4 +325,9 @@ The current source of truth is the repository. Historical findings from before t
 
 ## 9. Next action
 
-Implement the `IECDeviceManager` `.cpp` against the committed generic interface. First inspect the current manager and protocol source files, then provide complete replacement files for review. Do not modify the repository directly; the repository owner applies, builds, tests and commits the changes.
+
+Redesign the Foundry Drive configuration model and GUI before continuing the concrete Foundry Drive runtime integration.
+
+First inspect the current configuration classes, configuration persistence and GUI device-configuration workflow. Define the parent drive configuration and optional child disk configurations, then implement drive creation and configuration in the GUI.
+
+Do not modify the repository directly. Provide complete replacement files or focused patches for review. The repository owner applies, builds, tests and commits the changes.
