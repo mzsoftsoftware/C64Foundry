@@ -7,6 +7,7 @@
 
 #include "C64/IEC/IECDeviceConfiguration.h"
 
+
 class QSettings;
 class C64Configuration;
 class C64KeyboardConfiguration;
@@ -25,5 +26,5 @@ private:
     void saveKeyboard(QSettings& settings, const C64KeyboardConfiguration& keyboard) const;
 
     bool loadIECDevices(QSettings& settings, QList<QSharedPointer<IECDeviceConfiguration>>& devices) const;
-    void saveIECDevices(QSettings& settings, const QList<QSharedPointer<IECDeviceConfiguration>>& devices) const;
+    bool saveIECDevices(QSettings& settings, const QList<QSharedPointer<IECDeviceConfiguration>>& devices) const;
 };

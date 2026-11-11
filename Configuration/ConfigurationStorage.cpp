@@ -4,10 +4,10 @@
 #include <QStringList>
 
 #include "C64Configuration.h"
-#include "C64/IEC/IECAsciiPrinter.h"
 #include "C64/IEC/IECAsciiPrinterConfiguration.h"
-#include "C64/IEC/IECFoundryDisk.h"
+#include "C64/IEC/IECFoundryDriveConfiguration.h"
 #include "C64/IEC/IECFoundryDiskConfiguration.h"
+#include "C64/IEC/IECConfigurationValidator.h"
 
 
 bool ConfigurationStorage::load(QMap<QString, C64Configuration*>& configurations, QString& activeConfigurationName) const
@@ -83,6 +83,19 @@ bool ConfigurationStorage::load(QMap<QString, C64Configuration*>& configurations
 
 bool ConfigurationStorage::save(const QMap<QString, C64Configuration*>& configurations, const QString& activeConfigurationName) const
 {
+    //
+    // Validate all IEC configurations before changing the stored configuration.
+    //
+    for (C64Configuration* ptrConfiguration : configurations)
+    {
+        if (ptrConfiguration == nullptr)
+            return false;
+
+        QStringList errors;
+        if (!IECConfigurationValidator::validate(ptrConfiguration->iecDevices, &errors))
+            return false;
+    }
+
     QSettings settings;
 
     settings.setValue(QStringLiteral("ActiveConfiguration"), activeConfigurationName);
@@ -114,7 +127,14 @@ bool ConfigurationStorage::save(const QMap<QString, C64Configuration*>& configur
         // IEC devices
         //
         settings.beginGroup(QStringLiteral("IEC"));
-        saveIECDevices(settings, ptrConfiguration->iecDevices);
+        if (!saveIECDevices(settings, ptrConfiguration->iecDevices))
+        {
+            settings.endGroup();
+            settings.endGroup();
+            settings.endGroup();
+
+            return false;
+        }
         settings.endGroup();
 
         settings.endGroup();
@@ -217,8 +237,6 @@ void ConfigurationStorage::saveKeyboard(QSettings& settings, const C64KeyboardCo
 bool ConfigurationStorage::loadIECDevices(QSettings& settings, QList<QSharedPointer<IECDeviceConfiguration>>& devices) const
 {
     QList<QSharedPointer<IECDeviceConfiguration>> loadedDevices;
-    QList<IECDeviceConfiguration::DeviceId> usedIds;
-    QList<quint8> usedDeviceNumbers;
 
     const int deviceCount = settings.beginReadArray(QStringLiteral("Devices"));
 
@@ -226,14 +244,11 @@ bool ConfigurationStorage::loadIECDevices(QSettings& settings, QList<QSharedPoin
     {
         settings.setArrayIndex(index);
 
-        bool bIdValid = false;
-        bool bDeviceNumberValid = false;
-
-        const IECDeviceConfiguration::DeviceId id = settings.value(QStringLiteral("Id")).toULongLong(&bIdValid);
-        const uint deviceNumber = settings.value(QStringLiteral("DeviceNumber")).toUInt(&bDeviceNumberValid);
+        bool idValid = false;
+        const IECDeviceConfiguration::DeviceId id = settings.value(QStringLiteral("Id")).toULongLong(&idValid);
         const QString typeName = settings.value(QStringLiteral("Type")).toString();
 
-        if (!bIdValid || id == 0 || !bDeviceNumberValid || deviceNumber > 255 || usedIds.contains(id) || usedDeviceNumbers.contains(static_cast<quint8>(deviceNumber)))
+        if (!idValid || id == 0)
         {
             settings.endArray();
             return false;
@@ -243,16 +258,13 @@ bool ConfigurationStorage::loadIECDevices(QSettings& settings, QList<QSharedPoin
 
         if (typeName == QStringLiteral("PrinterASCII"))
         {
-            if (!IECAsciiPrinter::supportedDeviceNumbers().contains(static_cast<quint8>(deviceNumber)))
-            {
-                settings.endArray();
-                return false;
-            }
+            bool deviceNumberValid = false;
+            const uint deviceNumber = settings.value(QStringLiteral("DeviceNumber")).toUInt(&deviceNumberValid);
 
-            bool bLineWidthValid = false;
-            const int lineWidth = settings.value(QStringLiteral("LineWidth"), 80).toInt(&bLineWidthValid);
+            bool lineWidthValid = false;
+            const int lineWidth = settings.value(QStringLiteral("LineWidth"), 80).toInt(&lineWidthValid);
 
-            if (!bLineWidthValid || lineWidth < 1)
+            if (!deviceNumberValid || deviceNumber > 255 || !lineWidthValid || lineWidth < 1)
             {
                 settings.endArray();
                 return false;
@@ -260,51 +272,104 @@ bool ConfigurationStorage::loadIECDevices(QSettings& settings, QList<QSharedPoin
 
             IECAsciiPrinterConfiguration* ptrPrinterConfiguration = new IECAsciiPrinterConfiguration();
 
+            ptrPrinterConfiguration->setDeviceNumber(static_cast<quint8>(deviceNumber));
             ptrPrinterConfiguration->setLineWidth(lineWidth);
             ptrPrinterConfiguration->setAutoWrap(settings.value(QStringLiteral("AutoWrap"), true).toBool());
 
             ptrConfiguration.reset(ptrPrinterConfiguration);
         }
-        else if (typeName == QStringLiteral("FoundryDisk"))
+        else if (typeName == QStringLiteral("FoundryDrive"))
         {
-            if (!IECFoundryDisk::supportedDeviceNumbers().contains(static_cast<quint8>(deviceNumber)))
+            bool startDeviceNumberValid = false;
+            const uint startDeviceNumber = settings.value(QStringLiteral("StartDeviceNumber")).toUInt(&startDeviceNumberValid);
+
+            bool slotCountValid = false;
+            const int slotCount = settings.value(QStringLiteral("SlotCount")).toInt(&slotCountValid);
+
+            if (!startDeviceNumberValid || startDeviceNumber > 255 || !slotCountValid)
             {
                 settings.endArray();
                 return false;
             }
 
-            IECFoundryDiskConfiguration* ptrDiskConfiguration = new IECFoundryDiskConfiguration();
-            const bool saveCurrentDiskOnExit = settings.value(QStringLiteral("SaveCurrentDiskOnExit"), false).toBool();
-            ptrDiskConfiguration->setSaveCurrentDiskOnExit(saveCurrentDiskOnExit);
-            if (saveCurrentDiskOnExit)
+            IECFoundryDriveConfiguration* ptrDriveConfiguration = new IECFoundryDriveConfiguration();
+
+            ptrDriveConfiguration->setStartDeviceNumber(static_cast<quint8>(startDeviceNumber));
+            ptrDriveConfiguration->setSlotCount(slotCount);
+
+            //
+            // Load configured disk slots.
+            //
+            const int diskCount = settings.beginReadArray(QStringLiteral("Disks"));
+
+            for (int diskIndex = 0; diskIndex < diskCount; ++diskIndex)
             {
-                ptrDiskConfiguration->setImageFileName(settings.value(QStringLiteral("ImageFileName")).toString());
+                settings.setArrayIndex(diskIndex);
+
+                bool slotIndexValid = false;
+                const int slotIndex = settings.value(QStringLiteral("SlotIndex")).toInt(&slotIndexValid);
+
+                if (!slotIndexValid)
+                {
+                    settings.endArray();
+                    settings.endArray();
+                    return false;
+                }
+
+                IECFoundryDiskConfiguration diskConfiguration;
+                diskConfiguration.setSlotIndex(slotIndex);
+                diskConfiguration.setEnabled(settings.value(QStringLiteral("Enabled"), false).toBool());
+
+                const bool saveCurrentDiskOnExit = settings.value(QStringLiteral("SaveCurrentDiskOnExit"), false).toBool();
+                diskConfiguration.setSaveCurrentDiskOnExit(saveCurrentDiskOnExit);
+
+                //
+                // The image association is persisted only when requested.
+                // Image contents are handled by the drive independently.
+                //
+                if (saveCurrentDiskOnExit)
+                    diskConfiguration.setImageFileName(settings.value(QStringLiteral("ImageFileName")).toString());
+
+                if (!ptrDriveConfiguration->addDiskConfiguration(diskConfiguration))
+                {
+                    settings.endArray();
+                    settings.endArray();
+                    return false;
+                }
             }
-            ptrConfiguration.reset(ptrDiskConfiguration);
+
+            settings.endArray();
+
+            ptrConfiguration.reset(ptrDriveConfiguration);
         }
         else
         {
+            //
+            // Unknown types, including the obsolete FoundryDisk device type,
+            // are not migrated implicitly.
+            //
             settings.endArray();
             return false;
         }
 
         ptrConfiguration->setId(id);
-        ptrConfiguration->setDeviceNumber(static_cast<quint8>(deviceNumber));
         ptrConfiguration->setEnabled(settings.value(QStringLiteral("Enabled"), false).toBool());
 
         loadedDevices.append(ptrConfiguration);
-        usedIds.append(id);
-        usedDeviceNumbers.append(static_cast<quint8>(deviceNumber));
     }
 
     settings.endArray();
+
+    QStringList errors;
+    if (!IECConfigurationValidator::validate(loadedDevices, &errors))
+        return false;
 
     devices = loadedDevices;
 
     return true;
 }
 
-void ConfigurationStorage::saveIECDevices(QSettings& settings, const QList<QSharedPointer<IECDeviceConfiguration>>& devices) const
+bool ConfigurationStorage::saveIECDevices(QSettings& settings, const QList<QSharedPointer<IECDeviceConfiguration>>& devices) const
 {
     settings.beginWriteArray(QStringLiteral("Devices"), devices.size());
 
@@ -315,10 +380,12 @@ void ConfigurationStorage::saveIECDevices(QSettings& settings, const QList<QShar
         const QSharedPointer<IECDeviceConfiguration>& ptrConfiguration = devices[index];
 
         if (ptrConfiguration.isNull())
-            continue;
+        {
+            settings.endArray();
+            return false;
+        }
 
         settings.setValue(QStringLiteral("Id"), static_cast<qulonglong>(ptrConfiguration->id()));
-        settings.setValue(QStringLiteral("DeviceNumber"), static_cast<uint>(ptrConfiguration->deviceNumber()));
         settings.setValue(QStringLiteral("Enabled"), ptrConfiguration->enabled());
 
         switch (ptrConfiguration->type())
@@ -328,34 +395,67 @@ void ConfigurationStorage::saveIECDevices(QSettings& settings, const QList<QShar
             const IECAsciiPrinterConfiguration* ptrPrinterConfiguration = dynamic_cast<const IECAsciiPrinterConfiguration*>(ptrConfiguration.data());
 
             if (ptrPrinterConfiguration == nullptr)
-                break;
+            {
+                settings.endArray();
+                return false;
+            }
 
             settings.setValue(QStringLiteral("Type"), QStringLiteral("PrinterASCII"));
+            settings.setValue(QStringLiteral("DeviceNumber"), static_cast<uint>(ptrPrinterConfiguration->deviceNumber()));
             settings.setValue(QStringLiteral("LineWidth"), ptrPrinterConfiguration->lineWidth());
             settings.setValue(QStringLiteral("AutoWrap"), ptrPrinterConfiguration->autoWrap());
 
             break;
         }
-        case IECDeviceType::FoundryDisk:
+        case IECDeviceType::FoundryDrive:
         {
-            const IECFoundryDiskConfiguration* ptrDiskConfiguration = dynamic_cast<const IECFoundryDiskConfiguration*>(ptrConfiguration.data());
+            const IECFoundryDriveConfiguration* ptrDriveConfiguration = dynamic_cast<const IECFoundryDriveConfiguration*>(ptrConfiguration.data());
 
-            if (ptrDiskConfiguration == nullptr)
-                break;
-
-            settings.setValue(QStringLiteral("Type"), QStringLiteral("FoundryDisk"));
-            const bool saveCurrentDiskOnExit = ptrDiskConfiguration->saveCurrentDiskOnExit();
-            settings.setValue(QStringLiteral("SaveCurrentDiskOnExit"), saveCurrentDiskOnExit);
-            // Alte Image-Pfade bei deaktivierter Option ausdrücklich entfernen.
-            settings.remove(QStringLiteral("ImageFileName"));
-            if (saveCurrentDiskOnExit && !ptrDiskConfiguration->imageFileName().isEmpty())
+            if (ptrDriveConfiguration == nullptr)
             {
-                settings.setValue(QStringLiteral("ImageFileName"), ptrDiskConfiguration->imageFileName());
+                settings.endArray();
+                return false;
             }
+
+            settings.setValue(QStringLiteral("Type"), QStringLiteral("FoundryDrive"));
+            settings.setValue(QStringLiteral("StartDeviceNumber"), static_cast<uint>(ptrDriveConfiguration->startDeviceNumber()));
+            settings.setValue(QStringLiteral("SlotCount"), ptrDriveConfiguration->slotCount());
+
+            //
+            // Store only configured disk slots. SlotIndex identifies the
+            // actual slot and is independent of the array position.
+            //
+            const QList<IECFoundryDiskConfiguration>& disks = ptrDriveConfiguration->disks();
+            settings.beginWriteArray(QStringLiteral("Disks"), disks.size());
+
+            for (int diskIndex = 0; diskIndex < disks.size(); ++diskIndex)
+            {
+                settings.setArrayIndex(diskIndex);
+
+                const IECFoundryDiskConfiguration& diskConfiguration = disks[diskIndex];
+                const bool saveCurrentDiskOnExit = diskConfiguration.saveCurrentDiskOnExit();
+
+                settings.setValue(QStringLiteral("SlotIndex"), diskConfiguration.slotIndex());
+                settings.setValue(QStringLiteral("Enabled"), diskConfiguration.enabled());
+                settings.setValue(QStringLiteral("SaveCurrentDiskOnExit"), saveCurrentDiskOnExit);
+
+                //
+                // Never retain an old path when persistence is disabled.
+                //
+                settings.remove(QStringLiteral("ImageFileName"));
+
+                if (saveCurrentDiskOnExit && !diskConfiguration.imageFileName().isEmpty())
+                    settings.setValue(QStringLiteral("ImageFileName"), diskConfiguration.imageFileName());
+            }
+
+            settings.endArray();
+
             break;
         }
         }
     }
 
     settings.endArray();
+
+    return true;
 }
