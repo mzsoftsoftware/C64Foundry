@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QList>
+
 #include "IECDeviceConfiguration.h"
 #include "IECProtocolEvent.h"
 #include "IECDeviceEvent.h"
