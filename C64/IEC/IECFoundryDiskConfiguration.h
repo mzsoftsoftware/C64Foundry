@@ -1,49 +1,29 @@
 #pragma once
 
-#include "IECDeviceConfiguration.h"
-
 #include <QString>
 
 
-class IECFoundryDiskConfiguration : public IECDeviceConfiguration
+class IECFoundryDiskConfiguration
 {
 public:
-    IECFoundryDiskConfiguration()
-        : IECDeviceConfiguration(IECDeviceType::FoundryDisk)
-    {
-    }
+    IECFoundryDiskConfiguration() = default;
 
-    IECDeviceConfiguration* clone() const override
-    {
-        return new IECFoundryDiskConfiguration(*this);
-    }
+    int slotIndex() const;
+    bool enabled() const;
+    QString imageFileName() const;
+    bool saveCurrentDiskOnExit() const;
 
-    QString imageFileName() const                   { return m_qstrImageFileName; }
-    void setImageFileName(const QString& fileName)  { m_qstrImageFileName = fileName; }
+    void setSlotIndex(int slotIndex);
+    void setEnabled(bool enabled);
+    void setImageFileName(const QString& fileName);
+    void setSaveCurrentDiskOnExit(bool enabled);
 
-    bool saveCurrentDiskOnExit() const              { return m_bSaveCurrentDiskOnExit; }
-    void setSaveCurrentDiskOnExit(bool enabled)     { m_bSaveCurrentDiskOnExit = enabled; }
-
-protected:
-    bool equals(const IECDeviceConfiguration& other) const override
-    {
-        if (other.type() != IECDeviceType::FoundryDisk)
-            return false;
-
-        const IECFoundryDiskConfiguration* ptrOther = dynamic_cast<const IECFoundryDiskConfiguration*>(&other);
-
-        if (ptrOther == nullptr)
-            return false;
-
-        if(m_qstrImageFileName != ptrOther->m_qstrImageFileName)
-            return false;
-        if(m_bSaveCurrentDiskOnExit != ptrOther->m_bSaveCurrentDiskOnExit)
-            return false;
-
-        return true;
-    }
+    bool operator==(const IECFoundryDiskConfiguration& other) const;
+    bool operator!=(const IECFoundryDiskConfiguration& other) const;
 
 private:
-    QString m_qstrImageFileName;
-    bool m_bSaveCurrentDiskOnExit = false;
+    int m_slotIndex = 0;
+    bool m_enabled = false;
+    QString m_imageFileName;
+    bool m_saveCurrentDiskOnExit = false;
 };

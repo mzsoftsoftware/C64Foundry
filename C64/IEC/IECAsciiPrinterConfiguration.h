@@ -6,38 +6,23 @@
 class IECAsciiPrinterConfiguration : public IECDeviceConfiguration
 {
 public:
-    IECAsciiPrinterConfiguration()
-        : IECDeviceConfiguration(IECDeviceType::PrinterASCII)
-    {
-    }
+    IECAsciiPrinterConfiguration();
 
-    int lineWidth() const { return m_lineWidth; }
-    bool autoWrap() const { return m_autoWrap; }
+    quint8 deviceNumber() const;
+    int lineWidth() const;
+    bool autoWrap() const;
 
-    void setLineWidth(int lineWidth) { m_lineWidth = lineWidth; }
-    void setAutoWrap(bool autoWrap) { m_autoWrap = autoWrap; }
+    void setDeviceNumber(quint8 deviceNumber);
+    void setLineWidth(int lineWidth);
+    void setAutoWrap(bool autoWrap);
 
-    IECDeviceConfiguration* clone() const override
-    {
-        return new IECAsciiPrinterConfiguration(*this);
-    }
+    IECDeviceConfiguration* clone() const override;
 
 protected:
-    bool equals(const IECDeviceConfiguration& other) const override
-    {
-        if (other.type() != IECDeviceType::PrinterASCII)
-            return false;
-
-        const IECAsciiPrinterConfiguration* ptrOther = dynamic_cast<const IECAsciiPrinterConfiguration*>(&other);
-
-        if (ptrOther == nullptr)
-            return false;
-
-        return m_lineWidth == ptrOther->m_lineWidth &&
-               m_autoWrap == ptrOther->m_autoWrap;
-    }
+    bool equals(const IECDeviceConfiguration& other) const override;
 
 private:
+    quint8 m_deviceNumber = 4;
     int m_lineWidth = 80;
     bool m_autoWrap = true;
 };
