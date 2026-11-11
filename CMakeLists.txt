@@ -59,6 +59,7 @@ add_library(C64FoundryCore STATIC
     C64/IEC/IECDeviceEvent.h
     C64/IEC/IECDeviceRequest.h C64/IEC/IECDeviceResponse.h
     C64/IEC/IECDeviceConfiguration.h C64/IEC/IECDeviceConfiguration.cpp
+    C64/IEC/IECConfigurationValidator.h C64/IEC/IECConfigurationValidator.cpp
 
     C64/IEC/IECRequest.h C64/IEC/IECResponse.h
     C64/IEC/IECBus.h C64/IEC/IECBus.cpp
