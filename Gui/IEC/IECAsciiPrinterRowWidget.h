@@ -7,6 +7,8 @@ namespace Ui {
 class IECAsciiPrinterRowWidget;
 }
 
+class IECSystemGetConfigurationsResponse;
+
 
 class IECAsciiPrinterRowWidget : public IECDeviceRowWidget
 {
@@ -22,16 +24,16 @@ protected:
     void applyConfiguration(const IECDeviceConfiguration& configuration) override;
     void setPowerButtonChecked(bool checked) override;
     void setControlsEnabled(bool enabled) override;
-    void openSettingsDialog(const EmulatorResponseIEC* ptrResponse) override;
+    void openSettingsDialog(const IECSystemGetConfigurationsResponse* ptrResponse) override;
 
 private slots:
     void on_toolButton_Power_toggled(bool checked);
     void on_toolButton_Settings_clicked();
     void on_toolButton_Remove_clicked();
-    void onPrinterOutputChanged(IECDeviceConfiguration::DeviceId deviceId, QQueue<IECPrinterOutputEvent> events);
+    void onIECDeviceEventsChanged(IECDeviceEventList events);
 
 private:
-    void showSettingsDialog(const EmulatorResponseIEC* ptrResponse);
+    void showSettingsDialog(const IECSystemGetConfigurationsResponse* ptrResponse);
     void triggerActivity(int index = 0);
 
 private:

@@ -5,14 +5,12 @@
 
 #include "IECOperationStatusWidget.h"
 #include "C64/IEC/IECDeviceConfiguration.h"
-#include "Emulator/EmulatorRequest.h"
-#include "Emulator/EmulatorResponse.h"
-#include "Emulator/EmulatorIECDeviceEvent.h"
+#include "C64/IEC/IECRequest.h"
+#include "C64/IEC/IECResponse.h"
 
 class QLabel;
-
 class EmulatorController;
-class EmulatorResponseIEC;
+class IECSystemGetConfigurationsResponse;
 
 
 class IECDeviceRowWidget : public QWidget
@@ -50,24 +48,22 @@ protected:
     virtual void applyConfiguration(const IECDeviceConfiguration& configuration) = 0;
     virtual void setPowerButtonChecked(bool checked) = 0;
     virtual void setControlsEnabled(bool enabled) = 0;
-    virtual void openSettingsDialog(const EmulatorResponseIEC* ptrResponse) = 0;
+    virtual void openSettingsDialog(const IECSystemGetConfigurationsResponse* ptrResponse) = 0;
 
 private slots:
-    void onRequestDone(QSharedPointer<EmulatorResponse> response);
-    void onIECDeviceChanged(EmulatorIECDeviceEvent::Type type,
-                            IECDeviceConfiguration::DeviceId deviceId);
+    void onIECRequestDone(QSharedPointer<IECResponse> response);
 
 protected:
     EmulatorController* m_ptrController = nullptr;
     bool m_bBusy = false;
 
 private:
-    bool submitRequest(EmulatorRequest* ptrRequest, RequestPurpose purpose);
+    bool submitRequest(IECRequest* ptrRequest, RequestPurpose purpose);
     void finishRequest();
 
     QSharedPointer<IECDeviceConfiguration> m_ptrConfiguration;
     QSharedPointer<IECDeviceConfiguration> m_ptrPendingConfiguration;
 
-    EmulatorRequest::RequestId m_requestId = 0;
+    IECRequest::RequestId m_requestId = 0;
     RequestPurpose m_requestPurpose = RequestPurpose::None;
 };

@@ -1,13 +1,11 @@
-
 #include "IECAsciiPrinterRowWidget.h"
 #include "ui_IECAsciiPrinterRowWidget.h"
 
-#include <QByteArray>
 #include <QDialog>
 #include <QSignalBlocker>
 
 #include "Emulator/EmulatorController.h"
-#include "Emulator/EmulatorResponse.h"
+#include "C64/IEC/IECSystemResponse.h"
 #include "Gui/IEC/IECAsciiPrinterSettingsDialog.h"
 
 
@@ -18,35 +16,46 @@ IECAsciiPrinterRowWidget::IECAsciiPrinterRowWidget(QWidget* parent)
     ui->setupUi(this);
 }
 
+
 IECAsciiPrinterRowWidget::~IECAsciiPrinterRowWidget()
 {
     delete ui;
 }
 
+
 void IECAsciiPrinterRowWidget::onControllerSet()
 {
-    connect(m_ptrController, &EmulatorController::printerOutputChanged, this, &IECAsciiPrinterRowWidget::onPrinterOutputChanged);
+    connect(m_ptrController, &EmulatorController::iecDeviceEventsChanged,
+            this, &IECAsciiPrinterRowWidget::onIECDeviceEventsChanged);
 }
 
-void IECAsciiPrinterRowWidget::applyConfiguration(const IECDeviceConfiguration& configuration)
+
+void IECAsciiPrinterRowWidget::applyConfiguration(
+    const IECDeviceConfiguration& configuration)
 {
     if (configuration.type() != IECDeviceType::PrinterASCII)
         return;
 
-    const IECAsciiPrinterConfiguration* ptrPrinterConfiguration = dynamic_cast<const IECAsciiPrinterConfiguration*>(&configuration);
+    const IECAsciiPrinterConfiguration* ptrPrinterConfiguration =
+        dynamic_cast<const IECAsciiPrinterConfiguration*>(&configuration);
+
     if (ptrPrinterConfiguration == nullptr)
         return;
 
-    setPowerButtonChecked(ptrPrinterConfiguration->enabled());    
-    setDeviceNumberLabel(ui->label_DeviceNumber, ptrPrinterConfiguration->deviceNumber());
+    setPowerButtonChecked(ptrPrinterConfiguration->enabled());
+    setDeviceNumberLabel(ui->label_DeviceNumber,
+                         ptrPrinterConfiguration->deviceNumber());
+
     ui->label_DeviceType->setText(tr("ASCII Printer"));
 }
+
 
 void IECAsciiPrinterRowWidget::setPowerButtonChecked(bool checked)
 {
     const QSignalBlocker blocker(ui->toolButton_Power);
     ui->toolButton_Power->setChecked(checked);
 }
+
 
 void IECAsciiPrinterRowWidget::setControlsEnabled(bool enabled)
 {
@@ -55,6 +64,7 @@ void IECAsciiPrinterRowWidget::setControlsEnabled(bool enabled)
     ui->toolButton_Remove->setEnabled(enabled);
 }
 
+
 void IECAsciiPrinterRowWidget::setOperationState(
     IECOperationStatusWidget::State state,
     const QString& message)
@@ -62,32 +72,40 @@ void IECAsciiPrinterRowWidget::setOperationState(
     ui->widget_OperationStatus->setState(state, message);
 }
 
+
 void IECAsciiPrinterRowWidget::triggerActivity(int index)
 {
     ui->widget_ActivityLED->triggerActivity(index);
 }
+
 
 void IECAsciiPrinterRowWidget::on_toolButton_Power_toggled(bool checked)
 {
     requestPowerChange(checked);
 }
 
+
 void IECAsciiPrinterRowWidget::on_toolButton_Settings_clicked()
 {
     requestSettings();
 }
+
 
 void IECAsciiPrinterRowWidget::on_toolButton_Remove_clicked()
 {
     requestRemove();
 }
 
-void IECAsciiPrinterRowWidget::openSettingsDialog(const EmulatorResponseIEC* ptrResponse)
+
+void IECAsciiPrinterRowWidget::openSettingsDialog(
+    const IECSystemGetConfigurationsResponse* ptrResponse)
 {
     showSettingsDialog(ptrResponse);
 }
 
-void IECAsciiPrinterRowWidget::showSettingsDialog(const EmulatorResponseIEC* ptrResponse)
+
+void IECAsciiPrinterRowWidget::showSettingsDialog(
+    const IECSystemGetConfigurationsResponse* ptrResponse)
 {
     if (ptrResponse == nullptr || configuration() == nullptr)
     {
@@ -109,7 +127,8 @@ void IECAsciiPrinterRowWidget::showSettingsDialog(const EmulatorResponseIEC* ptr
     QList<quint8> availableDeviceNumbers =
         ptrResponse->supportedDeviceNumbers().value(IECDeviceType::PrinterASCII);
 
-    const quint8 currentDeviceNumber = ptrPrinterConfiguration->deviceNumber();
+    const quint8 currentDeviceNumber =
+        ptrPrinterConfiguration->deviceNumber();
 
     for (const QSharedPointer<IECDeviceConfiguration>& ptrOtherConfiguration :
          ptrResponse->configurations())
@@ -120,7 +139,11 @@ void IECAsciiPrinterRowWidget::showSettingsDialog(const EmulatorResponseIEC* ptr
             continue;
         }
 
-        availableDeviceNumbers.removeAll(ptrOtherConfiguration->deviceNumber());
+        const IECAsciiPrinterConfiguration* ptrOtherPrinter =
+            dynamic_cast<const IECAsciiPrinterConfiguration*>(ptrOtherConfiguration.data());
+
+        if (ptrOtherPrinter != nullptr)
+            availableDeviceNumbers.removeAll(ptrOtherPrinter->deviceNumber());
     }
 
     if (!availableDeviceNumbers.contains(currentDeviceNumber))
@@ -141,12 +164,21 @@ void IECAsciiPrinterRowWidget::showSettingsDialog(const EmulatorResponseIEC* ptr
     requestSetConfiguration(updatedConfiguration);
 }
 
-void IECAsciiPrinterRowWidget::onPrinterOutputChanged(IECDeviceConfiguration::DeviceId deviceId, QQueue<IECPrinterOutputEvent> events)
+
+void IECAsciiPrinterRowWidget::onIECDeviceEventsChanged(IECDeviceEventList events)
 {
-    Q_UNUSED(events)
+    for (const IECDeviceEventPtr& ptrEvent : events)
+    {
+        if (ptrEvent.isNull() || ptrEvent->deviceId != deviceId())
+            continue;
 
-    if (deviceId != this->deviceId())
-        return;
+        const IECPrinterOutputEvent* ptrPrinterEvent =
+            dynamic_cast<const IECPrinterOutputEvent*>(ptrEvent.data());
 
-    triggerActivity();
+        if (ptrPrinterEvent == nullptr)
+            continue;
+
+        triggerActivity();
+        break;
+    }
 }

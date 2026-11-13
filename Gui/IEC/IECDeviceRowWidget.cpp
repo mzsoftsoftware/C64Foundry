@@ -1,11 +1,12 @@
 #include "IECDeviceRowWidget.h"
 
-#include <QSignalBlocker>
 #include <QFont>
 #include <QLabel>
 #include <QMessageBox>
 
 #include "Emulator/EmulatorController.h"
+#include "C64/IEC/IECSystemRequest.h"
+#include "C64/IEC/IECSystemResponse.h"
 
 
 IECDeviceRowWidget::IECDeviceRowWidget(QWidget* parent)
@@ -13,9 +14,11 @@ IECDeviceRowWidget::IECDeviceRowWidget(QWidget* parent)
 {
 }
 
+
 IECDeviceRowWidget::~IECDeviceRowWidget()
 {
 }
+
 
 void IECDeviceRowWidget::setController(EmulatorController* ptrController)
 {
@@ -24,11 +27,12 @@ void IECDeviceRowWidget::setController(EmulatorController* ptrController)
 
     m_ptrController = ptrController;
 
-    connect(m_ptrController, &EmulatorController::requestDone, this, &IECDeviceRowWidget::onRequestDone);
-    connect(m_ptrController, &EmulatorController::iecDeviceChanged, this, &IECDeviceRowWidget::onIECDeviceChanged);
+    connect(m_ptrController, &EmulatorController::iecRequestDone,
+            this, &IECDeviceRowWidget::onIECRequestDone);
 
     onControllerSet();
 }
+
 
 void IECDeviceRowWidget::setConfiguration(const IECDeviceConfiguration& configuration)
 {
@@ -36,6 +40,7 @@ void IECDeviceRowWidget::setConfiguration(const IECDeviceConfiguration& configur
 
     applyConfiguration(*m_ptrConfiguration);
 }
+
 
 IECDeviceConfiguration::DeviceId IECDeviceRowWidget::deviceId() const
 {
@@ -45,10 +50,12 @@ IECDeviceConfiguration::DeviceId IECDeviceRowWidget::deviceId() const
     return m_ptrConfiguration->id();
 }
 
+
 const IECDeviceConfiguration* IECDeviceRowWidget::configuration() const
 {
     return m_ptrConfiguration.data();
 }
+
 
 void IECDeviceRowWidget::setBusy(bool busy)
 {
@@ -59,7 +66,8 @@ void IECDeviceRowWidget::setBusy(bool busy)
     setControlsEnabled(!busy);
 }
 
-bool IECDeviceRowWidget::submitRequest(EmulatorRequest* ptrRequest, RequestPurpose purpose)
+
+bool IECDeviceRowWidget::submitRequest(IECRequest* ptrRequest, RequestPurpose purpose)
 {
     if (m_ptrController == nullptr || m_bBusy || ptrRequest == nullptr)
     {
@@ -83,6 +91,7 @@ bool IECDeviceRowWidget::submitRequest(EmulatorRequest* ptrRequest, RequestPurpo
     return false;
 }
 
+
 void IECDeviceRowWidget::requestPowerChange(bool enabled)
 {
     if (m_ptrConfiguration.isNull())
@@ -96,35 +105,39 @@ void IECDeviceRowWidget::requestPowerChange(bool enabled)
     requestSetConfiguration(*ptrConfiguration);
 }
 
+
 void IECDeviceRowWidget::requestSettings()
 {
     if (m_ptrConfiguration.isNull())
         return;
 
-    submitRequest(new EmulatorRequestGetIECConfigurations(),
+    submitRequest(new IECSystemGetConfigurationsRequest(),
                   RequestPurpose::LoadSettings);
 }
+
 
 void IECDeviceRowWidget::requestRemove()
 {
     if (m_ptrConfiguration.isNull())
         return;
 
-    submitRequest(new EmulatorRequestRemoveIECDevice(deviceId()),
+    submitRequest(new IECSystemRemoveDeviceRequest(deviceId()),
                   RequestPurpose::Remove);
 }
+
 
 void IECDeviceRowWidget::requestSetConfiguration(
     const IECDeviceConfiguration& configuration)
 {
     m_ptrPendingConfiguration.reset(configuration.clone());
 
-    if (!submitRequest(new EmulatorRequestSetIECConfiguration(configuration),
+    if (!submitRequest(new IECSystemSetConfigurationRequest(configuration),
                        RequestPurpose::SetConfiguration))
     {
         m_ptrPendingConfiguration.clear();
     }
 }
+
 
 void IECDeviceRowWidget::setDeviceNumberLabel(
     QLabel* ptrLabel, quint8 deviceNumber)
@@ -141,6 +154,7 @@ void IECDeviceRowWidget::setDeviceNumberLabel(
         QStringLiteral("#%1").arg(deviceNumber, 2, 10, QChar('0')));
 }
 
+
 void IECDeviceRowWidget::finishRequest()
 {
     m_requestId = 0;
@@ -148,15 +162,22 @@ void IECDeviceRowWidget::finishRequest()
     setBusy(false);
 }
 
-void IECDeviceRowWidget::onRequestDone(QSharedPointer<EmulatorResponse> response)
-{
-    if (response.isNull() || m_requestId == 0 || response->id() != m_requestId)
-        return;
 
-    const EmulatorResponseIEC* ptrIECResponse = dynamic_cast<const EmulatorResponseIEC*>(response.data());
-    if (ptrIECResponse != nullptr && !ptrIECResponse->message().isEmpty())
+void IECDeviceRowWidget::onIECRequestDone(QSharedPointer<IECResponse> response)
+{
+    if (response.isNull() || m_requestId == 0 ||
+        response->requestId() != m_requestId)
     {
-        QMessageBox::warning(this, tr("IEC device warning"), ptrIECResponse->message());
+        return;
+    }
+
+    const IECSystemSetConfigurationResponse* ptrSetResponse =
+        dynamic_cast<const IECSystemSetConfigurationResponse*>(response.data());
+
+    if (ptrSetResponse != nullptr && !ptrSetResponse->operationMessage().isEmpty())
+    {
+        QMessageBox::warning(this, tr("IEC device warning"),
+                             ptrSetResponse->operationMessage());
     }
 
     const RequestPurpose purpose = m_requestPurpose;
@@ -188,8 +209,8 @@ void IECDeviceRowWidget::onRequestDone(QSharedPointer<EmulatorResponse> response
 
     case RequestPurpose::LoadSettings:
     {
-        const EmulatorResponseIEC* ptrResponse =
-            dynamic_cast<const EmulatorResponseIEC*>(response.data());
+        const IECSystemGetConfigurationsResponse* ptrResponse =
+            dynamic_cast<const IECSystemGetConfigurationsResponse*>(response.data());
 
         finishRequest();
 
@@ -203,8 +224,11 @@ void IECDeviceRowWidget::onRequestDone(QSharedPointer<EmulatorResponse> response
         for (const QSharedPointer<IECDeviceConfiguration>& ptrConfiguration :
              ptrResponse->configurations())
         {
-            if (ptrConfiguration.isNull() || ptrConfiguration->id() != deviceId())
+            if (ptrConfiguration.isNull() ||
+                ptrConfiguration->id() != deviceId())
+            {
                 continue;
+            }
 
             setConfiguration(*ptrConfiguration);
             break;
@@ -225,16 +249,6 @@ void IECDeviceRowWidget::onRequestDone(QSharedPointer<EmulatorResponse> response
     }
 }
 
-void IECDeviceRowWidget::onIECDeviceChanged(
-    EmulatorIECDeviceEvent::Type type,
-    IECDeviceConfiguration::DeviceId changedDeviceId)
-{
-    Q_UNUSED(type)
-    Q_UNUSED(changedDeviceId)
-
-    // Die IECDeviceManagerWidget aktualisiert die Konfigurationen zentral.
-    // Hier darf bei ConfigurationChanged kein Einstellungsdialog aufgehen.
-}
 
 void IECDeviceRowWidget::onControllerSet()
 {
