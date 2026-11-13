@@ -3,15 +3,20 @@
 
 #include <QAction>
 #include <QDebug>
-#include <QListWidget>
-#include <QListWidgetItem>
 #include <QMenu>
+#include <QTreeWidget>
+#include <QTreeWidgetItem>
 #include <QToolButton>
 #include <QVariant>
 
 #include "Emulator/EmulatorController.h"
+#include "C64/IEC/IECSystemRequest.h"
+#include "C64/IEC/IECSystemResponse.h"
+#include "C64/IEC/IECFoundryDriveConfiguration.h"
+#include "C64/IEC/IECAsciiPrinterConfiguration.h"
+
 #include "IECAsciiPrinterRowWidget.h"
-#include "IECFoundryDiskRowWidget.h"
+#include "IECFoundryDriveRowWidget.h"
 
 
 IECDeviceManagerWidget::IECDeviceManagerWidget(QWidget* parent)
@@ -22,14 +27,16 @@ IECDeviceManagerWidget::IECDeviceManagerWidget(QWidget* parent)
 
     setupAddMenu();
 
-    ui->listWidget_Devices->setSelectionMode(QAbstractItemView::NoSelection);
-    ui->listWidget_Devices->setFocusPolicy(Qt::NoFocus);
+    ui->treeWidget_Devices->setSelectionMode(QAbstractItemView::NoSelection);
+    ui->treeWidget_Devices->setFocusPolicy(Qt::NoFocus);
 }
+
 
 IECDeviceManagerWidget::~IECDeviceManagerWidget()
 {
     delete ui;
 }
+
 
 void IECDeviceManagerWidget::setController(EmulatorController* ptrController)
 {
@@ -40,6 +47,7 @@ void IECDeviceManagerWidget::setController(EmulatorController* ptrController)
         disconnect(m_ptrController, nullptr, this, nullptr);
 
     m_ptrController = ptrController;
+
     m_addRequestId = 0;
     m_configurationRequestId = 0;
     m_bRefreshPending = false;
@@ -47,20 +55,21 @@ void IECDeviceManagerWidget::setController(EmulatorController* ptrController)
     clearDeviceRows();
 
     ui->widget_OperationStatus->setState(IECOperationStatusWidget::State::Idle);
-    ui->toolButton_Add->setEnabled(m_ptrController != nullptr);
-    ui->toolButton_Refresh->setEnabled(m_ptrController != nullptr);
+
+    updateControls();
 
     if (m_ptrController == nullptr)
         return;
 
-    connect(m_ptrController, &EmulatorController::requestDone,
-            this, &IECDeviceManagerWidget::onRequestDone);
+    connect(m_ptrController, &EmulatorController::iecRequestDone,
+            this, &IECDeviceManagerWidget::onIECRequestDone);
 
-    connect(m_ptrController, &EmulatorController::iecDeviceChanged,
-            this, &IECDeviceManagerWidget::onIECDeviceChanged);
+    connect(m_ptrController, &EmulatorController::iecSystemEventsChanged,
+            this, &IECDeviceManagerWidget::onIECSystemEventsChanged);
 
     refreshConfigurations();
 }
+
 
 void IECDeviceManagerWidget::setupAddMenu()
 {
@@ -73,18 +82,21 @@ void IECDeviceManagerWidget::setupAddMenu()
             this, &IECDeviceManagerWidget::onAddMenuTriggered);
 }
 
+
 QString IECDeviceManagerWidget::deviceTypeName(IECDeviceType type) const
 {
     switch (type)
     {
     case IECDeviceType::PrinterASCII:
         return tr("ASCII Printer");
-    case IECDeviceType::FoundryDisk:
-        return tr("Foundry Disk");
+
+    case IECDeviceType::FoundryDrive:
+        return tr("Foundry Drive");
     }
 
     return tr("Unknown Device");
 }
+
 
 void IECDeviceManagerWidget::updateAddMenu()
 {
@@ -104,47 +116,56 @@ void IECDeviceManagerWidget::updateAddMenu()
     }
 }
 
+
 void IECDeviceManagerWidget::onAddMenuTriggered(QAction* ptrAction)
 {
     if (m_ptrController == nullptr || ptrAction == nullptr ||
         m_addRequestId != 0 || m_configurationRequestId != 0)
+    {
         return;
+    }
 
-    const IECDeviceType type = static_cast<IECDeviceType>(ptrAction->data().toInt());
+    const IECDeviceType type =
+        static_cast<IECDeviceType>(ptrAction->data().toInt());
 
-    m_addRequestId = m_ptrController->request(new EmulatorRequestAddIECDevice(type));
+    m_addRequestId =
+        m_ptrController->request(new IECSystemAddDeviceRequest(type));
 
     if (m_addRequestId == 0)
     {
         ui->widget_OperationStatus->setState(
             IECOperationStatusWidget::State::Failed,
             tr("Could not submit IEC device request"));
+
         return;
     }
 
-    ui->toolButton_Add->setEnabled(false);
-    ui->toolButton_Refresh->setEnabled(false);
-    ui->widget_OperationStatus->setState(IECOperationStatusWidget::State::Pending);
+    updateControls();
+
+    ui->widget_OperationStatus->setState(
+        IECOperationStatusWidget::State::Pending);
 }
 
-void IECDeviceManagerWidget::on_pushButton_Refresh_clicked()
+
+void IECDeviceManagerWidget::on_toolButton_Refresh_clicked()
 {
     refreshConfigurations();
 }
+
 
 void IECDeviceManagerWidget::refreshConfigurations()
 {
     if (m_ptrController == nullptr)
         return;
 
-    if (m_configurationRequestId != 0)
+    if (m_configurationRequestId != 0 || m_addRequestId != 0)
     {
         m_bRefreshPending = true;
         return;
     }
 
     m_configurationRequestId =
-        m_ptrController->request(new EmulatorRequestGetIECConfigurations());
+        m_ptrController->request(new IECSystemGetConfigurationsRequest());
 
     if (m_configurationRequestId == 0)
     {
@@ -154,72 +175,70 @@ void IECDeviceManagerWidget::refreshConfigurations()
             IECOperationStatusWidget::State::Failed,
             tr("Could not refresh IEC devices"));
 
-        ui->toolButton_Add->setEnabled(m_ptrController != nullptr && m_addRequestId == 0);
-        ui->toolButton_Refresh->setEnabled(m_ptrController != nullptr && m_addRequestId == 0);
+        updateControls();
         return;
     }
 
-    ui->toolButton_Add->setEnabled(false);
-    ui->toolButton_Refresh->setEnabled(false);
-    ui->widget_OperationStatus->setState(IECOperationStatusWidget::State::Pending);
+    updateControls();
+
+    ui->widget_OperationStatus->setState(
+        IECOperationStatusWidget::State::Pending);
 }
 
-void IECDeviceManagerWidget::onRequestDone(QSharedPointer<EmulatorResponse> response)
+
+void IECDeviceManagerWidget::onIECRequestDone(QSharedPointer<IECResponse> response)
 {
     if (response.isNull())
         return;
 
-    if (response->id() == m_addRequestId && m_addRequestId != 0)
+    if (m_addRequestId != 0 && response->requestId() == m_addRequestId)
     {
         m_addRequestId = 0;
 
-        if (response->success())
-        {
-            ui->widget_OperationStatus->setState(IECOperationStatusWidget::State::Pending);
-            refreshConfigurations();
-        }
-        else
+        const IECSystemAddDeviceResponse* ptrAddResponse =
+            dynamic_cast<const IECSystemAddDeviceResponse*>(response.data());
+
+        if (response->success() && ptrAddResponse != nullptr &&
+            ptrAddResponse->deviceId() != 0)
         {
             ui->widget_OperationStatus->setState(
-                IECOperationStatusWidget::State::Failed,
-                tr("Could not add IEC device"));
+                IECOperationStatusWidget::State::Pending);
 
-            ui->toolButton_Add->setEnabled(true);
-            ui->toolButton_Refresh->setEnabled(true);
+            updateControls();
+            refreshConfigurations();
+            return;
         }
 
+        ui->widget_OperationStatus->setState(
+            IECOperationStatusWidget::State::Failed,
+            tr("Could not add IEC device"));
+
+        updateControls();
         return;
     }
 
-    if (response->id() != m_configurationRequestId || m_configurationRequestId == 0)
+    if (m_configurationRequestId == 0 ||
+        response->requestId() != m_configurationRequestId)
+    {
         return;
+    }
 
     m_configurationRequestId = 0;
 
-    bool bSuccess = false;
+    const IECSystemGetConfigurationsResponse* ptrResponse =
+        dynamic_cast<const IECSystemGetConfigurationsResponse*>(response.data());
 
-    if (response->type() == EmulatorRequest::Type::GetIECConfigurations &&
-        response->success())
+    if (response->success() && ptrResponse != nullptr)
     {
-        const EmulatorResponseIEC* ptrResponse =
-            dynamic_cast<const EmulatorResponseIEC*>(response.data());
+        setConfigurations(ptrResponse);
 
-        if (ptrResponse != nullptr)
-        {
-            m_availableDeviceTypes = ptrResponse->availableDeviceTypes();
-            m_addableDeviceTypes = ptrResponse->addableDeviceTypes();
+        m_availableDeviceTypes = ptrResponse->availableDeviceTypes();
+        m_addableDeviceTypes = ptrResponse->addableDeviceTypes();
 
-            setConfigurations(ptrResponse->configurations(), ptrResponse->diskImageLoaded());
-            updateAddMenu();
+        updateAddMenu();
 
-            bSuccess = true;
-        }
-    }
-
-    if (bSuccess)
-    {
-        if (m_addRequestId == 0)
-            ui->widget_OperationStatus->setState(IECOperationStatusWidget::State::Success);
+        ui->widget_OperationStatus->setState(
+            IECOperationStatusWidget::State::Success);
     }
     else
     {
@@ -228,8 +247,7 @@ void IECDeviceManagerWidget::onRequestDone(QSharedPointer<EmulatorResponse> resp
             tr("Could not refresh IEC devices"));
     }
 
-    ui->toolButton_Add->setEnabled(m_ptrController != nullptr && m_addRequestId == 0);
-    ui->toolButton_Refresh->setEnabled(m_ptrController != nullptr && m_addRequestId == 0);
+    updateControls();
 
     if (m_bRefreshPending)
     {
@@ -238,25 +256,29 @@ void IECDeviceManagerWidget::onRequestDone(QSharedPointer<EmulatorResponse> resp
     }
 }
 
-void IECDeviceManagerWidget::onIECDeviceChanged(
-    EmulatorIECDeviceEvent::Type type,
-    IECDeviceConfiguration::DeviceId deviceId)
+
+void IECDeviceManagerWidget::onIECSystemEventsChanged(IECSystemEventList events)
 {
-    Q_UNUSED(deviceId)
-
-    switch (type)
+    for (const IECSystemEventPtr& ptrEvent : events)
     {
-    case EmulatorIECDeviceEvent::Type::Added:
-    case EmulatorIECDeviceEvent::Type::Removed:
-    case EmulatorIECDeviceEvent::Type::ConfigurationChanged:
-    case EmulatorIECDeviceEvent::Type::Restored:
-        refreshConfigurations();
-        break;
+        if (ptrEvent.isNull())
+            continue;
 
-    case EmulatorIECDeviceEvent::Type::Reset:
-        break;
+        switch (ptrEvent->type)
+        {
+        case IECSystemEvent::Type::DeviceAdded:
+        case IECSystemEvent::Type::DeviceRemoved:
+        case IECSystemEvent::Type::ConfigurationChanged:
+        case IECSystemEvent::Type::ConfigurationsRestored:
+            refreshConfigurations();
+            return;
+
+        case IECSystemEvent::Type::Reset:
+            break;
+        }
     }
 }
+
 
 IECDeviceRowWidget* IECDeviceManagerWidget::createDeviceRow(IECDeviceType type)
 {
@@ -267,8 +289,9 @@ IECDeviceRowWidget* IECDeviceManagerWidget::createDeviceRow(IECDeviceType type)
     case IECDeviceType::PrinterASCII:
         ptrRow = new IECAsciiPrinterRowWidget();
         break;
-    case IECDeviceType::FoundryDisk:
-        ptrRow = new IECFoundryDiskRowWidget();
+
+    case IECDeviceType::FoundryDrive:
+        ptrRow = new IECFoundryDriveRowWidget();
         break;
     }
 
@@ -278,19 +301,52 @@ IECDeviceRowWidget* IECDeviceManagerWidget::createDeviceRow(IECDeviceType type)
     return ptrRow;
 }
 
-void IECDeviceManagerWidget::setConfigurations(const QList<IECDeviceManager::ConfigurationPtr>& configurations, const QHash<IECDeviceConfiguration::DeviceId, bool>& diskImageLoaded)
-{
-    QList<IECDeviceManager::ConfigurationPtr> sortedConfigurations;
 
-    for (const IECDeviceManager::ConfigurationPtr& ptrConfiguration : configurations)
+quint8 IECDeviceManagerWidget::deviceStartNumber(
+    const IECDeviceConfiguration& configuration) const
+{
+    if (configuration.type() == IECDeviceType::PrinterASCII)
+    {
+        const IECAsciiPrinterConfiguration* ptrPrinterConfiguration =
+            dynamic_cast<const IECAsciiPrinterConfiguration*>(&configuration);
+
+        if (ptrPrinterConfiguration != nullptr)
+            return ptrPrinterConfiguration->deviceNumber();
+    }
+
+    if (configuration.type() == IECDeviceType::FoundryDrive)
+    {
+        const IECFoundryDriveConfiguration* ptrDriveConfiguration =
+            dynamic_cast<const IECFoundryDriveConfiguration*>(&configuration);
+
+        if (ptrDriveConfiguration != nullptr)
+            return ptrDriveConfiguration->startDeviceNumber();
+    }
+
+    return 255;
+}
+
+
+void IECDeviceManagerWidget::setConfigurations(
+    const IECSystemGetConfigurationsResponse* ptrResponse)
+{
+    if (ptrResponse == nullptr)
+        return;
+
+    QList<QSharedPointer<IECDeviceConfiguration>> sortedConfigurations;
+
+    for (const QSharedPointer<IECDeviceConfiguration>& ptrConfiguration :
+         ptrResponse->configurations())
     {
         if (ptrConfiguration.isNull())
             continue;
 
+        const quint8 deviceNumber = deviceStartNumber(*ptrConfiguration);
+
         qsizetype insertIndex = 0;
 
         while (insertIndex < sortedConfigurations.size() &&
-               sortedConfigurations[insertIndex]->deviceNumber() <= ptrConfiguration->deviceNumber())
+               deviceStartNumber(*sortedConfigurations[insertIndex]) <= deviceNumber)
         {
             ++insertIndex;
         }
@@ -298,23 +354,10 @@ void IECDeviceManagerWidget::setConfigurations(const QList<IECDeviceManager::Con
         sortedConfigurations.insert(insertIndex, ptrConfiguration);
     }
 
-    for (int index = ui->listWidget_Devices->count() - 1; index >= 0; --index)
-    {
-        QListWidgetItem* ptrItem = ui->listWidget_Devices->item(index);
-        QWidget* ptrWidget = ui->listWidget_Devices->itemWidget(ptrItem);
+    clearDeviceList();
 
-        if (ptrWidget != nullptr)
-        {
-            ui->listWidget_Devices->removeItemWidget(ptrItem);
-            delete ptrWidget;
-        }
-
-        delete ui->listWidget_Devices->takeItem(index);
-    }
-
-    m_deviceRows.clear();
-
-    for (const IECDeviceManager::ConfigurationPtr& ptrConfiguration : sortedConfigurations)
+    for (const QSharedPointer<IECDeviceConfiguration>& ptrConfiguration :
+         sortedConfigurations)
     {
         IECDeviceRowWidget* ptrRow = createDeviceRow(ptrConfiguration->type());
 
@@ -322,26 +365,27 @@ void IECDeviceManagerWidget::setConfigurations(const QList<IECDeviceManager::Con
         {
             qWarning() << "IECDeviceManagerWidget: unsupported device type"
                        << static_cast<int>(ptrConfiguration->type());
+
             continue;
         }
 
         ptrRow->setConfiguration(*ptrConfiguration);
-        IECFoundryDiskRowWidget* ptrDiskRow = dynamic_cast<IECFoundryDiskRowWidget*>(ptrRow);
-        if (ptrDiskRow != nullptr)
-        {
-            ptrDiskRow->setImageLoaded(diskImageLoaded.value(ptrConfiguration->id(), false));
-        }
 
-        QListWidgetItem* ptrItem = new QListWidgetItem();
-        ptrItem->setData(Qt::UserRole, QVariant::fromValue(ptrConfiguration->id()));
+        QTreeWidgetItem* ptrItem = new QTreeWidgetItem();
 
-        ui->listWidget_Devices->addItem(ptrItem);
-        ui->listWidget_Devices->setItemWidget(ptrItem, ptrRow);
-        ptrItem->setSizeHint(ptrRow->sizeHint());
+        ptrItem->setData(0, Qt::UserRole,
+                         QVariant::fromValue(ptrConfiguration->id()));
+
+        ui->treeWidget_Devices->addTopLevelItem(ptrItem);
+        ui->treeWidget_Devices->setItemWidget(ptrItem, 0, ptrRow);
+        ptrItem->setSizeHint(0, ptrRow->sizeHint());
 
         m_deviceRows.insert(ptrConfiguration->id(), ptrRow);
     }
+
+    ui->treeWidget_Devices->expandAll();
 }
+
 
 void IECDeviceManagerWidget::clearDeviceRows()
 {
@@ -353,20 +397,31 @@ void IECDeviceManagerWidget::clearDeviceRows()
     updateAddMenu();
 }
 
+
 void IECDeviceManagerWidget::clearDeviceList()
 {
-    for (int index = ui->listWidget_Devices->count() - 1; index >= 0; --index)
+    while (ui->treeWidget_Devices->topLevelItemCount() > 0)
     {
-        QListWidgetItem* ptrItem = ui->listWidget_Devices->item(index);
-        QWidget* ptrWidget = ui->listWidget_Devices->itemWidget(ptrItem);
+        QTreeWidgetItem* ptrItem =
+            ui->treeWidget_Devices->takeTopLevelItem(0);
 
-        ui->listWidget_Devices->removeItemWidget(ptrItem);
+        QWidget* ptrWidget = ui->treeWidget_Devices->itemWidget(ptrItem, 0);
 
-        delete ui->listWidget_Devices->takeItem(index);
+        ui->treeWidget_Devices->removeItemWidget(ptrItem, 0);
 
-        if (ptrWidget != nullptr)
-            delete ptrWidget;
+        delete ptrWidget;
+        delete ptrItem;
     }
 
     m_deviceRows.clear();
+}
+
+
+void IECDeviceManagerWidget::updateControls()
+{
+    const bool bAvailable = m_ptrController != nullptr;
+    const bool bBusy = m_addRequestId != 0 || m_configurationRequestId != 0;
+
+    ui->toolButton_Add->setEnabled(bAvailable && !bBusy);
+    ui->toolButton_Refresh->setEnabled(bAvailable && !bBusy);
 }

@@ -11,7 +11,7 @@
 
 IECAsciiPrinterRowWidget::IECAsciiPrinterRowWidget(QWidget* parent)
     : IECDeviceRowWidget(parent)
-    , ui(new Ui::IECAsciiPrinterRowWidget)
+    , ui(new Ui::IECFoudnryDriveRowWidget)
 {
     ui->setupUi(this);
 }

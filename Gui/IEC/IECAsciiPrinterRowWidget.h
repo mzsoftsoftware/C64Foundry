@@ -4,7 +4,7 @@
 #include "C64/IEC/IECDeviceEvent.h"
 
 namespace Ui {
-class IECAsciiPrinterRowWidget;
+class IECFoudnryDriveRowWidget;
 }
 
 class IECSystemGetConfigurationsResponse;
@@ -37,5 +37,5 @@ private:
     void triggerActivity(int index = 0);
 
 private:
-    Ui::IECAsciiPrinterRowWidget* ui = nullptr;
+    Ui::IECFoudnryDriveRowWidget* ui = nullptr;
 };
