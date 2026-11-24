@@ -1,37 +1,95 @@
 #pragma once
 
-#include "IECDevice.h"
-#include "IECProtocol.h"
+#include <QByteArray>
+#include <QQueue>
+#include <QString>
+#include <QtGlobal>
 
-class IECFoundryDiskConfiguration;
+#include "IECFoundryDiskConfiguration.h"
+
 class IECFoundryDrive;
 
-
-class IECFoundryDisk : public IECDevice
+class IECFoundryDisk
 {
 public:
-    static QList<quint8> supportedDeviceNumbers();
+    using DiskId = IECFoundryDiskConfiguration::DiskId;
 
-    explicit IECFoundryDisk(IECBus* ptrBus, IECFoundryDrive* ptrDrive, quint8 deviceNumber = 8);
-    virtual ~IECFoundryDisk();
+    enum class SectorAccessOperation : quint8
+    {
+        Read,
+        Write
+    };
 
-    bool setConfiguration(const IECFoundryDiskConfiguration& configuration, QString* errorMessage = nullptr);
+    struct SectorAccessStatus
+    {
+        SectorAccessOperation operation = SectorAccessOperation::Read;
+        quint8 track = 0;
+        quint8 sector = 0;
+        bool success = false;
+        QString errorMessage;
+    };
+
+    IECFoundryDisk(IECFoundryDrive* ptrDrive, const IECFoundryDiskConfiguration& configuration);
+    ~IECFoundryDisk();
+
+    IECFoundryDisk(const IECFoundryDisk&) = delete;
+    IECFoundryDisk& operator=(const IECFoundryDisk&) = delete;
+
+    DiskId diskId() const;
+    int slotIndex() const;
+
+    bool enabled() const;
+    bool saveCurrentDiskOnExit() const;
+
+    bool setConfiguration(const IECFoundryDiskConfiguration& configuration);
+
+    QString lastError() const;
+
     bool hasImage() const;
+    QString imageFileName() const;
+    bool imageModified() const;
 
-    void reset() override;
-    void clock() override;
+    bool insertImage(const QString& fileName);
+    bool ejectImage();
+    bool saveImage();
+
+    bool readSector(quint8 track, quint8 sector, QByteArray& data);
+    bool writeSector(quint8 track, quint8 sector, const QByteArray& data);
+
+    bool createDirectoryProgram(QByteArray& program);
+    bool readFile(const QByteArray& fileName, QByteArray& data);
+
+    QQueue<SectorAccessStatus> takeSectorAccessEvents();
 
 private:
-    void processReceivedBytes();
-    void finishListen();
-    void startRequestedTransfer();
+    static int sectorsOnTrack(int track);
+    static int sectorOffset(int track, int sector);
+
+    static QByteArray normalizeDiskFileName(QByteArray fileName);
+
+    bool saveImageInternal();
+
+    bool createDirectoryHeader(const QByteArray& bam, QByteArray& header);
+    bool createDirectoryEntry(const QByteArray& directorySector, int entryOffset, QByteArray& entry);
+    bool createDirectoryFooter(quint16 freeBlocks, QByteArray& footer);
+
+    void debugDirectorySector(const QByteArray& directorySector, quint8 track, quint8 sector);
+
+    void recordSectorAccess(SectorAccessOperation operation, quint8 track, quint8 sector, bool success, const QString& errorMessage);
 
 private:
-    IECFoundryDrive* m_ptrDrive = nullptr;
-    IECProtocol m_protocol;
+    IECFoundryDrive* m_ptrDrive = nullptr; // non-owning
 
-    QByteArray m_listenFileName;
-    QByteArray m_requestedFileName;
+    DiskId m_diskId = 0;
+    int m_slotIndex = 0;
 
-    bool m_pendingTalk = false;
+    bool m_enabled = false;
+    bool m_saveCurrentDiskOnExit = false;
+
+    QString m_imageFileName;
+    QByteArray m_imageData;
+    bool m_imageModified = false;
+
+    QString m_lastError;
+    QQueue<SectorAccessStatus> m_sectorAccessEvents;
 };

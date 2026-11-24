@@ -1,162 +1,746 @@
 #include "IECFoundryDisk.h"
 
-#include "IECFoundryDiskConfiguration.h"
 #include "IECFoundryDrive.h"
 
 #include <QDebug>
+#include <QFile>
+#include <QSaveFile>
+#include <QSet>
 
 
-QList<quint8> IECFoundryDisk::supportedDeviceNumbers()
+IECFoundryDisk::IECFoundryDisk(IECFoundryDrive* ptrDrive, const IECFoundryDiskConfiguration& configuration)
+    : m_ptrDrive(ptrDrive)
 {
-    return { 8, 9, 10, 11 };
+    setConfiguration(configuration);
 }
 
-IECFoundryDisk::IECFoundryDisk(IECBus* ptrBus, IECFoundryDrive* ptrDrive, quint8 deviceNumber)
-    : IECDevice(ptrBus, deviceNumber)
-    , m_ptrDrive(ptrDrive)
-    , m_protocol(iecBus(), deviceNumber, participantId())
-{
-    Q_ASSERT(m_ptrDrive);
-    m_ptrDrive->registerDisk(this);
-}
 IECFoundryDisk::~IECFoundryDisk()
 {
-    m_ptrDrive->unregisterDisk(this);
+    if (m_saveCurrentDiskOnExit && m_imageModified)
+        saveImage();
 }
 
-bool IECFoundryDisk::setConfiguration(const IECFoundryDiskConfiguration& configuration, QString* errorMessage)
+
+IECFoundryDisk::DiskId IECFoundryDisk::diskId() const
 {
-    Q_ASSERT(m_ptrDrive);
-
-    if (configuration.type() != IECDeviceType::FoundryDisk)
-        return false;
-
-    if (configuration.deviceNumber() != deviceNumber())
-        return false;
-
-    const bool success = m_ptrDrive->insertImage(deviceNumber(), configuration.imageFileName());
-
-    if (!success && errorMessage != nullptr)
-        *errorMessage = m_ptrDrive->lastError();
-
-    return success;
+    return m_diskId;
 }
+
+int IECFoundryDisk::slotIndex() const
+{
+    return m_slotIndex;
+}
+
+bool IECFoundryDisk::enabled() const
+{
+    return m_enabled;
+}
+
+bool IECFoundryDisk::saveCurrentDiskOnExit() const
+{
+    return m_saveCurrentDiskOnExit;
+}
+
+
+bool IECFoundryDisk::setConfiguration(const IECFoundryDiskConfiguration& configuration)
+{
+    m_diskId = configuration.diskId();
+    m_slotIndex = configuration.slotIndex();
+    m_enabled = configuration.enabled();
+    m_saveCurrentDiskOnExit = configuration.saveCurrentDiskOnExit();
+
+    if (configuration.imageFileName() != m_imageFileName)
+        return insertImage(configuration.imageFileName());
+
+    return true;
+}
+
+
+QString IECFoundryDisk::lastError() const
+{
+    return m_lastError;
+}
+
 
 bool IECFoundryDisk::hasImage() const
 {
-    return m_ptrDrive != nullptr && m_ptrDrive->hasImage(deviceNumber());
+    return !m_imageFileName.isEmpty() && !m_imageData.isNull();
 }
 
-void IECFoundryDisk::reset()
+QString IECFoundryDisk::imageFileName() const
 {
-    m_protocol.reset();
-    m_listenFileName.clear();
-    m_requestedFileName.clear();
-    m_pendingTalk = false;
+    return m_imageFileName;
 }
 
-void IECFoundryDisk::clock()
+bool IECFoundryDisk::imageModified() const
 {
-    const IECProtocol::Mode previousMode = m_protocol.mode();
-    m_protocol.clock();
-    const IECProtocol::Mode currentMode = m_protocol.mode();
+    return m_imageModified;
+}
 
-    // Bei einem neuen LISTEN-Vorgang beginnt ein neuer Dateiname.
-    if (currentMode == IECProtocol::Mode::Listen && previousMode != IECProtocol::Mode::Listen)
+
+bool IECFoundryDisk::insertImage(const QString& fileName)
+{
+    m_lastError.clear();
+
+    if (hasImage() && !ejectImage())
+        return false;
+
+    if (fileName.isEmpty())
+        return true;
+
+    QFile file(fileName);
+
+    if (!file.open(QIODevice::ReadOnly))
     {
-        m_listenFileName.clear();
-    }
-    // TALK wird zunächst unter ATN angekündigt. Die Übertragung
-    // beginnt erst, wenn ATN wieder High ist und die Adresse steht.
-    if (currentMode == IECProtocol::Mode::Talk && previousMode != IECProtocol::Mode::Talk)
-    {
-        m_pendingTalk = true;
-    }
-
-    processReceivedBytes();
-    if (m_protocol.takeListenEnded())
-        finishListen();
-    if (m_pendingTalk && lineHigh(IECBus::Line::ATN))
-        startRequestedTransfer();
-}
-
-void IECFoundryDisk::processReceivedBytes()
-{
-    while (m_protocol.hasReceivedByte())
-    {
-        const IECProtocol::ReceivedByte receivedByte = m_protocol.takeReceivedByte();
-
-        // Sekundäradresse 0 ist der Datenkanal für LOAD.
-        // Der Kommando-/Statuskanal 15 wird später ergänzt.
-        if (receivedByte.secondaryAddress == 0)
-            m_listenFileName.append(static_cast<char>(receivedByte.value));
-    }
-}
-
-void IECFoundryDisk::finishListen()
-{
-    m_requestedFileName = m_listenFileName;
-    qDebug() << "IEC disk UNLISTEN"
-             << "device:" << deviceNumber()
-             << "filename bytes:" << m_requestedFileName.toHex()
-             << "filename:" << m_requestedFileName;
-
-    m_listenFileName.clear();
-}
-
-void IECFoundryDisk::startRequestedTransfer()
-{
-    m_pendingTalk = false;
-
-    qDebug() << "IEC disk TALK"
-             << "device:" << deviceNumber()
-             << "filename:" << m_requestedFileName.toHex()
-             << "has image:" << (m_ptrDrive != nullptr && m_ptrDrive->hasImage(deviceNumber()))
-             << "mode:" << static_cast<int>(m_protocol.mode())
-             << "ATN high:" << lineHigh(IECBus::Line::ATN);
-
-    if (m_ptrDrive == nullptr || !m_ptrDrive->hasImage(deviceNumber()))
-    {
-        qDebug() << "IEC disk: no image available";
-        return;
+        m_lastError = QStringLiteral("Image konnte nicht geöffnet werden: %1\n%2").arg(fileName, file.errorString());
+        return false;
     }
 
-    QByteArray transferData;
+    const QByteArray imageData = file.readAll();
 
-    if (m_requestedFileName == QByteArrayLiteral("$"))
+    if (file.error() != QFileDevice::NoError)
     {
-        if (!m_ptrDrive->createDirectoryProgram(deviceNumber(), transferData))
+        m_lastError = QStringLiteral("Fehler beim Lesen des Images: %1\n%2").arg(fileName, file.errorString());
+        return false;
+    }
+
+    m_imageFileName = fileName;
+    m_imageData = imageData;
+    m_imageModified = false;
+
+    return true;
+}
+
+bool IECFoundryDisk::ejectImage()
+{
+    m_lastError.clear();
+
+    if (m_imageModified && !saveImageInternal())
+        return false;
+
+    m_imageFileName.clear();
+    m_imageData.clear();
+    m_imageModified = false;
+
+    return true;
+}
+
+bool IECFoundryDisk::saveImage()
+{
+    m_lastError.clear();
+    return saveImageInternal();
+}
+
+bool IECFoundryDisk::saveImageInternal()
+{
+    if (m_imageFileName.isEmpty() || m_imageData.isNull())
+    {
+        m_lastError = QStringLiteral("Es ist kein Image zum Speichern geladen.");
+        return false;
+    }
+
+    QSaveFile file(m_imageFileName);
+
+    if (!file.open(QIODevice::WriteOnly))
+    {
+        m_lastError = QStringLiteral("Image konnte nicht zum Schreiben geöffnet werden: %1\n%2").arg(m_imageFileName, file.errorString());
+        return false;
+    }
+
+    if (file.write(m_imageData) != m_imageData.size())
+    {
+        m_lastError = QStringLiteral("Fehler beim Schreiben des Images: %1\n%2").arg(m_imageFileName, file.errorString());
+        file.cancelWriting();
+        return false;
+    }
+
+    if (!file.commit())
+    {
+        m_lastError = QStringLiteral("Image konnte nicht gespeichert werden: %1\n%2").arg(m_imageFileName, file.errorString());
+        return false;
+    }
+
+    m_imageModified = false;
+    return true;
+}
+
+
+int IECFoundryDisk::sectorsOnTrack(const int track)
+{
+    if (track < 1 || track > 35)
+        return 0;
+
+    if (track <= 17)
+        return 21;
+
+    if (track <= 24)
+        return 19;
+
+    if (track <= 30)
+        return 18;
+
+    return 17;
+}
+
+int IECFoundryDisk::sectorOffset(const int track, const int sector)
+{
+    if (track < 1 || track > 35)
+        return -1;
+
+    const int sectors = sectorsOnTrack(track);
+
+    if (sector < 0 || sector >= sectors)
+        return -1;
+
+    int offset = 0;
+
+    for (int currentTrack = 1; currentTrack < track; ++currentTrack)
+        offset += sectorsOnTrack(currentTrack);
+
+    return (offset + sector) * 256;
+}
+
+QByteArray IECFoundryDisk::normalizeDiskFileName(QByteArray fileName)
+{
+    while (!fileName.isEmpty() && (static_cast<quint8>(fileName.back()) == 0xA0 || fileName.back() == ' '))
+        fileName.chop(1);
+
+    return fileName.toUpper();
+}
+
+
+bool IECFoundryDisk::readSector(const quint8 track, const quint8 sector, QByteArray& data)
+{
+    m_lastError.clear();
+    data.clear();
+
+    if (!hasImage())
+    {
+        m_lastError = QStringLiteral("Es ist kein Disketten-Image geladen.");
+        recordSectorAccess(SectorAccessOperation::Read, track, sector, false, m_lastError);
+        return false;
+    }
+
+    const int offset = sectorOffset(track, sector);
+
+    if (offset < 0)
+    {
+        m_lastError = QStringLiteral("Ungültiger Track oder Sektor.");
+        recordSectorAccess(SectorAccessOperation::Read, track, sector, false, m_lastError);
+        return false;
+    }
+
+    constexpr int SectorSize = 256;
+
+    if (offset + SectorSize > m_imageData.size())
+    {
+        m_lastError = QStringLiteral("Der Sektor liegt außerhalb des Disketten-Images.");
+        recordSectorAccess(SectorAccessOperation::Read, track, sector, false, m_lastError);
+        return false;
+    }
+
+    data = m_imageData.mid(offset, SectorSize);
+
+    if (data.size() != SectorSize)
+    {
+        data.clear();
+        m_lastError = QStringLiteral("Der Sektor konnte nicht vollständig gelesen werden.");
+        recordSectorAccess(SectorAccessOperation::Read, track, sector, false, m_lastError);
+        return false;
+    }
+
+    recordSectorAccess(SectorAccessOperation::Read, track, sector, true, QString());
+    return true;
+}
+
+bool IECFoundryDisk::writeSector(const quint8 track, const quint8 sector, const QByteArray& data)
+{
+    Q_UNUSED(data);
+
+    m_lastError.clear();
+
+    if (!hasImage())
+    {
+        m_lastError = QStringLiteral("Es ist kein Disketten-Image geladen.");
+        recordSectorAccess(SectorAccessOperation::Write, track, sector, false, m_lastError);
+        return false;
+    }
+
+    m_lastError = QStringLiteral("Das Schreiben von Sektoren ist noch nicht implementiert.");
+    recordSectorAccess(SectorAccessOperation::Write, track, sector, false, m_lastError);
+
+    return false;
+}
+
+
+bool IECFoundryDisk::createDirectoryProgram(QByteArray& program)
+{
+    m_lastError.clear();
+    program.clear();
+
+    if (!hasImage())
+    {
+        m_lastError = QStringLiteral("Kein Disketten-Image geladen.");
+        return false;
+    }
+
+    QByteArray bam;
+
+    if (!readSector(18, 0, bam) || bam.size() != 256)
+        return false;
+
+    QByteArray header;
+
+    if (!createDirectoryHeader(bam, header))
+    {
+        m_lastError = QStringLiteral("Der Directory-Header konnte nicht erzeugt werden.");
+        return false;
+    }
+
+    program.append(header);
+
+    quint8 track = 18;
+    quint8 sector = 1;
+    QSet<quint16> visitedSectors;
+
+    while (track != 0)
+    {
+        const quint16 sectorKey = (static_cast<quint16>(track) << 8) | sector;
+
+        if (visitedSectors.contains(sectorKey))
         {
-            qDebug() << "IEC disk: directory creation failed:" << m_ptrDrive->lastError();
-            return;
+            m_lastError = QStringLiteral("Die Directory-Sektorkette enthält einen Zyklus.");
+            program.clear();
+            return false;
+        }
+
+        visitedSectors.insert(sectorKey);
+
+        QByteArray directorySector;
+
+        if (!readSector(track, sector, directorySector) || directorySector.size() != 256)
+        {
+            program.clear();
+            return false;
+        }
+
+        debugDirectorySector(directorySector, track, sector);
+
+        for (int entryOffset = 2; entryOffset + 29 < directorySector.size(); entryOffset += 32)
+        {
+            const quint8 fileType = static_cast<quint8>(directorySector.at(entryOffset));
+
+            if (fileType == 0)
+                continue;
+
+            QByteArray entry;
+
+            if (!createDirectoryEntry(directorySector, entryOffset, entry))
+            {
+                m_lastError = QStringLiteral("Ein Directory-Eintrag konnte nicht erzeugt werden.");
+                program.clear();
+                return false;
+            }
+
+            program.append(entry);
+        }
+
+        track = static_cast<quint8>(directorySector.at(0));
+        sector = static_cast<quint8>(directorySector.at(1));
+    }
+
+    quint16 freeBlocks = 0;
+
+    for (int currentTrack = 1; currentTrack <= 35; ++currentTrack)
+    {
+        if (currentTrack == 18)
+            continue;
+
+        const int bamOffset = 4 + ((currentTrack - 1) * 4);
+        freeBlocks += static_cast<quint8>(bam.at(bamOffset));
+    }
+
+    QByteArray footer;
+
+    if (!createDirectoryFooter(freeBlocks, footer))
+    {
+        m_lastError = QStringLiteral("Der Directory-Footer konnte nicht erzeugt werden.");
+        program.clear();
+        return false;
+    }
+
+    program.append(footer);
+
+    qDebug() << "IEC directory program:"
+             << "size:" << program.size()
+             << "load address:" << Qt::hex
+             << static_cast<quint8>(program.at(0))
+             << static_cast<quint8>(program.at(1));
+
+    qDebug().noquote() << "IEC directory program:" << program.toHex(' ');
+
+    return true;
+}
+
+
+bool IECFoundryDisk::readFile(const QByteArray& fileName, QByteArray& data)
+{
+    m_lastError.clear();
+    data.clear();
+
+    if (!hasImage())
+    {
+        m_lastError = QStringLiteral("Kein Disketten-Image geladen.");
+        return false;
+    }
+
+    const QByteArray requestedName = normalizeDiskFileName(fileName);
+
+    if (requestedName.isEmpty())
+    {
+        m_lastError = QStringLiteral("Es wurde kein Dateiname angegeben.");
+        return false;
+    }
+
+    QByteArray directorySector;
+
+    if (!readSector(18, 1, directorySector))
+        return false;
+
+    quint8 directoryTrack = 18;
+    quint8 directorySectorNumber = 1;
+    quint8 fileTrack = 0;
+    quint8 fileSectorNumber = 0;
+    bool fileFound = false;
+    QSet<quint16> visitedDirectorySectors;
+
+    while (directoryTrack != 0)
+    {
+        const quint16 sectorKey = (static_cast<quint16>(directoryTrack) << 8) | directorySectorNumber;
+
+        if (visitedDirectorySectors.contains(sectorKey))
+        {
+            m_lastError = QStringLiteral("Die Directory-Sektorkette enthält einen Zyklus.");
+            return false;
+        }
+
+        visitedDirectorySectors.insert(sectorKey);
+
+        if (!readSector(directoryTrack, directorySectorNumber, directorySector))
+            return false;
+
+        for (int entryOffset = 2; entryOffset + 29 < directorySector.size(); entryOffset += 32)
+        {
+            const quint8 fileType = static_cast<quint8>(directorySector.at(entryOffset));
+
+            if (fileType == 0)
+                continue;
+
+            if ((fileType & 0x07U) != 2)
+                continue;
+
+            const QByteArray entryName = normalizeDiskFileName(directorySector.mid(entryOffset + 3, 16));
+            bool matches = entryName == requestedName;
+
+            if (!matches && requestedName.endsWith('*'))
+            {
+                const QByteArray prefix = requestedName.left(requestedName.size() - 1);
+                matches = entryName.startsWith(prefix);
+            }
+
+            if (!matches)
+                continue;
+
+            fileTrack = static_cast<quint8>(directorySector.at(entryOffset + 1));
+            fileSectorNumber = static_cast<quint8>(directorySector.at(entryOffset + 2));
+            fileFound = true;
+            break;
+        }
+
+        if (fileFound)
+            break;
+
+        directoryTrack = static_cast<quint8>(directorySector.at(0));
+        directorySectorNumber = static_cast<quint8>(directorySector.at(1));
+    }
+
+    if (!fileFound)
+    {
+        m_lastError = QStringLiteral("PRG-Datei nicht gefunden: %1").arg(QString::fromLatin1(requestedName));
+        return false;
+    }
+
+    QSet<quint16> visitedFileSectors;
+
+    while (fileTrack != 0)
+    {
+        const quint16 sectorKey = (static_cast<quint16>(fileTrack) << 8) | fileSectorNumber;
+
+        if (visitedFileSectors.contains(sectorKey))
+        {
+            data.clear();
+            m_lastError = QStringLiteral("Die Dateisektorkette enthält einen Zyklus.");
+            return false;
+        }
+
+        visitedFileSectors.insert(sectorKey);
+
+        QByteArray fileSectorData;
+
+        if (!readSector(fileTrack, fileSectorNumber, fileSectorData))
+        {
+            data.clear();
+            return false;
+        }
+
+        const quint8 nextTrack = static_cast<quint8>(fileSectorData.at(0));
+        const quint8 nextSector = static_cast<quint8>(fileSectorData.at(1));
+
+        if (nextTrack != 0)
+        {
+            data.append(fileSectorData.constData() + 2, 254);
+        }
+        else
+        {
+            const int payloadSize = static_cast<int>(nextSector) - 1;
+
+            if (payloadSize < 0 || payloadSize > 254)
+            {
+                data.clear();
+                m_lastError = QStringLiteral("Der letzte Dateisektor enthält eine ungültige Länge.");
+                return false;
+            }
+
+            data.append(fileSectorData.constData() + 2, payloadSize);
+        }
+
+        fileTrack = nextTrack;
+        fileSectorNumber = nextSector;
+    }
+
+    if (data.size() < 2)
+    {
+        data.clear();
+        m_lastError = QStringLiteral("Die PRG-Datei enthält keine vollständige Ladeadresse.");
+        return false;
+    }
+
+    return true;
+}
+
+
+bool IECFoundryDisk::createDirectoryHeader(const QByteArray& bam, QByteArray& header)
+{
+    header.clear();
+
+    if (bam.size() != 256)
+        return false;
+
+    header = QByteArray(32, ' ');
+
+    header[0] = static_cast<char>(0x01);
+    header[1] = static_cast<char>(0x04);
+
+    header[2] = static_cast<char>(0x01);
+    header[3] = static_cast<char>(0x01);
+
+    header[4] = static_cast<char>(0x00);
+    header[5] = static_cast<char>(0x00);
+
+    header[6] = static_cast<char>(0x12);
+    header[7] = '"';
+
+    for (int index = 0; index < 16; ++index)
+    {
+        quint8 value = static_cast<quint8>(bam.at(144 + index));
+
+        if (value == 0xA0)
+            value = 0x20;
+
+        header[8 + index] = static_cast<char>(value & 0x7F);
+    }
+
+    header[24] = '"';
+    header[25] = ' ';
+
+    for (int index = 0; index < 5; ++index)
+    {
+        quint8 value = static_cast<quint8>(bam.at(162 + index));
+
+        if (value == 0xA0)
+            value = 0x20;
+
+        header[26 + index] = static_cast<char>(value & 0x7F);
+    }
+
+    header[31] = static_cast<char>(0x00);
+
+    return true;
+}
+
+bool IECFoundryDisk::createDirectoryEntry(const QByteArray& directorySector, const int entryOffset, QByteArray& entry)
+{
+    if (entryOffset < 2 || entryOffset + 29 >= directorySector.size())
+        return false;
+
+    const quint8 fileTypeFlags = static_cast<quint8>(directorySector.at(entryOffset));
+    const quint16 blocks = static_cast<quint8>(directorySector.at(entryOffset + 28))
+                           | (static_cast<quint16>(static_cast<quint8>(directorySector.at(entryOffset + 29))) << 8);
+
+    const QByteArray fileName = directorySector.mid(entryOffset + 3, 16);
+
+    int nameLength = 16;
+
+    for (int index = 0; index < 16; ++index)
+    {
+        const quint8 character = static_cast<quint8>(fileName.at(index));
+
+        if (character == 0x22 || character == 0x00)
+        {
+            nameLength = index;
+            break;
         }
     }
-    else
+
+    entry = QByteArray(32, ' ');
+    entry[0] = 0x01;
+    entry[1] = 0x01;
+    entry[2] = static_cast<char>(blocks & 0xFF);
+    entry[3] = static_cast<char>((blocks >> 8) & 0xFF);
+
+    int position = 5;
+
+    if (blocks < 100)
+        ++position;
+
+    if (blocks < 10)
+        ++position;
+
+    entry[position++] = '"';
+
+    const int nameStart = position;
+
+    for (int index = 0; index < 16; ++index)
     {
-        if (!m_ptrDrive->readFile(deviceNumber(), m_requestedFileName, transferData))
+        quint8 character = static_cast<quint8>(fileName.at(index));
+
+        if (index < nameLength)
+            entry[nameStart + index] = static_cast<char>(character);
+        else
         {
-            qDebug() << "IEC disk: file read failed:" << m_ptrDrive->lastError();
-            return;
+            if (character == 0x00)
+                character = 0x20;
+            else
+                character &= 0x7F;
+
+            entry[nameStart + index] = static_cast<char>(character);
         }
     }
 
-    qDebug() << "IEC disk: transfer data size:" << transferData.size();
+    entry[nameStart + nameLength] = '"';
 
-    if (transferData.isEmpty())
+    const int typePosition = nameStart + 17;
+
+    if ((fileTypeFlags & 0x80) == 0)
+        entry[typePosition] = '*';
+
+    const quint8 type = fileTypeFlags & 0x07;
+    const char* typeName = "???";
+
+    switch (type)
     {
-        qDebug() << "IEC disk: transfer data is empty";
-        return;
+    case 0: typeName = "DEL"; break;
+    case 1: typeName = "SEQ"; break;
+    case 2: typeName = "PRG"; break;
+    case 3: typeName = "USR"; break;
+    case 4: typeName = "REL"; break;
+    default: break;
     }
 
-    if (!m_protocol.startSending(transferData))
-    {
-        qDebug() << "IEC disk: startSending failed"
-                 << "mode:" << static_cast<int>(m_protocol.mode());
+    entry[typePosition + 1] = typeName[0];
+    entry[typePosition + 2] = typeName[1];
+    entry[typePosition + 3] = typeName[2];
 
-        m_pendingTalk = true;
+    if ((fileTypeFlags & 0x40) != 0)
+        entry[typePosition + 4] = '<';
+
+    entry[31] = '\0';
+
+    return true;
+}
+
+bool IECFoundryDisk::createDirectoryFooter(const quint16 freeBlocks, QByteArray& footer)
+{
+    footer = QByteArray(32, ' ');
+
+    footer[0] = static_cast<char>(0x01);
+    footer[1] = static_cast<char>(0x01);
+
+    footer[2] = static_cast<char>(freeBlocks & 0xFFU);
+    footer[3] = static_cast<char>((freeBlocks >> 8) & 0xFFU);
+
+    const QByteArray text = QByteArrayLiteral("BLOCKS FREE.");
+    footer.replace(4, text.size(), text);
+
+    footer[29] = static_cast<char>(0x00);
+    footer[30] = static_cast<char>(0x00);
+    footer[31] = static_cast<char>(0x00);
+
+    return true;
+}
+
+
+void IECFoundryDisk::debugDirectorySector(const QByteArray& directorySector, const quint8 track, const quint8 sector)
+{
+    qDebug() << "IEC directory sector:"
+             << "track:" << track
+             << "sector:" << sector
+             << "size:" << directorySector.size();
+
+    qDebug().noquote() << directorySector.toHex(' ');
+
+    if (directorySector.size() != 256)
         return;
-    }
 
-    qDebug() << "IEC disk: startSending accepted";
-    m_requestedFileName.clear();
+    for (int entryOffset = 2; entryOffset + 29 < directorySector.size(); entryOffset += 32)
+    {
+        const quint8 fileType = static_cast<quint8>(directorySector.at(entryOffset));
+
+        if ((fileType & 0x07U) == 0)
+            continue;
+
+        const QByteArray fileName = directorySector.mid(entryOffset + 3, 16);
+
+        const quint8 blockLow = static_cast<quint8>(directorySector.at(entryOffset + 28));
+        const quint8 blockHigh = static_cast<quint8>(directorySector.at(entryOffset + 29));
+
+        const quint16 blocks = static_cast<quint16>(blockLow) | (static_cast<quint16>(blockHigh) << 8);
+
+        qDebug() << "IEC directory entry:"
+                 << "offset:" << entryOffset
+                 << "type:" << Qt::hex << fileType
+                 << "name:" << fileName.toHex(' ')
+                 << "blocks:" << Qt::dec << blocks
+                 << "block bytes:" << Qt::hex << blockLow << blockHigh;
+    }
+}
+
+
+void IECFoundryDisk::recordSectorAccess(const SectorAccessOperation operation, const quint8 track, const quint8 sector, const bool success, const QString& errorMessage)
+{
+    SectorAccessStatus status;
+    status.operation = operation;
+    status.track = track;
+    status.sector = sector;
+    status.success = success;
+    status.errorMessage = errorMessage;
+
+    m_sectorAccessEvents.append(status);
+}
+
+QQueue<IECFoundryDisk::SectorAccessStatus> IECFoundryDisk::takeSectorAccessEvents()
+{
+    QQueue<SectorAccessStatus> events;
+    events.swap(m_sectorAccessEvents);
+    return events;
 }
