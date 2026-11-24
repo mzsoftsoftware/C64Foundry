@@ -5,7 +5,8 @@
 #include <QTabWidget>
 
 #include "Emulator/EmulatorController.h"
-#include "C64/IEC/IECDeviceConfiguration.h"
+#include "C64/IEC/IECSystemRequest.h"
+#include "C64/IEC/IECSystemResponse.h"
 #include "Gui/IEC/IECAsciiPrinterOutputWidget.h"
 
 
@@ -39,8 +40,15 @@ void IECPrinterOutputDockWidget::setController(EmulatorController* ptrController
     if (m_ptrController == nullptr)
         return;
 
-    connect(m_ptrController, &EmulatorController::requestDone, this, &IECPrinterOutputDockWidget::onRequestDone);
-    connect(m_ptrController, &EmulatorController::iecDeviceChanged, this, &IECPrinterOutputDockWidget::onIECDeviceChanged);
+    connect(m_ptrController,
+            &EmulatorController::iecRequestDone,
+            this,
+            &IECPrinterOutputDockWidget::onRequestDone);
+
+    connect(m_ptrController,
+            &EmulatorController::iecSystemEventsChanged,
+            this,
+            &IECPrinterOutputDockWidget::onIECSystemEventsChanged);
 
     refreshConfigurations();
 }
@@ -57,37 +65,35 @@ void IECPrinterOutputDockWidget::refreshConfigurations()
     }
 
     m_configurationRequestId =
-        m_ptrController->request(new EmulatorRequestGetIECConfigurations());
+        m_ptrController->request(new IECSystemGetConfigurationsRequest());
 
     if (m_configurationRequestId == 0)
     {
         qWarning() << "IECPrinterOutputDockWidget: could not submit configuration request";
-        return;
+        m_bRefreshPending = true;
     }
 }
 
-void IECPrinterOutputDockWidget::onRequestDone(QSharedPointer<EmulatorResponse> response)
+void IECPrinterOutputDockWidget::onRequestDone(QSharedPointer<IECResponse> response)
 {
     if (response.isNull())
         return;
 
-    if (m_configurationRequestId == 0 || response->id() != m_configurationRequestId)
+    if (m_configurationRequestId == 0 ||
+        response->requestId() != m_configurationRequestId)
         return;
 
     m_configurationRequestId = 0;
 
     bool bRefreshSuccess = false;
 
-    if (response->type() == EmulatorRequest::Type::GetIECConfigurations && response->success())
-    {
-        const EmulatorResponseIEC* ptrResponse =
-            dynamic_cast<const EmulatorResponseIEC*>(response.data());
+    const IECSystemGetConfigurationsResponse* ptrResponse =
+        dynamic_cast<const IECSystemGetConfigurationsResponse*>(response.data());
 
-        if (ptrResponse != nullptr)
-        {
-            updatePrinterTabs(ptrResponse->configurations());
-            bRefreshSuccess = true;
-        }
+    if (response->success() && ptrResponse != nullptr)
+    {
+        updatePrinterTabs(ptrResponse->configurations());
+        bRefreshSuccess = true;
     }
 
     if (!bRefreshSuccess)
@@ -100,34 +106,36 @@ void IECPrinterOutputDockWidget::onRequestDone(QSharedPointer<EmulatorResponse> 
     }
 }
 
-void IECPrinterOutputDockWidget::onIECDeviceChanged(
-    EmulatorIECDeviceEvent::Type type,
-    IECDeviceConfiguration::DeviceId deviceId)
+void IECPrinterOutputDockWidget::onIECSystemEventsChanged(IECSystemEventList events)
 {
-    Q_UNUSED(deviceId)
-
-    switch (type)
+    for (const IECSystemEventPtr& ptrEvent : events)
     {
-    case EmulatorIECDeviceEvent::Type::Added:
-    case EmulatorIECDeviceEvent::Type::Removed:
-    case EmulatorIECDeviceEvent::Type::ConfigurationChanged:
-    case EmulatorIECDeviceEvent::Type::Restored:
-        refreshConfigurations();
-        break;
+        if (ptrEvent.isNull())
+            continue;
 
-    case EmulatorIECDeviceEvent::Type::Reset:
-        // Ein Reset ändert die Geräteliste nicht.
-        break;
+        switch (ptrEvent->type)
+        {
+        case IECSystemEvent::Type::DeviceAdded:
+        case IECSystemEvent::Type::DeviceRemoved:
+        case IECSystemEvent::Type::ConfigurationChanged:
+        case IECSystemEvent::Type::ConfigurationsRestored:
+            refreshConfigurations();
+            return;
+
+        case IECSystemEvent::Type::Reset:
+            // Ein Reset ändert die Geräteliste nicht.
+            break;
+        }
     }
 }
 
 void IECPrinterOutputDockWidget::updatePrinterTabs(
-    const QList<IECDeviceManager::ConfigurationPtr>& configurations)
+    const QList<QSharedPointer<IECDeviceConfiguration>>& configurations)
 {
-    QList<IECDeviceManager::ConfigurationPtr> sortedConfigurations;
-    QHash<IECDeviceConfiguration::DeviceId, IECDeviceManager::ConfigurationPtr> newConfigurations;
+    QList<QSharedPointer<IECDeviceConfiguration>> sortedConfigurations;
+    QHash<IECDeviceConfiguration::DeviceId, QSharedPointer<IECDeviceConfiguration>> newConfigurations;
 
-    for (const IECDeviceManager::ConfigurationPtr& ptrConfiguration : configurations)
+    for (const QSharedPointer<IECDeviceConfiguration>& ptrConfiguration : configurations)
     {
         if (ptrConfiguration.isNull())
             continue;
@@ -151,10 +159,12 @@ void IECPrinterOutputDockWidget::updatePrinterTabs(
     // Tabs für entfernte oder nicht mehr unterstützte Drucker entfernen.
     for (IECDeviceConfiguration::DeviceId deviceId : m_printerWidgets.keys())
     {
-        const IECDeviceManager::ConfigurationPtr ptrConfiguration = newConfigurations.value(deviceId);
+        const QSharedPointer<IECDeviceConfiguration> ptrConfiguration = newConfigurations.value(deviceId);
+
         const bool bKeepWidget = !ptrConfiguration.isNull()
                                  && ptrConfiguration->type() == IECDeviceType::PrinterASCII
                                  && ptrConfiguration->enabled();
+
         if (bKeepWidget)
             continue;
 
@@ -168,7 +178,7 @@ void IECPrinterOutputDockWidget::updatePrinterTabs(
     }
 
     // Vorhandene Tabs aktualisieren und neue Tabs erzeugen.
-    for (const IECDeviceManager::ConfigurationPtr& ptrConfiguration : sortedConfigurations)
+    for (const QSharedPointer<IECDeviceConfiguration>& ptrConfiguration : sortedConfigurations)
     {
         const IECDeviceConfiguration::DeviceId deviceId = ptrConfiguration->id();
         IECAsciiPrinterOutputWidget* ptrWidget = m_printerWidgets.value(deviceId, nullptr);
@@ -185,7 +195,6 @@ void IECPrinterOutputDockWidget::updatePrinterTabs(
 
         ptrWidget->setPrinterName(printerName);
 
-        // Bestehenden Tab entfernen und an der sortierten Position wieder einsetzen.
         const int oldIndex = ui->tabWidget_Printers->indexOf(ptrWidget);
 
         if (oldIndex >= 0)
