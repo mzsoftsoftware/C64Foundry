@@ -12,10 +12,9 @@
 #include "EmulatorRequest.h"
 #include "EmulatorResponse.h"
 #include "C64/IEC/IECResponse.h"
-
+#include "C64/VideoFrameSource.h"
 
 class C64Machine;
-class VideoFrameSource;
 class IECSystem;
 class IECDeviceFactory;
 class EmulationScheduler;

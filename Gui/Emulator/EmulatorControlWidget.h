@@ -1,7 +1,9 @@
 #pragma once
 
 #include <QWidget>
+#include <QSharedPointer>
 
+#include "Emulator/EmulatorResponse.h"
 #include "Emulator/EmulatorTypes.h"
 
 class EmulatorController;
@@ -33,7 +35,7 @@ private slots:
     void onStatisticsChanged(quint64 cycles, quint64 currentCyclesPerSecond, quint64 averageCyclesPerSecond);
 
     void on_toolButton_LoadPRG_clicked();
-    void onProgramLoaded(bool bLoaded);
+    void onProgramLoaded(QSharedPointer<EmulatorResponse> response);
 
 private:
     void setupSpeedComboBox();
@@ -41,5 +43,6 @@ private:
 private:
     Ui::EmulatorControlWidget* ui;
 
-    EmulatorController* m_ptrController = nullptr;
+    EmulatorController* m_ptrController = nullptr;    
+    EmulatorRequest::RequestId m_loadProgramRequestId = 0;
 };

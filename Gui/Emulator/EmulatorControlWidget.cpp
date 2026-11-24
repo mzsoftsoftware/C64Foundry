@@ -33,7 +33,8 @@ void EmulatorControlWidget::setController(EmulatorController* ptrController)
 
     connect(m_ptrController, &EmulatorController::stateChanged, this, &EmulatorControlWidget::setState);
     connect(m_ptrController, &EmulatorController::statisticsChanged, this, &EmulatorControlWidget::onStatisticsChanged);
-    connect(m_ptrController, &EmulatorController::programLoaded, this, &EmulatorControlWidget::onProgramLoaded);
+    connect(m_ptrController, &EmulatorController::requestDone,
+            this, &EmulatorControlWidget::onProgramLoaded);
 }
 
 void EmulatorControlWidget::setState(Emulator::State state)
@@ -148,13 +149,27 @@ void EmulatorControlWidget::on_toolButton_LoadPRG_clicked()
         return;
     }
 
-    m_ptrController->loadProgram(prgFile.loadAddress(), prgFile.data());
+    m_loadProgramRequestId = m_ptrController->request(
+        new EmulatorRequestLoadProgram(prgFile.loadAddress(), prgFile.data()));
 }
-void EmulatorControlWidget::onProgramLoaded(bool bLoaded)
+void EmulatorControlWidget::onProgramLoaded(QSharedPointer<EmulatorResponse> response)
 {
-    if (!bLoaded)
+    if (response.isNull())
+        return;
+
+    if (m_loadProgramRequestId == 0)
+        return;
+
+    if (response->id() != m_loadProgramRequestId)
+        return;
+
+    m_loadProgramRequestId = 0;
+
+    if (response->type() != EmulatorRequest::Type::LoadProgram)
+        return;
+
+    if (!response->success())
     {
         QMessageBox::warning(this, tr("Load PRG file"), tr("The PRG file could not be loaded into C64 memory."));
     }
 }
-

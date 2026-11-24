@@ -14,11 +14,10 @@
 #include "C64/IEC/IECResponse.h"
 #include "C64/IEC/IECSystemEvent.h"
 #include "C64/IEC/IECDeviceEvent.h"
-
+#include "C64/VideoFrameSource.h"
 
 class EmulatorThread;
 class EmulatorWorker;
-class VideoFrameSource;
 
 
 class EmulatorController : public QObject

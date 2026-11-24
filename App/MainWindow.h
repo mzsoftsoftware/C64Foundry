@@ -6,6 +6,10 @@
 #include "Emulator/EmulatorRequest.h"
 #include "Emulator/EmulatorResponse.h"
 
+#include "C64/IEC/IECRequest.h"
+#include "C64/IEC/IECResponse.h"
+#include "C64/VideoFrameSource.h"
+
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class MainWindow;
@@ -16,7 +20,6 @@ class ConfigurationManager;
 class EmulatorController;
 class KeyboardController;
 class VideoController;
-class VideoFrameSource;
 
 
 class MainWindow : public QMainWindow
@@ -30,7 +33,7 @@ public:
     bool initialize();
 
 private slots:
-    void onIECConfigurationsRestored(QSharedPointer<EmulatorResponse> response);
+    void onIECConfigurationsRestored(QSharedPointer<IECResponse> response);
     void onVideoFrameSourceReady(VideoFrameSource* ptrSource);
     void romSetLoaded(bool bLoaded);
     void onConfigurationSaveErrorChanged(bool bError);
@@ -57,5 +60,5 @@ private:
 
     VideoController* m_ptrVideoController = nullptr;
 
-    EmulatorRequest::RequestId m_restoreIECRequestId = 0;
+    IECRequest::RequestId m_restoreIECRequestId = 0;
 };

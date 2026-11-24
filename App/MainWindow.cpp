@@ -16,6 +16,9 @@
 
 #include "Storage/PRG/C64PRGFile.h"
 
+#include "C64/IEC/IECSystemRequest.h"
+#include "C64/IEC/IECSystemResponse.h"
+
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -45,7 +48,8 @@ bool MainWindow::initialize()
         return false;
 
     m_ptrEmulatorController = new EmulatorController(this);
-    connect(m_ptrEmulatorController, &EmulatorController::requestDone, this, &MainWindow::onIECConfigurationsRestored);
+    connect(m_ptrEmulatorController, &EmulatorController::iecRequestDone,
+            this, &MainWindow::onIECConfigurationsRestored);
 
     ui->dockWidgetContents_EmulatorControl->setController(m_ptrEmulatorController);
     ui->dockWidgetContents_IECControl->setController(m_ptrEmulatorController);
@@ -178,7 +182,7 @@ void MainWindow::closeEvent(QCloseEvent* ptrEvent)
     QMainWindow::closeEvent(ptrEvent);
 }
 
-void MainWindow::onIECConfigurationsRestored(QSharedPointer<EmulatorResponse> response)
+void MainWindow::onIECConfigurationsRestored(QSharedPointer<IECResponse> response)
 {
     if (response.isNull())
         return;
@@ -186,15 +190,15 @@ void MainWindow::onIECConfigurationsRestored(QSharedPointer<EmulatorResponse> re
     if (m_restoreIECRequestId == 0)
         return;
 
-    if (response->id() != m_restoreIECRequestId)
-        return;
-
-    if (response->type() != EmulatorRequest::Type::RestoreIECConfigurations)
+    if (response->requestId() != m_restoreIECRequestId)
         return;
 
     m_restoreIECRequestId = 0;
 
-    if (!response->success())
+    const IECSystemRestoreConfigurationsResponse* ptrRestoreResponse =
+        dynamic_cast<const IECSystemRestoreConfigurationsResponse*>(response.data());
+
+    if (!response->success() || ptrRestoreResponse == nullptr)
     {
         QMessageBox::critical(this, tr("IEC configuration error"), tr("The saved IEC device configurations could not be restored."));
 
@@ -203,6 +207,7 @@ void MainWindow::onIECConfigurationsRestored(QSharedPointer<EmulatorResponse> re
     }
 
     qDebug() << "MainWindow: IEC configurations restored successfully";
+
     m_ptrConfigurationManager->startIECSynchronization(m_ptrEmulatorController);
     m_ptrEmulatorController->loadROMSet(m_ptrConfigurationManager->activeConfiguration()->romSet);
 }
