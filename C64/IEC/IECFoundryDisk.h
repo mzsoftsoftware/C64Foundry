@@ -41,6 +41,7 @@ public:
     int slotIndex() const;
 
     bool enabled() const;
+    void setEnabled(bool enabled);
     bool saveCurrentDiskOnExit() const;
 
     bool setConfiguration(const IECFoundryDiskConfiguration& configuration);

@@ -28,6 +28,7 @@ public:
     IECFoundryDisk* disk(int slotIndex) const;
     IECFoundryDisk* diskByDeviceNumber(quint8 deviceNumber) const;
 
+    bool setDiskEnabled(quint8 deviceNumber, bool enabled);
     bool insertImage(quint8 deviceNumber, const QString& fileName);
     bool ejectImage(quint8 deviceNumber);
     bool saveImage(quint8 deviceNumber);

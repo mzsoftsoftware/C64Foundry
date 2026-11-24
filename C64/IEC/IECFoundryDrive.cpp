@@ -127,7 +127,25 @@ IECFoundryDisk* IECFoundryDrive::findDisk(const quint8 deviceNumber) const
     return m_disks.at(slotIndex);
 }
 
+bool IECFoundryDrive::setDiskEnabled(
+    const quint8 deviceNumber, const bool enabled)
+{
+    IECFoundryDisk* ptrDisk = findDisk(deviceNumber);
 
+    if (ptrDisk == nullptr)
+        return false;
+
+    IECFoundryDiskConfiguration* ptrConfiguration =
+        m_configuration.diskConfiguration(ptrDisk->slotIndex());
+
+    if (ptrConfiguration == nullptr)
+        return false;
+
+    ptrDisk->setEnabled(enabled);
+    ptrConfiguration->setEnabled(enabled);
+
+    return true;
+}
 bool IECFoundryDrive::insertImage(const quint8 deviceNumber, const QString& fileName)
 {
     IECFoundryDisk* ptrDisk = findDisk(deviceNumber);

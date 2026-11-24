@@ -21,6 +21,20 @@ private:
     IECDeviceConfiguration::DeviceId m_deviceId = 0;
 };
 
+class IECFoundryDriveResponse : public IECDeviceResponse
+{
+public:
+    explicit IECFoundryDriveResponse(RequestId requestId)
+        : IECDeviceResponse(requestId)
+    {
+    }
+
+    const QString& errorMessage() const { return m_errorMessage; }
+    void setErrorMessage(const QString& message) { m_errorMessage = message; }
+
+private:
+    QString m_errorMessage;
+};
 
 class IECPrinterTearOffResponse : public IECDeviceResponse
 {
@@ -36,3 +50,4 @@ public:
 private:
     QString m_errorMessage;
 };
+

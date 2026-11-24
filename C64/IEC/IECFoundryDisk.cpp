@@ -35,6 +35,10 @@ bool IECFoundryDisk::enabled() const
 {
     return m_enabled;
 }
+void IECFoundryDisk::setEnabled(const bool enabled)
+{
+    m_enabled = enabled;
+}
 
 bool IECFoundryDisk::saveCurrentDiskOnExit() const
 {
