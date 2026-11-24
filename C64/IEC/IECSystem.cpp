@@ -2,6 +2,7 @@
 
 #include "IECDeviceFactory.h"
 #include "IECDevice.h"
+#include "IECDeviceManager.h"
 #include "IECDeviceRequest.h"
 #include "IECSystemRequest.h"
 
@@ -11,9 +12,12 @@ IECSystem::IECSystem(C64Machine* ptrMachine, IECDeviceFactory* ptrDeviceFactory)
     m_ptrDeviceFactory(ptrDeviceFactory)
 {
 }
+
+
 IECSystem::~IECSystem()
 {
 }
+
 
 QList<IECDeviceType> IECSystem::availableDeviceTypes() const
 {
@@ -22,12 +26,94 @@ QList<IECDeviceType> IECSystem::availableDeviceTypes() const
 
     return m_ptrDeviceFactory->availableDeviceTypes();
 }
+
+
 QList<quint8> IECSystem::supportedDeviceNumbers(const IECDeviceType type) const
 {
     if (m_ptrDeviceFactory == nullptr)
         return {};
 
     return m_ptrDeviceFactory->supportedDeviceNumbers(type);
+}
+
+
+IECSystem::DeviceEntry* IECSystem::findEntry(const DeviceId id)
+{
+    for (DeviceEntry& entry : m_devices)
+    {
+        if (entry.configuration != nullptr && entry.configuration->id() == id)
+            return &entry;
+    }
+
+    return nullptr;
+}
+
+
+const IECSystem::DeviceEntry* IECSystem::findEntry(const DeviceId id) const
+{
+    for (const DeviceEntry& entry : m_devices)
+    {
+        if (entry.configuration != nullptr && entry.configuration->id() == id)
+            return &entry;
+    }
+
+    return nullptr;
+}
+
+
+IECSystem::ConfigurationPtr IECSystem::configuration(const DeviceId id) const
+{
+    const DeviceEntry* ptrEntry = findEntry(id);
+
+    if (ptrEntry == nullptr || ptrEntry->configuration == nullptr)
+        return {};
+
+    return ConfigurationPtr(ptrEntry->configuration->clone());
+}
+
+
+QList<IECSystem::ConfigurationPtr> IECSystem::configurations() const
+{
+    QList<ConfigurationPtr> result;
+
+    for (const DeviceEntry& entry : m_devices)
+    {
+        if (entry.configuration == nullptr)
+            continue;
+
+        result.append(ConfigurationPtr(entry.configuration->clone()));
+    }
+
+    return result;
+}
+
+
+void IECSystem::collectDeviceEvents()
+{
+    if (m_ptrDeviceManager == nullptr)
+        return;
+
+    m_deviceEvents.append(m_ptrDeviceManager->takeEvents());
+}
+
+
+IECSystemEventList IECSystem::takeSystemEvents()
+{
+    IECSystemEventList events;
+    events.swap(m_systemEvents);
+
+    return events;
+}
+
+
+IECDeviceEventList IECSystem::takeDeviceEvents()
+{
+    collectDeviceEvents();
+
+    IECDeviceEventList events;
+    events.swap(m_deviceEvents);
+
+    return events;
 }
 
 
