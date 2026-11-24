@@ -21,6 +21,19 @@ public:
     void setConfiguration(const IECFoundryDiskConfiguration& configuration, const QList<quint8>& availableDeviceNumbers);
     IECFoundryDiskConfiguration configuration() const;
 
+private slots:
+    void on_spinBox_StartDevice_valueChanged(int value);
+    void on_spinBox_SlotCount_valueChanged(int value);
+    void onSlotDeviceNumberChanged(int index);
+
+private:
+    void updateStartDeviceMaximum();
+    void updateReservedRangeLabel();
+    void updateDeviceNumberAvailability();
+
+    void addSlotRow();
+    void removeSlotRow();
+
 private:
     Ui::IECFoundryDriveSettingsDialog* ui;
     IECFoundryDiskConfiguration m_configuration;
