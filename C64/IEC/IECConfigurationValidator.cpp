@@ -133,13 +133,10 @@ bool IECConfigurationValidator::validate(
 
         case IECDeviceType::FoundryDrive:
         {
-            const IECFoundryDriveConfiguration* ptrDriveConfiguration =
-                dynamic_cast<const IECFoundryDriveConfiguration*>(&configuration);
-
+            const IECFoundryDriveConfiguration* ptrDriveConfiguration = dynamic_cast<const IECFoundryDriveConfiguration*>(&configuration);
             if (ptrDriveConfiguration == nullptr)
             {
-                appendError(errors, QStringLiteral("IEC device %1 has an invalid configuration type for FoundryDrive.")
-                                .arg(configuration.id()));
+                appendError(errors, QStringLiteral("IEC device %1 has an invalid configuration type for FoundryDrive.").arg(configuration.id()));
                 valid = false;
                 break;
             }
@@ -148,13 +145,9 @@ bool IECConfigurationValidator::validate(
             const int slotCount = ptrDriveConfiguration->slotCount();
             const int endDeviceNumber = ptrDriveConfiguration->endDeviceNumber();
 
-            const bool slotCountValid =
-                slotCount >= 1 &&
-                slotCount <= IECFoundryDriveConfiguration::MaximumDiskCount;
+            const bool slotCountValid = slotCount >= 1 && slotCount <= IECFoundryDriveConfiguration::MaximumDiskCount;
 
-            const bool startAddressValid =
-                startDeviceNumber >= MinimumIECDeviceNumber &&
-                startDeviceNumber <= MaximumIECDeviceNumber;
+            const bool startAddressValid = startDeviceNumber >= MinimumIECDeviceNumber && startDeviceNumber <= MaximumIECDeviceNumber;
 
             if (!slotCountValid)
             {
@@ -207,10 +200,12 @@ bool IECConfigurationValidator::validate(
             // Disk configurations
             //
             QSet<int> usedSlotIndices;
+            QSet<int> usedDiskDeviceNumbers;
 
             for (const IECFoundryDiskConfiguration& diskConfiguration : ptrDriveConfiguration->disks())
             {
                 const int slotIndex = diskConfiguration.slotIndex();
+                const int deviceNumber = diskConfiguration.deviceNumber();
 
                 if (slotIndex < 0 || slotIndex >= slotCount)
                 {
@@ -230,6 +225,33 @@ bool IECConfigurationValidator::validate(
                 else
                 {
                     usedSlotIndices.insert(slotIndex);
+                }
+
+                //
+                // Disk IEC address must belong to the reserved range.
+                //
+                if (deviceNumber < startDeviceNumber || deviceNumber > endDeviceNumber)
+                {
+                    appendError(errors, QStringLiteral("Foundry Drive %1 has a disk in slot %2 with IEC device number %3 outside its reserved range.")
+                                    .arg(configuration.id())
+                                    .arg(slotIndex + 1)
+                                    .arg(deviceNumber));
+                    valid = false;
+                }
+
+                //
+                // Disk IEC addresses must be unique within the drive.
+                //
+                if (usedDiskDeviceNumbers.contains(deviceNumber))
+                {
+                    appendError(errors, QStringLiteral("Foundry Drive %1 assigns IEC device number %2 more than once.")
+                                    .arg(configuration.id())
+                                    .arg(deviceNumber));
+                    valid = false;
+                }
+                else
+                {
+                    usedDiskDeviceNumbers.insert(deviceNumber);
                 }
             }
 

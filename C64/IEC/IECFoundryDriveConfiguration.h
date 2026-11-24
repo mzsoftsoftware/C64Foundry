@@ -18,15 +18,12 @@ public:
     int endDeviceNumber() const;
 
     void setStartDeviceNumber(quint8 deviceNumber);
-    void setSlotCount(int slotCount);
 
     const QList<IECFoundryDiskConfiguration>& disks() const;
-
     IECFoundryDiskConfiguration* diskConfiguration(int slotIndex);
     const IECFoundryDiskConfiguration* diskConfiguration(int slotIndex) const;
 
     bool addDiskConfiguration(const IECFoundryDiskConfiguration& configuration);
-    bool removeDiskConfiguration(int slotIndex);
 
     IECDeviceConfiguration* clone() const override;
 
@@ -35,7 +32,6 @@ protected:
 
 private:
     quint8 m_startDeviceNumber = 8;
-    int m_slotCount = MaximumDiskCount;
 
     QList<IECFoundryDiskConfiguration> m_disks;
 };

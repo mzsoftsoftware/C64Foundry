@@ -283,10 +283,7 @@ bool ConfigurationStorage::loadIECDevices(QSettings& settings, QList<QSharedPoin
             bool startDeviceNumberValid = false;
             const uint startDeviceNumber = settings.value(QStringLiteral("StartDeviceNumber")).toUInt(&startDeviceNumberValid);
 
-            bool slotCountValid = false;
-            const int slotCount = settings.value(QStringLiteral("SlotCount")).toInt(&slotCountValid);
-
-            if (!startDeviceNumberValid || startDeviceNumber > 255 || !slotCountValid)
+            if (!startDeviceNumberValid || startDeviceNumber > 255)
             {
                 settings.endArray();
                 return false;
@@ -295,10 +292,10 @@ bool ConfigurationStorage::loadIECDevices(QSettings& settings, QList<QSharedPoin
             IECFoundryDriveConfiguration* ptrDriveConfiguration = new IECFoundryDriveConfiguration();
 
             ptrDriveConfiguration->setStartDeviceNumber(static_cast<quint8>(startDeviceNumber));
-            ptrDriveConfiguration->setSlotCount(slotCount);
 
             //
             // Load configured disk slots.
+            // The number of disk configurations determines the slot count.
             //
             const int diskCount = settings.beginReadArray(QStringLiteral("Disks"));
 
@@ -316,8 +313,27 @@ bool ConfigurationStorage::loadIECDevices(QSettings& settings, QList<QSharedPoin
                     return false;
                 }
 
+                //
+                // Older configurations did not store an individual
+                // IEC device number for each disk.
+                //
+                bool deviceNumberValid = true;
+                uint deviceNumber = startDeviceNumber + static_cast<uint>(slotIndex);
+
+                if (settings.contains(QStringLiteral("DeviceNumber")))
+                    deviceNumber = settings.value(QStringLiteral("DeviceNumber")).toUInt(&deviceNumberValid);
+
+                if (!deviceNumberValid || deviceNumber > 255)
+                {
+                    settings.endArray();
+                    settings.endArray();
+                    return false;
+                }
+
                 IECFoundryDiskConfiguration diskConfiguration;
+
                 diskConfiguration.setSlotIndex(slotIndex);
+                diskConfiguration.setDeviceNumber(static_cast<quint8>(deviceNumber));
                 diskConfiguration.setEnabled(settings.value(QStringLiteral("Enabled"), false).toBool());
 
                 const bool saveCurrentDiskOnExit = settings.value(QStringLiteral("SaveCurrentDiskOnExit"), false).toBool();
@@ -409,7 +425,8 @@ bool ConfigurationStorage::saveIECDevices(QSettings& settings, const QList<QShar
         }
         case IECDeviceType::FoundryDrive:
         {
-            const IECFoundryDriveConfiguration* ptrDriveConfiguration = dynamic_cast<const IECFoundryDriveConfiguration*>(ptrConfiguration.data());
+            const IECFoundryDriveConfiguration* ptrDriveConfiguration =
+                dynamic_cast<const IECFoundryDriveConfiguration*>(ptrConfiguration.data());
 
             if (ptrDriveConfiguration == nullptr)
             {
@@ -419,11 +436,9 @@ bool ConfigurationStorage::saveIECDevices(QSettings& settings, const QList<QShar
 
             settings.setValue(QStringLiteral("Type"), QStringLiteral("FoundryDrive"));
             settings.setValue(QStringLiteral("StartDeviceNumber"), static_cast<uint>(ptrDriveConfiguration->startDeviceNumber()));
-            settings.setValue(QStringLiteral("SlotCount"), ptrDriveConfiguration->slotCount());
 
             //
-            // Store only configured disk slots. SlotIndex identifies the
-            // actual slot and is independent of the array position.
+            // Store configured disk slots.
             //
             const QList<IECFoundryDiskConfiguration>& disks = ptrDriveConfiguration->disks();
             settings.beginWriteArray(QStringLiteral("Disks"), disks.size());
@@ -436,6 +451,7 @@ bool ConfigurationStorage::saveIECDevices(QSettings& settings, const QList<QShar
                 const bool saveCurrentDiskOnExit = diskConfiguration.saveCurrentDiskOnExit();
 
                 settings.setValue(QStringLiteral("SlotIndex"), diskConfiguration.slotIndex());
+                settings.setValue(QStringLiteral("DeviceNumber"), static_cast<uint>(diskConfiguration.deviceNumber()));
                 settings.setValue(QStringLiteral("Enabled"), diskConfiguration.enabled());
                 settings.setValue(QStringLiteral("SaveCurrentDiskOnExit"), saveCurrentDiskOnExit);
 

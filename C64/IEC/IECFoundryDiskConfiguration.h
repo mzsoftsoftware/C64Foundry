@@ -13,12 +13,14 @@ public:
 
     DiskId diskId() const;
     int slotIndex() const;
+    quint8 deviceNumber() const;
     bool enabled() const;
     QString imageFileName() const;
     bool saveCurrentDiskOnExit() const;
 
     void setDiskId(DiskId diskId);
     void setSlotIndex(int slotIndex);
+    void setDeviceNumber(quint8 deviceNumber);
     void setEnabled(bool enabled);
     void setImageFileName(const QString& fileName);
     void setSaveCurrentDiskOnExit(bool enabled);
@@ -29,6 +31,7 @@ public:
 private:
     DiskId m_diskId = 0;
     int m_slotIndex = 0;
+    quint8 m_deviceNumber = 8;
     bool m_enabled = false;
     QString m_imageFileName;
     bool m_saveCurrentDiskOnExit = false;
