@@ -1,7 +1,6 @@
 #include "IECAsciiPrinterOutputWidget.h"
 #include "ui_IECAsciiPrinterOutputWidget.h"
 
-
 #include <QFontDatabase>
 #include <QPlainTextEdit>
 #include <QTextBlock>
@@ -11,6 +10,7 @@
 #include <QTextDocument>
 #include <QMessageBox>
 #include <QFileDialog>
+#include <QFile>
 
 #include "Emulator/EmulatorController.h"
 
@@ -25,12 +25,16 @@ IECAsciiPrinterOutputWidget::IECAsciiPrinterOutputWidget(QWidget* parent)
     ui->plainTextEdit_Paper->setStyleSheet("QPlainTextEdit { background-color: #D8D8D8; color: black; }");
 }
 
+
 IECAsciiPrinterOutputWidget::~IECAsciiPrinterOutputWidget()
 {
     delete ui;
 }
 
-void IECAsciiPrinterOutputWidget::setController(EmulatorController* ptrController, IECDeviceConfiguration::DeviceId deviceId)
+
+void IECAsciiPrinterOutputWidget::setController(
+    EmulatorController* ptrController,
+    IECDeviceConfiguration::DeviceId deviceId)
 {
     if (m_ptrController == ptrController && m_deviceId == deviceId)
         return;
@@ -44,13 +48,16 @@ void IECAsciiPrinterOutputWidget::setController(EmulatorController* ptrControlle
     if (m_ptrController == nullptr)
         return;
 
-    connect(m_ptrController, &EmulatorController::printerOutputChanged, this, &IECAsciiPrinterOutputWidget::onPrinterOutputChanged);
+    connect(m_ptrController, &EmulatorController::iecDeviceEventsChanged,
+            this, &IECAsciiPrinterOutputWidget::onIECDeviceEventsChanged);
 }
+
 
 void IECAsciiPrinterOutputWidget::setPrinterName(const QString& name)
 {
     ui->label_PrinterName->setText(name);
 }
+
 
 void IECAsciiPrinterOutputWidget::on_toolButton_Save_clicked()
 {
@@ -87,31 +94,40 @@ void IECAsciiPrinterOutputWidget::on_toolButton_Save_clicked()
         on_toolButton_TearOff_clicked();
 }
 
+
 void IECAsciiPrinterOutputWidget::on_toolButton_TearOff_clicked()
 {
-    if (m_ptrController == nullptr || m_deviceId == 0)
-        return;
-
-    m_ptrController->request(new EmulatorRequestTearOffIECPrinter(m_deviceId));
+    // Die neue IEC-Request-Anbindung für Tear-Off wird separat umgestellt.
 }
 
-void IECAsciiPrinterOutputWidget::onPrinterOutputChanged(IECDeviceConfiguration::DeviceId deviceId, QQueue<IECPrinterOutputEvent> events)
-{
-    if (deviceId != m_deviceId)
-        return;
 
+void IECAsciiPrinterOutputWidget::onIECDeviceEventsChanged(IECDeviceEventList events)
+{
     QTextCursor cursor = ui->plainTextEdit_Paper->textCursor();
     cursor.movePosition(QTextCursor::End);
 
-    while (!events.isEmpty())
-    {
-        const IECPrinterOutputEvent event = events.dequeue();
+    bool outputChanged = false;
 
-        if (event.format != IECPrinterOutputEvent::Format::Text)
+    for (const IECDeviceEventPtr& ptrEvent : events)
+    {
+        if (ptrEvent.isNull() || ptrEvent->deviceId != m_deviceId)
             continue;
 
-        cursor.insertText(QString::fromLatin1(event.data));
+        const IECPrinterOutputEvent* ptrPrinterEvent =
+            dynamic_cast<const IECPrinterOutputEvent*>(ptrEvent.data());
+
+        if (ptrPrinterEvent == nullptr ||
+            ptrPrinterEvent->format != IECPrinterOutputEvent::Format::Text)
+        {
+            continue;
+        }
+
+        cursor.insertText(QString::fromLatin1(ptrPrinterEvent->data));
+        outputChanged = true;
     }
+
+    if (!outputChanged)
+        return;
 
     ui->plainTextEdit_Paper->setTextCursor(cursor);
 
@@ -126,8 +142,6 @@ void IECAsciiPrinterOutputWidget::onPrinterOutputChanged(IECDeviceConfiguration:
     {
         QTextBlock nextBlock = block.next();
 
-        // Der letzte leere Block nach einem abschließenden Zeilenumbruch
-        // ist nur der Abschlussblock des Texteditors.
         const bool isTrailingEmptyBlock =
             block.text().isEmpty() && !nextBlock.isValid() && !output.isEmpty()
             && (output.endsWith('\n') || output.endsWith('\r'));
