@@ -1,34 +1,80 @@
 #include "IECPrinter.h"
 
+#include "IECDeviceEvent.h"
 
-IECPrinter::IECPrinter(IECBus* ptrBus, const quint8 deviceNumber)
-    : IECDevice(ptrBus, deviceNumber)
+
+IECPrinter::IECPrinter(const DeviceId id)
+    : IECDevice(id)
 {
 }
 
-IECPrinter::~IECPrinter()
-{
-}
+
+IECPrinter::~IECPrinter() = default;
+
 
 bool IECPrinter::hasOutput() const
 {
     return !m_output.isEmpty();
 }
 
+
 quint64 IECPrinter::outputRevision() const
 {
     return m_outputRevision;
 }
+
 
 QByteArray IECPrinter::outputSnapshot() const
 {
     return m_output;
 }
 
+
+void IECPrinter::processEvent(const IECProtocolEvent& event, IECProtocolResponse& response)
+{
+    Q_UNUSED(response);
+
+    switch (event.type)
+    {
+    case IECProtocolEvent::Type::DeviceSelected:
+        m_listening = event.mode == IECProtocolEvent::Mode::Listen;
+        break;
+
+    case IECProtocolEvent::Type::ByteReceived:
+        if (!m_listening)
+            break;
+
+        receiveByte(event.value);
+
+        if (event.eoi)
+            finishTransmission();
+
+        break;
+
+    case IECProtocolEvent::Type::EndOfTransmission:
+        if (m_listening)
+            finishTransmission();
+
+        break;
+
+    case IECProtocolEvent::Type::DeviceDeselected:
+        if (m_listening)
+            finishTransmission();
+
+        m_listening = false;
+        break;
+
+    case IECProtocolEvent::Type::SecondaryAddressReceived:
+        break;
+    }
+}
+
+
 void IECPrinter::receiveByte(const quint8 value)
 {
     m_pendingOutput.append(static_cast<char>(value));
 }
+
 
 void IECPrinter::finishTransmission()
 {
@@ -39,6 +85,7 @@ void IECPrinter::finishTransmission()
     m_pendingOutput.clear();
 }
 
+
 void IECPrinter::processReceivedData(const QByteArray& data)
 {
     if (data.isEmpty())
@@ -46,7 +93,15 @@ void IECPrinter::processReceivedData(const QByteArray& data)
 
     m_output.append(data);
     ++m_outputRevision;
+
+    QSharedPointer<IECPrinterOutputEvent> event(new IECPrinterOutputEvent());
+    event->deviceId = id();
+    event->format = IECPrinterOutputEvent::Format::Text;
+    event->data = data;
+
+    m_events.append(event);
 }
+
 
 void IECPrinter::tearOff()
 {
@@ -59,9 +114,22 @@ void IECPrinter::tearOff()
     }
 }
 
+
 void IECPrinter::reset()
 {
     m_pendingOutput.clear();
     m_output.clear();
     m_outputRevision = 0;
+
+    m_listening = false;
+    m_events.clear();
+}
+
+
+IECDeviceEventList IECPrinter::takeEvents()
+{
+    IECDeviceEventList events;
+    events.swap(m_events);
+
+    return events;
 }

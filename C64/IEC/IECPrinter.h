@@ -8,7 +8,7 @@
 class IECPrinter : public IECDevice
 {
 public:
-    explicit IECPrinter(IECBus* ptrBus, quint8 deviceNumber);
+    explicit IECPrinter(DeviceId id);
     virtual ~IECPrinter();
 
     bool hasOutput() const;
@@ -16,7 +16,10 @@ public:
     QByteArray outputSnapshot() const;
 
     virtual void tearOff();
+
     void reset() override;
+    void processEvent(const IECProtocolEvent& event, IECProtocolResponse& response) override;
+    IECDeviceEventList takeEvents() override;
 
 protected:
     void receiveByte(quint8 value);
@@ -28,4 +31,8 @@ private:
     QByteArray m_output;
     QByteArray m_pendingOutput;
     quint64 m_outputRevision = 0;
+
+    bool m_listening = false;
+
+    IECDeviceEventList m_events;
 };
