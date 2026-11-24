@@ -37,7 +37,4 @@ private:
 private:
     Ui::IECFoundryDriveSettingsDialog* ui;
     IECFoundryDriveConfiguration m_configuration;
-    QList<IECFoundryDiskConfiguration> m_diskConfigurations;
-
-    int m_previousSlotCount = 0;
 };

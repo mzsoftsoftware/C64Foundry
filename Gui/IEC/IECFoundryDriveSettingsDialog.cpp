@@ -21,18 +21,17 @@ IECFoundryDriveSettingsDialog::~IECFoundryDriveSettingsDialog()
 void IECFoundryDriveSettingsDialog::setConfiguration(const IECFoundryDriveConfiguration& configuration)
 {
     m_configuration = configuration;
-    m_diskConfigurations = configuration.disks();
-
-    m_previousSlotCount = configuration.slotCount();
-
-    {
-        const QSignalBlocker blocker(ui->spinBox_StartDevice);
-        ui->spinBox_StartDevice->setValue(configuration.startDeviceNumber());
-    }
 
     {
         const QSignalBlocker blocker(ui->spinBox_SlotCount);
         ui->spinBox_SlotCount->setValue(configuration.slotCount());
+    }
+
+    updateStartDeviceMaximum();
+
+    {
+        const QSignalBlocker blocker(ui->spinBox_StartDevice);
+        ui->spinBox_StartDevice->setValue(configuration.startDeviceNumber());
     }
 
     ui->tableWidget_Slots->setRowCount(0);
@@ -41,28 +40,36 @@ void IECFoundryDriveSettingsDialog::setConfiguration(const IECFoundryDriveConfig
     {
         addSlotRow();
 
-        const IECFoundryDiskConfiguration& diskConfiguration =
-            m_diskConfigurations[slotIndex];
+        const IECFoundryDiskConfiguration* diskConfiguration =
+            configuration.diskConfiguration(slotIndex);
+
+        if (diskConfiguration == nullptr)
+        {
+            continue;
+        }
 
         QComboBox* comboBox = qobject_cast<QComboBox*>(ui->tableWidget_Slots->cellWidget(slotIndex, 0));
         QCheckBox* checkBox = qobject_cast<QCheckBox*>(ui->tableWidget_Slots->cellWidget(slotIndex, 1));
 
         if (comboBox != nullptr)
         {
-            const int index = comboBox->findData(static_cast<int>(diskConfiguration.deviceNumber()));
+            const int index = comboBox->findData(static_cast<int>(diskConfiguration->deviceNumber()));
+
             if (index >= 0)
+            {
                 comboBox->setCurrentIndex(index);
+            }
         }
 
         if (checkBox != nullptr)
-            checkBox->setChecked(diskConfiguration.saveCurrentDiskOnExit());
+        {
+            checkBox->setChecked(diskConfiguration->saveCurrentDiskOnExit());
+        }
     }
 
-    updateStartDeviceMaximum();
     updateReservedRangeLabel();
     updateDeviceNumberAvailability();
 }
-
 IECFoundryDriveConfiguration IECFoundryDriveSettingsDialog::configuration() const
 {
     IECFoundryDriveConfiguration result;
@@ -73,12 +80,12 @@ IECFoundryDriveConfiguration IECFoundryDriveSettingsDialog::configuration() cons
 
     for (int slotIndex = 0; slotIndex < ui->tableWidget_Slots->rowCount(); ++slotIndex)
     {
-        IECFoundryDiskConfiguration diskConfiguration = m_diskConfigurations[slotIndex];
-        diskConfiguration.setDiskId(0);
+        IECFoundryDiskConfiguration diskConfiguration;
+
+        diskConfiguration.setSlotIndex(slotIndex);
 
         QComboBox* comboBox = qobject_cast<QComboBox*>(ui->tableWidget_Slots->cellWidget(slotIndex, 0));
         QCheckBox* checkBox = qobject_cast<QCheckBox*>(ui->tableWidget_Slots->cellWidget(slotIndex, 1));
-        diskConfiguration.setSlotIndex(slotIndex);
 
         if (comboBox != nullptr && comboBox->currentIndex() >= 0)
         {
@@ -86,10 +93,11 @@ IECFoundryDriveConfiguration IECFoundryDriveSettingsDialog::configuration() cons
         }
 
         if (checkBox != nullptr)
+        {
             diskConfiguration.setSaveCurrentDiskOnExit(checkBox->isChecked());
+        }
 
-        if (!result.addDiskConfiguration(diskConfiguration))
-            break;
+        result.addDiskConfiguration(diskConfiguration);
     }
 
     return result;
@@ -98,7 +106,7 @@ IECFoundryDriveConfiguration IECFoundryDriveSettingsDialog::configuration() cons
 void IECFoundryDriveSettingsDialog::on_spinBox_StartDevice_valueChanged(int value)
 {
     const int slotCount = ui->spinBox_SlotCount->value();
-    const int lastDeviceNumber = startDeviceNumber + slotCount - 1;
+    const int lastDeviceNumber = value + slotCount - 1;
 
     for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex)
     {
@@ -127,12 +135,12 @@ void IECFoundryDriveSettingsDialog::on_spinBox_StartDevice_valueChanged(int valu
 }
 void IECFoundryDriveSettingsDialog::on_spinBox_SlotCount_valueChanged(int value)
 {
-    while (ui->tableWidget_Slots->rowCount() < slotCount)
+    while (ui->tableWidget_Slots->rowCount() < value)
     {
         addSlotRow();
     }
 
-    while (ui->tableWidget_Slots->rowCount() > slotCount)
+    while (ui->tableWidget_Slots->rowCount() > value)
     {
         removeSlotRow();
     }
