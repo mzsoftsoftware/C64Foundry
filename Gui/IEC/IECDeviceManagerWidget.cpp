@@ -449,8 +449,14 @@ void IECDeviceManagerWidget::setConfigurations(const IECSystemGetConfigurationsR
                 m_driveImageStates.value(ptrDriveConfiguration->id())
                     .value(diskConfiguration.deviceNumber());
 
-            if (imageEvent.deviceId != 0)
-                ptrSlot->processDeviceEvent(imageEvent);
+            if (m_driveImageStates.contains(ptrDriveConfiguration->id()) &&
+                m_driveImageStates.value(ptrDriveConfiguration->id()).contains(
+                    diskConfiguration.deviceNumber()))
+            {
+                ptrSlot->processDeviceEvent(
+                    m_driveImageStates.value(ptrDriveConfiguration->id())
+                        .value(diskConfiguration.deviceNumber()));
+            }
         }
     }
 
