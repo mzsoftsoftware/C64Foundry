@@ -3,27 +3,18 @@
 #include "IECAsciiPrinterConfiguration.h"
 
 
-IECAsciiPrinter::IECAsciiPrinter(IECBus* ptrBus, const quint8 deviceNumber)
-    : IECPrinter(ptrBus, deviceNumber)
-    , m_protocol(iecBus(), deviceNumber, participantId())
+IECAsciiPrinter::IECAsciiPrinter(const DeviceId id)
+    : IECPrinter(id)
 {
 }
 
-IECAsciiPrinter::~IECAsciiPrinter()
-{
-}
 
-QList<quint8> IECAsciiPrinter::supportedDeviceNumbers()
-{
-    return { 4, 5 };
-}
+IECAsciiPrinter::~IECAsciiPrinter() = default;
+
 
 bool IECAsciiPrinter::setConfiguration(const IECAsciiPrinterConfiguration& configuration)
 {
     if (configuration.type() != IECDeviceType::PrinterASCII)
-        return false;
-
-    if (configuration.deviceNumber() != deviceNumber())
         return false;
 
     if (configuration.lineWidth() < 1)
@@ -35,6 +26,7 @@ bool IECAsciiPrinter::setConfiguration(const IECAsciiPrinterConfiguration& confi
     return true;
 }
 
+
 void IECAsciiPrinter::tearOff()
 {
     IECPrinter::tearOff();
@@ -43,32 +35,15 @@ void IECAsciiPrinter::tearOff()
     m_lastWasCR = false;
 }
 
+
 void IECAsciiPrinter::reset()
 {
     IECPrinter::reset();
-    m_protocol.reset();
 
     m_column = 0;
     m_lastWasCR = false;
 }
 
-void IECAsciiPrinter::clock()
-{
-    m_protocol.clock();
-
-    while (m_protocol.hasReceivedByte())
-    {
-        const IECProtocol::ReceivedByte receivedByte = m_protocol.takeReceivedByte();
-
-        receiveByte(receivedByte.value);
-
-        if (receivedByte.eoi)
-            finishTransmission();
-    }
-
-    if (m_protocol.takeListenEnded())
-        finishTransmission();
-}
 
 void IECAsciiPrinter::processReceivedData(const QByteArray& data)
 {
