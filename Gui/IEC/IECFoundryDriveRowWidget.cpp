@@ -3,6 +3,7 @@
 
 #include <QSignalBlocker>
 
+#include "IECFoundryDriveSettingsDialog.h"
 #include "C64/IEC/IECFoundryDriveConfiguration.h"
 #include "C64/IEC/IECSystemResponse.h"
 

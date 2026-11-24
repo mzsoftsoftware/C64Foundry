@@ -4,6 +4,8 @@
 #include <QDialogButtonBox>
 #include <QPushButton>
 #include <QVariant>
+#include <QComboBox>
+#include <QCheckBox>
 
 
 IECFoundryDriveSettingsDialog::IECFoundryDriveSettingsDialog(QWidget* parent)
