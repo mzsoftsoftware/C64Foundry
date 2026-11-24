@@ -18,32 +18,79 @@ IECFoundryDriveSettingsDialog::~IECFoundryDriveSettingsDialog()
     delete ui;
 }
 
-void IECFoundryDriveSettingsDialog::setConfiguration(const IECFoundryDiskConfiguration& configuration, const QList<quint8>& availableDeviceNumbers)
+void IECFoundryDriveSettingsDialog::setConfiguration(const IECFoundryDriveConfiguration& configuration)
 {
     m_configuration = configuration;
+    m_diskConfigurations = configuration.disks();
 
-    ui->comboBox_DeviceNumber->clear();
-    for (quint8 deviceNumber : availableDeviceNumbers)
+    m_previousSlotCount = configuration.slotCount();
+
     {
-        ui->comboBox_DeviceNumber->addItem(QStringLiteral("#%1").arg(deviceNumber), static_cast<int>(deviceNumber));
+        const QSignalBlocker blocker(ui->spinBox_StartDevice);
+        ui->spinBox_StartDevice->setValue(configuration.startDeviceNumber());
     }
-    const int index = ui->comboBox_DeviceNumber->findData(static_cast<int>(configuration.deviceNumber()));
-    if (index >= 0)
-        ui->comboBox_DeviceNumber->setCurrentIndex(index);
 
-    ui->checkBox_SaveCurrentDiskOnExit->setChecked(configuration.saveCurrentDiskOnExit());
+    {
+        const QSignalBlocker blocker(ui->spinBox_SlotCount);
+        ui->spinBox_SlotCount->setValue(configuration.slotCount());
+    }
 
-    ui->buttonBox->button(QDialogButtonBox::Ok)->setEnabled(ui->comboBox_DeviceNumber->count() > 0);
+    ui->tableWidget_Slots->setRowCount(0);
+
+    for (int slotIndex = 0; slotIndex < configuration.slotCount(); ++slotIndex)
+    {
+        addSlotRow();
+
+        const IECFoundryDiskConfiguration& diskConfiguration =
+            m_diskConfigurations[slotIndex];
+
+        QComboBox* comboBox = qobject_cast<QComboBox*>(ui->tableWidget_Slots->cellWidget(slotIndex, 0));
+        QCheckBox* checkBox = qobject_cast<QCheckBox*>(ui->tableWidget_Slots->cellWidget(slotIndex, 1));
+
+        if (comboBox != nullptr)
+        {
+            const int index = comboBox->findData(static_cast<int>(diskConfiguration.deviceNumber()));
+            if (index >= 0)
+                comboBox->setCurrentIndex(index);
+        }
+
+        if (checkBox != nullptr)
+            checkBox->setChecked(diskConfiguration.saveCurrentDiskOnExit());
+    }
+
+    updateStartDeviceMaximum();
+    updateReservedRangeLabel();
+    updateDeviceNumberAvailability();
 }
 
-IECFoundryDiskConfiguration IECFoundryDriveSettingsDialog::configuration() const
+IECFoundryDriveConfiguration IECFoundryDriveSettingsDialog::configuration() const
 {
-    IECFoundryDiskConfiguration result = m_configuration;
+    IECFoundryDriveConfiguration result;
 
-    if (ui->comboBox_DeviceNumber->currentIndex() >= 0)
-        result.setDeviceNumber(static_cast<quint8>(ui->comboBox_DeviceNumber->currentData().toUInt()));
+    result.setId(m_configuration.id());
+    result.setEnabled(m_configuration.enabled());
+    result.setStartDeviceNumber(static_cast<quint8>(ui->spinBox_StartDevice->value()));
 
-    result.setSaveCurrentDiskOnExit(ui->checkBox_SaveCurrentDiskOnExit->isChecked());
+    for (int slotIndex = 0; slotIndex < ui->tableWidget_Slots->rowCount(); ++slotIndex)
+    {
+        IECFoundryDiskConfiguration diskConfiguration = m_diskConfigurations[slotIndex];
+        diskConfiguration.setDiskId(0);
+
+        QComboBox* comboBox = qobject_cast<QComboBox*>(ui->tableWidget_Slots->cellWidget(slotIndex, 0));
+        QCheckBox* checkBox = qobject_cast<QCheckBox*>(ui->tableWidget_Slots->cellWidget(slotIndex, 1));
+        diskConfiguration.setSlotIndex(slotIndex);
+
+        if (comboBox != nullptr && comboBox->currentIndex() >= 0)
+        {
+            diskConfiguration.setDeviceNumber(static_cast<quint8>(comboBox->currentData().toUInt()));
+        }
+
+        if (checkBox != nullptr)
+            diskConfiguration.setSaveCurrentDiskOnExit(checkBox->isChecked());
+
+        if (!result.addDiskConfiguration(diskConfiguration))
+            break;
+    }
 
     return result;
 }

@@ -3,7 +3,7 @@
 #include <QDialog>
 #include <QList>
 
-#include "C64/IEC/IECFoundryDiskConfiguration.h"
+#include "C64/IEC/IECFoundryDriveConfiguration.h"
 
 namespace Ui {
 class IECFoundryDriveSettingsDialog;
@@ -18,8 +18,8 @@ public:
     explicit IECFoundryDriveSettingsDialog(QWidget* parent = nullptr);
     virtual ~IECFoundryDriveSettingsDialog();
 
-    void setConfiguration(const IECFoundryDiskConfiguration& configuration, const QList<quint8>& availableDeviceNumbers);
-    IECFoundryDiskConfiguration configuration() const;
+    void setConfiguration(const IECFoundryDriveConfiguration& configuration);
+    IECFoundryDriveConfiguration configuration() const;
 
 private slots:
     void on_spinBox_StartDevice_valueChanged(int value);
@@ -36,5 +36,8 @@ private:
 
 private:
     Ui::IECFoundryDriveSettingsDialog* ui;
-    IECFoundryDiskConfiguration m_configuration;
+    IECFoundryDriveConfiguration m_configuration;
+    QList<IECFoundryDiskConfiguration> m_diskConfigurations;
+
+    int m_previousSlotCount = 0;
 };

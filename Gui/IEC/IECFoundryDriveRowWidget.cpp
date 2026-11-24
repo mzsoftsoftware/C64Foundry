@@ -90,6 +90,29 @@ void IECFoundryDriveRowWidget::openSettingsDialog(
 {
     Q_UNUSED(ptrResponse)
 
-    // The dedicated Drive settings dialog will be added in the next GUI step.
-    setOperationState(IECOperationStatusWidget::State::Idle);
+    if (configuration() == nullptr)
+    {
+        setOperationState(IECOperationStatusWidget::State::Failed, tr("Invalid IEC configuration"));
+        return;
+    }
+
+    const IECFoundryDriveConfiguration* ptrDriveConfiguration = dynamic_cast<const IECFoundryDriveConfiguration*>(configuration());
+
+    if (ptrDriveConfiguration == nullptr)
+    {
+        setOperationState(IECOperationStatusWidget::State::Failed, tr("Invalid Foundry Drive configuration"));
+        return;
+    }
+
+    IECFoundryDriveSettingsDialog dialog(this);
+    dialog.setConfiguration(*ptrDriveConfiguration);
+
+    if (dialog.exec() != QDialog::Accepted)
+    {
+        setOperationState(IECOperationStatusWidget::State::Idle);
+        return;
+    }
+
+    const IECFoundryDriveConfiguration updatedConfiguration = dialog.configuration();
+    requestSetConfiguration(updatedConfiguration);
 }
