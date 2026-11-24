@@ -1,9 +1,10 @@
-#include "IECDeviceGuiRequest.h"
+#include "IECDeviceRequest.h"
 
+#include "IECDevice.h"
 #include "IECPrinter.h"
 
 
-bool IECPrinterTearOffRequest::execute(IECDevice& device, IECDeviceGuiResponse& response) const
+bool IECPrinterTearOffRequest::execute(IECDevice& device, IECDeviceResponse& response) const
 {
     IECPrinter* ptrPrinter = dynamic_cast<IECPrinter*>(&device);
     IECPrinterTearOffResponse* ptrResponse =
@@ -12,7 +13,9 @@ bool IECPrinterTearOffRequest::execute(IECDevice& device, IECDeviceGuiResponse& 
     if (ptrPrinter == nullptr || ptrResponse == nullptr)
         return false;
 
-    ptrResponse->deviceId = deviceId;
+    ptrResponse->setDeviceId(deviceId());
 
-    return ptrPrinter->tearOff(*ptrResponse);
+    ptrPrinter->tearOff();
+
+    return true;
 }
