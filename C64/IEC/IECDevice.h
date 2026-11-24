@@ -27,8 +27,6 @@ public:
 
     virtual void processEvent(const IECProtocolEvent& event, IECProtocolResponse& response) = 0;
 
-    virtual QList<quint8> supportedDeviceNumbers() const = 0;
-
     virtual IECDeviceEventList takeEvents() = 0;
 
 private:
