@@ -11,7 +11,7 @@
 #include "C64/IEC/IECFoundryDiskConfiguration.h"
 #include "Emulator/EmulatorController.h"
 #include "Emulator/EmulatorResponse.h"
-#include "Gui/IEC/IECFoundryDiskSettingsDialog.h"
+#include "Gui/IEC/IECFoundryDriveSettingsDialog.h"
 
 
 IECFoundryDiskRowWidget::IECFoundryDiskRowWidget(QWidget* parent)

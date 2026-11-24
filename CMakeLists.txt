@@ -128,7 +128,7 @@ qt_add_executable(C64Foundry
     Gui/IEC/IECActivityLEDWidget.h Gui/IEC/IECActivityLEDWidget.cpp
     Gui/IEC/IECOperationStatusWidget.h Gui/IEC/IECOperationStatusWidget.cpp
     Gui/IEC/IECAsciiPrinterSettingsDialog.h Gui/IEC/IECAsciiPrinterSettingsDialog.cpp Gui/IEC/IECAsciiPrinterSettingsDialog.ui
-    Gui/IEC/IECFoundryDiskSettingsDialog.h Gui/IEC/IECFoundryDiskSettingsDialog.cpp Gui/IEC/IECFoundryDiskSettingsDialog.ui
+    Gui/IEC/IECFoundryDriveSettingsDialog.h Gui/IEC/IECFoundryDriveSettingsDialog.cpp Gui/IEC/IECFoundryDriveSettingsDialog.ui
 
     Gui/IEC/IECPrinterOutputDockWidget.h Gui/IEC/IECPrinterOutputDockWidget.cpp Gui/IEC/IECPrinterOutputDockWidget.ui
     Gui/IEC/IECAsciiPrinterOutputWidget.h Gui/IEC/IECAsciiPrinterOutputWidget.cpp Gui/IEC/IECAsciiPrinterOutputWidget.ui

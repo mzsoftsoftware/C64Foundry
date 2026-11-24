@@ -1,24 +1,24 @@
-#include "IECFoundryDiskSettingsDialog.h"
-#include "ui_IECFoundryDiskSettingsDialog.h"
+#include "IECFoundryDriveSettingsDialog.h"
+#include "ui_IECFoundryDriveSettingsDialog.h"
 
 #include <QDialogButtonBox>
 #include <QPushButton>
 #include <QVariant>
 
 
-IECFoundryDiskSettingsDialog::IECFoundryDiskSettingsDialog(QWidget* parent)
+IECFoundryDriveSettingsDialog::IECFoundryDriveSettingsDialog(QWidget* parent)
     : QDialog(parent)
-    , ui(new Ui::IECFoundryDiskSettingsDialog)
+    , ui(new Ui::IECFoundryDriveSettingsDialog)
 {
     ui->setupUi(this);
 }
 
-IECFoundryDiskSettingsDialog::~IECFoundryDiskSettingsDialog()
+IECFoundryDriveSettingsDialog::~IECFoundryDriveSettingsDialog()
 {
     delete ui;
 }
 
-void IECFoundryDiskSettingsDialog::setConfiguration(const IECFoundryDiskConfiguration& configuration, const QList<quint8>& availableDeviceNumbers)
+void IECFoundryDriveSettingsDialog::setConfiguration(const IECFoundryDiskConfiguration& configuration, const QList<quint8>& availableDeviceNumbers)
 {
     m_configuration = configuration;
 
@@ -36,7 +36,7 @@ void IECFoundryDiskSettingsDialog::setConfiguration(const IECFoundryDiskConfigur
     ui->buttonBox->button(QDialogButtonBox::Ok)->setEnabled(ui->comboBox_DeviceNumber->count() > 0);
 }
 
-IECFoundryDiskConfiguration IECFoundryDiskSettingsDialog::configuration() const
+IECFoundryDiskConfiguration IECFoundryDriveSettingsDialog::configuration() const
 {
     IECFoundryDiskConfiguration result = m_configuration;
 
