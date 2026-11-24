@@ -53,6 +53,8 @@ void IECDeviceManagerWidget::setController(EmulatorController* ptrController)
     m_configurationRequestId = 0;
     m_bRefreshPending = false;
 
+    m_driveImageStates.clear();
+
     clearDeviceRows();
 
     ui->widget_OperationStatus->setState(IECOperationStatusWidget::State::Idle);
@@ -62,13 +64,17 @@ void IECDeviceManagerWidget::setController(EmulatorController* ptrController)
     if (m_ptrController == nullptr)
         return;
 
-    connect(m_ptrController, &EmulatorController::iecRequestDone, this, &IECDeviceManagerWidget::onIECRequestDone);
-    connect(m_ptrController, &EmulatorController::iecSystemEventsChanged, this, &IECDeviceManagerWidget::onIECSystemEventsChanged);
-    connect(m_ptrController, &EmulatorController::iecDeviceEventsChanged, this, &IECDeviceManagerWidget::onIECDeviceEventsChanged);
+    connect(m_ptrController, &EmulatorController::iecRequestDone,
+            this, &IECDeviceManagerWidget::onIECRequestDone);
+
+    connect(m_ptrController, &EmulatorController::iecSystemEventsChanged,
+            this, &IECDeviceManagerWidget::onIECSystemEventsChanged);
+
+    connect(m_ptrController, &EmulatorController::iecDeviceEventsChanged,
+            this, &IECDeviceManagerWidget::onIECDeviceEventsChanged);
 
     refreshConfigurations();
 }
-
 
 void IECDeviceManagerWidget::setupAddMenu()
 {
@@ -444,10 +450,6 @@ void IECDeviceManagerWidget::setConfigurations(const IECSystemGetConfigurationsR
 
             m_driveSlotRows[ptrDriveConfiguration->id()]
                            [diskConfiguration.deviceNumber()] = ptrSlot;
-
-            const IECDriveImageEvent imageEvent =
-                m_driveImageStates.value(ptrDriveConfiguration->id())
-                    .value(diskConfiguration.deviceNumber());
 
             if (m_driveImageStates.contains(ptrDriveConfiguration->id()) &&
                 m_driveImageStates.value(ptrDriveConfiguration->id()).contains(
