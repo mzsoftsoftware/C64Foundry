@@ -30,7 +30,21 @@ struct IECPrinterOutputEvent : public IECDeviceEvent
     QByteArray data;
 };
 
+struct IECDriveImageEvent : public IECDeviceEvent
+{
+    enum class Type : quint8
+    {
+        ImageInserted,
+        ImageEjected,
+        ImageInvalid,
+        Error
+    };
 
+    Type type = Type::ImageInserted;
+    quint8 deviceNumber = 0;
+    QString fileName;
+    QString errorMessage;
+};
 struct IECDriveAccessEvent : public IECDeviceEvent
 {
     enum class Operation : quint8

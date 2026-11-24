@@ -3,6 +3,7 @@
 #include "IECFoundryDisk.h"
 
 #include <QSharedPointer>
+#include <QQueue>
 
 
 IECFoundryDrive::IECFoundryDrive(const DeviceId id)
@@ -156,9 +157,11 @@ void IECFoundryDrive::reset()
     m_events.clear();
 
     for (IECFoundryDisk* ptrDisk : m_disks)
+    {
         ptrDisk->takeSectorAccessEvents();
+        ptrDisk->takeImageEvents();
+    }
 }
-
 
 void IECFoundryDrive::processEvent(const IECProtocolEvent& event, IECProtocolResponse& response)
 {
@@ -172,18 +175,40 @@ void IECFoundryDrive::collectDiskEvents()
     for (int slotIndex = 0; slotIndex < m_disks.size(); ++slotIndex)
     {
         IECFoundryDisk* ptrDisk = m_disks.at(slotIndex);
-        QQueue<IECFoundryDisk::SectorAccessStatus> diskEvents = ptrDisk->takeSectorAccessEvents();
+
+        const quint8 deviceNumber =
+            static_cast<quint8>(m_configuration.startDeviceNumber() + slotIndex);
+
+        QQueue<IECDriveImageEvent> imageEvents = ptrDisk->takeImageEvents();
+
+        while (!imageEvents.isEmpty())
+        {
+            IECDriveImageEvent imageEvent = imageEvents.dequeue();
+
+            imageEvent.deviceId = id();
+            imageEvent.deviceNumber = deviceNumber;
+
+            m_events.append(IECDeviceEventPtr(
+                new IECDriveImageEvent(imageEvent)));
+        }
+
+        QQueue<IECFoundryDisk::SectorAccessStatus> diskEvents =
+            ptrDisk->takeSectorAccessEvents();
 
         while (!diskEvents.isEmpty())
         {
-            const IECFoundryDisk::SectorAccessStatus status = diskEvents.dequeue();
+            const IECFoundryDisk::SectorAccessStatus status =
+                diskEvents.dequeue();
 
-            QSharedPointer<IECDriveAccessEvent> event(new IECDriveAccessEvent());
+            QSharedPointer<IECDriveAccessEvent> event(
+                new IECDriveAccessEvent());
+
             event->deviceId = id();
-            event->deviceNumber = static_cast<quint8>(m_configuration.startDeviceNumber() + slotIndex);
-            event->operation = status.operation == IECFoundryDisk::SectorAccessOperation::Read
-                                   ? IECDriveAccessEvent::Operation::Read
-                                   : IECDriveAccessEvent::Operation::Write;
+            event->deviceNumber = deviceNumber;
+            event->operation =
+                status.operation == IECFoundryDisk::SectorAccessOperation::Read
+                    ? IECDriveAccessEvent::Operation::Read
+                    : IECDriveAccessEvent::Operation::Write;
             event->track = status.track;
             event->sector = status.sector;
             event->success = status.success;
@@ -193,7 +218,6 @@ void IECFoundryDrive::collectDiskEvents()
         }
     }
 }
-
 
 IECDeviceEventList IECFoundryDrive::takeEvents()
 {

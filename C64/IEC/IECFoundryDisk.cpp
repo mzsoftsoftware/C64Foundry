@@ -82,22 +82,38 @@ bool IECFoundryDisk::insertImage(const QString& fileName)
 {
     m_lastError.clear();
 
-    if (hasImage() && !ejectImage())
-        return false;
+    if (fileName.isEmpty())
+        return ejectImage();
+
+    // Das bisherige Image darf das Ersetzen nicht verhindern.
+    if (m_imageModified && !saveImageInternal())
+    {
+        recordImageEvent(IECDriveImageEvent::Type::Error,
+                         m_imageFileName,
+                         m_lastError);
+    }
 
     m_imageFileName = fileName;
     m_imageData.clear();
     m_imageValid = false;
     m_imageModified = false;
-
-    if (fileName.isEmpty())
-        return true;
+    m_lastError.clear();
 
     QFile file(fileName);
 
     if (!file.open(QIODevice::ReadOnly))
     {
-        m_lastError = QStringLiteral("Image konnte nicht geöffnet werden: %1\n%2").arg(fileName, file.errorString());
+        m_lastError = QStringLiteral("Image konnte nicht geöffnet werden: %1\n%2")
+                          .arg(fileName, file.errorString());
+
+        recordImageEvent(IECDriveImageEvent::Type::ImageInvalid,
+                         fileName,
+                         m_lastError);
+
+        recordImageEvent(IECDriveImageEvent::Type::Error,
+                         fileName,
+                         m_lastError);
+
         return false;
     }
 
@@ -105,12 +121,24 @@ bool IECFoundryDisk::insertImage(const QString& fileName)
 
     if (file.error() != QFileDevice::NoError)
     {
-        m_lastError = QStringLiteral("Fehler beim Lesen des Images: %1\n%2").arg(fileName, file.errorString());
+        m_lastError = QStringLiteral("Fehler beim Lesen des Images: %1\n%2")
+        .arg(fileName, file.errorString());
+
+        recordImageEvent(IECDriveImageEvent::Type::ImageInvalid,
+                         fileName,
+                         m_lastError);
+
+        recordImageEvent(IECDriveImageEvent::Type::Error,
+                         fileName,
+                         m_lastError);
+
         return false;
     }
 
     m_imageData = imageData;
     m_imageValid = true;
+
+    recordImageEvent(IECDriveImageEvent::Type::ImageInserted, fileName);
 
     return true;
 }
@@ -119,19 +147,38 @@ bool IECFoundryDisk::ejectImage()
     m_lastError.clear();
 
     if (m_imageModified && !saveImageInternal())
+    {
+        recordImageEvent(IECDriveImageEvent::Type::Error,
+                         m_imageFileName,
+                         m_lastError);
+
         return false;
+    }
+
+    const QString previousFileName = m_imageFileName;
 
     m_imageFileName.clear();
     m_imageData.clear();
     m_imageValid = false;
     m_imageModified = false;
 
+    recordImageEvent(IECDriveImageEvent::Type::ImageEjected,
+                     previousFileName);
+
     return true;
 }
 bool IECFoundryDisk::saveImage()
 {
     m_lastError.clear();
-    return saveImageInternal();
+
+    if (saveImageInternal())
+        return true;
+
+    recordImageEvent(IECDriveImageEvent::Type::Error,
+                     m_imageFileName,
+                     m_lastError);
+
+    return false;
 }
 
 bool IECFoundryDisk::saveImageInternal()
@@ -729,6 +776,18 @@ void IECFoundryDisk::debugDirectorySector(const QByteArray& directorySector, con
 }
 
 
+void IECFoundryDisk::recordImageEvent(
+    const IECDriveImageEvent::Type type,
+    const QString& fileName,
+    const QString& errorMessage)
+{
+    IECDriveImageEvent event;
+    event.type = type;
+    event.fileName = fileName;
+    event.errorMessage = errorMessage;
+
+    m_imageEvents.enqueue(event);
+}
 void IECFoundryDisk::recordSectorAccess(const SectorAccessOperation operation, const quint8 track, const quint8 sector, const bool success, const QString& errorMessage)
 {
     SectorAccessStatus status;
@@ -741,6 +800,13 @@ void IECFoundryDisk::recordSectorAccess(const SectorAccessOperation operation, c
     m_sectorAccessEvents.append(status);
 }
 
+QQueue<IECDriveImageEvent> IECFoundryDisk::takeImageEvents()
+{
+    QQueue<IECDriveImageEvent> events;
+    events.swap(m_imageEvents);
+
+    return events;
+}
 QQueue<IECFoundryDisk::SectorAccessStatus> IECFoundryDisk::takeSectorAccessEvents()
 {
     QQueue<SectorAccessStatus> events;

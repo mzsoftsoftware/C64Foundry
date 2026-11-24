@@ -6,8 +6,10 @@
 #include <QtGlobal>
 
 #include "IECFoundryDiskConfiguration.h"
+#include "IECDeviceEvent.h"
 
 class IECFoundryDrive;
+
 
 class IECFoundryDisk
 {
@@ -60,6 +62,7 @@ public:
     bool createDirectoryProgram(QByteArray& program);
     bool readFile(const QByteArray& fileName, QByteArray& data);
 
+    QQueue<IECDriveImageEvent> takeImageEvents();
     QQueue<SectorAccessStatus> takeSectorAccessEvents();
 
 private:
@@ -76,6 +79,7 @@ private:
 
     void debugDirectorySector(const QByteArray& directorySector, quint8 track, quint8 sector);
 
+    void recordImageEvent(IECDriveImageEvent::Type type, const QString& fileName = QString(), const QString& errorMessage = QString());
     void recordSectorAccess(SectorAccessOperation operation, quint8 track, quint8 sector, bool success, const QString& errorMessage);
 
 private:
@@ -93,5 +97,6 @@ private:
     bool m_imageModified = false;
 
     QString m_lastError;
+    QQueue<IECDriveImageEvent> m_imageEvents;
     QQueue<SectorAccessStatus> m_sectorAccessEvents;
 };
