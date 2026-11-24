@@ -12,24 +12,6 @@ IECPrinter::IECPrinter(const DeviceId id)
 IECPrinter::~IECPrinter() = default;
 
 
-bool IECPrinter::hasOutput() const
-{
-    return !m_output.isEmpty();
-}
-
-
-quint64 IECPrinter::outputRevision() const
-{
-    return m_outputRevision;
-}
-
-
-QByteArray IECPrinter::outputSnapshot() const
-{
-    return m_output;
-}
-
-
 void IECPrinter::processEvent(const IECProtocolEvent& event, IECProtocolResponse& response)
 {
     Q_UNUSED(response);
@@ -91,9 +73,6 @@ void IECPrinter::processReceivedData(const QByteArray& data)
     if (data.isEmpty())
         return;
 
-    m_output.append(data);
-    ++m_outputRevision;
-
     QSharedPointer<IECPrinterOutputEvent> event(new IECPrinterOutputEvent());
     event->deviceId = id();
     event->format = IECPrinterOutputEvent::Format::Text;
@@ -106,21 +85,12 @@ void IECPrinter::processReceivedData(const QByteArray& data)
 void IECPrinter::tearOff()
 {
     m_pendingOutput.clear();
-
-    if (!m_output.isEmpty())
-    {
-        m_output.clear();
-        ++m_outputRevision;
-    }
 }
 
 
 void IECPrinter::reset()
 {
     m_pendingOutput.clear();
-    m_output.clear();
-    m_outputRevision = 0;
-
     m_listening = false;
     m_events.clear();
 }
