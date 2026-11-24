@@ -1,18 +1,18 @@
 #pragma once
 
-#include "IECDeviceRowWidget.h"
-
 #include <QQueue>
 #include <QTimer>
+#include <QWidget>
 
 #include "C64/IEC/IECDeviceEvent.h"
+#include "C64/IEC/IECFoundryDiskConfiguration.h"
 
 namespace Ui {
 class IECFoundryDiskRowWidget;
 }
 
 
-class IECFoundryDiskRowWidget : public IECDeviceRowWidget
+class IECFoundryDiskRowWidget : public QWidget
 {
     Q_OBJECT
 
@@ -20,33 +20,26 @@ public:
     explicit IECFoundryDiskRowWidget(QWidget* parent = nullptr);
     ~IECFoundryDiskRowWidget() override;
 
-    void setImageLoaded(bool loaded);
+    void setSlotConfiguration(IECDeviceConfiguration::DeviceId driveId,
+                              const IECFoundryDiskConfiguration& configuration);
 
-protected:
-    void onControllerSet() override;
-    void setOperationState(IECOperationStatusWidget::State state, const QString& message = QString()) override;
-    void applyConfiguration(const IECDeviceConfiguration& configuration) override;
-    void setPowerButtonChecked(bool checked) override;
-    void setControlsEnabled(bool enabled) override;
-    void openSettingsDialog(const EmulatorResponseIEC* ptrResponse) override;
+    void processDeviceEvent(const IECDeviceEvent& event);
 
 private slots:
-    void on_toolButton_Power_toggled(bool checked);
-    void on_toolButton_Disk_clicked();
-    void on_toolButton_Eject_clicked();
-    void on_toolButton_DiskName_clicked();
-    void on_toolButton_Settings_clicked();
-    void on_toolButton_Remove_clicked();
-
-    void onDriveAccessChanged(IECDeviceConfiguration::DeviceId deviceId, QQueue<IECDriveAccessEvent> events);
     void processNextSectorAccessEvent();
 
 private:
-    void showSettingsDialog(const EmulatorResponseIEC* ptrResponse);
+    void updateImageDisplay();
 
 private:
     Ui::IECFoundryDiskRowWidget* ui = nullptr;
+
+    IECDeviceConfiguration::DeviceId m_driveId = 0;
+    IECFoundryDiskConfiguration m_configuration;
+
     bool m_bImageLoaded = false;
+    bool m_bImageInvalid = false;
+    QString m_errorMessage;
 
     QQueue<IECDriveAccessEvent> m_sectorAccessQueue;
     QTimer m_activityTimer;

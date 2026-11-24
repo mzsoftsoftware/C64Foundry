@@ -7,11 +7,14 @@
 #include "C64/IEC/IECRequest.h"
 #include "C64/IEC/IECSystemEvent.h"
 #include "C64/IEC/IECDeviceConfiguration.h"
+#include "C64/IEC/IECDeviceEvent.h"
+#include "C64/IEC/IECFoundryDiskConfiguration.h"
 
 class QAction;
 class QTreeWidgetItem;
 class EmulatorController;
 class IECDeviceRowWidget;
+class IECFoundryDiskRowWidget;
 class IECResponse;
 class IECSystemGetConfigurationsResponse;
 
@@ -34,6 +37,7 @@ private slots:
     void onAddMenuTriggered(QAction* ptrAction);
     void onIECRequestDone(QSharedPointer<IECResponse> response);
     void onIECSystemEventsChanged(IECSystemEventList events);
+    void onIECDeviceEventsChanged(IECDeviceEventList events);
     void on_toolButton_Refresh_clicked();
 
 private:
@@ -53,6 +57,9 @@ private:
     EmulatorController* m_ptrController = nullptr;
 
     QHash<IECDeviceConfiguration::DeviceId, IECDeviceRowWidget*> m_deviceRows;
+    QHash<IECDeviceConfiguration::DeviceId, QHash<quint8, IECFoundryDiskRowWidget*>> m_driveSlotRows;
+    QHash<IECDeviceConfiguration::DeviceId, QHash<quint8, IECDriveImageEvent>> m_driveImageStates;
+
     QList<IECDeviceType> m_availableDeviceTypes;
     QList<IECDeviceType> m_addableDeviceTypes;
 

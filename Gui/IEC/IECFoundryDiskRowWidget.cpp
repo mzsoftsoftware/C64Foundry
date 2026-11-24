@@ -1,248 +1,183 @@
 #include "IECFoundryDiskRowWidget.h"
 #include "ui_IECFoundryDiskRowWidget.h"
 
-#include <QDialog>
-#include <QSignalBlocker>
-#include <QFileDialog>
 #include <QFileInfo>
-#include <QSettings>
-#include <QDir>
-
-#include "C64/IEC/IECFoundryDiskConfiguration.h"
-#include "Emulator/EmulatorController.h"
-#include "Emulator/EmulatorResponse.h"
-#include "Gui/IEC/IECFoundryDriveSettingsDialog.h"
+#include <QFont>
+#include <QSignalBlocker>
 
 
 IECFoundryDiskRowWidget::IECFoundryDiskRowWidget(QWidget* parent)
-    : IECDeviceRowWidget(parent)
+    : QWidget(parent)
     , ui(new Ui::IECFoundryDiskRowWidget)
 {
     ui->setupUi(this);
 
     ui->widget_ActivityLED->setLEDCount(2);
 
+    // Die Aktionen werden im nächsten Schritt über Device-Requests angebunden.
+    ui->toolButton_Power->setEnabled(false);
+    ui->toolButton_Disk->setEnabled(false);
+    ui->toolButton_Eject->setEnabled(false);
+
+    ui->toolButton_Settings->hide();
+    ui->toolButton_Remove->hide();
+
     m_activityTimer.setInterval(240);
     m_activityTimer.setTimerType(Qt::PreciseTimer);
-    connect(&m_activityTimer, &QTimer::timeout, this, &IECFoundryDiskRowWidget::processNextSectorAccessEvent);
+
+    connect(&m_activityTimer, &QTimer::timeout,
+            this, &IECFoundryDiskRowWidget::processNextSectorAccessEvent);
 }
+
 
 IECFoundryDiskRowWidget::~IECFoundryDiskRowWidget()
 {
     delete ui;
 }
 
-void IECFoundryDiskRowWidget::setImageLoaded(bool loaded)
-{
-    m_bImageLoaded = loaded;
 
-    if (configuration() != nullptr)
-        applyConfiguration(*configuration());
+void IECFoundryDiskRowWidget::setSlotConfiguration(
+    IECDeviceConfiguration::DeviceId driveId,
+    const IECFoundryDiskConfiguration& configuration)
+{
+    m_driveId = driveId;
+    m_configuration = configuration;
+
+    const QSignalBlocker blocker(ui->toolButton_Power);
+
+    ui->toolButton_Power->setChecked(configuration.enabled());
+
+    QFont font = ui->label_DeviceNumber->font();
+    font.setStyleHint(QFont::Monospace);
+    font.setFamily(QStringLiteral("Monospace"));
+    ui->label_DeviceNumber->setFont(font);
+
+    ui->label_DeviceNumber->setText(
+        QStringLiteral("#%1")
+            .arg(configuration.deviceNumber(), 2, 10, QChar('0')));
+
+    ui->label_DeviceType->setText(tr("Disk"));
+
+    updateImageDisplay();
 }
 
-void IECFoundryDiskRowWidget::onControllerSet()
+
+void IECFoundryDiskRowWidget::processDeviceEvent(const IECDeviceEvent& event)
 {
-    connect(m_ptrController, &EmulatorController::driveAccessChanged, this, &IECFoundryDiskRowWidget::onDriveAccessChanged);
+    if (event.deviceId != m_driveId)
+        return;
+
+    const IECDriveImageEvent* ptrImageEvent =
+        dynamic_cast<const IECDriveImageEvent*>(&event);
+
+    if (ptrImageEvent != nullptr)
+    {
+        if (ptrImageEvent->deviceNumber != m_configuration.deviceNumber())
+            return;
+
+        switch (ptrImageEvent->type)
+        {
+        case IECDriveImageEvent::Type::ImageInserted:
+            m_configuration.setImageFileName(ptrImageEvent->fileName);
+            m_bImageLoaded = true;
+            m_bImageInvalid = false;
+            m_errorMessage.clear();
+            break;
+
+        case IECDriveImageEvent::Type::ImageEjected:
+            m_configuration.setImageFileName(QString());
+            m_bImageLoaded = false;
+            m_bImageInvalid = false;
+            m_errorMessage.clear();
+            break;
+
+        case IECDriveImageEvent::Type::ImageInvalid:
+            m_configuration.setImageFileName(ptrImageEvent->fileName);
+            m_bImageLoaded = false;
+            m_bImageInvalid = true;
+            m_errorMessage = ptrImageEvent->errorMessage;
+            break;
+
+        case IECDriveImageEvent::Type::Error:
+            m_errorMessage = ptrImageEvent->errorMessage;
+            break;
+        }
+
+        updateImageDisplay();
+        return;
+    }
+
+    const IECDriveAccessEvent* ptrAccessEvent =
+        dynamic_cast<const IECDriveAccessEvent*>(&event);
+
+    if (ptrAccessEvent == nullptr ||
+        ptrAccessEvent->deviceNumber != m_configuration.deviceNumber())
+    {
+        return;
+    }
+
+    m_sectorAccessQueue.enqueue(*ptrAccessEvent);
+
+    if (!m_activityTimer.isActive())
+        m_activityTimer.start();
 }
 
-void IECFoundryDiskRowWidget::applyConfiguration(const IECDeviceConfiguration& configuration)
+
+void IECFoundryDiskRowWidget::updateImageDisplay()
 {
-    if (configuration.type() != IECDeviceType::FoundryDisk)
-        return;
+    const QString fileName = m_configuration.imageFileName();
 
-    const IECFoundryDiskConfiguration* ptrDiskConfiguration = dynamic_cast<const IECFoundryDiskConfiguration*>(&configuration);
-    if (ptrDiskConfiguration == nullptr)
-        return;
-
-    setPowerButtonChecked(ptrDiskConfiguration->enabled());
-    setDeviceNumberLabel(ui->label_DeviceNumber, ptrDiskConfiguration->deviceNumber());
-    ui->label_DeviceType->setText(tr("Foundry Disk"));
-
-    const QString fileName = ptrDiskConfiguration->imageFileName();
     if (fileName.isEmpty())
     {
         ui->toolButton_DiskName->setText(tr("No disk"));
-        ui->toolButton_DiskName->setToolTip(tr("No disk image configured"));
+        ui->toolButton_DiskName->setToolTip(tr("No disk image inserted"));
+        ui->toolButton_DiskName->setStyleSheet(QString());
+        ui->toolButton_Eject->setEnabled(false);
+        return;
+    }
+
+    const QString displayName = QFileInfo(fileName).fileName();
+
+    ui->toolButton_DiskName->setText(displayName);
+
+    if (m_bImageInvalid)
+    {
+        ui->toolButton_DiskName->setStyleSheet(
+            QStringLiteral("QToolButton { color: red; }"));
+
+        ui->toolButton_DiskName->setToolTip(
+            QStringLiteral("%1\n%2")
+                .arg(fileName, m_errorMessage));
+
+        ui->toolButton_Eject->setEnabled(false);
+        return;
+    }
+
+    if (!m_errorMessage.isEmpty())
+    {
+        ui->toolButton_DiskName->setStyleSheet(
+            QStringLiteral("QToolButton { color: red; }"));
+
+        ui->toolButton_DiskName->setToolTip(
+            QStringLiteral("%1\n%2")
+                .arg(fileName, m_errorMessage));
     }
     else
     {
-        const QFileInfo fileInfo(fileName);
-
-        QString displayName = fileInfo.fileName();
-
-        if (!m_bImageLoaded)
-            displayName += tr(" (not loaded)");
-
-        ui->toolButton_DiskName->setText(displayName);
+        ui->toolButton_DiskName->setStyleSheet(QString());
 
         ui->toolButton_DiskName->setToolTip(
             QStringLiteral("%1\n%2")
                 .arg(fileName,
                      m_bImageLoaded
                          ? tr("Image loaded")
-                         : tr("Image configured, but not loaded")));
+                         : tr("Image status unknown")));
     }
 
-    ui->toolButton_Eject->setEnabled(m_bImageLoaded && !m_bBusy);
-}
-
-void IECFoundryDiskRowWidget::setPowerButtonChecked(bool checked)
-{
-    const QSignalBlocker blocker(ui->toolButton_Power);
-    ui->toolButton_Power->setChecked(checked);
-}
-
-void IECFoundryDiskRowWidget::setControlsEnabled(bool enabled)
-{
-    ui->toolButton_Power->setEnabled(enabled);
-    ui->toolButton_Disk->setEnabled(enabled);
-    ui->toolButton_Eject->setEnabled(enabled && m_bImageLoaded);
-    ui->toolButton_DiskName->setEnabled(enabled);
-    ui->toolButton_Settings->setEnabled(enabled);
-    ui->toolButton_Remove->setEnabled(enabled);
-}
-
-void IECFoundryDiskRowWidget::setOperationState(
-    IECOperationStatusWidget::State state,
-    const QString& message)
-{
-    ui->widget_OperationStatus->setState(state, message);
-}
-
-void IECFoundryDiskRowWidget::on_toolButton_Power_toggled(bool checked)
-{
-    requestPowerChange(checked);
+    ui->toolButton_Eject->setEnabled(false);
 }
 
 
-
-void IECFoundryDiskRowWidget::on_toolButton_Disk_clicked()
-{
-    if (configuration() == nullptr)
-        return;
-
-    QSettings settings;
-    const QString lastDirectory = settings.value(QStringLiteral("FileDialogs/LastD64Directory"), QDir::homePath()).toString();
-    const QString fileName = QFileDialog::getOpenFileName(this, tr("Insert Disk Image"), lastDirectory, tr("D64 Disk Images (*.d64);;All Files (*)"));
-    if (fileName.isEmpty())
-        return;
-
-    settings.setValue(QStringLiteral("FileDialogs/LastD64Directory"), QFileInfo(fileName).absolutePath());
-    const IECFoundryDiskConfiguration* ptrDiskConfiguration = dynamic_cast<const IECFoundryDiskConfiguration*>(configuration());
-    if (ptrDiskConfiguration == nullptr)
-        return;
-
-    IECFoundryDiskConfiguration updatedConfiguration = *ptrDiskConfiguration;
-    updatedConfiguration.setImageFileName(fileName);
-
-    requestSetConfiguration(updatedConfiguration);
-}
-
-
-
-void IECFoundryDiskRowWidget::on_toolButton_Eject_clicked()
-{
-    if (!m_bImageLoaded)
-        return;
-
-    const IECFoundryDiskConfiguration* ptrDiskConfiguration = dynamic_cast<const IECFoundryDiskConfiguration*>(configuration());
-
-    if (ptrDiskConfiguration == nullptr || ptrDiskConfiguration->imageFileName().isEmpty())
-        return;
-
-    IECFoundryDiskConfiguration updatedConfiguration = *ptrDiskConfiguration;
-    updatedConfiguration.setImageFileName(QString());
-
-    requestSetConfiguration(updatedConfiguration);
-}
-
-void IECFoundryDiskRowWidget::on_toolButton_DiskName_clicked()
-{
-    // Das Directory-Popup wird im nächsten Schritt implementiert.
-}
-
-void IECFoundryDiskRowWidget::on_toolButton_Settings_clicked()
-{
-    requestSettings();
-}
-
-void IECFoundryDiskRowWidget::on_toolButton_Remove_clicked()
-{
-    requestRemove();
-}
-
-void IECFoundryDiskRowWidget::openSettingsDialog(
-    const EmulatorResponseIEC* ptrResponse)
-{
-    showSettingsDialog(ptrResponse);
-}
-
-void IECFoundryDiskRowWidget::showSettingsDialog(
-    const EmulatorResponseIEC* ptrResponse)
-{
-    if (ptrResponse == nullptr || configuration() == nullptr)
-    {
-        setOperationState(IECOperationStatusWidget::State::Failed,
-                          tr("Invalid IEC configuration"));
-        return;
-    }
-
-    const IECFoundryDiskConfiguration* ptrDiskConfiguration =
-        dynamic_cast<const IECFoundryDiskConfiguration*>(configuration());
-
-    if (ptrDiskConfiguration == nullptr)
-    {
-        setOperationState(IECOperationStatusWidget::State::Failed,
-                          tr("Invalid Foundry Disk configuration"));
-        return;
-    }
-
-    QList<quint8> availableDeviceNumbers =
-        ptrResponse->supportedDeviceNumbers().value(IECDeviceType::FoundryDisk);
-
-    const quint8 currentDeviceNumber = ptrDiskConfiguration->deviceNumber();
-
-    for (const QSharedPointer<IECDeviceConfiguration>& ptrOtherConfiguration :
-         ptrResponse->configurations())
-    {
-        if (ptrOtherConfiguration.isNull() ||
-            ptrOtherConfiguration->id() == ptrDiskConfiguration->id())
-        {
-            continue;
-        }
-
-        availableDeviceNumbers.removeAll(ptrOtherConfiguration->deviceNumber());
-    }
-
-    if (!availableDeviceNumbers.contains(currentDeviceNumber))
-        availableDeviceNumbers.append(currentDeviceNumber);
-
-    IECFoundryDiskSettingsDialog dialog(this);
-    dialog.setConfiguration(*ptrDiskConfiguration, availableDeviceNumbers);
-
-    if (dialog.exec() != QDialog::Accepted)
-    {
-        setOperationState(IECOperationStatusWidget::State::Idle);
-        return;
-    }
-
-    const IECFoundryDiskConfiguration updatedConfiguration =
-        dialog.configuration();
-
-    requestSetConfiguration(updatedConfiguration);
-}
-
-void IECFoundryDiskRowWidget::onDriveAccessChanged(const IECDeviceConfiguration::DeviceId deviceId, QQueue<IECDriveAccessEvent> events)
-{
-    if (deviceId != this->deviceId())
-        return;
-
-    for (const IECDriveAccessEvent& event : events)
-        m_sectorAccessQueue.enqueue(event);
-
-    if (!m_sectorAccessQueue.isEmpty() && !m_activityTimer.isActive())
-        m_activityTimer.start();
-}
 void IECFoundryDiskRowWidget::processNextSectorAccessEvent()
 {
     if (m_sectorAccessQueue.isEmpty())
@@ -253,7 +188,10 @@ void IECFoundryDiskRowWidget::processNextSectorAccessEvent()
 
     const IECDriveAccessEvent event = m_sectorAccessQueue.dequeue();
 
-    ui->lcdNumber_TrackSector->display(QStringLiteral("%1.%2").arg(event.track, 2, 10, QChar('0')).arg(event.sector, 2, 10, QChar('0')));
+    ui->lcdNumber_TrackSector->display(
+        QStringLiteral("%1.%2")
+            .arg(event.track, 2, 10, QChar('0'))
+            .arg(event.sector, 2, 10, QChar('0')));
 
     switch (event.operation)
     {

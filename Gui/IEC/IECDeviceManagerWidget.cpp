@@ -17,6 +17,7 @@
 
 #include "IECAsciiPrinterRowWidget.h"
 #include "IECFoundryDriveRowWidget.h"
+#include "IECFoundryDiskRowWidget.h"
 
 
 IECDeviceManagerWidget::IECDeviceManagerWidget(QWidget* parent)
@@ -61,11 +62,9 @@ void IECDeviceManagerWidget::setController(EmulatorController* ptrController)
     if (m_ptrController == nullptr)
         return;
 
-    connect(m_ptrController, &EmulatorController::iecRequestDone,
-            this, &IECDeviceManagerWidget::onIECRequestDone);
-
-    connect(m_ptrController, &EmulatorController::iecSystemEventsChanged,
-            this, &IECDeviceManagerWidget::onIECSystemEventsChanged);
+    connect(m_ptrController, &EmulatorController::iecRequestDone, this, &IECDeviceManagerWidget::onIECRequestDone);
+    connect(m_ptrController, &EmulatorController::iecSystemEventsChanged, this, &IECDeviceManagerWidget::onIECSystemEventsChanged);
+    connect(m_ptrController, &EmulatorController::iecDeviceEventsChanged, this, &IECDeviceManagerWidget::onIECDeviceEventsChanged);
 
     refreshConfigurations();
 }
@@ -278,6 +277,41 @@ void IECDeviceManagerWidget::onIECSystemEventsChanged(IECSystemEventList events)
         }
     }
 }
+void IECDeviceManagerWidget::onIECDeviceEventsChanged(
+    IECDeviceEventList events)
+{
+    for (const IECDeviceEventPtr& ptrEvent : events)
+    {
+        if (ptrEvent.isNull())
+            continue;
+
+        const IECDriveImageEvent* ptrImageEvent =
+            dynamic_cast<const IECDriveImageEvent*>(ptrEvent.data());
+
+        if (ptrImageEvent != nullptr)
+        {
+            m_driveImageStates[ptrImageEvent->deviceId]
+                              [ptrImageEvent->deviceNumber] = *ptrImageEvent;
+        }
+
+        const IECDriveAccessEvent* ptrAccessEvent =
+            dynamic_cast<const IECDriveAccessEvent*>(ptrEvent.data());
+
+        if (ptrImageEvent == nullptr && ptrAccessEvent == nullptr)
+            continue;
+
+        const quint8 deviceNumber =
+            ptrImageEvent != nullptr
+                ? ptrImageEvent->deviceNumber
+                : ptrAccessEvent->deviceNumber;
+
+        IECFoundryDiskRowWidget* ptrSlot =
+            m_driveSlotRows.value(ptrEvent->deviceId).value(deviceNumber);
+
+        if (ptrSlot != nullptr)
+            ptrSlot->processDeviceEvent(*ptrEvent);
+    }
+}
 
 
 IECDeviceRowWidget* IECDeviceManagerWidget::createDeviceRow(IECDeviceType type)
@@ -327,8 +361,7 @@ quint8 IECDeviceManagerWidget::deviceStartNumber(
 }
 
 
-void IECDeviceManagerWidget::setConfigurations(
-    const IECSystemGetConfigurationsResponse* ptrResponse)
+void IECDeviceManagerWidget::setConfigurations(const IECSystemGetConfigurationsResponse* ptrResponse)
 {
     if (ptrResponse == nullptr)
         return;
@@ -359,7 +392,8 @@ void IECDeviceManagerWidget::setConfigurations(
     for (const QSharedPointer<IECDeviceConfiguration>& ptrConfiguration :
          sortedConfigurations)
     {
-        IECDeviceRowWidget* ptrRow = createDeviceRow(ptrConfiguration->type());
+        IECDeviceRowWidget* ptrRow =
+            createDeviceRow(ptrConfiguration->type());
 
         if (ptrRow == nullptr)
         {
@@ -381,6 +415,43 @@ void IECDeviceManagerWidget::setConfigurations(
         ptrItem->setSizeHint(0, ptrRow->sizeHint());
 
         m_deviceRows.insert(ptrConfiguration->id(), ptrRow);
+
+        if (ptrConfiguration->type() != IECDeviceType::FoundryDrive)
+            continue;
+
+        const IECFoundryDriveConfiguration* ptrDriveConfiguration =
+            dynamic_cast<const IECFoundryDriveConfiguration*>(
+                ptrConfiguration.data());
+
+        if (ptrDriveConfiguration == nullptr)
+            continue;
+
+        for (const IECFoundryDiskConfiguration& diskConfiguration :
+             ptrDriveConfiguration->disks())
+        {
+            IECFoundryDiskRowWidget* ptrSlot =
+                new IECFoundryDiskRowWidget();
+
+            ptrSlot->setSlotConfiguration(
+                ptrDriveConfiguration->id(), diskConfiguration);
+
+            QTreeWidgetItem* ptrSlotItem = new QTreeWidgetItem(ptrItem);
+
+            ui->treeWidget_Devices->setItemWidget(
+                ptrSlotItem, 0, ptrSlot);
+
+            ptrSlotItem->setSizeHint(0, ptrSlot->sizeHint());
+
+            m_driveSlotRows[ptrDriveConfiguration->id()]
+                           [diskConfiguration.deviceNumber()] = ptrSlot;
+
+            const IECDriveImageEvent imageEvent =
+                m_driveImageStates.value(ptrDriveConfiguration->id())
+                    .value(diskConfiguration.deviceNumber());
+
+            if (imageEvent.deviceId != 0)
+                ptrSlot->processDeviceEvent(imageEvent);
+        }
     }
 
     ui->treeWidget_Devices->expandAll();
@@ -414,6 +485,7 @@ void IECDeviceManagerWidget::clearDeviceList()
     }
 
     m_deviceRows.clear();
+    m_driveSlotRows.clear();
 }
 
 
