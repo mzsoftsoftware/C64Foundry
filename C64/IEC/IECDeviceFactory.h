@@ -20,6 +20,7 @@ public:
     IECDeviceFactory(const IECDeviceFactory&) = delete;
     IECDeviceFactory& operator=(const IECDeviceFactory&) = delete;
 
+    QList<IECDeviceType> availableDeviceTypes() const;
     QList<quint8> supportedDeviceNumbers(IECDeviceType type) const;
 
     IECDevice* createDevice(const IECDeviceConfiguration& configuration);

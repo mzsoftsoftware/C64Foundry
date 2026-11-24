@@ -8,6 +8,13 @@ IECDeviceFactory::~IECDeviceFactory()
 {
 }
 
+QList<IECDeviceType> IECDeviceFactory::availableDeviceTypes() const
+{
+    return {
+        IECDeviceType::PrinterASCII,
+        IECDeviceType::FoundryDrive
+    };
+}
 QList<quint8> IECDeviceFactory::supportedDeviceNumbers(const IECDeviceType type) const
 {
     switch (type)

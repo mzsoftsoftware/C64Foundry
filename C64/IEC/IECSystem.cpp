@@ -3,6 +3,8 @@
 #include "IECDeviceFactory.h"
 #include "IECDevice.h"
 #include "IECDeviceRequest.h"
+#include "IECSystemRequest.h"
+
 
 IECSystem::IECSystem(C64Machine* ptrMachine, IECDeviceFactory* ptrDeviceFactory)
     : m_ptrMachine(ptrMachine),
@@ -13,6 +15,13 @@ IECSystem::~IECSystem()
 {
 }
 
+QList<IECDeviceType> IECSystem::availableDeviceTypes() const
+{
+    if (m_ptrDeviceFactory == nullptr)
+        return {};
+
+    return m_ptrDeviceFactory->availableDeviceTypes();
+}
 QList<quint8> IECSystem::supportedDeviceNumbers(const IECDeviceType type) const
 {
     if (m_ptrDeviceFactory == nullptr)
@@ -24,19 +33,40 @@ QList<quint8> IECSystem::supportedDeviceNumbers(const IECDeviceType type) const
 
 IECResponse::Result IECSystem::processRequest(const IECRequest& request, IECResponse& response)
 {
+    const IECSystemRequest* ptrSystemRequest = dynamic_cast<const IECSystemRequest*>(&request);
+
+    if (ptrSystemRequest != nullptr)
+    {
+        IECSystemResponse* ptrSystemResponse = dynamic_cast<IECSystemResponse*>(&response);
+
+        if (ptrSystemResponse == nullptr)
+            return IECResponse::Result::InvalidParameter;
+
+        if (!ptrSystemRequest->execute(*this, *ptrSystemResponse))
+            return IECResponse::Result::Failed;
+
+        return IECResponse::Result::Success;
+    }
+
     const IECDeviceRequest* ptrDeviceRequest = dynamic_cast<const IECDeviceRequest*>(&request);
-    IECDeviceResponse* ptrDeviceResponse = dynamic_cast<IECDeviceResponse*>(&response);
 
-    if (ptrDeviceRequest == nullptr || ptrDeviceResponse == nullptr)
-        return IECResponse::Result::InvalidParameter;
+    if (ptrDeviceRequest != nullptr)
+    {
+        IECDeviceResponse* ptrDeviceResponse = dynamic_cast<IECDeviceResponse*>(&response);
 
-    DeviceEntry* ptrEntry = findEntry(ptrDeviceRequest->deviceId());
+        if (ptrDeviceResponse == nullptr)
+            return IECResponse::Result::InvalidParameter;
 
-    if (ptrEntry == nullptr || ptrEntry->ptrDevice == nullptr)
-        return IECResponse::Result::InvalidParameter;
+        DeviceEntry* ptrEntry = findEntry(ptrDeviceRequest->deviceId());
 
-    if (!ptrDeviceRequest->execute(*ptrEntry->ptrDevice, *ptrDeviceResponse))
-        return IECResponse::Result::Failed;
+        if (ptrEntry == nullptr || ptrEntry->ptrDevice == nullptr)
+            return IECResponse::Result::InvalidParameter;
 
-    return IECResponse::Result::Success;
+        if (!ptrDeviceRequest->execute(*ptrEntry->ptrDevice, *ptrDeviceResponse))
+            return IECResponse::Result::Failed;
+
+        return IECResponse::Result::Success;
+    }
+
+    return IECResponse::Result::InvalidParameter;
 }

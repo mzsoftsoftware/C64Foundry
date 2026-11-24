@@ -68,7 +68,8 @@ add_library(C64FoundryCore STATIC
     C64/IEC/IECProtocolEvent.h
     C64/IEC/IECSystem.h C64/IEC/IECSystem.cpp
     C64/IEC/IECSystemEvent.h
-    C64/IEC/IECSystemRequest.h C64/IEC/IECSystemResponse.h
+    C64/IEC/IECSystemRequest.h C64/IEC/IECSystemRequest.cpp
+    C64/IEC/IECSystemResponse.h
 
     C64/IEC/IECPrinter.h C64/IEC/IECPrinter.cpp
     C64/IEC/IECAsciiPrinter.h C64/IEC/IECAsciiPrinter.cpp
