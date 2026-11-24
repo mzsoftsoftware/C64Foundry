@@ -1,40 +1,16 @@
 #include "IECDevice.h"
 
-#include <QDebug>
 
-
-IECDevice::IECDevice(IECBus* ptrBus, const quint8 deviceNumber)
-    : m_deviceNumber(deviceNumber)
-    , m_ptrBus(ptrBus)
+IECDevice::IECDevice(const DeviceId id)
+    : m_id(id)
 {
-    if (m_ptrBus != nullptr)
-    {
-        m_participantId = m_ptrBus->addParticipant();
-
-        qDebug() << "IEC device registered:"
-                 << "device number:" << m_deviceNumber
-                 << "participant ID:" << m_participantId;
-    }
 }
 
-IECDevice::~IECDevice()
+
+IECDevice::~IECDevice() = default;
+
+
+IECDevice::DeviceId IECDevice::id() const
 {
-    if (m_ptrBus != nullptr)
-        m_ptrBus->removeParticipant(m_participantId);
-}
-
-bool IECDevice::lineHigh(const IECBus::Line line) const
-{
-    if (m_ptrBus == nullptr)
-        return true;
-
-    return m_ptrBus->lineHigh(line);
-}
-
-void IECDevice::setLineLow(const IECBus::Line line, const bool low)
-{
-    if (m_ptrBus == nullptr)
-        return;
-
-    m_ptrBus->setLineLow(m_participantId, line, low);
+    return m_id;
 }
