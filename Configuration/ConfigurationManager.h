@@ -7,10 +7,9 @@
 #include <QList>
 #include <QSharedPointer>
 
-#include "Emulator/EmulatorRequest.h"
-#include "Emulator/EmulatorResponse.h"
-#include "Emulator/EmulatorIECDeviceEvent.h"
-
+#include "C64/IEC/IECRequest.h"
+#include "C64/IEC/IECResponse.h"
+#include "C64/IEC/IECSystemEvent.h"
 #include "C64/IEC/IECDeviceConfiguration.h"
 
 class C64Configuration;
@@ -41,8 +40,8 @@ signals:
     void saveErrorChanged(bool bError);
 
 private slots:
-    void onIECDeviceChanged(EmulatorIECDeviceEvent::Type type, IECDeviceConfiguration::DeviceId deviceId);
-    void onIECRequestDone(QSharedPointer<EmulatorResponse> response);
+    void onIECSystemEventsChanged(IECSystemEventList events);
+    void onIECRequestDone(QSharedPointer<IECResponse> response);
 
 private:
     void requestIECConfigurations();
@@ -52,7 +51,7 @@ private:
     C64Configuration* m_ptrActiveConfiguration = nullptr;
 
     EmulatorController* m_ptrEmulatorController = nullptr;
-    EmulatorRequest::RequestId m_iecConfigurationRequestId = 0;
+    IECRequest::RequestId m_iecConfigurationRequestId = 0;
     bool m_bIECRefreshPending = false;
 
     bool m_bSaveError = false;

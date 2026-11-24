@@ -438,6 +438,8 @@ void IECDeviceManagerWidget::setConfigurations(const IECSystemGetConfigurationsR
             IECFoundryDiskRowWidget* ptrSlot =
                 new IECFoundryDiskRowWidget();
 
+            ptrSlot->setController(m_ptrController);
+
             ptrSlot->setSlotConfiguration(
                 ptrDriveConfiguration->id(), diskConfiguration);
 
