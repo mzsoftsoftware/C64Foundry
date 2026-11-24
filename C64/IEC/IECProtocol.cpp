@@ -1,40 +1,79 @@
 #include "IECProtocol.h"
 
 
-IECProtocol::IECProtocol(IECBus* ptrBus, const quint8 deviceNumber, const IECBus::ParticipantId participantId)
-    : m_deviceNumber(deviceNumber)
-    , m_ptrBus(ptrBus)
-    , m_participantId(participantId)
+IECProtocol::IECProtocol(IECBus* ptrBus)
+    : m_ptrBus(ptrBus)
 {
+    if (m_ptrBus != nullptr)
+        m_participantId = m_ptrBus->addParticipant();
+
     reset();
 }
+
+
+IECProtocol::~IECProtocol()
+{
+    if (m_ptrBus != nullptr && m_participantId != 0)
+        m_ptrBus->removeParticipant(m_participantId);
+}
+
+
+IECProtocol::State IECProtocol::state() const
+{
+    return m_state;
+}
+
+
+IECProtocolEvent::Mode IECProtocol::mode() const
+{
+    return m_mode;
+}
+
+
+quint8 IECProtocol::selectedDeviceNumber() const
+{
+    return m_selectedDeviceNumber;
+}
+
+
+quint8 IECProtocol::secondaryAddress() const
+{
+    return m_secondaryAddress;
+}
+
 
 void IECProtocol::reset()
 {
     releaseBus();
 
     m_state = State::Idle;
-    m_mode = Mode::None;
+    m_mode = IECProtocolEvent::Mode::None;
 
+    m_selectedDeviceNumber = 0;
     m_secondaryAddress = 0;
+
     m_receivedByte = 0;
     m_receivedBits = 0;
-    m_listenEnded = false;
+
     m_stateCycles = 0;
 
     m_endOfInformation = false;
     m_attentionClockLowSeen = false;
 
-    m_receivedBytes.clear();
+    m_events.clear();
 
-    m_previousAttentionHigh = lineHigh(IECBus::Line::ATN);
-    m_previousClockHigh = lineHigh(IECBus::Line::CLK);
+    m_responseData.clear();
+    m_responsePending = false;
 
     m_transmitData.clear();
     m_transmitIndex = 0;
     m_transmitBit = 0;
     m_sendPhase = SendPhase::WaitReady;
+
+    m_previousAttentionHigh = lineHigh(IECBus::Line::ATN);
+    m_previousClockHigh = lineHigh(IECBus::Line::CLK);
 }
+
 
 void IECProtocol::clock()
 {
@@ -57,6 +96,16 @@ void IECProtocol::clock()
     if (attentionFalling)
         processAttention();
 
+    // Die Antwort eines TALK-Geräts wird erst nach Ende der
+    // ATN-Phase über den Bus übertragen.
+    if (m_state == State::WaitFirstClockLow &&
+        attentionHigh &&
+        m_mode == IECProtocolEvent::Mode::Talk &&
+        m_responsePending)
+    {
+        beginSending();
+    }
+
     ++m_stateCycles;
 
     switch (m_state)
@@ -70,8 +119,6 @@ void IECProtocol::clock()
         //
         // CLK muss während dieser ATN-Phase zunächst
         // Low gewesen sein und anschließend High werden.
-        // Dadurch geben wir DATA nicht sofort frei,
-        // wenn CLK beim ATN-Einstieg bereits High ist.
 
         if (!clockHigh)
             m_attentionClockLowSeen = true;
@@ -94,8 +141,10 @@ void IECProtocol::clock()
 
     case State::WaitFirstClockLow:
         // EOI wird vor dem ersten Datenbit erkannt.
-        // EOI gilt nur während der Datenphase.
-        if (attentionHigh && m_mode == Mode::Listen && clockHigh && m_stateCycles >= EOI_TIMEOUT_CYCLES)
+        if (attentionHigh &&
+            m_mode == IECProtocolEvent::Mode::Listen &&
+            clockHigh &&
+            m_stateCycles >= EOI_TIMEOUT_CYCLES)
         {
             setLineLow(IECBus::Line::DATA, true);
 
@@ -106,8 +155,7 @@ void IECProtocol::clock()
             break;
         }
 
-        // Erste fallende CLK-Flanke startet die
-        // eigentliche Byteübertragung.
+        // Erste fallende CLK-Flanke startet die Byteübertragung.
         if (clockFalling)
         {
             m_receivedByte = 0;
@@ -138,7 +186,6 @@ void IECProtocol::clock()
 
     case State::WaitByteEnd:
         // Nach dem achten Bit zieht der Talker CLK Low.
-        // Anschließend bestätigt der Listener das Byte.
         if (clockFalling)
         {
             processReceivedByte(m_receivedByte, !attentionHigh);
@@ -151,7 +198,6 @@ void IECProtocol::clock()
         break;
 
     case State::Acknowledge:
-        // ACK unabhängig vom ATN-Pegel abschließen.
         if (m_stateCycles >= BYTE_ACK_CYCLES)
         {
             setLineLow(IECBus::Line::DATA, false);
@@ -164,7 +210,16 @@ void IECProtocol::clock()
         {
             setLineLow(IECBus::Line::DATA, false);
 
-            m_state = State::WaitFirstClockLow;
+            if (attentionHigh && m_mode == IECProtocolEvent::Mode::None)
+            {
+                releaseBus();
+                m_state = State::Idle;
+            }
+            else
+            {
+                m_state = State::WaitFirstClockLow;
+            }
+
             m_stateCycles = 0;
         }
         break;
@@ -180,8 +235,6 @@ void IECProtocol::clock()
         break;
 
     case State::WaitEOIRelease:
-        // Nach der EOI-Bestätigung warten wir auf
-        // den Beginn des letzten Bytes.
         if (!clockHigh)
         {
             m_receivedByte = 0;
@@ -201,6 +254,7 @@ void IECProtocol::clock()
     m_previousClockHigh = clockHigh;
 }
 
+
 void IECProtocol::processAttention()
 {
     releaseBus();
@@ -213,9 +267,11 @@ void IECProtocol::processAttention()
     m_endOfInformation = false;
     m_attentionClockLowSeen = false;
 
-    // Alle Listener bestätigen ATN zunächst
-    // durch DATA Low.
+    // Alle Listener bestätigen ATN zunächst durch DATA Low.
     setLineLow(IECBus::Line::DATA, true);
+
+    m_responseData.clear();
+    m_responsePending = false;
 
     m_transmitData.clear();
     m_transmitIndex = 0;
@@ -223,55 +279,99 @@ void IECProtocol::processAttention()
     m_sendPhase = SendPhase::WaitReady;
 }
 
+
 void IECProtocol::processReceivedByte(const quint8 value, const bool attention)
 {
     if (attention)
     {
         if (value == 0x3F)
         {
-            if (m_mode == Mode::Listen)
-                m_listenEnded = true;
+            if (m_mode == IECProtocolEvent::Mode::Listen)
+                addEvent(IECProtocolEvent::Type::EndOfTransmission);
 
-            m_mode = Mode::None;
+            if (m_mode != IECProtocolEvent::Mode::None)
+                addEvent(IECProtocolEvent::Type::DeviceDeselected);
+
+            m_mode = IECProtocolEvent::Mode::None;
+            m_selectedDeviceNumber = 0;
+            m_responseData.clear();
+            m_responsePending = false;
+
             return;
         }
 
         if (value == 0x5F)
         {
-            m_mode = Mode::None;
+            if (m_mode != IECProtocolEvent::Mode::None)
+                addEvent(IECProtocolEvent::Type::DeviceDeselected);
+
+            m_mode = IECProtocolEvent::Mode::None;
+            m_selectedDeviceNumber = 0;
+            m_responseData.clear();
+            m_responsePending = false;
+
             return;
         }
 
-        if ((value & 0xE0) == 0x20)
+        if ((value & 0xE0) == 0x20 || (value & 0xE0) == 0x40)
         {
-            m_mode = ((value & 0x1F) == m_deviceNumber) ? Mode::Listen : Mode::None;
+            if (m_mode != IECProtocolEvent::Mode::None)
+                addEvent(IECProtocolEvent::Type::DeviceDeselected);
+
+            m_selectedDeviceNumber = value & 0x1F;
+
+            m_mode = ((value & 0xE0) == 0x20)
+                         ? IECProtocolEvent::Mode::Listen
+                         : IECProtocolEvent::Mode::Talk;
+
+            m_secondaryAddress = 0;
+            m_responseData.clear();
+            m_responsePending = false;
+
+            addEvent(IECProtocolEvent::Type::DeviceSelected);
+
             return;
         }
 
-        if ((value & 0xE0) == 0x40)
-        {
-            m_mode = ((value & 0x1F) == m_deviceNumber) ? Mode::Talk : Mode::None;
-            return;
-        }
-
-        if (m_mode != Mode::None && ((value & 0xF0) == 0x60 || (value & 0xF0) == 0xE0 || (value & 0xF0) == 0xF0))
+        if (m_mode != IECProtocolEvent::Mode::None &&
+            ((value & 0xF0) == 0x60 ||
+             (value & 0xF0) == 0xE0 ||
+             (value & 0xF0) == 0xF0))
         {
             m_secondaryAddress = value & 0x0F;
+            addEvent(IECProtocolEvent::Type::SecondaryAddressReceived);
         }
 
         return;
     }
 
-    if (m_mode == Mode::Listen)
+    if (m_mode == IECProtocolEvent::Mode::Listen)
     {
-        ReceivedByte receivedByte;
-        receivedByte.value = value;
-        receivedByte.secondaryAddress = m_secondaryAddress;
-        receivedByte.eoi = m_endOfInformation;
+        IECProtocolEvent event;
+        event.type = IECProtocolEvent::Type::ByteReceived;
+        event.deviceNumber = m_selectedDeviceNumber;
+        event.mode = m_mode;
+        event.secondaryAddress = m_secondaryAddress;
+        event.value = value;
+        event.eoi = m_endOfInformation;
 
-        m_receivedBytes.enqueue(receivedByte);
+        m_events.enqueue(event);
+        m_endOfInformation = false;
     }
 }
+
+
+void IECProtocol::addEvent(const IECProtocolEvent::Type type)
+{
+    IECProtocolEvent event;
+    event.type = type;
+    event.deviceNumber = m_selectedDeviceNumber;
+    event.mode = m_mode;
+    event.secondaryAddress = m_secondaryAddress;
+
+    m_events.enqueue(event);
+}
+
 
 void IECProtocol::beginNextByte()
 {
@@ -289,19 +389,17 @@ void IECProtocol::beginNextByte()
         return;
     }
 
-    // Nach UNLISTEN ist das Gerät nicht mehr adressiert.
-    if (m_mode != Mode::Listen)
+    if (m_mode != IECProtocolEvent::Mode::Listen)
     {
         releaseBus();
         m_state = State::Idle;
         return;
     }
 
-    // Adressierter Listener wartet auf das nächste Byte.
     setLineLow(IECBus::Line::DATA, true);
-
     m_state = State::WaitNextClockHigh;
 }
+
 
 void IECProtocol::releaseBus()
 {
@@ -309,25 +407,31 @@ void IECProtocol::releaseBus()
     setLineLow(IECBus::Line::DATA, false);
 }
 
-bool IECProtocol::hasReceivedByte() const
+
+QQueue<IECProtocolEvent> IECProtocol::takeEvents()
 {
-    return !m_receivedBytes.isEmpty();
+    QQueue<IECProtocolEvent> events;
+    events.swap(m_events);
+    return events;
 }
 
-IECProtocol::ReceivedByte IECProtocol::takeReceivedByte()
-{
-    if (m_receivedBytes.isEmpty())
-        return ReceivedByte();
 
-    return m_receivedBytes.dequeue();
+void IECProtocol::setResponse(const IECProtocolResponse& response)
+{
+    m_responseData.clear();
+    m_responsePending = false;
+
+    if (response.type != IECProtocolResponse::Type::SendData ||
+        response.data.isEmpty() ||
+        m_mode != IECProtocolEvent::Mode::Talk)
+    {
+        return;
+    }
+
+    m_responseData = response.data;
+    m_responsePending = true;
 }
 
-bool IECProtocol::takeListenEnded()
-{
-    const bool ended = m_listenEnded;
-    m_listenEnded = false;
-    return ended;
-}
 
 bool IECProtocol::lineHigh(const IECBus::Line line) const
 {
@@ -337,28 +441,27 @@ bool IECProtocol::lineHigh(const IECBus::Line line) const
     return m_ptrBus->lineHigh(line);
 }
 
+
 void IECProtocol::setLineLow(const IECBus::Line line, const bool low)
 {
-    if (m_ptrBus == nullptr)
+    if (m_ptrBus == nullptr || m_participantId == 0)
         return;
 
     m_ptrBus->setLineLow(m_participantId, line, low);
 }
 
-bool IECProtocol::startSending(const QByteArray& data)
+
+void IECProtocol::beginSending()
 {
-    if (m_ptrBus == nullptr || m_mode != Mode::Talk || data.isEmpty())
-        return false;
+    if (m_responseData.isEmpty())
+        return;
 
-    if (m_state == State::Send || !lineHigh(IECBus::Line::ATN))
-        return false;
+    m_transmitData = m_responseData;
+    m_responseData.clear();
+    m_responsePending = false;
 
-    m_transmitData = data;
     m_transmitIndex = 0;
     m_transmitBit = 0;
-
-    m_previousSendClockHigh = lineHigh(IECBus::Line::CLK);
-    m_transmitClockRiseCount = 0;
 
     // Während des TALK-Turnarounds hält das Laufwerk DATA zunächst
     // weiterhin Low. CLK wird freigegeben, damit der C64 die
@@ -369,9 +472,8 @@ bool IECProtocol::startSending(const QByteArray& data)
     m_state = State::Send;
     m_sendPhase = SendPhase::WaitTalkTurnaround;
     m_stateCycles = 0;
-
-    return true;
 }
+
 
 void IECProtocol::clockSend()
 {
@@ -384,9 +486,7 @@ void IECProtocol::clockSend()
         if (lineHigh(IECBus::Line::CLK) && lineHigh(IECBus::Line::DATA))
         {
             if (m_stateCycles >= TALK_LISTENER_READY_DELAY_CYCLES)
-            {
                 prepareTransmitByte();
-            }
         }
         else
         {
@@ -407,10 +507,6 @@ void IECProtocol::clockSend()
         break;
 
     case SendPhase::WaitEOIRelease:
-        // Der Listener hält DATA während seiner EOI-Bestätigung
-        // mindestens 60 µs auf Low. Sobald DATA wieder High ist,
-        // beginnt der Talker innerhalb der zulässigen Antwortzeit
-        // mit dem letzten Byte.
         if (lineHigh(IECBus::Line::DATA))
         {
             m_transmitBit = 0;
@@ -442,8 +538,6 @@ void IECProtocol::clockSend()
         break;
 
     case SendPhase::WaitClockHigh:
-        // Der Listener darf CLK vorübergehend auf Low halten.
-        // Die Datenhaltezeit beginnt erst, wenn CLK tatsächlich High ist.
         if (!lineHigh(IECBus::Line::CLK))
         {
             m_stateCycles = 0;
@@ -469,15 +563,6 @@ void IECProtocol::clockSend()
         break;
 
     case SendPhase::WaitFinalBitDataHold:
-        // Nach der achten steigenden CLK-Flanke ist das letzte
-        // Datenbit übertragen. CLK bleibt Low, während DATA
-        // zunächst noch den Zustand des letzten Bits behält.
-        //
-        // Dadurch erhält der C64 Zeit, den Byteabschluss zu
-        // erkennen und sein ACK über DATA zu signalisieren.
-        //
-        // Erst danach gibt das Laufwerk DATA frei. Ein bereits
-        // aktives ACK des C64 bleibt dadurch auf der Leitung Low.
         if (m_stateCycles >= SEND_FINAL_BIT_DATA_HOLD_CYCLES)
         {
             setLineLow(IECBus::Line::DATA, false);
@@ -500,9 +585,6 @@ void IECProtocol::clockSend()
         break;
 
     case SendPhase::WaitAcknowledgeHold:
-        // Ein externes Gerät als Talker muss das Byte-ACK
-        // mindestens 60 µs berücksichtigen.
-        // CLK bleibt währenddessen Low.
         if (m_stateCycles >= SEND_BYTE_ACK_HOLD_CYCLES)
         {
             setLineLow(IECBus::Line::CLK, false);
@@ -526,9 +608,6 @@ void IECProtocol::clockSend()
 
                 if (m_transmitIndex == m_transmitData.size() - 1)
                 {
-                    // Das letzte Byte beginnt mit der EOI-Sequenz.
-                    // Die EOI-Frist startet direkt nach Freigabe des
-                    // vorherigen Byte-ACKs.
                     prepareTransmitByte();
                 }
                 else
@@ -544,7 +623,6 @@ void IECProtocol::clockSend()
         setLineLow(IECBus::Line::CLK, false);
         setLineLow(IECBus::Line::DATA, false);
 
-        // T_BB beginnt erst nach Freigabe des ACKs.
         if (m_stateCycles >= BETWEEN_BYTES_CYCLES)
         {
             m_transmitBit = 0;
@@ -554,12 +632,8 @@ void IECProtocol::clockSend()
         break;
 
     case SendPhase::WaitTalkTurnaround:
-        // Der C64 leitet den Rollenwechsel ein, indem er CLK freigibt.
-        // Das Laufwerk hält DATA bis zu diesem Zeitpunkt weiterhin Low.
         if (lineHigh(IECBus::Line::CLK))
         {
-            // Das Laufwerk übernimmt jetzt die TALK-Rolle:
-            // CLK auf Low ziehen und DATA freigeben.
             setLineLow(IECBus::Line::CLK, true);
             setLineLow(IECBus::Line::DATA, false);
 
@@ -569,9 +643,6 @@ void IECProtocol::clockSend()
         break;
 
     case SendPhase::WaitTalkAcknowledgeHold:
-        // Das Laufwerk hält CLK mindestens 80 µs auf Low.
-        // Anschließend gibt es CLK frei und wartet auf die
-        // Listener-Bereitschaft des C64 über DATA High.
         if (m_stateCycles >= TALK_ATTENTION_ACK_HOLD_CYCLES)
         {
             setLineLow(IECBus::Line::CLK, false);
@@ -582,8 +653,6 @@ void IECProtocol::clockSend()
         break;
 
     case SendPhase::WaitTalkListenerReady:
-        // Nach Freigabe von CLK wartet das Laufwerk darauf,
-        // dass der C64 DATA freigibt und damit empfangsbereit ist.
         if (lineHigh(IECBus::Line::DATA))
         {
             m_sendPhase = SendPhase::WaitInitialDataStart;
@@ -597,6 +666,7 @@ void IECProtocol::clockSend()
         break;
     }
 }
+
 
 void IECProtocol::prepareTransmitByte()
 {
@@ -617,6 +687,7 @@ void IECProtocol::prepareTransmitByte()
         m_sendPhase = SendPhase::DriveBit;
     }
 }
+
 
 void IECProtocol::finishSending()
 {

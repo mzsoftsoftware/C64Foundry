@@ -1,9 +1,11 @@
 #pragma once
 
+#include <QByteArray>
 #include <QQueue>
 #include <QtGlobal>
 
 #include "IECBus.h"
+#include "IECProtocolEvent.h"
 
 
 class IECProtocol
@@ -43,35 +45,22 @@ public:
         WaitBetweenBytes
     };
 
-    enum class Mode
-    {
-        None,
-        Listen,
-        Talk
-    };
+    explicit IECProtocol(IECBus* ptrBus);
+    ~IECProtocol();
 
-    struct ReceivedByte
-    {
-        quint8 value = 0;
-        quint8 secondaryAddress = 0;
-        bool eoi = false;
-    };
+    IECProtocol(const IECProtocol&) = delete;
+    IECProtocol& operator=(const IECProtocol&) = delete;
 
-    explicit IECProtocol(IECBus* ptrBus, quint8 deviceNumber, IECBus::ParticipantId participantId);
-
-    quint8 deviceNumber() const             { return m_deviceNumber; }
-    State state() const                     { return m_state; }
-    Mode mode() const                       { return m_mode; }
-    quint8 secondaryAddress() const         { return m_secondaryAddress; }
+    State state() const;
+    IECProtocolEvent::Mode mode() const;
+    quint8 selectedDeviceNumber() const;
+    quint8 secondaryAddress() const;
 
     void reset();
     void clock();
 
-    bool hasReceivedByte() const;
-    ReceivedByte takeReceivedByte();
-    bool takeListenEnded();
-
-    bool startSending(const QByteArray& data);
+    QQueue<IECProtocolEvent> takeEvents();
+    void setResponse(const IECProtocolResponse& response);
 
 private:
     void processAttention();
@@ -79,9 +68,12 @@ private:
     void beginNextByte();
     void releaseBus();
 
+    void beginSending();
     void clockSend();
     void prepareTransmitByte();
     void finishSending();
+
+    void addEvent(IECProtocolEvent::Type type);
 
     bool lineHigh(IECBus::Line line) const;
     void setLineLow(IECBus::Line line, bool low);
@@ -109,17 +101,17 @@ private:
     // Talk attention turnaround.
     static constexpr quint32 TALK_ATTENTION_ACK_HOLD_CYCLES = 82;
 
-    quint8 m_deviceNumber = 0;
     IECBus* m_ptrBus = nullptr;
     IECBus::ParticipantId m_participantId = 0;
 
     State m_state = State::Idle;
-    Mode m_mode = Mode::None;
+    IECProtocolEvent::Mode m_mode = IECProtocolEvent::Mode::None;
 
+    quint8 m_selectedDeviceNumber = 0;
     quint8 m_secondaryAddress = 0;
+
     quint8 m_receivedByte = 0;
     quint8 m_receivedBits = 0;
-    bool m_listenEnded = false;
 
     quint32 m_stateCycles = 0;
 
@@ -131,13 +123,13 @@ private:
     // CLK bereits auf Low gewesen ist.
     bool m_attentionClockLowSeen = false;
 
-    QQueue<ReceivedByte> m_receivedBytes;
+    QQueue<IECProtocolEvent> m_events;
+
+    QByteArray m_responseData;
+    bool m_responsePending = false;
 
     SendPhase m_sendPhase = SendPhase::WaitReady;
     QByteArray m_transmitData;
     qsizetype m_transmitIndex = 0;
     quint8 m_transmitBit = 0;
-
-    bool m_previousSendClockHigh = true;
-    quint8 m_transmitClockRiseCount = 0;
 };
