@@ -34,6 +34,4 @@ private:
 
 private:
     QHash<DeviceId, IECDevice*> m_devices;
-
-    IECFoundryDrive* m_ptrFoundryDrive = nullptr;
 };

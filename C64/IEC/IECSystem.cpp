@@ -6,16 +6,37 @@
 #include "IECDeviceRequest.h"
 #include "IECSystemRequest.h"
 
+#include "C64/C64Machine.h"
+#include "IECBus.h"
+#include "IECProtocol.h"
+
+
 
 IECSystem::IECSystem(C64Machine* ptrMachine, IECDeviceFactory* ptrDeviceFactory)
     : m_ptrMachine(ptrMachine),
     m_ptrDeviceFactory(ptrDeviceFactory)
 {
+    m_ptrBus = new IECBus();
+
+    if (m_ptrMachine != nullptr)
+        m_ptrMachine->setIECBus(m_ptrBus);
+
+    m_ptrProtocol = new IECProtocol(m_ptrBus);
+    m_ptrDeviceManager = new IECDeviceManager();
 }
-
-
 IECSystem::~IECSystem()
 {
+    if (m_ptrMachine != nullptr)
+        m_ptrMachine->setIECBus(nullptr);
+
+    delete m_ptrProtocol;
+    m_ptrProtocol = nullptr;
+
+    delete m_ptrDeviceManager;
+    m_ptrDeviceManager = nullptr;
+
+    delete m_ptrBus;
+    m_ptrBus = nullptr;
 }
 
 
