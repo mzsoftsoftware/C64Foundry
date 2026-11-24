@@ -6,6 +6,8 @@
 #include <QVariant>
 #include <QComboBox>
 #include <QCheckBox>
+#include <QSignalBlocker>
+#include <QStandardItemModel>
 
 
 IECFoundryDriveSettingsDialog::IECFoundryDriveSettingsDialog(QWidget* parent)
@@ -120,7 +122,7 @@ void IECFoundryDriveSettingsDialog::on_spinBox_StartDevice_valueChanged(int valu
 
         const int previousDeviceNumber = comboBox->currentData().toInt();
         comboBox->clear();
-        for (int deviceNumber = startDeviceNumber; deviceNumber <= lastDeviceNumber; ++deviceNumber)
+        for (int deviceNumber = value; deviceNumber <= lastDeviceNumber; ++deviceNumber)
         {
             comboBox->addItem(QString("#%1").arg(deviceNumber), deviceNumber);
         }

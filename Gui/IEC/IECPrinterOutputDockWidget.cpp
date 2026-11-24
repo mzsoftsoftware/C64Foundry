@@ -7,6 +7,7 @@
 #include "Emulator/EmulatorController.h"
 #include "C64/IEC/IECSystemRequest.h"
 #include "C64/IEC/IECSystemResponse.h"
+#include "C64/IEC/IECAsciiPrinterConfiguration.h"
 #include "Gui/IEC/IECAsciiPrinterOutputWidget.h"
 
 
@@ -137,19 +138,25 @@ void IECPrinterOutputDockWidget::updatePrinterTabs(
 
     for (const QSharedPointer<IECDeviceConfiguration>& ptrConfiguration : configurations)
     {
-        if (ptrConfiguration.isNull())
-            continue;
+        const IECAsciiPrinterConfiguration* ptrPrinterConfiguration =
+            dynamic_cast<const IECAsciiPrinterConfiguration*>(ptrConfiguration.data());
 
-        newConfigurations.insert(ptrConfiguration->id(), ptrConfiguration);
-
-        if (ptrConfiguration->type() != IECDeviceType::PrinterASCII || !ptrConfiguration->enabled())
+        if (ptrPrinterConfiguration == nullptr)
             continue;
 
         qsizetype insertIndex = 0;
 
-        while (insertIndex < sortedConfigurations.size()
-               && sortedConfigurations[insertIndex]->deviceNumber() <= ptrConfiguration->deviceNumber())
+        while (insertIndex < sortedConfigurations.size())
         {
+            const IECAsciiPrinterConfiguration* ptrSortedPrinterConfiguration =
+                dynamic_cast<const IECAsciiPrinterConfiguration*>(sortedConfigurations[insertIndex].data());
+
+            if (ptrSortedPrinterConfiguration == nullptr ||
+                ptrSortedPrinterConfiguration->deviceNumber() > ptrPrinterConfiguration->deviceNumber())
+            {
+                break;
+            }
+
             ++insertIndex;
         }
 
@@ -190,8 +197,14 @@ void IECPrinterOutputDockWidget::updatePrinterTabs(
             m_printerWidgets.insert(deviceId, ptrWidget);
         }
 
+        const IECAsciiPrinterConfiguration* ptrPrinterConfiguration =
+            dynamic_cast<const IECAsciiPrinterConfiguration*>(ptrConfiguration.data());
+
+        if (ptrPrinterConfiguration == nullptr)
+            continue;
+
         const QString printerName = tr("ASCII Printer — IEC #%1")
-                                        .arg(ptrConfiguration->deviceNumber());
+                                        .arg(ptrPrinterConfiguration->deviceNumber());
 
         ptrWidget->setPrinterName(printerName);
 
@@ -203,7 +216,7 @@ void IECPrinterOutputDockWidget::updatePrinterTabs(
         ui->tabWidget_Printers->insertTab(
             static_cast<int>(ui->tabWidget_Printers->count()),
             ptrWidget,
-            tr("IEC #%1").arg(ptrConfiguration->deviceNumber()));
+                        tr("IEC #%1").arg(ptrPrinterConfiguration->deviceNumber()));
     }
 }
 
