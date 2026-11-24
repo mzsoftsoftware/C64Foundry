@@ -18,6 +18,7 @@
 
 class EmulatorThread;
 class EmulatorWorker;
+class VideoFrameSource;
 
 
 class EmulatorController : public QObject
@@ -27,6 +28,8 @@ class EmulatorController : public QObject
 public:
     explicit EmulatorController(QObject* parent = nullptr);
     virtual ~EmulatorController();
+
+    void start();
 
 public slots:
     // Requests
@@ -54,6 +57,7 @@ signals:
     void stateChanged(Emulator::State state);
     void speedChanged(Emulator::Speed speed);
     void statisticsChanged(quint64 cycles, quint64 currentCyclesPerSecond, quint64 averageCyclesPerSecond);
+    void videoFrameSourceReady(VideoFrameSource* ptrSource);
 
     // IEC events
     void iecSystemEventsChanged(IECSystemEventList events);

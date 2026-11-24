@@ -16,6 +16,7 @@ class ConfigurationManager;
 class EmulatorController;
 class KeyboardController;
 class VideoController;
+class VideoFrameSource;
 
 
 class MainWindow : public QMainWindow
@@ -30,6 +31,7 @@ public:
 
 private slots:
     void onIECConfigurationsRestored(QSharedPointer<EmulatorResponse> response);
+    void onVideoFrameSourceReady(VideoFrameSource* ptrSource);
     void romSetLoaded(bool bLoaded);
     void onConfigurationSaveErrorChanged(bool bError);
 

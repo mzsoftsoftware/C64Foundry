@@ -2,8 +2,6 @@
 
 #include <QThread>
 
-#include "C64/C64Machine.h"
-
 
 namespace
 {
@@ -29,9 +27,9 @@ constexpr QRgb C64Palette[16] =
 }
 
 
-VideoWorker::VideoWorker(C64Machine* ptrMachine, QObject* parent)
+VideoWorker::VideoWorker(VideoFrameSource* ptrSource, QObject* parent)
     : QObject{parent}
-    , m_ptrMachine{ptrMachine}
+    , m_ptrSource{ptrSource}
 {
 }
 VideoWorker::~VideoWorker()
@@ -44,7 +42,7 @@ void VideoWorker::run()
     // The video format remains constant for the
     // lifetime of the emulated machine.
     //
-    m_timing = m_ptrMachine->timing();
+    m_timing = m_ptrSource->timing();
     m_frameWidth =
         static_cast<quint16>(
             m_timing.cyclesPerLine * 8);
@@ -88,7 +86,7 @@ void VideoWorker::run()
             continue;
         }
 
-        const quint8* ptrFrame = m_ptrMachine->acquireVideoFrame();
+        const quint8* ptrFrame = m_ptrSource->acquireVideoFrame();
         if (ptrFrame == nullptr)
         {
             QThread::msleep(1);

@@ -4,16 +4,14 @@
 #include <QMutex>
 #include <QImage>
 
-#include "C64/C64Timing.h"
-
-class C64Machine;
+#include "C64/VideoFrameSource.h"
 
 
 class VideoWorker : public QObject
 {
     Q_OBJECT
 public:
-    explicit VideoWorker(C64Machine* ptrMachine, QObject* parent = nullptr);
+    explicit VideoWorker(VideoFrameSource* ptrSource, QObject* parent = nullptr);
     virtual ~VideoWorker();
 
     // Operations
@@ -31,7 +29,7 @@ private:
     QImage convertFrame(const quint8* ptrFrame) const;
 
 private:
-    C64Machine* m_ptrMachine = nullptr;
+    VideoFrameSource* m_ptrSource = nullptr;
 
     C64::Timing m_timing = C64::PALTiming;
     quint16 m_frameWidth = 0;

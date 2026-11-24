@@ -25,6 +25,9 @@ MainWindow::MainWindow(QWidget *parent)
 }
 MainWindow::~MainWindow()
 {
+    delete m_ptrVideoController;
+    m_ptrVideoController = nullptr;
+
     delete ui;
 }
 
@@ -47,10 +50,8 @@ bool MainWindow::initialize()
     ui->dockWidgetContents_EmulatorControl->setController(m_ptrEmulatorController);
     ui->dockWidgetContents_IECControl->setController(m_ptrEmulatorController);
     ui->dockWidgetContents_PrinterOutput->setController(m_ptrEmulatorController);
-    connect(m_ptrEmulatorController, &EmulatorController::romSetLoaded, this, &MainWindow::romSetLoaded);
 
-    m_ptrVideoController = new VideoController(m_ptrEmulatorController->machine(), this);
-    m_ptrVideoController->setVideoWidget(ui->dockWidgetContents_VideoWindow);
+    connect(m_ptrEmulatorController, &EmulatorController::videoFrameSourceReady, this, &MainWindow::onVideoFrameSourceReady, Qt::QueuedConnection);
 
     m_ptrKeyboardController = new KeyboardController(m_ptrConfigurationManager, this);
     qApp->installEventFilter(m_ptrKeyboardController);
@@ -65,7 +66,11 @@ bool MainWindow::initialize()
     setupDockWidgetsMenu();
     restoreWindowLayout();
 
-    m_restoreIECRequestId = m_ptrEmulatorController->restoreIECConfigurations(m_ptrConfigurationManager->activeConfiguration()->iecDevices);
+    m_ptrEmulatorController->start();
+
+    m_restoreIECRequestId = m_ptrEmulatorController->request(
+        new IECSystemRestoreConfigurationsRequest(
+            m_ptrConfigurationManager->activeConfiguration()->iecDevices));
 
     if (m_restoreIECRequestId == 0)
     {
@@ -208,4 +213,16 @@ void MainWindow::onConfigurationSaveErrorChanged(bool bError)
         return;
 
     QMessageBox::warning(this, tr("Configuration save error"), tr("The configuration could not be saved. Your changes are still active, but they may be lost when the application is restarted."));
+}
+
+void MainWindow::onVideoFrameSourceReady(VideoFrameSource* ptrSource)
+{
+    if (ptrSource == nullptr)
+        return;
+
+    if (m_ptrVideoController != nullptr)
+        return;
+
+    m_ptrVideoController = new VideoController(ptrSource, this);
+    m_ptrVideoController->setVideoWidget(ui->dockWidgetContents_VideoWindow);
 }

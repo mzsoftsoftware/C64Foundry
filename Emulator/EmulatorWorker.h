@@ -15,6 +15,7 @@
 
 
 class C64Machine;
+class VideoFrameSource;
 class IECSystem;
 class IECDeviceFactory;
 class EmulationScheduler;
@@ -46,6 +47,7 @@ signals:
     void stateChanged(Emulator::State state);
     void speedChanged(Emulator::Speed speed);
     void statisticsChanged(quint64 cycles, quint64 currentCyclesPerSecond, quint64 averageCyclesPerSecond);
+    void videoFrameSourceReady(VideoFrameSource* ptrSource);
 
     // IEC events
     void iecSystemEventsChanged(QList<QSharedPointer<IECSystemEvent>> events);

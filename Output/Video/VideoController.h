@@ -5,14 +5,14 @@
 class VideoThread;
 class VideoWorker;
 class VideoWindowWidget;
-class C64Machine;
+class VideoFrameSource;
 
 
 class VideoController : public QObject
 {
     Q_OBJECT
 public:
-    explicit VideoController(C64Machine* ptrMachine, QObject* parent);
+    explicit VideoController(VideoFrameSource* ptrSource, QObject* parent);
     virtual ~VideoController();
 
     // Operations

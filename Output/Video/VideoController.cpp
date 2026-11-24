@@ -7,17 +7,16 @@
 #include "Gui/Video/VideoWindowWidget.h"
 
 
-VideoController::VideoController(C64Machine* ptrMachine, QObject* parent)
+VideoController::VideoController(VideoFrameSource* ptrSource, QObject* parent)
     : QObject{parent}
 {
     qDebug() << "VideoController: created" << QThread::currentThreadId();
 
-    m_ptrWorker = new VideoWorker(ptrMachine);
+    m_ptrWorker = new VideoWorker(ptrSource);
     m_ptrThread = new VideoThread(m_ptrWorker, this);
 
     m_ptrThread->start();
 }
-
 VideoController::~VideoController()
 {
     qDebug() << "VideoController: shutting down";

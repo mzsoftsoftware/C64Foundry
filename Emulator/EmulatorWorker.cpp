@@ -62,6 +62,7 @@ void EmulatorWorker::run()
 {
     qDebug() << "EmulatorWorker: run() started" << QThread::currentThreadId();
 
+    emit videoFrameSourceReady(m_ptrMachine);
     const quint64 cyclesPerBatch = 500;
     QElapsedTimer statisticsTimer;
 

@@ -19,6 +19,8 @@ EmulatorController::EmulatorController(QObject* parent)
     qRegisterMetaType<IECSystemEventList>("IECSystemEventList");
     qRegisterMetaType<IECDeviceEventList>("IECDeviceEventList");
 
+    qRegisterMetaType<VideoFrameSource*>("VideoFrameSource*");
+
     m_ptrWorker = new EmulatorWorker();
     m_ptrThread = new EmulatorThread(m_ptrWorker, this);
 
@@ -53,7 +55,9 @@ EmulatorController::EmulatorController(QObject* parent)
             this, &EmulatorController::iecDeviceEventsChanged,
             Qt::QueuedConnection);
 
-    m_ptrThread->start();
+    connect(m_ptrWorker, &EmulatorWorker::videoFrameSourceReady,
+            this, &EmulatorController::videoFrameSourceReady,
+            Qt::QueuedConnection);
 }
 
 
@@ -70,6 +74,11 @@ EmulatorController::~EmulatorController()
     qDebug() << "EmulatorController: destroyed";
 }
 
+void EmulatorController::start()
+{
+    if (!m_ptrThread->isRunning())
+        m_ptrThread->start();
+}
 
 EmulatorRequest::RequestId EmulatorController::request(EmulatorRequest* ptrRequest)
 {
