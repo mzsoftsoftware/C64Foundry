@@ -71,7 +71,7 @@ private:
 
     bool isDeviceNumberReserved(quint8 deviceNumber, DeviceId excludedId = 0) const;
 
-    void registerDevice(DeviceEntry& entry);
+    bool registerDevice(DeviceEntry& entry);
     void unregisterDevice(DeviceEntry& entry);
     void destroyDevice(DeviceEntry& entry);
 
