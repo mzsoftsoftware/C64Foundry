@@ -1,5 +1,7 @@
 #include "IECSystem.h"
 
+#include <QQueue>
+
 #include "IECDeviceFactory.h"
 #include "IECDevice.h"
 #include "IECDeviceManager.h"
@@ -9,7 +11,6 @@
 #include "C64/C64Machine.h"
 #include "IECBus.h"
 #include "IECProtocol.h"
-
 
 
 IECSystem::IECSystem(C64Machine* ptrMachine, IECDeviceFactory* ptrDeviceFactory)
@@ -37,6 +38,39 @@ IECSystem::~IECSystem()
 
     delete m_ptrBus;
     m_ptrBus = nullptr;
+}
+
+
+void IECSystem::reset()
+{
+    if (m_ptrProtocol != nullptr)
+        m_ptrProtocol->reset();
+
+    if (m_ptrDeviceManager != nullptr)
+        m_ptrDeviceManager->reset();
+}
+
+
+void IECSystem::clock()
+{
+    if (m_ptrProtocol == nullptr || m_ptrDeviceManager == nullptr)
+        return;
+
+    m_ptrProtocol->clock();
+
+    QQueue<IECProtocolEvent> events = m_ptrProtocol->takeEvents();
+
+    while (!events.isEmpty())
+    {
+        const IECProtocolEvent event = events.dequeue();
+
+        IECProtocolResponse response;
+
+        m_ptrDeviceManager->processEvent(event, response);
+
+        if (response.type != IECProtocolResponse::Type::None)
+            m_ptrProtocol->setResponse(response);
+    }
 }
 
 
