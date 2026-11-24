@@ -2,8 +2,12 @@
 
 #include <QtGlobal>
 
+#include "IECDeviceEvent.h"
+
 
 class IECDevice;
+struct IECProtocolEvent;
+struct IECProtocolResponse;
 
 
 class IECDeviceManager
@@ -22,6 +26,11 @@ public:
     bool unregisterDevice(quint8 deviceNumber, IECDevice* ptrDevice);
 
     IECDevice* device(quint8 deviceNumber) const;
+
+    void processEvent(const IECProtocolEvent& event, IECProtocolResponse& response);
+
+    void reset();
+    IECDeviceEventList takeEvents();
 
 private:
     IECDevice* m_devices[DEVICE_NUMBER_COUNT] = {};
