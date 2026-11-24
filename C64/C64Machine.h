@@ -10,6 +10,8 @@ class MOS6510;
 class VICII;
 class MOS6526;
 
+#include "C64/VideoFrameSource.h"
+
 #include "C64/C64Timing.h"
 #include "CIA/C64CIA1Port.h"
 #include "CIA/C64CIA2Port.h"
@@ -17,11 +19,14 @@ class MOS6526;
 #include "IEC/IECBus.h"
 
 
-class C64Machine
+class C64Machine : public VideoFrameSource
 {
 public:
     explicit C64Machine();
     virtual ~C64Machine();
+
+    const C64::Timing& timing() const override { return m_timing; }
+    const quint8* acquireVideoFrame() override;
 
     // Operations
     void setIECBus(IECBus* ptrIECBus);
@@ -48,7 +53,6 @@ public:
     void writeCIA2Register(quint8 address, quint8 value);
 
     // Getter
-    const C64::Timing& timing() const           { return m_timing; }
     quint8 readRAM(quint16 address) const;
     quint8 readColorRAM(quint16 address) const;
 
@@ -82,7 +86,6 @@ public:
     quint64 cyclesPerFrame() const  { return m_timing.cyclesPerFrame; }
     quint64 cyclesPerLine() const   { return m_timing.cyclesPerLine;  }
 
-    const quint8* acquireVideoFrame();
     const quint8* peekVideoFrame() const;
     quint16 videoFrameWidth() const;
     quint16 videoFrameHeight() const;

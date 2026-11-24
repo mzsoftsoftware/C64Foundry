@@ -55,6 +55,11 @@ C64Machine::~C64Machine()
     delete m_ptrBus;
 }
 
+const quint8* C64Machine::acquireVideoFrame()
+{
+    return m_ptrVICII->acquireReadyFrame();
+}
+
 void C64Machine::setIECBus(IECBus* ptrIECBus)
 {
     if (m_ptrIECBus == ptrIECBus)
@@ -366,10 +371,6 @@ quint8 C64Machine::busLastAccessValue() const
     return m_ptrBus->lastAccessValue();
 }
 
-const quint8* C64Machine::acquireVideoFrame()
-{
-    return m_ptrVICII->acquireReadyFrame();
-}
 const quint8* C64Machine::peekVideoFrame() const
 {
     return m_ptrVICII->peekReadyFrame();

@@ -25,8 +25,9 @@ qt_standard_project_setup()
 # C64Foundry Core
 # -----------------------------------------------------------------------------
 add_library(C64FoundryCore STATIC
-    C64/C64Machine.h C64/C64Machine.cpp
+    C64/C64Machine.h C64/C64Machine.cpp    
     C64/C64Timing.h
+    C64/VideoFrameSource.h
     C64/C64ROMSet.h C64/C64ROMSet.cpp
 
     C64/CPU/MOS6510.h C64/CPU/MOS6510.cpp
