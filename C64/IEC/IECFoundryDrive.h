@@ -44,4 +44,5 @@ private:
     IECFoundryDriveConfiguration m_configuration;
     QList<IECFoundryDisk*> m_disks;
     IECDeviceEventList m_events;
+    DiskId m_nextDiskId = 1;
 };
