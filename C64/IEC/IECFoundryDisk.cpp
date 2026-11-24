@@ -41,7 +41,6 @@ bool IECFoundryDisk::saveCurrentDiskOnExit() const
     return m_saveCurrentDiskOnExit;
 }
 
-
 bool IECFoundryDisk::setConfiguration(const IECFoundryDiskConfiguration& configuration)
 {
     m_diskId = configuration.diskId();
@@ -50,11 +49,10 @@ bool IECFoundryDisk::setConfiguration(const IECFoundryDiskConfiguration& configu
     m_saveCurrentDiskOnExit = configuration.saveCurrentDiskOnExit();
 
     if (configuration.imageFileName() != m_imageFileName)
-        return insertImage(configuration.imageFileName());
+        insertImage(configuration.imageFileName());
 
     return true;
 }
-
 
 QString IECFoundryDisk::lastError() const
 {
@@ -64,14 +62,16 @@ QString IECFoundryDisk::lastError() const
 
 bool IECFoundryDisk::hasImage() const
 {
-    return !m_imageFileName.isEmpty() && !m_imageData.isNull();
+    return !m_imageFileName.isEmpty();
 }
-
+bool IECFoundryDisk::imageValid() const
+{
+    return m_imageValid;
+}
 QString IECFoundryDisk::imageFileName() const
 {
     return m_imageFileName;
 }
-
 bool IECFoundryDisk::imageModified() const
 {
     return m_imageModified;
@@ -84,6 +84,11 @@ bool IECFoundryDisk::insertImage(const QString& fileName)
 
     if (hasImage() && !ejectImage())
         return false;
+
+    m_imageFileName = fileName;
+    m_imageData.clear();
+    m_imageValid = false;
+    m_imageModified = false;
 
     if (fileName.isEmpty())
         return true;
@@ -104,13 +109,11 @@ bool IECFoundryDisk::insertImage(const QString& fileName)
         return false;
     }
 
-    m_imageFileName = fileName;
     m_imageData = imageData;
-    m_imageModified = false;
+    m_imageValid = true;
 
     return true;
 }
-
 bool IECFoundryDisk::ejectImage()
 {
     m_lastError.clear();
@@ -120,11 +123,11 @@ bool IECFoundryDisk::ejectImage()
 
     m_imageFileName.clear();
     m_imageData.clear();
+    m_imageValid = false;
     m_imageModified = false;
 
     return true;
 }
-
 bool IECFoundryDisk::saveImage()
 {
     m_lastError.clear();
@@ -133,7 +136,7 @@ bool IECFoundryDisk::saveImage()
 
 bool IECFoundryDisk::saveImageInternal()
 {
-    if (m_imageFileName.isEmpty() || m_imageData.isNull())
+    if (!imageValid())
     {
         m_lastError = QStringLiteral("Es ist kein Image zum Speichern geladen.");
         return false;
@@ -214,7 +217,7 @@ bool IECFoundryDisk::readSector(const quint8 track, const quint8 sector, QByteAr
     m_lastError.clear();
     data.clear();
 
-    if (!hasImage())
+    if (!imageValid())
     {
         m_lastError = QStringLiteral("Es ist kein Disketten-Image geladen.");
         recordSectorAccess(SectorAccessOperation::Read, track, sector, false, m_lastError);
@@ -259,7 +262,7 @@ bool IECFoundryDisk::writeSector(const quint8 track, const quint8 sector, const 
 
     m_lastError.clear();
 
-    if (!hasImage())
+    if (!imageValid())
     {
         m_lastError = QStringLiteral("Es ist kein Disketten-Image geladen.");
         recordSectorAccess(SectorAccessOperation::Write, track, sector, false, m_lastError);
@@ -278,7 +281,7 @@ bool IECFoundryDisk::createDirectoryProgram(QByteArray& program)
     m_lastError.clear();
     program.clear();
 
-    if (!hasImage())
+    if (!imageValid())
     {
         m_lastError = QStringLiteral("Kein Disketten-Image geladen.");
         return false;
@@ -388,7 +391,7 @@ bool IECFoundryDisk::readFile(const QByteArray& fileName, QByteArray& data)
     m_lastError.clear();
     data.clear();
 
-    if (!hasImage())
+    if (!imageValid())
     {
         m_lastError = QStringLiteral("Kein Disketten-Image geladen.");
         return false;

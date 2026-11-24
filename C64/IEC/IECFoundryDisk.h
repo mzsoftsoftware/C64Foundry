@@ -46,6 +46,7 @@ public:
     QString lastError() const;
 
     bool hasImage() const;
+    bool imageValid() const;
     QString imageFileName() const;
     bool imageModified() const;
 
@@ -88,6 +89,7 @@ private:
 
     QString m_imageFileName;
     QByteArray m_imageData;
+    bool m_imageValid = false;
     bool m_imageModified = false;
 
     QString m_lastError;
