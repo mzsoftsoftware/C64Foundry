@@ -290,18 +290,28 @@ void IECFoundryDrive::processEvent(
             if (!ptrDisk->imageValid())
                 break;
 
-            QByteArray requestedName = ptrChannelState->fileName.trimmed().toUpper();
+            const QByteArray requestedName =
+                ptrChannelState->fileName.trimmed().toUpper();
 
-            if (requestedName != QByteArrayLiteral("$"))
+            if (requestedName == QByteArrayLiteral("$"))
+            {
+                QByteArray directoryProgram;
+
+                if (!ptrDisk->createDirectoryProgram(directoryProgram))
+                    break;
+
+                response.type = IECProtocolResponse::Type::SendData;
+                response.data = directoryProgram;
                 break;
+            }
 
-            QByteArray directoryProgram;
+            QByteArray programData;
 
-            if (!ptrDisk->createDirectoryProgram(directoryProgram))
+            if (!ptrDisk->readFile(requestedName, programData))
                 break;
 
             response.type = IECProtocolResponse::Type::SendData;
-            response.data = directoryProgram;
+            response.data = programData;
         }
         break;
 
