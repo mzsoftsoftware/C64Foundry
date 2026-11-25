@@ -12,6 +12,7 @@ IECPrinter::IECPrinter(const DeviceId id)
 IECPrinter::~IECPrinter() = default;
 
 
+
 void IECPrinter::processEvent(const IECProtocolEvent& event, IECProtocolResponse& response)
 {
     Q_UNUSED(response);
@@ -47,6 +48,8 @@ void IECPrinter::processEvent(const IECProtocolEvent& event, IECProtocolResponse
         break;
 
     case IECProtocolEvent::Type::SecondaryAddressReceived:
+    case IECProtocolEvent::Type::Open:
+    case IECProtocolEvent::Type::Close:
         break;
     }
 }

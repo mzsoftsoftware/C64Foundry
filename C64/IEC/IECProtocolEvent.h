@@ -10,6 +10,8 @@ struct IECProtocolEvent
     {
         DeviceSelected,
         SecondaryAddressReceived,
+        Open,
+        Close,
         ByteReceived,
         EndOfTransmission,
         DeviceDeselected

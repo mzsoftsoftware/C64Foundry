@@ -333,13 +333,31 @@ void IECProtocol::processReceivedByte(const quint8 value, const bool attention)
             return;
         }
 
-        if (m_mode != IECProtocolEvent::Mode::None &&
-            ((value & 0xF0) == 0x60 ||
-             (value & 0xF0) == 0xE0 ||
-             (value & 0xF0) == 0xF0))
+
+        if (m_mode != IECProtocolEvent::Mode::None)
         {
-            m_secondaryAddress = value & 0x0F;
-            addEvent(IECProtocolEvent::Type::SecondaryAddressReceived);
+            const quint8 command = value & 0xF0;
+
+            switch (command)
+            {
+            case 0x60:
+                m_secondaryAddress = value & 0x0F;
+                addEvent(IECProtocolEvent::Type::SecondaryAddressReceived);
+                break;
+
+            case 0xE0:
+                m_secondaryAddress = value & 0x0F;
+                addEvent(IECProtocolEvent::Type::Close);
+                break;
+
+            case 0xF0:
+                m_secondaryAddress = value & 0x0F;
+                addEvent(IECProtocolEvent::Type::Open);
+                break;
+
+            default:
+                break;
+            }
         }
 
         return;
