@@ -4,6 +4,7 @@
 
 #include "C64/IEC/IECDeviceConfiguration.h"
 #include "C64/IEC/IECDeviceEvent.h"
+#include "C64/IEC/IECRequest.h"
 
 class EmulatorController;
 
@@ -28,10 +29,13 @@ private slots:
     void on_toolButton_TearOff_clicked();
 
     void onIECDeviceEventsChanged(IECDeviceEventList events);
+    void onIECRequestDone(QSharedPointer<IECResponse> response);
 
 private:
     Ui::IECAsciiPrinterOutputWidget* ui = nullptr;
 
     EmulatorController* m_ptrController = nullptr;
     IECDeviceConfiguration::DeviceId m_deviceId = 0;
+
+    IECRequest::RequestId m_tearOffRequestId = 0;
 };

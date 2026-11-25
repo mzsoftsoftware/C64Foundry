@@ -13,6 +13,8 @@
 #include <QFile>
 
 #include "Emulator/EmulatorController.h"
+#include "C64/IEC/IECDeviceRequest.h"
+#include "C64/IEC/IECDeviceResponse.h"
 
 
 IECAsciiPrinterOutputWidget::IECAsciiPrinterOutputWidget(QWidget* parent)
@@ -44,12 +46,16 @@ void IECAsciiPrinterOutputWidget::setController(
 
     m_ptrController = ptrController;
     m_deviceId = deviceId;
+    m_tearOffRequestId = 0;
 
     if (m_ptrController == nullptr)
         return;
 
     connect(m_ptrController, &EmulatorController::iecDeviceEventsChanged,
             this, &IECAsciiPrinterOutputWidget::onIECDeviceEventsChanged);
+
+    connect(m_ptrController, &EmulatorController::iecRequestDone,
+            this, &IECAsciiPrinterOutputWidget::onIECRequestDone);
 }
 
 
@@ -97,7 +103,37 @@ void IECAsciiPrinterOutputWidget::on_toolButton_Save_clicked()
 
 void IECAsciiPrinterOutputWidget::on_toolButton_TearOff_clicked()
 {
-    // Die neue IEC-Request-Anbindung für Tear-Off wird separat umgestellt.
+    if (m_ptrController == nullptr || m_deviceId == 0 || m_tearOffRequestId != 0)
+        return;
+
+    IECPrinterTearOffRequest* ptrRequest = new IECPrinterTearOffRequest();
+    ptrRequest->setDeviceId(m_deviceId);
+
+    m_tearOffRequestId = m_ptrController->request(ptrRequest);
+}
+
+
+void IECAsciiPrinterOutputWidget::onIECRequestDone(QSharedPointer<IECResponse> response)
+{
+    if (response.isNull() ||
+        m_tearOffRequestId == 0 ||
+        response->requestId() != m_tearOffRequestId)
+    {
+        return;
+    }
+
+    m_tearOffRequestId = 0;
+
+    if (!response->success())
+        return;
+
+    IECPrinterTearOffResponse* ptrResponse =
+        dynamic_cast<IECPrinterTearOffResponse*>(response.data());
+
+    if (ptrResponse == nullptr || ptrResponse->deviceId() != m_deviceId)
+        return;
+
+    ui->plainTextEdit_Paper->clear();
 }
 
 
