@@ -21,7 +21,6 @@ public:
         Read,
         Write
     };
-
     struct SectorAccessStatus
     {
         SectorAccessOperation operation = SectorAccessOperation::Read;
@@ -29,6 +28,19 @@ public:
         quint8 sector = 0;
         bool success = false;
         QString errorMessage;
+    };
+    struct FileOpenResult
+    {
+        bool empty = false;
+        quint8 firstTrack = 0;
+        quint8 firstSector = 0;
+    };
+    struct FileDataBlock
+    {
+        QByteArray data;
+        bool isLast = false;
+        quint8 nextTrack = 0;
+        quint8 nextSector = 0;
     };
 
     IECFoundryDisk(IECFoundryDrive* ptrDrive, const IECFoundryDiskConfiguration& configuration);
@@ -62,6 +74,8 @@ public:
 
     bool createDirectoryProgram(QByteArray& program);
     bool readFile(const QByteArray& fileName, QByteArray& data);
+    bool openFile(const QByteArray& fileName, FileOpenResult& result);
+    bool readFileBlock(quint8 track, quint8 sector, FileDataBlock& block);
 
     QQueue<IECDriveImageEvent> takeImageEvents();
     QQueue<SectorAccessStatus> takeSectorAccessEvents();
@@ -82,6 +96,7 @@ private:
 
     void recordImageEvent(IECDriveImageEvent::Type type, const QString& fileName = QString(), const QString& errorMessage = QString());
     void recordSectorAccess(SectorAccessOperation operation, quint8 track, quint8 sector, bool success, const QString& errorMessage);
+    bool readSectorInternal(quint8 track, quint8 sector, QByteArray& data, bool recordAccess);
 
 private:
     IECFoundryDrive* m_ptrDrive = nullptr; // non-owning

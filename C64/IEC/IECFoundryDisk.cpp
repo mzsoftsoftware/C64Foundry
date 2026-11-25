@@ -263,13 +263,26 @@ QByteArray IECFoundryDisk::normalizeDiskFileName(QByteArray fileName)
 
 bool IECFoundryDisk::readSector(const quint8 track, const quint8 sector, QByteArray& data)
 {
+    return readSectorInternal(track, sector, data, true);
+}
+
+
+bool IECFoundryDisk::readSectorInternal(
+    const quint8 track,
+    const quint8 sector,
+    QByteArray& data,
+    const bool recordAccess)
+{
     m_lastError.clear();
     data.clear();
 
     if (!imageValid())
     {
         m_lastError = QStringLiteral("Es ist kein Disketten-Image geladen.");
-        recordSectorAccess(SectorAccessOperation::Read, track, sector, false, m_lastError);
+
+        if (recordAccess)
+            recordSectorAccess(SectorAccessOperation::Read, track, sector, false, m_lastError);
+
         return false;
     }
 
@@ -278,7 +291,10 @@ bool IECFoundryDisk::readSector(const quint8 track, const quint8 sector, QByteAr
     if (offset < 0)
     {
         m_lastError = QStringLiteral("Ungültiger Track oder Sektor.");
-        recordSectorAccess(SectorAccessOperation::Read, track, sector, false, m_lastError);
+
+        if (recordAccess)
+            recordSectorAccess(SectorAccessOperation::Read, track, sector, false, m_lastError);
+
         return false;
     }
 
@@ -287,7 +303,10 @@ bool IECFoundryDisk::readSector(const quint8 track, const quint8 sector, QByteAr
     if (offset + SectorSize > m_imageData.size())
     {
         m_lastError = QStringLiteral("Der Sektor liegt außerhalb des Disketten-Images.");
-        recordSectorAccess(SectorAccessOperation::Read, track, sector, false, m_lastError);
+
+        if (recordAccess)
+            recordSectorAccess(SectorAccessOperation::Read, track, sector, false, m_lastError);
+
         return false;
     }
 
@@ -297,11 +316,16 @@ bool IECFoundryDisk::readSector(const quint8 track, const quint8 sector, QByteAr
     {
         data.clear();
         m_lastError = QStringLiteral("Der Sektor konnte nicht vollständig gelesen werden.");
-        recordSectorAccess(SectorAccessOperation::Read, track, sector, false, m_lastError);
+
+        if (recordAccess)
+            recordSectorAccess(SectorAccessOperation::Read, track, sector, false, m_lastError);
+
         return false;
     }
 
-    recordSectorAccess(SectorAccessOperation::Read, track, sector, true, QString());
+    if (recordAccess)
+        recordSectorAccess(SectorAccessOperation::Read, track, sector, true, QString());
+
     return true;
 }
 
@@ -814,4 +838,217 @@ QQueue<IECFoundryDisk::SectorAccessStatus> IECFoundryDisk::takeSectorAccessEvent
     QQueue<SectorAccessStatus> events;
     events.swap(m_sectorAccessEvents);
     return events;
+}
+
+bool IECFoundryDisk::openFile(const QByteArray& fileName, FileOpenResult& result)
+{
+    m_lastError.clear();
+    result = FileOpenResult();
+
+    if (!imageValid())
+    {
+        m_lastError = QStringLiteral("Kein Disketten-Image geladen.");
+        return false;
+    }
+
+    const QByteArray requestedName = normalizeDiskFileName(fileName);
+
+    if (requestedName.isEmpty())
+    {
+        m_lastError = QStringLiteral("Es wurde kein Dateiname angegeben.");
+        return false;
+    }
+
+    quint8 directoryTrack = 18;
+    quint8 directorySectorNumber = 1;
+    quint8 fileTrack = 0;
+    quint8 fileSectorNumber = 0;
+    bool fileFound = false;
+
+    QSet<quint16> visitedDirectorySectors;
+
+    while (directoryTrack != 0)
+    {
+        const quint16 sectorKey =
+            (static_cast<quint16>(directoryTrack) << 8) | directorySectorNumber;
+
+        if (visitedDirectorySectors.contains(sectorKey))
+        {
+            m_lastError = QStringLiteral("Die Directory-Sektorkette enthält einen Zyklus.");
+            return false;
+        }
+
+        visitedDirectorySectors.insert(sectorKey);
+
+        QByteArray directorySector;
+
+        if (!readSectorInternal(directoryTrack, directorySectorNumber, directorySector, false))
+            return false;
+
+        for (int entryOffset = 2; entryOffset + 29 < directorySector.size(); entryOffset += 32)
+        {
+            const quint8 fileType = static_cast<quint8>(directorySector.at(entryOffset));
+
+            if ((fileType & 0x07U) != 2)
+                continue;
+
+            const QByteArray entryName =
+                normalizeDiskFileName(directorySector.mid(entryOffset + 3, 16));
+
+            bool matches = entryName == requestedName;
+
+            if (!matches && requestedName.endsWith('*'))
+            {
+                const QByteArray prefix =
+                    requestedName.left(requestedName.size() - 1);
+
+                matches = entryName.startsWith(prefix);
+            }
+
+            if (!matches)
+                continue;
+
+            fileTrack = static_cast<quint8>(directorySector.at(entryOffset + 1));
+            fileSectorNumber = static_cast<quint8>(directorySector.at(entryOffset + 2));
+            fileFound = true;
+            break;
+        }
+
+        if (fileFound)
+            break;
+
+        directoryTrack = static_cast<quint8>(directorySector.at(0));
+        directorySectorNumber = static_cast<quint8>(directorySector.at(1));
+    }
+
+    if (!fileFound)
+    {
+        m_lastError = QStringLiteral("PRG-Datei nicht gefunden: %1")
+        .arg(QString::fromLatin1(requestedName));
+        return false;
+    }
+
+    if (fileTrack == 0)
+    {
+        if (fileSectorNumber != 0)
+        {
+            m_lastError = QStringLiteral("Der Directory-Eintrag einer leeren Datei ist ungültig.");
+            return false;
+        }
+
+        result.empty = true;
+        return true;
+    }
+
+    const quint8 firstTrack = fileTrack;
+    const quint8 firstSector = fileSectorNumber;
+    QSet<quint16> visitedFileSectors;
+    quint32 fileSize = 0;
+
+    while (fileTrack != 0)
+    {
+        const quint16 sectorKey =
+            (static_cast<quint16>(fileTrack) << 8) | fileSectorNumber;
+
+        if (visitedFileSectors.contains(sectorKey))
+        {
+            m_lastError = QStringLiteral("Die Dateisektorkette enthält einen Zyklus.");
+            return false;
+        }
+
+        visitedFileSectors.insert(sectorKey);
+
+        QByteArray fileSectorData;
+
+        if (!readSectorInternal(fileTrack, fileSectorNumber, fileSectorData, false))
+            return false;
+
+        const quint8 nextTrack = static_cast<quint8>(fileSectorData.at(0));
+        const quint8 nextSector = static_cast<quint8>(fileSectorData.at(1));
+
+        if (nextTrack != 0)
+        {
+            if (sectorOffset(nextTrack, nextSector) < 0)
+            {
+                m_lastError = QStringLiteral("Die Dateisektorkette enthält einen ungültigen Folge-Sektor.");
+                return false;
+            }
+
+            fileSize += 254;
+        }
+        else
+        {
+            const int payloadSize = static_cast<int>(nextSector) - 1;
+
+            if (payloadSize < 0 || payloadSize > 254)
+            {
+                m_lastError = QStringLiteral("Der letzte Dateisektor enthält eine ungültige Länge.");
+                return false;
+            }
+
+            fileSize += static_cast<quint32>(payloadSize);
+        }
+
+        fileTrack = nextTrack;
+        fileSectorNumber = nextSector;
+    }
+
+    if (fileSize < 2)
+    {
+        m_lastError = QStringLiteral("Die PRG-Datei enthält keine vollständige Ladeadresse.");
+        return false;
+    }
+
+    result.firstTrack = firstTrack;
+    result.firstSector = firstSector;
+
+    // Die ursprünglichen Startkoordinaten stammen aus dem Directory-Eintrag.
+    // Sie werden weiter unten separat gesetzt.
+    return true;
+}
+
+bool IECFoundryDisk::readFileBlock(
+    const quint8 track,
+    const quint8 sector,
+    FileDataBlock& block)
+{
+    m_lastError.clear();
+    block = FileDataBlock();
+
+    QByteArray sectorData;
+
+    if (!readSector(track, sector, sectorData))
+        return false;
+
+    const quint8 nextTrack = static_cast<quint8>(sectorData.at(0));
+    const quint8 nextSector = static_cast<quint8>(sectorData.at(1));
+
+    if (nextTrack != 0)
+    {
+        if (sectorOffset(nextTrack, nextSector) < 0)
+        {
+            m_lastError = QStringLiteral("Die Dateisektorkette enthält einen ungültigen Folge-Sektor.");
+            return false;
+        }
+
+        block.data = sectorData.mid(2, 254);
+        block.isLast = false;
+        block.nextTrack = nextTrack;
+        block.nextSector = nextSector;
+    }
+    else
+    {
+        const int payloadSize = static_cast<int>(nextSector) - 1;
+
+        if (payloadSize < 0 || payloadSize > 254)
+        {
+            m_lastError = QStringLiteral("Der letzte Dateisektor enthält eine ungültige Länge.");
+            return false;
+        }
+
+        block.data = sectorData.mid(2, payloadSize);
+        block.isLast = true;
+    }
+
+    return true;
 }
