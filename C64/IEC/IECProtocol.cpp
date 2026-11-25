@@ -72,6 +72,10 @@ void IECProtocol::reset()
 
     m_previousAttentionHigh = lineHigh(IECBus::Line::ATN);
     m_previousClockHigh = lineHigh(IECBus::Line::CLK);
+
+    m_responseLastBlock = true;
+    m_transmitLastBlock = true;
+    m_continueSending = false;
 }
 
 
@@ -277,6 +281,10 @@ void IECProtocol::processAttention()
     m_transmitIndex = 0;
     m_transmitBit = 0;
     m_sendPhase = SendPhase::WaitReady;
+
+    m_responseLastBlock = true;
+    m_transmitLastBlock = true;
+    m_continueSending = false;
 }
 
 
@@ -447,9 +455,9 @@ void IECProtocol::setResponse(const IECProtocolResponse& response)
     }
 
     m_responseData = response.data;
+    m_responseLastBlock = response.lastBlock;
     m_responsePending = true;
 }
-
 
 bool IECProtocol::lineHigh(const IECBus::Line line) const
 {
@@ -475,15 +483,23 @@ void IECProtocol::beginSending()
         return;
 
     m_transmitData = m_responseData;
+    m_transmitLastBlock = m_responseLastBlock;
+
     m_responseData.clear();
     m_responsePending = false;
 
     m_transmitIndex = 0;
     m_transmitBit = 0;
 
-    // Während des TALK-Turnarounds hält das Laufwerk DATA zunächst
-    // weiterhin Low. CLK wird freigegeben, damit der C64 die
-    // Übergabe durch seine CLK-Freigabe einleiten kann.
+    if (m_continueSending)
+    {
+        m_continueSending = false;
+        m_state = State::Send;
+        m_sendPhase = SendPhase::WaitReady;
+        m_stateCycles = 0;
+        return;
+    }
+
     setLineLow(IECBus::Line::DATA, true);
     setLineLow(IECBus::Line::CLK, false);
 
@@ -491,7 +507,6 @@ void IECProtocol::beginSending()
     m_sendPhase = SendPhase::WaitTalkTurnaround;
     m_stateCycles = 0;
 }
-
 
 void IECProtocol::clockSend()
 {
@@ -617,7 +632,7 @@ void IECProtocol::clockSend()
         {
             if (m_transmitIndex + 1 >= m_transmitData.size())
             {
-                finishSending();
+                finishSending(!m_transmitLastBlock);
             }
             else
             {
@@ -693,7 +708,7 @@ void IECProtocol::prepareTransmitByte()
 
     const qsizetype lastIndex = m_transmitData.size() - 1;
 
-    if (m_transmitIndex == lastIndex)
+    if (m_transmitLastBlock && m_transmitIndex == lastIndex)
     {
         setLineLow(IECBus::Line::CLK, false);
         setLineLow(IECBus::Line::DATA, false);
@@ -706,8 +721,7 @@ void IECProtocol::prepareTransmitByte()
     }
 }
 
-
-void IECProtocol::finishSending()
+void IECProtocol::finishSending(const bool requestNextBlock)
 {
     releaseBus();
 
@@ -716,5 +730,15 @@ void IECProtocol::finishSending()
     m_transmitBit = 0;
     m_stateCycles = 0;
 
+    if (requestNextBlock)
+    {
+        m_continueSending = true;
+        m_state = State::WaitFirstClockLow;
+
+        addEvent(IECProtocolEvent::Type::RequestNextDataBlock);
+        return;
+    }
+
+    m_continueSending = false;
     m_state = State::Idle;
 }

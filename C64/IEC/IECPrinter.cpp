@@ -50,6 +50,7 @@ void IECPrinter::processEvent(const IECProtocolEvent& event, IECProtocolResponse
     case IECProtocolEvent::Type::SecondaryAddressReceived:
     case IECProtocolEvent::Type::Open:
     case IECProtocolEvent::Type::Close:
+    case IECProtocolEvent::Type::RequestNextDataBlock:
         break;
     }
 }

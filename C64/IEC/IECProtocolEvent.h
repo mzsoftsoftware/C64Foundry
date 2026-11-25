@@ -14,7 +14,8 @@ struct IECProtocolEvent
         Close,
         ByteReceived,
         EndOfTransmission,
-        DeviceDeselected
+        DeviceDeselected,
+        RequestNextDataBlock
     };
 
     enum class Mode : quint8
@@ -46,4 +47,5 @@ struct IECProtocolResponse
 
     Type type = Type::None;
     QByteArray data;
+    bool lastBlock = true;
 };

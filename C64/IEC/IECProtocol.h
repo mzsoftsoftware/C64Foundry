@@ -71,7 +71,7 @@ private:
     void beginSending();
     void clockSend();
     void prepareTransmitByte();
-    void finishSending();
+    void finishSending(bool requestNextBlock = false);
 
     void addEvent(IECProtocolEvent::Type type);
 
@@ -132,4 +132,8 @@ private:
     QByteArray m_transmitData;
     qsizetype m_transmitIndex = 0;
     quint8 m_transmitBit = 0;
+
+    bool m_responseLastBlock = true;
+    bool m_transmitLastBlock = true;
+    bool m_continueSending = false;
 };
