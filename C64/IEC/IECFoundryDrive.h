@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QByteArray>
 #include <QList>
 #include <QString>
 
@@ -38,12 +39,26 @@ public:
     IECDeviceEventList takeEvents() override;
 
 private:
+    struct ChannelState
+    {
+        bool opened = false;
+        QByteArray fileName;
+        QByteArray inputBuffer;
+    };
+
+    struct DiskChannelState
+    {
+        QList<ChannelState> channels;
+    };
+
     IECFoundryDisk* findDisk(quint8 deviceNumber) const;
+    ChannelState* findChannelState(quint8 deviceNumber, quint8 channel);
     void collectDiskEvents();
 
 private:
     IECFoundryDriveConfiguration m_configuration;
     QList<IECFoundryDisk*> m_disks;
+    QList<DiskChannelState> m_channelStates;
     IECDeviceEventList m_events;
     DiskId m_nextDiskId = 1;
 };

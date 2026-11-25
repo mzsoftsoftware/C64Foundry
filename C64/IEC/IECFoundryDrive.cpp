@@ -42,6 +42,7 @@ bool IECFoundryDrive::setConfiguration(const IECFoundryDriveConfiguration& confi
             delete ptrDisk;
 
         m_disks.clear();
+        m_channelStates.clear();
 
         m_configuration = newConfiguration;
 
@@ -57,6 +58,10 @@ bool IECFoundryDrive::setConfiguration(const IECFoundryDriveConfiguration& confi
             ptrDiskConfiguration->setDeviceNumber(static_cast<quint8>(m_configuration.startDeviceNumber() + slotIndex));
 
             m_disks.append(new IECFoundryDisk(this, *ptrDiskConfiguration));
+
+            DiskChannelState channelState;
+            channelState.channels.resize(16);
+            m_channelStates.append(channelState);
         }
 
         return true;
@@ -127,6 +132,27 @@ IECFoundryDisk* IECFoundryDrive::findDisk(const quint8 deviceNumber) const
     return m_disks.at(slotIndex);
 }
 
+
+IECFoundryDrive::ChannelState* IECFoundryDrive::findChannelState(
+    const quint8 deviceNumber, const quint8 channel)
+{
+    if (channel > 15)
+        return nullptr;
+
+    const int slotIndex = static_cast<int>(deviceNumber) - m_configuration.startDeviceNumber();
+
+    if (slotIndex < 0 || slotIndex >= m_channelStates.size())
+        return nullptr;
+
+    DiskChannelState& diskState = m_channelStates[slotIndex];
+
+    if (channel >= diskState.channels.size())
+        return nullptr;
+
+    return &diskState.channels[channel];
+}
+
+
 bool IECFoundryDrive::setDiskEnabled(
     const quint8 deviceNumber, const bool enabled)
 {
@@ -146,11 +172,24 @@ bool IECFoundryDrive::setDiskEnabled(
 
     return true;
 }
+
+
 bool IECFoundryDrive::insertImage(const quint8 deviceNumber, const QString& fileName)
 {
     IECFoundryDisk* ptrDisk = findDisk(deviceNumber);
 
-    return ptrDisk != nullptr && ptrDisk->insertImage(fileName);
+    if (ptrDisk == nullptr || !ptrDisk->insertImage(fileName))
+        return false;
+
+    IECFoundryDiskConfiguration* ptrConfiguration =
+        m_configuration.diskConfiguration(ptrDisk->slotIndex());
+
+    if (ptrConfiguration == nullptr)
+        return false;
+
+    ptrConfiguration->setImageFileName(ptrDisk->imageFileName());
+
+    return true;
 }
 
 
@@ -158,9 +197,19 @@ bool IECFoundryDrive::ejectImage(const quint8 deviceNumber)
 {
     IECFoundryDisk* ptrDisk = findDisk(deviceNumber);
 
-    return ptrDisk != nullptr && ptrDisk->ejectImage();
-}
+    if (ptrDisk == nullptr || !ptrDisk->ejectImage())
+        return false;
 
+    IECFoundryDiskConfiguration* ptrConfiguration =
+        m_configuration.diskConfiguration(ptrDisk->slotIndex());
+
+    if (ptrConfiguration == nullptr)
+        return false;
+
+    ptrConfiguration->setImageFileName(QString());
+
+    return true;
+}
 
 bool IECFoundryDrive::saveImage(const quint8 deviceNumber)
 {
@@ -174,6 +223,12 @@ void IECFoundryDrive::reset()
 {
     m_events.clear();
 
+    for (DiskChannelState& diskState : m_channelStates)
+    {
+        for (ChannelState& channelState : diskState.channels)
+            channelState = ChannelState();
+    }
+
     for (IECFoundryDisk* ptrDisk : m_disks)
     {
         ptrDisk->takeSectorAccessEvents();
@@ -181,10 +236,79 @@ void IECFoundryDrive::reset()
     }
 }
 
-void IECFoundryDrive::processEvent(const IECProtocolEvent& event, IECProtocolResponse& response)
+
+void IECFoundryDrive::processEvent(
+    const IECProtocolEvent& event, IECProtocolResponse& response)
 {
-    Q_UNUSED(event);
-    Q_UNUSED(response);
+    response.type = IECProtocolResponse::Type::None;
+    response.data.clear();
+
+    IECFoundryDisk* ptrDisk = findDisk(event.deviceNumber);
+
+    if (ptrDisk == nullptr || !ptrDisk->enabled())
+        return;
+
+    ChannelState* ptrChannelState =
+        findChannelState(event.deviceNumber, event.secondaryAddress);
+
+    if (ptrChannelState == nullptr)
+        return;
+
+    switch (event.type)
+    {
+    case IECProtocolEvent::Type::DeviceSelected:
+        break;
+
+    case IECProtocolEvent::Type::Open:
+        ptrChannelState->opened = true;
+        ptrChannelState->fileName.clear();
+        ptrChannelState->inputBuffer.clear();
+        break;
+
+    case IECProtocolEvent::Type::Close:
+        *ptrChannelState = ChannelState();
+        break;
+
+    case IECProtocolEvent::Type::ByteReceived:
+        if (event.mode == IECProtocolEvent::Mode::Listen)
+            ptrChannelState->inputBuffer.append(static_cast<char>(event.value));
+        break;
+
+    case IECProtocolEvent::Type::EndOfTransmission:
+        if (event.mode == IECProtocolEvent::Mode::Listen)
+        {
+            if (!ptrChannelState->inputBuffer.isEmpty())
+                ptrChannelState->fileName = ptrChannelState->inputBuffer;
+
+            ptrChannelState->inputBuffer.clear();
+        }
+        break;
+
+    case IECProtocolEvent::Type::SecondaryAddressReceived:
+        if (event.mode == IECProtocolEvent::Mode::Talk)
+        {
+            if (!ptrDisk->imageValid())
+                break;
+
+            QByteArray requestedName = ptrChannelState->fileName.trimmed().toUpper();
+
+            if (requestedName != QByteArrayLiteral("$"))
+                break;
+
+            QByteArray directoryProgram;
+
+            if (!ptrDisk->createDirectoryProgram(directoryProgram))
+                break;
+
+            response.type = IECProtocolResponse::Type::SendData;
+            response.data = directoryProgram;
+        }
+        break;
+
+    case IECProtocolEvent::Type::DeviceDeselected:
+        // Geöffnete Kanäle bleiben über UNLISTEN und UNTALK hinweg erhalten.
+        break;
+    }
 }
 
 
@@ -236,6 +360,7 @@ void IECFoundryDrive::collectDiskEvents()
         }
     }
 }
+
 
 IECDeviceEventList IECFoundryDrive::takeEvents()
 {

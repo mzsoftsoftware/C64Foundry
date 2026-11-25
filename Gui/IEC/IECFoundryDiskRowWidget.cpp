@@ -6,6 +6,7 @@
 #include <QFont>
 #include <QMessageBox>
 #include <QSignalBlocker>
+#include <QSettings>
 
 #include "Emulator/EmulatorController.h"
 #include "C64/IEC/IECDeviceRequest.h"
@@ -140,21 +141,29 @@ void IECFoundryDiskRowWidget::onDiskClicked()
     if (m_ptrController == nullptr || m_requestId != 0)
         return;
 
+    QSettings settings;
+
+    const QString lastDirectory =
+        settings.value(QStringLiteral("IEC/LastImageDirectory")).toString();
+
     const QString fileName = QFileDialog::getOpenFileName(
         this,
         tr("Insert Disk Image"),
-        QString(),
+        lastDirectory,
         tr("Disk Images (*.d64 *.d71 *.d81);;All Files (*)"));
 
     if (fileName.isEmpty())
         return;
+
+    settings.setValue(
+        QStringLiteral("IEC/LastImageDirectory"),
+        QFileInfo(fileName).absolutePath());
 
     submitRequest(
         new IECFoundryDriveInsertImageRequest(
             m_driveId, m_configuration.deviceNumber(), fileName),
         RequestPurpose::InsertImage);
 }
-
 
 void IECFoundryDiskRowWidget::onEjectClicked()
 {

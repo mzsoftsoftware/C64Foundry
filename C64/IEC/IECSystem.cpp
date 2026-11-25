@@ -793,6 +793,21 @@ IECResponse::Result IECSystem::processRequest(
             return IECResponse::Result::Failed;
         }
 
+        if (ptrEntry->configuration->type() == IECDeviceType::FoundryDrive)
+        {
+            IECFoundryDrive* ptrDrive =
+                dynamic_cast<IECFoundryDrive*>(ptrEntry->ptrDevice);
+
+            if (ptrDrive == nullptr)
+                return IECResponse::Result::Failed;
+
+            ptrEntry->configuration.reset(ptrDrive->configuration().clone());
+
+            addSystemEvent(
+                IECSystemEvent::Type::ConfigurationChanged,
+                ptrDeviceRequest->deviceId());
+        }
+
         return IECResponse::Result::Success;
     }
 

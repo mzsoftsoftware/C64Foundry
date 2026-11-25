@@ -16,8 +16,6 @@ IECFoundryDisk::IECFoundryDisk(IECFoundryDrive* ptrDrive, const IECFoundryDiskCo
 
 IECFoundryDisk::~IECFoundryDisk()
 {
-    if (m_saveCurrentDiskOnExit && m_imageModified)
-        saveImage();
 }
 
 
