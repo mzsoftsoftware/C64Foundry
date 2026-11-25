@@ -1,12 +1,24 @@
+
 # IEC Subsystem Architecture
 
 ## Purpose
 
-This document records the agreed target architecture and the current implementation boundary of the C64Foundry IEC subsystem.
+This document describes the architecture and current implementation of the C64Foundry IEC subsystem.
 
-The IEC subsystem provides communication between the emulated C64 and configured IEC peripherals, including the ASCII printer and the Foundry Drive. The current storage target is a practical D64-based implementation of standard IEC and drive/DOS behavior. Emulation of the internal 1541 CPU and physical drive electronics is not required by the current compatibility target.
+The IEC subsystem provides communication between the emulated C64 and configured IEC peripherals, including the ASCII printer and the Foundry Drive.
 
-The architecture separates electrical bus handling, IEC protocol handling, generic device routing, drive command logic, physical/logical disk objects and disk-image storage.
+The current storage target is a practical D64-based implementation of standard IEC and drive/DOS behavior. Emulation of the internal 1541 CPU and physical drive electronics is not required by the current compatibility target.
+
+The architecture separates:
+
+- Electrical bus handling
+- IEC protocol handling
+- Generic device routing
+- Device creation and ownership
+- Drive and disk management
+- Device-originated events and GUI communication
+
+The architecture is designed so that concrete devices do not need direct access to the IEC bus or protocol implementation.
 
 ## Components and responsibilities
 
@@ -27,20 +39,29 @@ The architecture separates electrical bus handling, IEC protocol handling, gener
 - Knows IEC protocol state and the currently addressed device number, but does not know concrete devices or hold device pointers.
 - Does not decide which concrete device receives an event.
 
-The protocol events preserve the information needed by devices, including the IEC device number, communication mode, secondary address, received byte and EOI state as applicable. LISTEN, UNLISTEN, TALK, UNTALK, SECONDARY ADDRESS, CLOSE and OPEN must remain distinguishable in the event model.
+Protocol events preserve the information needed by devices, including:
 
-Relevant ATN command ranges:
+- IEC device number
+- Communication mode
+- Secondary address
+- Received byte
+- EOI state, where applicable
 
-| Command | Values |
-|---|---|
-| LISTEN | `$20`–`$3E` |
-| UNLISTEN | `$3F` |
-| TALK | `$40`–`$5E` |
-| UNTALK | `$5F` |
-| SECONDARY ADDRESS | `$60`–`$6F` |
-| CLOSE | `$E0`–`$EF` |
-| OPEN | `$F0`–`$FF` |
+The following ATN commands remain distinguishable in the event model:
 
+| Command | Values | Event |
+|---|---|---|
+| LISTEN | `$20`–`$3E` | `DeviceSelected` with Listen mode |
+| UNLISTEN | `$3F` | `EndOfTransmission` and `DeviceDeselected` |
+| TALK | `$40`–`$5E` | `DeviceSelected` with Talk mode |
+| UNTALK | `$5F` | `DeviceDeselected` |
+| SECONDARY ADDRESS | `$60`–`$6F` | `SecondaryAddressReceived` |
+| CLOSE | `$E0`–`$EF` | `Close` |
+| OPEN | `$F0`–`$FF` | `Open` |
+
+The lower four bits of SECONDARY ADDRESS, CLOSE and OPEN are preserved as the secondary address.
+
+The protocol owns all electrical handshake and timing behavior. Concrete devices must not implement their own bus-level protocol handling.
 
 ### `IECDeviceManager`
 
@@ -51,13 +72,18 @@ The manager performs generic address registration and protocol-event routing.
 - A device may register more than one IEC address.
 - Dispatches protocol events to the device registered for the event's IEC address.
 - Routes the device's `IECProtocolResponse` back to the central protocol.
-- Rejects invalid or duplicate address registrations without leaving a partial mapping.
-- Removes all address mappings belonging to a device when it is unregistered.
+- Rejects invalid or duplicate address registrations.
 - Does not create, own or destroy devices.
 - Does not know concrete device classes or their internal structure.
 - Does not know about disks, disk images, printer jobs or DOS commands.
 
-The manager supports the complete IEC address range #0 through #30. Address registration is independent of device type and does not imply that the device has a separate IEC address of its own. A device may reserve and register a contiguous range of addresses.
+The manager supports IEC addresses #0 through #30.
+
+Address registration is independent of device type and does not imply that a device has a separate IEC address of its own. A device may reserve and register a range of addresses.
+
+Registration and unregistration are performed per address. `IECSystem` coordinates the complete registration or unregistration of a device, including all addresses reserved by that device.
+
+The manager deduplicates device pointers when resetting devices or collecting their events. This is necessary because one device may be registered under several IEC addresses.
 
 ### `IECDevice`
 
@@ -65,34 +91,76 @@ The manager supports the complete IEC address range #0 through #30. Address regi
 
 - Receives typed protocol events through the manager.
 - Produces a protocol response where a response is required.
-- Reports the IEC device numbers it currently supports.
-- Exposes device-originated GUI/status events through generic event types.
+- Can reset its internal state.
+- Exposes device-originated events through generic event types.
 - Does not access `IECBus` or `IECProtocol` directly.
 - Does not own or instantiate a per-device protocol instance.
 
-`DeviceId` identifies the configured device object. It is not an IEC device number. One `DeviceId` may therefore correspond to multiple IEC addresses.
+`DeviceId` identifies the configured device object. It is not an IEC device number.
+
+One `DeviceId` may therefore correspond to multiple IEC addresses.
 
 ### `IECDeviceFactory`
 
 - Creates and owns concrete IEC device objects.
 - Applies the device configuration supplied by `IECSystem`.
-- Provides the lifetime boundary for shared backend resources used by concrete devices.
-- Unregisters devices through the system/manager coordination before destroying them.
+- Provides the lifetime boundary for concrete devices.
+- Destroys devices when requested by `IECSystem`.
 - Does not implement IEC signaling or protocol timing.
-- Does not participate in the per-cycle hot path.
+- Does not participate in the normal per-cycle protocol path.
 
 The factory is owned by `EmulatorWorker`. Factory operations and device lifecycle changes execute in the emulation thread.
 
+The factory also provides the available device types and the supported IEC addresses for each device type. `IECSystem` exposes this information to the application without requiring the GUI to access the factory directly.
+
 ### `IECSystem`
 
-`IECSystem` owns the central IEC infrastructure:
+`IECSystem` is the central runtime boundary of the IEC subsystem.
+
+It owns:
 
 - `IECBus`
-- one `IECProtocol`
-- `IECDeviceManager`
+- One `IECProtocol`
+- One `IECDeviceManager`
 
-It connects the bus to the C64 machine, coordinates protocol/manager event flow, handles IEC reset and coordinates configured device lifecycle with the factory. It does not own concrete devices or a Foundry Drive.
+It references:
 
+- The `C64Machine`
+- The `IECDeviceFactory`
+
+`IECSystem` is responsible for:
+
+- Connecting the IEC bus to the C64 machine.
+- Advancing the central IEC protocol.
+- Routing protocol events through the manager.
+- Returning device responses to the protocol.
+- Managing configured devices and their lifecycle.
+- Validating device configurations and address reservations.
+- Registering and unregistering device addresses.
+- Handling IEC reset.
+- Collecting system and device events.
+- Processing generic system and device requests.
+
+`IECSystem` does not own concrete devices. Their ownership belongs to `IECDeviceFactory`.
+
+`IECSystem` does not know about `IECFoundryDisk` or individual disk-image operations.
+
+### `EmulatorWorker` and `EmulationScheduler`
+
+`EmulatorWorker` owns the runtime components required by the emulation thread:
+
+- `C64Machine`
+- `IECDeviceFactory`
+- `IECSystem`
+- `EmulationScheduler`
+
+The worker acts as the GUI-independent mediator between the application and the emulation runtime.
+
+`EmulationScheduler` advances the C64 machine and IEC system in a defined order. Each emulation cycle advances the machine once and the IEC system once.
+
+The worker forwards requests to the appropriate runtime component and forwards system and device events to the application through its existing controller-facing interface.
+
+The controller does not expose the machine directly.
 
 ## Device ownership: Foundry Drive and disks
 
@@ -104,75 +172,100 @@ A drive has its own internal `DeviceId`, but it does not have an IEC device numb
 
 The drive:
 
-- Implements IEC-facing drive behavior and the commands sent by the C64, including directory and file operations such as `LOAD "$"` and, as implemented later, the broader DOS command set.
-- Manages secondary addresses and channels.
+- Owns and manages its `IECFoundryDisk` objects.
 - Manages a configurable number of disk slots.
 - Reserves a contiguous IEC address range for its slots.
-- Selects the internal disk corresponding to the IEC number addressed by the C64.
-- Owns and manages its `IECFoundryDisk` objects.
-- Delegates media and sector operations to the selected disk.
-- Handles accesses to empty slots according to its drive behavior.
+- Maps an addressed IEC number to the corresponding slot.
+- Provides operations to enable or disable a disk.
+- Provides operations to insert, eject and save an image.
+- Collects image and sector-access events from its disks.
+- Reports these events through the generic device-event interface.
+
+The drive is the intended location for IEC-facing drive behavior, including secondary-address and channel management, directory and file operations, and DOS command handling.
+
+These IEC drive operations are not yet implemented. In particular, `IECFoundryDrive::processEvent()` currently does not implement drive command processing. They belong to the separate FoundryDrive implementation work package and are not a prerequisite for the completed IEC architecture refactoring.
 
 Multiple independent `IECFoundryDrive` instances are supported. Each drive has its own configuration, identity, disk slots and reserved IEC address range.
 
-The drive configuration contains:
+### Foundry Drive configuration
 
-- The number of available disk slots.
+`IECFoundryDriveConfiguration` contains:
+
 - The start IEC device number.
+- The configured disk-slot configurations.
 
-The end address is calculated:
+The number of configured slots is available through `slotCount()`.
 
-`endDeviceNumber = startDeviceNumber + diskCount - 1`
+The end address is derived:
 
-The end address is derived data and is not stored independently.
+`endDeviceNumber = startDeviceNumber + slotCount - 1`
 
-The current maximum number of disk slots per drive is four. This is a current product/configuration limit, not a fundamental architectural limitation. The implementation should not make future increases unnecessarily difficult.
+The end address is not stored independently.
 
-The complete address range is reserved by the drive, including addresses whose disk slots are currently empty. The range must not overlap with another drive or any other IEC device.
+The current maximum number of disk slots per drive is four. This is a current configuration limit, not a fundamental architectural limitation.
 
-The same `IECFoundryDrive` instance is registered with the manager under every address in its reserved range. The drive uses the addressed IEC number to determine the corresponding slot.
+Each `IECFoundryDiskConfiguration` contains:
+
+- Disk ID
+- Slot index
+- IEC device number
+- Enabled state
+- Image file name
+- `saveCurrentDiskOnExit`
+
+The complete address range is reserved by the drive, including addresses whose corresponding disk slot does not currently contain a disk object.
+
+The range must not overlap with another drive or any other IEC device.
+
+The same `IECFoundryDrive` instance is registered with the manager under every address in its reserved range.
+
+The drive uses the addressed IEC number to determine the corresponding slot.
+
+### Configuration changes
+
+The drive applies configuration changes according to the distinction between structural changes and disk-level changes.
+
+Changes to the start IEC address or slot count rebuild the affected disk objects.
+
+Changes to disk-level settings, including the enabled state and image assignment, are applied to the existing disk objects where possible.
+
+This behavior is intentional. The drive configuration is the authoritative configuration for the drive and its disk slots.
 
 ### `IECFoundryDisk`
 
 `IECFoundryDisk` is an internal drive component, not an `IECDevice`.
 
-- It has no IEC device number and does not participate in manager registration.
-- It represents one configured disk slot managed by `IECFoundryDrive`.
-- It manages one `DiskImage`.
-- It provides the drive with track/sector access, including reading and writing sector data.
-- It owns or controls the lifecycle of its attached image according to the disk-image API.
-- It can be exchanged with another disk object without changing the IEC address assigned to its slot.
+- It has no independent IEC device registration.
+- It is owned by `IECFoundryDrive`.
+- It represents one configured disk slot.
+- It manages its enabled state and image configuration.
+- It stores the current image data in memory.
+- It provides track/sector access to the image data.
+- It supports directory-program generation and PRG-file reading.
+- It collects image and sector-access status events for the drive.
+- It handles image persistence according to `saveCurrentDiskOnExit`.
 
-A disk slot may be empty. An empty slot has no `IECFoundryDisk` object and no disk configuration. The slot nevertheless remains part of the drive's reserved IEC address range.
+The disk object does not know about the IEC bus or protocol.
 
-Disk configurations are optional and independent. A drive with four available slots may have only one configured disk, for example at IEC #9.
+The disk object does not implement IEC command handling, secondary addresses or channels.
 
-### `DiskImage`
-
-`DiskImage` represents the actual image data and image-format operations. It does not know an IEC device number. `IECFoundryDisk` uses it to provide media access to the drive.
-
-This separation leaves room for future storage backends and media types, including HDD-like storage or other non-D64 media, without teaching `IECDeviceManager` or `IECProtocol` about them.
+Sector writing is not yet implemented. The current disk functionality is therefore not a complete DOS implementation.
 
 ### Disk-slot storage
 
-The drive manages its available disk slots internally. The current implementation may use a fixed-size array for the current maximum of four slots:
+`IECFoundryDrive` currently stores its disk objects in a `QList<IECFoundryDisk*>`.
 
-```cpp
-static constexpr quint8 MAX_DISK_COUNT = 4;
+The list represents the disk objects managed by the drive. Each disk object stores its slot index.
 
-IECFoundryDisk* m_disks[MAX_DISK_COUNT] = {};
-```
+The IEC address assigned to a slot is derived from the drive's start address and the slot index:
 
-- Array indices represent slot positions within the drive.
-- The IEC address for a slot is derived from the drive's start address and the slot index.
-- A non-null pointer means that the slot contains a configured disk.
-- `nullptr` means that the slot is empty.
-- The slot's IEC address does not depend on whether a disk is configured.
-- The disk object itself never stores an IEC device number.
+`deviceNumber = startDeviceNumber + slotIndex`
+
+The IEC address remains reserved independently of whether a disk image is currently inserted.
 
 The implementation must not assume that the first slot always corresponds to IEC #8 or that a drive can only expose #8 through #11.
 
-A disk swap changes the disk object associated with a slot. The slot's IEC address remains unchanged.
+The drive owns the disk objects and destroys them when they are removed or when the drive itself is destroyed.
 
 ## Event flow
 
@@ -182,14 +275,49 @@ A disk swap changes the disk object associated with a slot. The slot's IEC addre
 2. `IECProtocol` observes the bus and advances protocol state.
 3. `IECProtocol` emits a typed protocol event.
 4. `IECDeviceManager` routes the event using its IEC-address mapping.
-5. The matching device processes the event and fills an `IECProtocolResponse`.
-6. The manager returns the response to `IECProtocol`.
-7. `IECProtocol` performs the required IEC transfer through the bus.
+5. The matching device processes the event and fills an `IECProtocolResponse`, if required.
+6. The manager returns the response to `IECSystem`.
+7. `IECSystem` passes the response to `IECProtocol`.
+8. `IECProtocol` performs the required IEC transfer through the bus.
 
 ### Device to C64
 
-Devices do not bypass the manager to access the protocol or bus. A device response is returned through the manager to the central protocol, which owns the electrical transfer and handshake.
+Devices do not bypass the manager to access the protocol or bus.
 
+A device response is returned through the manager to `IECSystem` and then to the central protocol, which owns the electrical transfer and handshake.
+
+### Device to GUI
+
+Concrete devices collect their own events.
+
+`IECDeviceManager` retrieves events from registered devices. A device registered under several addresses is queried only once.
+
+`IECSystem` collects and exposes the device events. `EmulatorWorker` forwards event batches through its controller-facing signals.
+
+Examples include:
+
+- Printer output events
+- Drive image events
+- Drive sector-access events
+
+Drive access events contain the relevant device ID and IEC device number, operation, track, sector and success/error information.
+
+The GUI does not need a concrete device pointer.
+
+System lifecycle events, such as device addition, removal, configuration changes and configuration restoration, are exposed separately from device-originated events.
+
+## Requests
+
+Requests from outside the IEC runtime are handled through `EmulatorWorker` and `IECSystem`.
+
+The request hierarchy distinguishes between:
+
+- System requests, which operate on `IECSystem`.
+- Device requests, which target a configured device by `DeviceId`.
+
+Device-specific requests use the generic device request/response interface and execute against the selected `IECDevice`.
+
+The GUI does not directly call methods on concrete devices.
 
 ## Registration and lifetime
 
@@ -197,22 +325,18 @@ Devices do not bypass the manager to access the protocol or bus. A device respon
 - The manager stores non-owning device references.
 - Registration maps every IEC address reserved by a device to that device.
 - A drive is registered under every address in its configured range, including addresses whose disk slots are empty.
-- The complete address range must be validated before registration. Invalid, duplicate or conflicting addresses must not leave a partial mapping.
+- The complete address range is validated before registration.
+- Invalid, duplicate or conflicting addresses must not leave a partial mapping.
 - No two devices may reserve or register the same IEC address.
-- Unregistration removes every address belonging to that device and clears selection state referring to it.
-- A device must be unregistered before the factory destroys it.
+- `IECSystem` unregisters all addresses belonging to a device before asking the factory to destroy it.
 - Device creation, configuration, registration and destruction happen in the emulation thread.
 - No registration or destruction occurs in the normal emulation-cycle path.
 
-A Foundry Drive reserves a contiguous IEC address range determined by its configured slot count and start address. The same drive pointer is registered for every address in that range. The manager does not distinguish between populated and empty disk slots.
+A Foundry Drive reserves a contiguous IEC address range determined by its configured slot count and start address.
+
+The same drive pointer is registered for every address in that range. The manager does not distinguish between populated and empty disk slots.
 
 The drive itself decides how to respond when the C64 accesses an address whose corresponding disk slot is empty.
-
-## Events to the GUI
-
-Device events use generic event types defined in the IEC core. Examples include printer output events and drive sector-access status events. A drive access event carries the relevant IEC number together with the access operation and track/sector/error information; the GUI does not need a concrete device pointer.
-
-`IECSystem` collects and exposes device events. `EmulatorWorker` forwards the event batches through its existing controller-facing signals. Printer output revision tracking is not part of the new event path.
 
 ## Timing and performance
 
@@ -225,11 +349,28 @@ Device events use generic event types defined in the IEC core. Examples include 
 - Each time-sensitive component is advanced exactly once.
 - Preserve existing electrical handshake behavior unless a separate protocol change is explicitly agreed.
 
-## Current implementation boundary
+## Current implementation status
 
-The controller, worker and scheduler ownership refactor has been completed and committed. `IECSystem` has been introduced and committed as the central IEC runtime boundary. The generic device, protocol-event, response, manager and factory headers have been aligned with the agreed architecture.
+The IEC architecture refactoring has been completed.
 
-The manager implementation and migration of the central protocol and concrete devices remain part of the ongoing IEC refactor. This document describes the agreed architecture, not a claim that all of it is already implemented.
+The following parts are integrated:
+
+- GUI-independent `EmulatorWorker` ownership of runtime components.
+- `EmulationScheduler` for coordinated machine and IEC clocking.
+- Central `IECSystem` as the IEC runtime boundary.
+- Central `IECBus` and `IECProtocol`.
+- Generic protocol events and protocol responses.
+- Generic `IECDevice` interface.
+- `IECDeviceManager` with multi-address registration and event routing.
+- `IECDeviceFactory` with concrete device ownership.
+- Device configuration validation and address reservation.
+- Generic system and device requests.
+- Generic system and device events.
+- Distinction between SECONDARY ADDRESS, OPEN and CLOSE protocol events.
+
+The application compiles and starts with the integrated architecture.
+
+The Foundry Drive's actual IEC command handling is not part of the completed refactoring. Directory transfer, PRG loading through IEC, channel handling, DOS status handling, sector writing and further DOS commands remain separate implementation work.
 
 ## Explicit non-goals
 
@@ -237,5 +378,7 @@ The manager implementation and migration of the central protocol and concrete de
 - Giving `IECDeviceManager` knowledge of concrete drive, disk or printer types.
 - Registering `IECFoundryDisk` as an IEC device.
 - Giving `IECFoundryDisk` an IEC device number.
-- Moving disk/image ownership into `IECDeviceManager` or `IECSystem`.
+- Moving disk ownership into `IECDeviceManager` or `IECSystem`.
 - Creating devices from inside `IECDeviceManager`.
+- Implementing Foundry Drive DOS and file-transfer functionality as part of the IEC architecture refactoring.
+
