@@ -150,8 +150,6 @@ bool IECFoundryDisk::ejectImage()
         recordImageEvent(IECDriveImageEvent::Type::Error,
                          m_imageFileName,
                          m_lastError);
-
-        return false;
     }
 
     const QString previousFileName = m_imageFileName;
@@ -166,6 +164,7 @@ bool IECFoundryDisk::ejectImage()
 
     return true;
 }
+
 bool IECFoundryDisk::saveImage()
 {
     m_lastError.clear();
@@ -441,14 +440,6 @@ bool IECFoundryDisk::createDirectoryProgram(QByteArray& program)
     }
 
     program.append(footer);
-
-    qDebug() << "IEC directory program:"
-             << "size:" << program.size()
-             << "load address:" << Qt::hex
-             << static_cast<quint8>(program.at(0))
-             << static_cast<quint8>(program.at(1));
-
-    qDebug().noquote() << "IEC directory program:" << program.toHex(' ');
 
     return true;
 }

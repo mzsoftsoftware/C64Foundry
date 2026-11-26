@@ -24,7 +24,7 @@ IECFoundryDiskRowWidget::IECFoundryDiskRowWidget(QWidget* parent)
     ui->toolButton_Settings->hide();
     ui->toolButton_Remove->hide();
 
-    m_activityTimer.setInterval(240);
+    m_activityTimer.setInterval(40);
     m_activityTimer.setTimerType(Qt::PreciseTimer);
 
     connect(&m_activityTimer, &QTimer::timeout,
@@ -159,6 +159,9 @@ void IECFoundryDiskRowWidget::onDiskClicked()
         QStringLiteral("IEC/LastImageDirectory"),
         QFileInfo(fileName).absolutePath());
 
+    m_errorMessage.clear();
+    updateImageDisplay();
+
     submitRequest(
         new IECFoundryDriveInsertImageRequest(
             m_driveId, m_configuration.deviceNumber(), fileName),
@@ -172,6 +175,9 @@ void IECFoundryDiskRowWidget::onEjectClicked()
     {
         return;
     }
+
+    m_errorMessage.clear();
+    updateImageDisplay();
 
     submitRequest(
         new IECFoundryDriveEjectImageRequest(
@@ -263,14 +269,12 @@ void IECFoundryDiskRowWidget::processDeviceEvent(const IECDeviceEvent& event)
             m_configuration.setImageFileName(ptrImageEvent->fileName);
             m_bImageLoaded = true;
             m_bImageInvalid = false;
-            m_errorMessage.clear();
             break;
 
         case IECDriveImageEvent::Type::ImageEjected:
             m_configuration.setImageFileName(QString());
             m_bImageLoaded = false;
             m_bImageInvalid = false;
-            m_errorMessage.clear();
             break;
 
         case IECDriveImageEvent::Type::ImageInvalid:
@@ -313,8 +317,22 @@ void IECFoundryDiskRowWidget::updateImageDisplay()
     if (fileName.isEmpty())
     {
         ui->toolButton_DiskName->setText(tr("No disk"));
-        ui->toolButton_DiskName->setToolTip(tr("No disk image inserted"));
-        ui->toolButton_DiskName->setStyleSheet(QString());
+
+        if (!m_errorMessage.isEmpty())
+        {
+            ui->toolButton_DiskName->setStyleSheet(
+                QStringLiteral("QToolButton { color: red; }"));
+
+            ui->toolButton_DiskName->setToolTip(m_errorMessage);
+        }
+        else
+        {
+            ui->toolButton_DiskName->setToolTip(
+                tr("No disk image inserted"));
+
+            ui->toolButton_DiskName->setStyleSheet(QString());
+        }
+
         return;
     }
 
@@ -352,22 +370,42 @@ void IECFoundryDiskRowWidget::processNextSectorAccessEvent()
         return;
     }
 
-    const IECDriveAccessEvent event = m_sectorAccessQueue.dequeue();
+    bool readActivity = false;
+    bool writeActivity = false;
+    IECDriveAccessEvent lastEvent;
+
+    while (!m_sectorAccessQueue.isEmpty())
+    {
+        lastEvent = m_sectorAccessQueue.dequeue();
+
+        if (lastEvent.operation == IECDriveAccessEvent::Operation::Read)
+            readActivity = true;
+        else
+            writeActivity = true;
+    }
 
     ui->lcdNumber_TrackSector->display(
         QStringLiteral("%1.%2")
-            .arg(event.track, 2, 10, QChar('0'))
-            .arg(event.sector, 2, 10, QChar('0')));
+            .arg(lastEvent.track, 2, 10, QChar('0'))
+            .arg(lastEvent.sector, 2, 10, QChar('0')));
 
-    switch (event.operation)
-    {
-    case IECDriveAccessEvent::Operation::Read:
+    if (readActivity)
         ui->widget_ActivityLED->triggerActivity(0);
-        break;
 
-    case IECDriveAccessEvent::Operation::Write:
+    if (writeActivity)
         ui->widget_ActivityLED->triggerActivity(1);
-        break;
+
+    if (!lastEvent.success)
+    {
+        ui->lcdNumber_TrackSector->setStyleSheet(
+            QStringLiteral("QLCDNumber { color: red; }"));
+
+        ui->lcdNumber_TrackSector->setToolTip(lastEvent.errorMessage);
+    }
+    else
+    {
+        ui->lcdNumber_TrackSector->setStyleSheet(QString());
+        ui->lcdNumber_TrackSector->setToolTip(QString());
     }
 
     if (m_sectorAccessQueue.isEmpty())
