@@ -316,7 +316,14 @@ void IECFoundryDrive::processEvent(
             IECFoundryDisk::FileOpenResult openResult;
 
             if (!ptrDisk->openFile(requestedName, openResult) || openResult.empty)
+            {
+                // The KERNAL expects the first byte of a LOAD response.
+                // EOI on this byte makes it report FILE NOT FOUND.
+                response.type = IECProtocolResponse::Type::SendData;
+                response.data = QByteArray(1, '\0');
+                response.lastBlock = true;
                 break;
+            }
 
             ptrChannelState->currentTrack = openResult.firstTrack;
             ptrChannelState->currentSector = openResult.firstSector;
