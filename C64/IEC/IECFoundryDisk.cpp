@@ -702,16 +702,7 @@ bool IECFoundryDisk::openFile(const QByteArray& fileName, FileOpenResult& result
             const QByteArray entryName =
                 normalizeDiskFileName(directorySector.mid(entryOffset + 3, 16));
 
-            bool matches = entryName == requestedName;
-
-            if (!matches && requestedName.endsWith('*'))
-            {
-                const QByteArray prefix =
-                    requestedName.left(requestedName.size() - 1);
-
-                matches = entryName.startsWith(prefix);
-            }
-
+            const bool matches = matchesFileName(requestedName, entryName);
             if (!matches)
                 continue;
 
@@ -855,4 +846,50 @@ bool IECFoundryDisk::readFileBlock(
     }
 
     return true;
+}
+
+bool IECFoundryDisk::matchesFileName(
+    const QByteArray& pattern,
+    const QByteArray& fileName)
+{
+    int patternIndex = 0;
+    int fileNameIndex = 0;
+    int lastWildcardIndex = -1;
+    int lastWildcardMatchIndex = 0;
+
+    while (fileNameIndex < fileName.size())
+    {
+        if (patternIndex < pattern.size() &&
+            (pattern.at(patternIndex) == '?' ||
+             pattern.at(patternIndex) == fileName.at(fileNameIndex)))
+        {
+            ++patternIndex;
+            ++fileNameIndex;
+        }
+        else if (patternIndex < pattern.size() &&
+                 pattern.at(patternIndex) == '*')
+        {
+            lastWildcardIndex = patternIndex;
+            lastWildcardMatchIndex = fileNameIndex;
+            ++patternIndex;
+        }
+        else if (lastWildcardIndex >= 0)
+        {
+            patternIndex = lastWildcardIndex + 1;
+            ++lastWildcardMatchIndex;
+            fileNameIndex = lastWildcardMatchIndex;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    while (patternIndex < pattern.size() &&
+           pattern.at(patternIndex) == '*')
+    {
+        ++patternIndex;
+    }
+
+    return patternIndex == pattern.size();
 }

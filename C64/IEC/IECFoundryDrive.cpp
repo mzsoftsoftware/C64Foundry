@@ -4,7 +4,6 @@
 
 #include <QSharedPointer>
 #include <QQueue>
-#include <QDebug>
 
 
 IECFoundryDrive::IECFoundryDrive(const DeviceId id)
@@ -330,20 +329,7 @@ void IECFoundryDrive::processEvent(
     case IECProtocolEvent::Type::RequestNextDataBlock:
         if (event.mode == IECProtocolEvent::Mode::Talk && ptrChannelState->readingFile)
         {
-            qDebug() << "FoundryDrive: next block requested"
-                     << "Device:" << event.deviceNumber
-                     << "Channel:" << event.secondaryAddress
-                     << "Track:" << ptrChannelState->currentTrack
-                     << "Sector:" << ptrChannelState->currentSector;
-
             prepareNextFileBlock(ptrDisk, *ptrChannelState, response);
-        }
-        else
-        {
-            qWarning() << "FoundryDrive: next block request ignored"
-                       << "Device:" << event.deviceNumber
-                       << "Channel:" << event.secondaryAddress
-                       << "Reading:" << (ptrChannelState != nullptr && ptrChannelState->readingFile);
         }
         break;
 
@@ -428,11 +414,6 @@ bool IECFoundryDrive::prepareNextFileBlock(
             channelState.currentSector,
             block))
     {
-        qWarning() << "FoundryDrive: file block read failed"
-                   << "Track:" << channelState.currentTrack
-                   << "Sector:" << channelState.currentSector
-                   << "Error:" << ptrDisk->lastError();
-
         channelState.readingFile = false;
         return false;
     }
@@ -442,14 +423,6 @@ bool IECFoundryDrive::prepareNextFileBlock(
         channelState.readingFile = false;
         return false;
     }
-
-    qDebug() << "FoundryDrive: file block prepared"
-             << "Track:" << channelState.currentTrack
-             << "Sector:" << channelState.currentSector
-             << "Bytes:" << block.data.size()
-             << "Last:" << block.isLast
-             << "NextTrack:" << block.nextTrack
-             << "NextSector:" << block.nextSector;
 
     response.type = IECProtocolResponse::Type::SendData;
     response.data = block.data;

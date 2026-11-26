@@ -82,6 +82,7 @@ private:
     static int sectorOffset(int track, int sector);
 
     static QByteArray normalizeDiskFileName(QByteArray fileName);
+    static bool matchesFileName(const QByteArray& pattern, const QByteArray& fileName);
 
     bool saveImageInternal();
 
