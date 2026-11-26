@@ -680,7 +680,8 @@ void IECProtocol::clockSend()
                 ++m_transmitIndex;
                 m_transmitBit = 0;
 
-                if (m_transmitIndex == m_transmitData.size() - 1)
+                if (m_transmitLastBlock &&
+                    m_transmitIndex == m_transmitData.size() - 1)
                 {
                     prepareTransmitByte();
                 }
@@ -688,8 +689,7 @@ void IECProtocol::clockSend()
                 {
                     m_sendPhase = SendPhase::WaitBetweenBytes;
                     m_stateCycles = 0;
-                }
-            }
+                }            }
         }
         break;
 
