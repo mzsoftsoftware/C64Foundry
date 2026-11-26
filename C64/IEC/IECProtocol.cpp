@@ -76,6 +76,7 @@ void IECProtocol::reset()
     m_responseLastBlock = true;
     m_transmitLastBlock = true;
     m_continueSending = false;
+    m_talkTurnaroundPending = false;
 }
 
 
@@ -105,8 +106,9 @@ void IECProtocol::clock()
     if (m_state == State::WaitFirstClockLow &&
         attentionHigh &&
         m_mode == IECProtocolEvent::Mode::Talk &&
-        m_responsePending)
+        (m_responsePending || m_talkTurnaroundPending))
     {
+        m_talkTurnaroundPending = false;
         beginSending();
     }
 
@@ -285,6 +287,7 @@ void IECProtocol::processAttention()
     m_responseLastBlock = true;
     m_transmitLastBlock = true;
     m_continueSending = false;
+    m_talkTurnaroundPending = false;
 }
 
 
@@ -350,6 +353,10 @@ void IECProtocol::processReceivedByte(const quint8 value, const bool attention)
             {
             case 0x60:
                 m_secondaryAddress = value & 0x0F;
+
+                if (m_mode == IECProtocolEvent::Mode::Talk)
+                    m_talkTurnaroundPending = true;
+
                 addEvent(IECProtocolEvent::Type::SecondaryAddressReceived);
                 break;
 
@@ -479,9 +486,6 @@ void IECProtocol::setLineLow(const IECBus::Line line, const bool low)
 
 void IECProtocol::beginSending()
 {
-    if (m_responseData.isEmpty())
-        return;
-
     m_transmitData = m_responseData;
     m_transmitLastBlock = m_responseLastBlock;
 
@@ -688,8 +692,18 @@ void IECProtocol::clockSend()
     case SendPhase::WaitTalkListenerReady:
         if (lineHigh(IECBus::Line::DATA))
         {
-            m_sendPhase = SendPhase::WaitInitialDataStart;
-            m_stateCycles = 0;
+            if (m_transmitData.isEmpty())
+            {
+                releaseBus();
+                m_state = State::Idle;
+                m_sendPhase = SendPhase::WaitReady;
+                m_stateCycles = 0;
+            }
+            else
+            {
+                m_sendPhase = SendPhase::WaitInitialDataStart;
+                m_stateCycles = 0;
+            }
         }
         break;
 

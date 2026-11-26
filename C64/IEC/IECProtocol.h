@@ -136,4 +136,5 @@ private:
     bool m_responseLastBlock = true;
     bool m_transmitLastBlock = true;
     bool m_continueSending = false;
+    bool m_talkTurnaroundPending = false;
 };
