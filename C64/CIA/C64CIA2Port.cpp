@@ -95,6 +95,12 @@ void C64CIA2Port::portAOutputChanged(quint8 portA, quint8 dataDirectionA)
 {
     if (!m_ptrIECBus)
         return;
+    if ((dataDirectionA & 0xC0) != 0)
+    {
+        qWarning() << "CIA2 IEC: CLK/DATA input pins configured as output"
+                   << "PortA:" << Qt::hex << portA
+                   << "DDRA:" << Qt::hex << dataDirectionA;
+    }
 
     //
     // CIA2 Port A:

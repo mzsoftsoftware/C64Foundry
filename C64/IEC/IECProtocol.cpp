@@ -1,5 +1,7 @@
 #include "IECProtocol.h"
 
+#include <QDebug>
+
 
 IECProtocol::IECProtocol(IECBus* ptrBus)
     : m_ptrBus(ptrBus)
@@ -454,6 +456,13 @@ void IECProtocol::setResponse(const IECProtocolResponse& response)
         return;
     }
 
+    qDebug() << "IECProtocol: data response"
+             << "Device:" << m_selectedDeviceNumber
+             << "Channel:" << m_secondaryAddress
+             << "Bytes:" << response.data.size()
+             << "Last:" << response.lastBlock
+             << "Continue:" << m_continueSending;
+
     m_responseData = response.data;
     m_responseLastBlock = response.lastBlock;
     m_responsePending = true;
@@ -535,6 +544,13 @@ void IECProtocol::clockSend()
         }
         else if (m_stateCycles >= FRAME_HANDSHAKE_TIMEOUT_CYCLES)
         {
+            qWarning() << "IECProtocol: EOI handshake timeout"
+                       << "Device:" << m_selectedDeviceNumber
+                       << "Channel:" << m_secondaryAddress
+                       << "Index:" << m_transmitIndex
+                       << "Bytes:" << m_transmitData.size()
+                       << "Cycles:" << m_stateCycles;
+
             finishSending();
         }
         break;
@@ -600,6 +616,18 @@ void IECProtocol::clockSend()
         {
             setLineLow(IECBus::Line::DATA, false);
 
+            if (m_transmitIndex + 1 == m_transmitData.size())
+            {
+                const quint8 value = static_cast<quint8>(m_transmitData.at(m_transmitIndex));
+
+                qDebug() << "IECProtocol: final byte released"
+                         << "Index:" << m_transmitIndex
+                         << "Value:" << value
+                         << "Bit7:" << ((value & 0x80) != 0)
+                         << "CLK:" << lineHigh(IECBus::Line::CLK)
+                         << "DATA:" << lineHigh(IECBus::Line::DATA);
+            }
+
             m_sendPhase = SendPhase::WaitByteAcknowledge;
             m_stateCycles = 0;
         }
@@ -613,6 +641,19 @@ void IECProtocol::clockSend()
         }
         else if (m_stateCycles >= FRAME_HANDSHAKE_TIMEOUT_CYCLES)
         {
+            const quint8 value = static_cast<quint8>(m_transmitData.at(m_transmitIndex));
+
+            qWarning() << "IECProtocol: byte handshake timeout"
+                       << "Device:" << m_selectedDeviceNumber
+                       << "Channel:" << m_secondaryAddress
+                       << "Index:" << m_transmitIndex
+                       << "Bytes:" << m_transmitData.size()
+                       << "Value:" << value
+                       << "Bit7:" << ((value & 0x80) != 0)
+                       << "CLK:" << lineHigh(IECBus::Line::CLK)
+                       << "DATA:" << lineHigh(IECBus::Line::DATA)
+                       << "Cycles:" << m_stateCycles;
+
             finishSending();
         }
         break;
@@ -723,6 +764,12 @@ void IECProtocol::prepareTransmitByte()
 
 void IECProtocol::finishSending(const bool requestNextBlock)
 {
+    qDebug() << "IECProtocol: block finished"
+             << "Device:" << m_selectedDeviceNumber
+             << "Channel:" << m_secondaryAddress
+             << "Bytes:" << m_transmitData.size()
+             << "RequestNext:" << requestNextBlock;
+
     releaseBus();
 
     m_transmitData.clear();

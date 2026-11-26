@@ -422,13 +422,13 @@ EmulatorResponse::Result EmulatorWorker::processRequest(const EmulatorRequest* p
             return EmulatorResponse::Result::InvalidState;
 
         m_ptrMachine->softReset();
+        m_ptrIECSystem->reset();
 
         if (m_state == Emulator::State::Running)
             bRestartTiming = true;
 
         return EmulatorResponse::Result::Success;
     }
-
     case EmulatorRequest::Type::HardReset:
     {
         if (m_state == Emulator::State::PoweredOff)
