@@ -42,10 +42,12 @@ private:
     struct ChannelState
     {
         bool opened = false;
+        bool readingFile = false;
         QByteArray fileName;
         QByteArray inputBuffer;
+        quint8 currentTrack = 0;
+        quint8 currentSector = 0;
     };
-
     struct DiskChannelState
     {
         QList<ChannelState> channels;
@@ -54,6 +56,7 @@ private:
     IECFoundryDisk* findDisk(quint8 deviceNumber) const;
     ChannelState* findChannelState(quint8 deviceNumber, quint8 channel);
     void collectDiskEvents();
+    bool prepareNextFileBlock(IECFoundryDisk* ptrDisk, ChannelState& channelState, IECProtocolResponse& response);
 
 private:
     IECFoundryDriveConfiguration m_configuration;

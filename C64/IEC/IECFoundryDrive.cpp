@@ -57,7 +57,7 @@ bool IECFoundryDrive::setConfiguration(const IECFoundryDriveConfiguration& confi
             ptrDiskConfiguration->setSlotIndex(slotIndex);
             ptrDiskConfiguration->setDeviceNumber(static_cast<quint8>(m_configuration.startDeviceNumber() + slotIndex));
 
-            m_disks.append(new IECFoundryDisk(this, *ptrDiskConfiguration));
+            m_disks.append(new IECFoundryDisk(*ptrDiskConfiguration));
 
             DiskChannelState channelState;
             channelState.channels.resize(16);
@@ -242,6 +242,7 @@ void IECFoundryDrive::processEvent(
 {
     response.type = IECProtocolResponse::Type::None;
     response.data.clear();
+    response.lastBlock = true;
 
     IECFoundryDisk* ptrDisk = findDisk(event.deviceNumber);
 
@@ -261,8 +262,11 @@ void IECFoundryDrive::processEvent(
 
     case IECProtocolEvent::Type::Open:
         ptrChannelState->opened = true;
+        ptrChannelState->readingFile = false;
         ptrChannelState->fileName.clear();
         ptrChannelState->inputBuffer.clear();
+        ptrChannelState->currentTrack = 0;
+        ptrChannelState->currentSector = 0;
         break;
 
     case IECProtocolEvent::Type::Close:
@@ -285,11 +289,15 @@ void IECFoundryDrive::processEvent(
         break;
 
     case IECProtocolEvent::Type::SecondaryAddressReceived:
-        if (event.mode == IECProtocolEvent::Mode::Talk)
-        {
-            if (!ptrDisk->imageValid())
-                break;
+        if (event.mode != IECProtocolEvent::Mode::Talk)
+            break;
 
+        ptrChannelState->readingFile = false;
+
+        if (!ptrDisk->imageValid())
+            break;
+
+        {
             const QByteArray requestedName =
                 ptrChannelState->fileName.trimmed().toUpper();
 
@@ -305,14 +313,22 @@ void IECFoundryDrive::processEvent(
                 break;
             }
 
-            QByteArray programData;
+            IECFoundryDisk::FileOpenResult openResult;
 
-            if (!ptrDisk->readFile(requestedName, programData))
+            if (!ptrDisk->openFile(requestedName, openResult) || openResult.empty)
                 break;
 
-            response.type = IECProtocolResponse::Type::SendData;
-            response.data = programData;
+            ptrChannelState->currentTrack = openResult.firstTrack;
+            ptrChannelState->currentSector = openResult.firstSector;
+            ptrChannelState->readingFile = true;
+
+            prepareNextFileBlock(ptrDisk, *ptrChannelState, response);
         }
+        break;
+
+    case IECProtocolEvent::Type::RequestNextDataBlock:
+        if (event.mode == IECProtocolEvent::Mode::Talk && ptrChannelState->readingFile)
+            prepareNextFileBlock(ptrDisk, *ptrChannelState, response);
         break;
 
     case IECProtocolEvent::Type::DeviceDeselected:
@@ -320,7 +336,6 @@ void IECFoundryDrive::processEvent(
         break;
     }
 }
-
 
 void IECFoundryDrive::collectDiskEvents()
 {
@@ -380,4 +395,46 @@ IECDeviceEventList IECFoundryDrive::takeEvents()
     events.swap(m_events);
 
     return events;
+}
+
+bool IECFoundryDrive::prepareNextFileBlock(
+    IECFoundryDisk* ptrDisk,
+    ChannelState& channelState,
+    IECProtocolResponse& response)
+{
+    if (ptrDisk == nullptr || !channelState.readingFile)
+        return false;
+
+    IECFoundryDisk::FileDataBlock block;
+
+    if (!ptrDisk->readFileBlock(
+            channelState.currentTrack,
+            channelState.currentSector,
+            block))
+    {
+        channelState.readingFile = false;
+        return false;
+    }
+
+    if (block.data.isEmpty())
+    {
+        channelState.readingFile = false;
+        return false;
+    }
+
+    response.type = IECProtocolResponse::Type::SendData;
+    response.data = block.data;
+    response.lastBlock = block.isLast;
+
+    if (block.isLast)
+    {
+        channelState.readingFile = false;
+    }
+    else
+    {
+        channelState.currentTrack = block.nextTrack;
+        channelState.currentSector = block.nextSector;
+    }
+
+    return true;
 }

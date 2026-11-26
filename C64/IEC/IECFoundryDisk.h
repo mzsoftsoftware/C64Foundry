@@ -8,8 +8,6 @@
 #include "IECFoundryDiskConfiguration.h"
 #include "IECDeviceEvent.h"
 
-class IECFoundryDrive;
-
 
 class IECFoundryDisk
 {
@@ -43,7 +41,7 @@ public:
         quint8 nextSector = 0;
     };
 
-    IECFoundryDisk(IECFoundryDrive* ptrDrive, const IECFoundryDiskConfiguration& configuration);
+    IECFoundryDisk(const IECFoundryDiskConfiguration& configuration);
     ~IECFoundryDisk();
 
     IECFoundryDisk(const IECFoundryDisk&) = delete;
@@ -73,7 +71,6 @@ public:
     bool writeSector(quint8 track, quint8 sector, const QByteArray& data);
 
     bool createDirectoryProgram(QByteArray& program);
-    bool readFile(const QByteArray& fileName, QByteArray& data);
     bool openFile(const QByteArray& fileName, FileOpenResult& result);
     bool readFileBlock(quint8 track, quint8 sector, FileDataBlock& block);
 
@@ -92,15 +89,11 @@ private:
     bool createDirectoryEntry(const QByteArray& directorySector, int entryOffset, QByteArray& entry);
     bool createDirectoryFooter(quint16 freeBlocks, QByteArray& footer);
 
-    void debugDirectorySector(const QByteArray& directorySector, quint8 track, quint8 sector);
-
     void recordImageEvent(IECDriveImageEvent::Type type, const QString& fileName = QString(), const QString& errorMessage = QString());
     void recordSectorAccess(SectorAccessOperation operation, quint8 track, quint8 sector, bool success, const QString& errorMessage);
     bool readSectorInternal(quint8 track, quint8 sector, QByteArray& data, bool recordAccess);
 
 private:
-    IECFoundryDrive* m_ptrDrive = nullptr; // non-owning
-
     DiskId m_diskId = 0;
     int m_slotIndex = 0;
 

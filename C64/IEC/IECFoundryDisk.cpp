@@ -1,15 +1,12 @@
 #include "IECFoundryDisk.h"
 
-#include "IECFoundryDrive.h"
-
 #include <QDebug>
 #include <QFile>
 #include <QSaveFile>
 #include <QSet>
 
 
-IECFoundryDisk::IECFoundryDisk(IECFoundryDrive* ptrDrive, const IECFoundryDiskConfiguration& configuration)
-    : m_ptrDrive(ptrDrive)
+IECFoundryDisk::IECFoundryDisk(const IECFoundryDiskConfiguration& configuration)
 {
     setConfiguration(configuration);
 }
@@ -400,8 +397,6 @@ bool IECFoundryDisk::createDirectoryProgram(QByteArray& program)
             return false;
         }
 
-        debugDirectorySector(directorySector, track, sector);
-
         for (int entryOffset = 2; entryOffset + 29 < directorySector.size(); entryOffset += 32)
         {
             const quint8 fileType = static_cast<quint8>(directorySector.at(entryOffset));
@@ -459,150 +454,6 @@ bool IECFoundryDisk::createDirectoryProgram(QByteArray& program)
 }
 
 
-bool IECFoundryDisk::readFile(const QByteArray& fileName, QByteArray& data)
-{
-    m_lastError.clear();
-    data.clear();
-
-    if (!imageValid())
-    {
-        m_lastError = QStringLiteral("Kein Disketten-Image geladen.");
-        return false;
-    }
-
-    const QByteArray requestedName = normalizeDiskFileName(fileName);
-
-    if (requestedName.isEmpty())
-    {
-        m_lastError = QStringLiteral("Es wurde kein Dateiname angegeben.");
-        return false;
-    }
-
-    QByteArray directorySector;
-
-    if (!readSector(18, 1, directorySector))
-        return false;
-
-    quint8 directoryTrack = 18;
-    quint8 directorySectorNumber = 1;
-    quint8 fileTrack = 0;
-    quint8 fileSectorNumber = 0;
-    bool fileFound = false;
-    QSet<quint16> visitedDirectorySectors;
-
-    while (directoryTrack != 0)
-    {
-        const quint16 sectorKey = (static_cast<quint16>(directoryTrack) << 8) | directorySectorNumber;
-
-        if (visitedDirectorySectors.contains(sectorKey))
-        {
-            m_lastError = QStringLiteral("Die Directory-Sektorkette enthält einen Zyklus.");
-            return false;
-        }
-
-        visitedDirectorySectors.insert(sectorKey);
-
-        if (!readSector(directoryTrack, directorySectorNumber, directorySector))
-            return false;
-
-        for (int entryOffset = 2; entryOffset + 29 < directorySector.size(); entryOffset += 32)
-        {
-            const quint8 fileType = static_cast<quint8>(directorySector.at(entryOffset));
-
-            if (fileType == 0)
-                continue;
-
-            if ((fileType & 0x07U) != 2)
-                continue;
-
-            const QByteArray entryName = normalizeDiskFileName(directorySector.mid(entryOffset + 3, 16));
-            bool matches = entryName == requestedName;
-
-            if (!matches && requestedName.endsWith('*'))
-            {
-                const QByteArray prefix = requestedName.left(requestedName.size() - 1);
-                matches = entryName.startsWith(prefix);
-            }
-
-            if (!matches)
-                continue;
-
-            fileTrack = static_cast<quint8>(directorySector.at(entryOffset + 1));
-            fileSectorNumber = static_cast<quint8>(directorySector.at(entryOffset + 2));
-            fileFound = true;
-            break;
-        }
-
-        if (fileFound)
-            break;
-
-        directoryTrack = static_cast<quint8>(directorySector.at(0));
-        directorySectorNumber = static_cast<quint8>(directorySector.at(1));
-    }
-
-    if (!fileFound)
-    {
-        m_lastError = QStringLiteral("PRG-Datei nicht gefunden: %1").arg(QString::fromLatin1(requestedName));
-        return false;
-    }
-
-    QSet<quint16> visitedFileSectors;
-
-    while (fileTrack != 0)
-    {
-        const quint16 sectorKey = (static_cast<quint16>(fileTrack) << 8) | fileSectorNumber;
-
-        if (visitedFileSectors.contains(sectorKey))
-        {
-            data.clear();
-            m_lastError = QStringLiteral("Die Dateisektorkette enthält einen Zyklus.");
-            return false;
-        }
-
-        visitedFileSectors.insert(sectorKey);
-
-        QByteArray fileSectorData;
-
-        if (!readSector(fileTrack, fileSectorNumber, fileSectorData))
-        {
-            data.clear();
-            return false;
-        }
-
-        const quint8 nextTrack = static_cast<quint8>(fileSectorData.at(0));
-        const quint8 nextSector = static_cast<quint8>(fileSectorData.at(1));
-
-        if (nextTrack != 0)
-        {
-            data.append(fileSectorData.constData() + 2, 254);
-        }
-        else
-        {
-            const int payloadSize = static_cast<int>(nextSector) - 1;
-
-            if (payloadSize < 0 || payloadSize > 254)
-            {
-                data.clear();
-                m_lastError = QStringLiteral("Der letzte Dateisektor enthält eine ungültige Länge.");
-                return false;
-            }
-
-            data.append(fileSectorData.constData() + 2, payloadSize);
-        }
-
-        fileTrack = nextTrack;
-        fileSectorNumber = nextSector;
-    }
-
-    if (data.size() < 2)
-    {
-        data.clear();
-        m_lastError = QStringLiteral("Die PRG-Datei enthält keine vollständige Ladeadresse.");
-        return false;
-    }
-
-    return true;
-}
 
 
 bool IECFoundryDisk::createDirectoryHeader(const QByteArray& bam, QByteArray& header)
@@ -765,41 +616,6 @@ bool IECFoundryDisk::createDirectoryFooter(const quint16 freeBlocks, QByteArray&
     return true;
 }
 
-
-void IECFoundryDisk::debugDirectorySector(const QByteArray& directorySector, const quint8 track, const quint8 sector)
-{
-    qDebug() << "IEC directory sector:"
-             << "track:" << track
-             << "sector:" << sector
-             << "size:" << directorySector.size();
-
-    qDebug().noquote() << directorySector.toHex(' ');
-
-    if (directorySector.size() != 256)
-        return;
-
-    for (int entryOffset = 2; entryOffset + 29 < directorySector.size(); entryOffset += 32)
-    {
-        const quint8 fileType = static_cast<quint8>(directorySector.at(entryOffset));
-
-        if ((fileType & 0x07U) == 0)
-            continue;
-
-        const QByteArray fileName = directorySector.mid(entryOffset + 3, 16);
-
-        const quint8 blockLow = static_cast<quint8>(directorySector.at(entryOffset + 28));
-        const quint8 blockHigh = static_cast<quint8>(directorySector.at(entryOffset + 29));
-
-        const quint16 blocks = static_cast<quint16>(blockLow) | (static_cast<quint16>(blockHigh) << 8);
-
-        qDebug() << "IEC directory entry:"
-                 << "offset:" << entryOffset
-                 << "type:" << Qt::hex << fileType
-                 << "name:" << fileName.toHex(' ')
-                 << "blocks:" << Qt::dec << blocks
-                 << "block bytes:" << Qt::hex << blockLow << blockHigh;
-    }
-}
 
 
 void IECFoundryDisk::recordImageEvent(
@@ -1001,9 +817,6 @@ bool IECFoundryDisk::openFile(const QByteArray& fileName, FileOpenResult& result
 
     result.firstTrack = firstTrack;
     result.firstSector = firstSector;
-
-    // Die ursprünglichen Startkoordinaten stammen aus dem Directory-Eintrag.
-    // Sie werden weiter unten separat gesetzt.
     return true;
 }
 
