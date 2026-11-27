@@ -77,6 +77,9 @@ public:
     QQueue<IECDriveImageEvent> takeImageEvents();
     QQueue<SectorAccessStatus> takeSectorAccessEvents();
 
+    void setDosStatus(quint8 code, const QByteArray& message, quint8 track = 0, quint8 sector = 0);
+    QByteArray takeDosStatus();
+
 private:
     static int sectorsOnTrack(int track);
     static int sectorOffset(int track, int sector);
@@ -109,4 +112,9 @@ private:
     QString m_lastError;
     QQueue<IECDriveImageEvent> m_imageEvents;
     QQueue<SectorAccessStatus> m_sectorAccessEvents;
+
+    quint8 m_dosStatusCode = 0;
+    QByteArray m_dosStatusMessage = QByteArrayLiteral("OK");
+    quint8 m_dosStatusTrack = 0;
+    quint8 m_dosStatusSector = 0;
 };

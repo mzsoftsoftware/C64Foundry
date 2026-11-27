@@ -893,3 +893,34 @@ bool IECFoundryDisk::matchesFileName(
 
     return patternIndex == pattern.size();
 }
+
+void IECFoundryDisk::setDosStatus(
+    const quint8 code,
+    const QByteArray& message,
+    const quint8 track,
+    const quint8 sector)
+{
+    m_dosStatusCode = code;
+    m_dosStatusMessage = message;
+    m_dosStatusTrack = track;
+    m_dosStatusSector = sector;
+}
+
+
+QByteArray IECFoundryDisk::takeDosStatus()
+{
+    QByteArray status;
+
+    status.append(QByteArray::number(static_cast<int>(m_dosStatusCode)).rightJustified(2, '0'));
+    status.append(", ");
+    status.append(m_dosStatusMessage);
+    status.append(',');
+    status.append(QByteArray::number(static_cast<int>(m_dosStatusTrack)).rightJustified(2, '0'));
+    status.append(',');
+    status.append(QByteArray::number(static_cast<int>(m_dosStatusSector)).rightJustified(2, '0'));
+    status.append('\r');
+
+    setDosStatus(0, QByteArrayLiteral("OK"));
+
+    return status;
+}

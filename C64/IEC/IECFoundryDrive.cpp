@@ -292,11 +292,23 @@ void IECFoundryDrive::processEvent(
         if (event.mode != IECProtocolEvent::Mode::Talk)
             break;
 
+        if (event.secondaryAddress == 15)
+        {
+            response.type = IECProtocolResponse::Type::SendData;
+            response.data = ptrDisk->takeDosStatus();
+            response.lastBlock = true;
+            break;
+        }
+
         ptrChannelState->readingFile = false;
 
         if (!ptrDisk->imageValid())
+        {
+            ptrDisk->setDosStatus(74, QByteArrayLiteral("DRIVE NOT READY"));
             break;
+        }
 
+        // Bestehende Behandlung von LOAD und Directory bleibt hier.
         {
             const QByteArray requestedName =
                 ptrChannelState->fileName.trimmed().toUpper();
