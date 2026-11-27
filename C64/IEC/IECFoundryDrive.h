@@ -67,6 +67,7 @@ private:
     ChannelState* findChannelState(quint8 deviceNumber, quint8 channel);
     void collectDiskEvents();
     bool prepareNextFileBlock(IECFoundryDisk* ptrDisk, ChannelState& channelState, IECProtocolResponse& response);
+    void processDosCommand(quint8 deviceNumber, IECFoundryDisk* ptrDisk, const QByteArray& command);
 
 private:
     IECFoundryDriveConfiguration m_configuration;

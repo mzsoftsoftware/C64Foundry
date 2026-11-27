@@ -288,6 +288,13 @@ void IECFoundryDrive::processEvent(
 
                 ptrChannelState->inputBuffer.clear();
             }
+            else if (ptrChannelState->type == ChannelType::DosCommand)
+            {
+                if (!ptrChannelState->inputBuffer.isEmpty())
+                    processDosCommand(event.deviceNumber, ptrDisk, ptrChannelState->inputBuffer);
+
+                ptrChannelState->inputBuffer.clear();
+            }
         }
         break;
 
@@ -455,4 +462,103 @@ bool IECFoundryDrive::prepareNextFileBlock(
     }
 
     return true;
+}
+
+void IECFoundryDrive::processDosCommand(
+    const quint8 deviceNumber,
+    IECFoundryDisk* ptrDisk,
+    const QByteArray& command)
+{
+    if (ptrDisk == nullptr)
+        return;
+
+    const QByteArray normalizedCommand = command.trimmed().toUpper();
+    const int separatorPosition = normalizedCommand.indexOf(':');
+
+    if (separatorPosition <= 0)
+    {
+        ptrDisk->setDosStatus(30, QByteArrayLiteral("SYNTAX ERROR"));
+        return;
+    }
+
+    const QByteArray commandName = normalizedCommand.left(separatorPosition);
+    QByteArray arguments = normalizedCommand.mid(separatorPosition + 1);
+
+    ChannelType channelType = ChannelType::None;
+
+    if (commandName == QByteArrayLiteral("U1") ||
+        commandName == QByteArrayLiteral("B-R"))
+    {
+        channelType = ChannelType::BlockRead;
+    }
+    else if (commandName == QByteArrayLiteral("U2") ||
+             commandName == QByteArrayLiteral("B-W"))
+    {
+        channelType = ChannelType::BlockWrite;
+    }
+    else
+    {
+        ptrDisk->setDosStatus(30, QByteArrayLiteral("SYNTAX ERROR"));
+        return;
+    }
+
+    arguments.replace(',', ' ');
+
+    const QList<QByteArray> rawParameters = arguments.split(' ');
+    QList<quint8> parameters;
+
+    for (const QByteArray& rawParameter : rawParameters)
+    {
+        const QByteArray parameter = rawParameter.trimmed();
+
+        if (parameter.isEmpty())
+            continue;
+
+        bool conversionOk = false;
+        const uint value = parameter.toUInt(&conversionOk, 10);
+
+        if (!conversionOk || value > 255)
+        {
+            ptrDisk->setDosStatus(30, QByteArrayLiteral("SYNTAX ERROR"));
+            return;
+        }
+
+        parameters.append(static_cast<quint8>(value));
+    }
+
+    if (parameters.size() != 4)
+    {
+        ptrDisk->setDosStatus(30, QByteArrayLiteral("SYNTAX ERROR"));
+        return;
+    }
+
+    const quint8 channel = parameters.at(0);
+    const quint8 drive = parameters.at(1);
+    const quint8 track = parameters.at(2);
+    const quint8 sector = parameters.at(3);
+
+    if (channel >= 15 || drive != 0)
+    {
+        ptrDisk->setDosStatus(30, QByteArrayLiteral("SYNTAX ERROR"));
+        return;
+    }
+
+    ChannelState* ptrDataChannelState =
+        findChannelState(deviceNumber, channel);
+
+    if (ptrDataChannelState == nullptr || !ptrDataChannelState->opened)
+    {
+        ptrDisk->setDosStatus(70, QByteArrayLiteral("NO CHANNEL"));
+        return;
+    }
+
+    ptrDataChannelState->type = channelType;
+    ptrDataChannelState->readingFile = false;
+    ptrDataChannelState->fileName.clear();
+    ptrDataChannelState->inputBuffer.clear();
+    ptrDataChannelState->blockBuffer.clear();
+    ptrDataChannelState->currentTrack = track;
+    ptrDataChannelState->currentSector = sector;
+
+    ptrDisk->setDosStatus(0, QByteArrayLiteral("OK"));
 }
