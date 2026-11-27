@@ -39,12 +39,22 @@ public:
     IECDeviceEventList takeEvents() override;
 
 private:
+    enum class ChannelType : quint8
+    {
+        None,
+        File,
+        DosCommand,
+        BlockRead,
+        BlockWrite
+    };
     struct ChannelState
     {
+        ChannelType type = ChannelType::None;
         bool opened = false;
         bool readingFile = false;
         QByteArray fileName;
         QByteArray inputBuffer;
+        QByteArray blockBuffer;
         quint8 currentTrack = 0;
         quint8 currentSector = 0;
     };

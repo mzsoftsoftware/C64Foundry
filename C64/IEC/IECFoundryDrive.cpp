@@ -262,12 +262,11 @@ void IECFoundryDrive::processEvent(
         break;
 
     case IECProtocolEvent::Type::Open:
+        *ptrChannelState = ChannelState();
         ptrChannelState->opened = true;
-        ptrChannelState->readingFile = false;
-        ptrChannelState->fileName.clear();
-        ptrChannelState->inputBuffer.clear();
-        ptrChannelState->currentTrack = 0;
-        ptrChannelState->currentSector = 0;
+        ptrChannelState->type = event.secondaryAddress == 15
+                                    ? ChannelType::DosCommand
+                                    : ChannelType::File;
         break;
 
     case IECProtocolEvent::Type::Close:
@@ -282,10 +281,13 @@ void IECFoundryDrive::processEvent(
     case IECProtocolEvent::Type::EndOfTransmission:
         if (event.mode == IECProtocolEvent::Mode::Listen)
         {
-            if (!ptrChannelState->inputBuffer.isEmpty())
-                ptrChannelState->fileName = ptrChannelState->inputBuffer;
+            if (ptrChannelState->type == ChannelType::File)
+            {
+                if (!ptrChannelState->inputBuffer.isEmpty())
+                    ptrChannelState->fileName = ptrChannelState->inputBuffer;
 
-            ptrChannelState->inputBuffer.clear();
+                ptrChannelState->inputBuffer.clear();
+            }
         }
         break;
 
