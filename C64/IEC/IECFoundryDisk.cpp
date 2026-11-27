@@ -275,6 +275,7 @@ bool IECFoundryDisk::readSectorInternal(
     if (!imageValid())
     {
         m_lastError = QStringLiteral("Es ist kein Disketten-Image geladen.");
+        setDosStatus(74, QByteArrayLiteral("DRIVE NOT READY"), track, sector);
 
         if (recordAccess)
             recordSectorAccess(SectorAccessOperation::Read, track, sector, false, m_lastError);
@@ -287,6 +288,7 @@ bool IECFoundryDisk::readSectorInternal(
     if (offset < 0)
     {
         m_lastError = QStringLiteral("Ungültiger Track oder Sektor.");
+        setDosStatus(66, QByteArrayLiteral("ILLEGAL TRACK OR SECTOR"), track, sector);
 
         if (recordAccess)
             recordSectorAccess(SectorAccessOperation::Read, track, sector, false, m_lastError);
@@ -299,6 +301,7 @@ bool IECFoundryDisk::readSectorInternal(
     if (offset + SectorSize > m_imageData.size())
     {
         m_lastError = QStringLiteral("Der Sektor liegt außerhalb des Disketten-Images.");
+        setDosStatus(21, QByteArrayLiteral("READ ERROR"), track, sector);
 
         if (recordAccess)
             recordSectorAccess(SectorAccessOperation::Read, track, sector, false, m_lastError);
@@ -312,6 +315,7 @@ bool IECFoundryDisk::readSectorInternal(
     {
         data.clear();
         m_lastError = QStringLiteral("Der Sektor konnte nicht vollständig gelesen werden.");
+        setDosStatus(21, QByteArrayLiteral("READ ERROR"), track, sector);
 
         if (recordAccess)
             recordSectorAccess(SectorAccessOperation::Read, track, sector, false, m_lastError);
@@ -334,25 +338,36 @@ bool IECFoundryDisk::writeSector(const quint8 track, const quint8 sector, const 
     if (!imageValid())
     {
         m_lastError = QStringLiteral("Es ist kein Disketten-Image geladen.");
+        setDosStatus(74, QByteArrayLiteral("DRIVE NOT READY"), track, sector);
+        recordSectorAccess(SectorAccessOperation::Write, track, sector, false, m_lastError);
+        return false;
+    }
+
+    if (sectorOffset(track, sector) < 0)
+    {
+        m_lastError = QStringLiteral("Ungültiger Track oder Sektor.");
+        setDosStatus(66, QByteArrayLiteral("ILLEGAL TRACK OR SECTOR"), track, sector);
         recordSectorAccess(SectorAccessOperation::Write, track, sector, false, m_lastError);
         return false;
     }
 
     m_lastError = QStringLiteral("Das Schreiben von Sektoren ist noch nicht implementiert.");
+    setDosStatus(25, QByteArrayLiteral("WRITE ERROR"), track, sector);
     recordSectorAccess(SectorAccessOperation::Write, track, sector, false, m_lastError);
 
     return false;
 }
 
-
 bool IECFoundryDisk::createDirectoryProgram(QByteArray& program)
 {
     m_lastError.clear();
     program.clear();
+    setDosStatus(0, QByteArrayLiteral("OK"));
 
     if (!imageValid())
     {
         m_lastError = QStringLiteral("Kein Disketten-Image geladen.");
+        setDosStatus(74, QByteArrayLiteral("DRIVE NOT READY"));
         return false;
     }
 
@@ -366,6 +381,7 @@ bool IECFoundryDisk::createDirectoryProgram(QByteArray& program)
     if (!createDirectoryHeader(bam, header))
     {
         m_lastError = QStringLiteral("Der Directory-Header konnte nicht erzeugt werden.");
+        setDosStatus(71, QByteArrayLiteral("DIRECTORY ERROR"), 18, 0);
         return false;
     }
 
@@ -377,11 +393,13 @@ bool IECFoundryDisk::createDirectoryProgram(QByteArray& program)
 
     while (track != 0)
     {
-        const quint16 sectorKey = (static_cast<quint16>(track) << 8) | sector;
+        const quint16 sectorKey =
+            (static_cast<quint16>(track) << 8) | sector;
 
         if (visitedSectors.contains(sectorKey))
         {
             m_lastError = QStringLiteral("Die Directory-Sektorkette enthält einen Zyklus.");
+            setDosStatus(71, QByteArrayLiteral("DIRECTORY ERROR"), track, sector);
             program.clear();
             return false;
         }
@@ -408,6 +426,7 @@ bool IECFoundryDisk::createDirectoryProgram(QByteArray& program)
             if (!createDirectoryEntry(directorySector, entryOffset, entry))
             {
                 m_lastError = QStringLiteral("Ein Directory-Eintrag konnte nicht erzeugt werden.");
+                setDosStatus(71, QByteArrayLiteral("DIRECTORY ERROR"), track, sector);
                 program.clear();
                 return false;
             }
@@ -435,6 +454,7 @@ bool IECFoundryDisk::createDirectoryProgram(QByteArray& program)
     if (!createDirectoryFooter(freeBlocks, footer))
     {
         m_lastError = QStringLiteral("Der Directory-Footer konnte nicht erzeugt werden.");
+        setDosStatus(71, QByteArrayLiteral("DIRECTORY ERROR"));
         program.clear();
         return false;
     }
@@ -443,9 +463,6 @@ bool IECFoundryDisk::createDirectoryProgram(QByteArray& program)
 
     return true;
 }
-
-
-
 
 bool IECFoundryDisk::createDirectoryHeader(const QByteArray& bam, QByteArray& header)
 {
@@ -651,10 +668,12 @@ bool IECFoundryDisk::openFile(const QByteArray& fileName, FileOpenResult& result
 {
     m_lastError.clear();
     result = FileOpenResult();
+    setDosStatus(0, QByteArrayLiteral("OK"));
 
     if (!imageValid())
     {
         m_lastError = QStringLiteral("Kein Disketten-Image geladen.");
+        setDosStatus(74, QByteArrayLiteral("DRIVE NOT READY"));
         return false;
     }
 
@@ -663,6 +682,7 @@ bool IECFoundryDisk::openFile(const QByteArray& fileName, FileOpenResult& result
     if (requestedName.isEmpty())
     {
         m_lastError = QStringLiteral("Es wurde kein Dateiname angegeben.");
+        setDosStatus(34, QByteArrayLiteral("NO FILE GIVEN"));
         return false;
     }
 
@@ -682,6 +702,7 @@ bool IECFoundryDisk::openFile(const QByteArray& fileName, FileOpenResult& result
         if (visitedDirectorySectors.contains(sectorKey))
         {
             m_lastError = QStringLiteral("Die Directory-Sektorkette enthält einen Zyklus.");
+            setDosStatus(71, QByteArrayLiteral("DIRECTORY ERROR"), directoryTrack, directorySectorNumber);
             return false;
         }
 
@@ -702,8 +723,7 @@ bool IECFoundryDisk::openFile(const QByteArray& fileName, FileOpenResult& result
             const QByteArray entryName =
                 normalizeDiskFileName(directorySector.mid(entryOffset + 3, 16));
 
-            const bool matches = matchesFileName(requestedName, entryName);
-            if (!matches)
+            if (!matchesFileName(requestedName, entryName))
                 continue;
 
             fileTrack = static_cast<quint8>(directorySector.at(entryOffset + 1));
@@ -723,6 +743,7 @@ bool IECFoundryDisk::openFile(const QByteArray& fileName, FileOpenResult& result
     {
         m_lastError = QStringLiteral("PRG-Datei nicht gefunden: %1")
         .arg(QString::fromLatin1(requestedName));
+        setDosStatus(62, QByteArrayLiteral("FILE NOT FOUND"));
         return false;
     }
 
@@ -731,6 +752,7 @@ bool IECFoundryDisk::openFile(const QByteArray& fileName, FileOpenResult& result
         if (fileSectorNumber != 0)
         {
             m_lastError = QStringLiteral("Der Directory-Eintrag einer leeren Datei ist ungültig.");
+            setDosStatus(66, QByteArrayLiteral("ILLEGAL TRACK OR SECTOR"));
             return false;
         }
 
@@ -751,6 +773,7 @@ bool IECFoundryDisk::openFile(const QByteArray& fileName, FileOpenResult& result
         if (visitedFileSectors.contains(sectorKey))
         {
             m_lastError = QStringLiteral("Die Dateisektorkette enthält einen Zyklus.");
+            setDosStatus(66, QByteArrayLiteral("ILLEGAL TRACK OR SECTOR"), fileTrack, fileSectorNumber);
             return false;
         }
 
@@ -769,6 +792,7 @@ bool IECFoundryDisk::openFile(const QByteArray& fileName, FileOpenResult& result
             if (sectorOffset(nextTrack, nextSector) < 0)
             {
                 m_lastError = QStringLiteral("Die Dateisektorkette enthält einen ungültigen Folge-Sektor.");
+                setDosStatus(66, QByteArrayLiteral("ILLEGAL TRACK OR SECTOR"), nextTrack, nextSector);
                 return false;
             }
 
@@ -781,6 +805,7 @@ bool IECFoundryDisk::openFile(const QByteArray& fileName, FileOpenResult& result
             if (payloadSize < 0 || payloadSize > 254)
             {
                 m_lastError = QStringLiteral("Der letzte Dateisektor enthält eine ungültige Länge.");
+                setDosStatus(66, QByteArrayLiteral("ILLEGAL TRACK OR SECTOR"), fileTrack, fileSectorNumber);
                 return false;
             }
 
@@ -794,11 +819,13 @@ bool IECFoundryDisk::openFile(const QByteArray& fileName, FileOpenResult& result
     if (fileSize < 2)
     {
         m_lastError = QStringLiteral("Die PRG-Datei enthält keine vollständige Ladeadresse.");
+        setDosStatus(23, QByteArrayLiteral("READ ERROR"), firstTrack, firstSector);
         return false;
     }
 
     result.firstTrack = firstTrack;
     result.firstSector = firstSector;
+
     return true;
 }
 
@@ -823,6 +850,7 @@ bool IECFoundryDisk::readFileBlock(
         if (sectorOffset(nextTrack, nextSector) < 0)
         {
             m_lastError = QStringLiteral("Die Dateisektorkette enthält einen ungültigen Folge-Sektor.");
+            setDosStatus(66, QByteArrayLiteral("ILLEGAL TRACK OR SECTOR"), nextTrack, nextSector);
             return false;
         }
 
@@ -838,6 +866,7 @@ bool IECFoundryDisk::readFileBlock(
         if (payloadSize < 0 || payloadSize > 254)
         {
             m_lastError = QStringLiteral("Der letzte Dateisektor enthält eine ungültige Länge.");
+            setDosStatus(66, QByteArrayLiteral("ILLEGAL TRACK OR SECTOR"), track, sector);
             return false;
         }
 

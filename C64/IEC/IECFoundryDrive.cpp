@@ -238,7 +238,8 @@ void IECFoundryDrive::reset()
 
 
 void IECFoundryDrive::processEvent(
-    const IECProtocolEvent& event, IECProtocolResponse& response)
+    const IECProtocolEvent& event,
+    IECProtocolResponse& response)
 {
     response.type = IECProtocolResponse::Type::None;
     response.data.clear();
@@ -294,6 +295,9 @@ void IECFoundryDrive::processEvent(
 
         if (event.secondaryAddress == 15)
         {
+            if (!ptrDisk->imageValid())
+                ptrDisk->setDosStatus(74, QByteArrayLiteral("DRIVE NOT READY"));
+
             response.type = IECProtocolResponse::Type::SendData;
             response.data = ptrDisk->takeDosStatus();
             response.lastBlock = true;
@@ -308,7 +312,6 @@ void IECFoundryDrive::processEvent(
             break;
         }
 
-        // Bestehende Behandlung von LOAD und Directory bleibt hier.
         {
             const QByteArray requestedName =
                 ptrChannelState->fileName.trimmed().toUpper();
@@ -322,10 +325,12 @@ void IECFoundryDrive::processEvent(
 
                 response.type = IECProtocolResponse::Type::SendData;
                 response.data = directoryProgram;
+                response.lastBlock = true;
                 break;
             }
 
             IECFoundryDisk::FileOpenResult openResult;
+
             if (!ptrDisk->openFile(requestedName, openResult) || openResult.empty)
                 break;
 
@@ -339,9 +344,7 @@ void IECFoundryDrive::processEvent(
 
     case IECProtocolEvent::Type::RequestNextDataBlock:
         if (event.mode == IECProtocolEvent::Mode::Talk && ptrChannelState->readingFile)
-        {
             prepareNextFileBlock(ptrDisk, *ptrChannelState, response);
-        }
         break;
 
     case IECProtocolEvent::Type::DeviceDeselected:
