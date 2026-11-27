@@ -57,6 +57,7 @@ private:
         QByteArray blockBuffer;
         quint8 currentTrack = 0;
         quint8 currentSector = 0;
+        int bufferPosition = 0;
     };
     struct DiskChannelState
     {

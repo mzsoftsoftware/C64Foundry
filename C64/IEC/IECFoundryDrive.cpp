@@ -317,19 +317,32 @@ void IECFoundryDrive::processEvent(
         if (ptrChannelState->type == ChannelType::BlockRead)
         {
             ptrChannelState->readingFile = false;
-            ptrChannelState->blockBuffer.clear();
 
-            if (!ptrDisk->readSector(
-                    ptrChannelState->currentTrack,
-                    ptrChannelState->currentSector,
-                    ptrChannelState->blockBuffer))
+            if (ptrChannelState->blockBuffer.size() != 256)
             {
+                ptrChannelState->blockBuffer.clear();
+
+                if (!ptrDisk->readSector(
+                        ptrChannelState->currentTrack,
+                        ptrChannelState->currentSector,
+                        ptrChannelState->blockBuffer))
+                {
+                    break;
+                }
+            }
+
+            if (ptrChannelState->bufferPosition < 0 ||
+                ptrChannelState->bufferPosition >= ptrChannelState->blockBuffer.size())
+            {
+                ptrDisk->setDosStatus(30, QByteArrayLiteral("SYNTAX ERROR"));
                 break;
             }
 
             response.type = IECProtocolResponse::Type::SendData;
-            response.data = ptrChannelState->blockBuffer;
+            response.data = ptrChannelState->blockBuffer.mid(ptrChannelState->bufferPosition);
             response.lastBlock = true;
+
+            ptrChannelState->bufferPosition = ptrChannelState->blockBuffer.size();
             break;
         }
 
@@ -507,6 +520,9 @@ void IECFoundryDrive::processDosCommand(
     const QByteArray commandName = normalizedCommand.left(separatorPosition);
     QByteArray arguments = normalizedCommand.mid(separatorPosition + 1);
 
+    const bool bufferPointerCommand =
+        commandName == QByteArrayLiteral("B-P");
+
     ChannelType channelType = ChannelType::None;
 
     if (commandName == QByteArrayLiteral("U1") ||
@@ -519,7 +535,7 @@ void IECFoundryDrive::processDosCommand(
     {
         channelType = ChannelType::BlockWrite;
     }
-    else
+    else if (!bufferPointerCommand)
     {
         ptrDisk->setDosStatus(30, QByteArrayLiteral("SYNTAX ERROR"));
         return;
@@ -549,18 +565,17 @@ void IECFoundryDrive::processDosCommand(
         parameters.append(static_cast<quint8>(value));
     }
 
-    if (parameters.size() != 4)
+    const int expectedParameterCount = bufferPointerCommand ? 2 : 4;
+
+    if (parameters.size() != expectedParameterCount)
     {
         ptrDisk->setDosStatus(30, QByteArrayLiteral("SYNTAX ERROR"));
         return;
     }
 
     const quint8 channel = parameters.at(0);
-    const quint8 drive = parameters.at(1);
-    const quint8 track = parameters.at(2);
-    const quint8 sector = parameters.at(3);
 
-    if (channel >= 15 || drive != 0)
+    if (channel >= 15)
     {
         ptrDisk->setDosStatus(30, QByteArrayLiteral("SYNTAX ERROR"));
         return;
@@ -575,11 +590,37 @@ void IECFoundryDrive::processDosCommand(
         return;
     }
 
+    if (bufferPointerCommand)
+    {
+        if (ptrDataChannelState->type != ChannelType::BlockRead &&
+            ptrDataChannelState->type != ChannelType::BlockWrite)
+        {
+            ptrDisk->setDosStatus(70, QByteArrayLiteral("NO CHANNEL"));
+            return;
+        }
+
+        ptrDataChannelState->bufferPosition = parameters.at(1);
+
+        ptrDisk->setDosStatus(0, QByteArrayLiteral("OK"));
+        return;
+    }
+
+    const quint8 drive = parameters.at(1);
+    const quint8 track = parameters.at(2);
+    const quint8 sector = parameters.at(3);
+
+    if (drive != 0)
+    {
+        ptrDisk->setDosStatus(30, QByteArrayLiteral("SYNTAX ERROR"));
+        return;
+    }
+
     ptrDataChannelState->type = channelType;
     ptrDataChannelState->readingFile = false;
     ptrDataChannelState->fileName.clear();
     ptrDataChannelState->inputBuffer.clear();
     ptrDataChannelState->blockBuffer.clear();
+    ptrDataChannelState->bufferPosition = 0;
     ptrDataChannelState->currentTrack = track;
     ptrDataChannelState->currentSector = sector;
 
