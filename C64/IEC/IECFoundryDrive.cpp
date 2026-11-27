@@ -237,6 +237,7 @@ void IECFoundryDrive::reset()
 }
 
 
+
 void IECFoundryDrive::processEvent(
     const IECProtocolEvent& event,
     IECProtocolResponse& response)
@@ -312,6 +313,28 @@ void IECFoundryDrive::processEvent(
             response.lastBlock = true;
             break;
         }
+
+        if (ptrChannelState->type == ChannelType::BlockRead)
+        {
+            ptrChannelState->readingFile = false;
+            ptrChannelState->blockBuffer.clear();
+
+            if (!ptrDisk->readSector(
+                    ptrChannelState->currentTrack,
+                    ptrChannelState->currentSector,
+                    ptrChannelState->blockBuffer))
+            {
+                break;
+            }
+
+            response.type = IECProtocolResponse::Type::SendData;
+            response.data = ptrChannelState->blockBuffer;
+            response.lastBlock = true;
+            break;
+        }
+
+        if (ptrChannelState->type == ChannelType::BlockWrite)
+            break;
 
         ptrChannelState->readingFile = false;
 
